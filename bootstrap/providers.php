@@ -2,8 +2,18 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\BusinessServiceProvider;
+use App\Providers\CategoryServiceProvider;
+use App\Providers\CustomerServiceProvider;
+use App\Providers\ExpenseCategoryServiceProvider;
+use App\Providers\ExpenseServiceProvider;
 use App\Providers\PlanServiceProvider;
+use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
+use App\Providers\SaleItemServiceProvider;
+use App\Providers\SaleServiceProvider;
+use App\Providers\ShiftServiceProvider;
+use App\Providers\StockMovementServiceProvider;
+use App\Providers\SubscriptionServiceProvider;
 use App\Providers\UserServiceProvider;
 
 return [
@@ -12,4 +22,14 @@ return [
     UserServiceProvider::class,
     BusinessServiceProvider::class,
     RoleServiceProvider::class,
+    CategoryServiceProvider::class,
+    ProductServiceProvider::class,
+    CustomerServiceProvider::class,
+    ShiftServiceProvider::class,
+    SaleServiceProvider::class,
+    SaleItemServiceProvider::class,
+    StockMovementServiceProvider::class,
+    SubscriptionServiceProvider::class,
+    ExpenseCategoryServiceProvider::class,
+    ExpenseServiceProvider::class,
 ];
