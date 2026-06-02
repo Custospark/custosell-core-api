@@ -7,6 +7,7 @@ use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
 use App\Providers\PlanServiceProvider;
+use App\Providers\SyncServiceProvider;
 use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
 use App\Providers\SaleItemServiceProvider;
@@ -32,4 +33,5 @@ return [
     SubscriptionServiceProvider::class,
     ExpenseCategoryServiceProvider::class,
     ExpenseServiceProvider::class,
+    SyncServiceProvider::class,
 ];

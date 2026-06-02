@@ -17,4 +17,5 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/subscriptions.php';
     require __DIR__ . '/api/v1/expense_categories.php';
     require __DIR__ . '/api/v1/expenses.php';
+    require __DIR__ . '/api/v1/sync.php';
 });
