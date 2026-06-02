@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Product;
 use App\Models\StockMovement;
 use App\Repositories\Contracts\StockMovementRepositoryInterface;
 use App\Services\Contracts\StockMovementServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class StockMovementService implements StockMovementServiceInterface
 {
@@ -25,8 +27,19 @@ class StockMovementService implements StockMovementServiceInterface
 
     public function create(int $businessId, array $data): StockMovement
     {
-        $data['business_id'] = $businessId;
-        return $this->stockMovementRepository->create($data);
+        return DB::transaction(function () use ($businessId, $data) {
+            $data['business_id'] = $businessId;
+
+            $movement = $this->stockMovementRepository->create($data);
+
+            $product = Product::find($data['product_id']);
+            if ($product) {
+                $product->stock_quantity = $data['stock_after'];
+                $product->save();
+            }
+
+            return $movement;
+        });
     }
 
     public function update(int $id, array $data): StockMovement
