@@ -16,10 +16,12 @@ class Product extends Model
         'business_id',
         'category_id',
         'name',
+        'unit',
         'description',
         'sku',
         'barcode',
         'unit_price',
+        'wholesale_price',
         'cost_price',
         'stock_quantity',
         'low_stock_threshold',
@@ -31,6 +33,7 @@ class Product extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'wholesale_price' => 'decimal:2',
             'cost_price' => 'decimal:2',
             'stock_quantity' => 'integer',
             'low_stock_threshold' => 'integer',
