@@ -16,15 +16,18 @@ class SaleRequest extends FormRequest
         return [
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
-            'receipt_number' => ['required', 'string', 'max:50'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
             'subtotal' => ['required', 'numeric', 'min:0'],
-            'tax_total' => ['numeric', 'min:0'],
-            'discount_amount' => ['numeric', 'min:0'],
+            'tax_total' => ['nullable', 'numeric', 'min:0'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'string', 'in:cash,mobile_money,card,other'],
-            'payment_status' => ['string', 'in:paid,partially_refunded,refunded'],
             'notes' => ['nullable', 'string'],
-            'sale_date' => ['required', 'date'],
+            'sale_date' => ['nullable', 'date'],
         ];
     }
 }

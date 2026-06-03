@@ -50,4 +50,22 @@ class SaleController extends Controller
         $this->saleService->delete($id);
         return response()->json(null, 204);
     }
+
+    public function daily(Request $request): SaleCollection
+    {
+        $businessId = $request->user()->business_id;
+        $date = $request->query('date');
+        return new SaleCollection($this->saleService->getDaily($businessId, $date));
+    }
+
+    public function refund(int $id, Request $request): SaleResource
+    {
+        $sale = $this->saleService->refund($id, $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['required', 'integer', 'exists:sale_items,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.amount' => ['nullable', 'numeric', 'min:0'],
+        ]));
+        return new SaleResource($sale);
+    }
 }

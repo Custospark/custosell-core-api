@@ -11,7 +11,7 @@ class SaleRepository implements SaleRepositoryInterface
     public function all(int $businessId): Collection
     {
         return Sale::where('business_id', $businessId)
-            ->with(['user', 'customer', 'shift'])
+            ->with(['user', 'customer', 'shift', 'saleItems'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
@@ -48,7 +48,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->whereBetween('sale_date', [$start, $end])
-            ->with(['user', 'customer', 'shift'])
+            ->with(['user', 'customer', 'shift', 'saleItems'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
