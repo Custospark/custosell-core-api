@@ -38,7 +38,7 @@ class ProductImportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', 'MF-001', '', '0', 'Premium maize flour'];
+        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', '', '', '0', 'Premium maize flour (delete this example row)'];
         foreach ($example as $i => $val) {
             $sheet->setCellValue(chr(65 + $i) . '2', $val);
         }
@@ -118,7 +118,12 @@ class ProductImportService
 
     protected function mapRow(array $row, array $categories): array
     {
-        $get = fn (int $i) => ($row[$i] ?? null) !== '' && ($row[$i] ?? null) !== null ? trim((string) $row[$i]) : null;
+        $get = function (int $i) use ($row): ?string {
+            $raw = $row[$i] ?? null;
+            if ($raw === null || $raw === '') return null;
+            $trimmed = trim((string) $raw);
+            return $trimmed === '' ? null : $trimmed;
+        };
 
         $name = $get(0);
         $categoryName = $get(2);
