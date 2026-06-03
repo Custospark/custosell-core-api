@@ -10,6 +10,8 @@ use App\Services\Contracts\ProductServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ProductController extends Controller
 {
@@ -63,28 +65,53 @@ class ProductController extends Controller
         return new ProductCollection($this->productService->getLowStock($businessId));
     }
 
-    public function export(Request $request): \Illuminate\Http\Response
+    public function export(Request $request)
     {
         $businessId = $request->user()->business_id;
         $products = $this->productService->getAll($businessId);
+        $format = $request->query('format', 'csv');
 
         $headers = ['Name', 'Unit', 'Category', 'Unit Price', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Description'];
-        $rows = [$headers];
 
+        if ($format === 'xlsx') {
+            $spreadsheet = new Spreadsheet;
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Products');
+
+            foreach ($headers as $i => $h) {
+                $sheet->setCellValue(chr(65 + $i) . '1', $h);
+                $sheet->getColumnDimension(chr(65 + $i))->setAutoSize(true);
+            }
+
+            foreach ($products as $r => $p) {
+                $row = $r + 2;
+                $vals = [
+                    $p->name, $p->unit ?? '', $p->category?->name ?? '', $p->unit_price,
+                    $p->wholesale_price ?? '', $p->cost_price ?? '', $p->stock_quantity,
+                    $p->low_stock_threshold ?? '', $p->sku ?? '', $p->barcode ?? '',
+                    $p->tax_percentage ?? '0', $p->description ?? '',
+                ];
+                foreach ($vals as $i => $v) {
+                    $sheet->setCellValue(chr(65 + $i) . $row, $v);
+                }
+            }
+
+            $writer = new Xlsx($spreadsheet);
+            $temp = tempnam(sys_get_temp_dir(), 'export');
+            $writer->save($temp);
+
+            return response()->download($temp, 'products-export.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        }
+
+        $rows = [$headers];
         foreach ($products as $p) {
             $rows[] = [
-                $p->name,
-                $p->unit ?? '',
-                $p->category?->name ?? '',
-                $p->unit_price,
-                $p->wholesale_price ?? '',
-                $p->cost_price ?? '',
-                $p->stock_quantity,
-                $p->low_stock_threshold ?? '',
-                $p->sku ?? '',
-                $p->barcode ?? '',
-                $p->tax_percentage ?? '0',
-                $p->description ?? '',
+                $p->name, $p->unit ?? '', $p->category?->name ?? '', $p->unit_price,
+                $p->wholesale_price ?? '', $p->cost_price ?? '', $p->stock_quantity,
+                $p->low_stock_threshold ?? '', $p->sku ?? '', $p->barcode ?? '',
+                $p->tax_percentage ?? '0', $p->description ?? '',
             ];
         }
 
