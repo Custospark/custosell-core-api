@@ -9,6 +9,7 @@ use App\Http\Resources\ProductResource;
 use App\Services\Contracts\ProductServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class ProductController extends Controller
 {
@@ -60,5 +61,38 @@ class ProductController extends Controller
     {
         $businessId = $request->user()->business_id;
         return new ProductCollection($this->productService->getLowStock($businessId));
+    }
+
+    public function export(Request $request): \Illuminate\Http\Response
+    {
+        $businessId = $request->user()->business_id;
+        $products = $this->productService->getAll($businessId);
+
+        $headers = ['Name', 'Unit', 'Category', 'Unit Price', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Description'];
+        $rows = [$headers];
+
+        foreach ($products as $p) {
+            $rows[] = [
+                $p->name,
+                $p->unit ?? '',
+                $p->category?->name ?? '',
+                $p->unit_price,
+                $p->wholesale_price ?? '',
+                $p->cost_price ?? '',
+                $p->stock_quantity,
+                $p->low_stock_threshold ?? '',
+                $p->sku ?? '',
+                $p->barcode ?? '',
+                $p->tax_percentage ?? '0',
+                $p->description ?? '',
+            ];
+        }
+
+        $csv = implode("\n", array_map(fn ($r) => implode(',', array_map(fn ($v) => '"' . str_replace('"', '""', (string) $v) . '"', $r)), $rows));
+
+        return Response::make($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="products-export.csv"',
+        ]);
     }
 }

@@ -9,5 +9,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
     Route::get('/products/import-template', [ProductImportController::class, 'downloadTemplate']);
     Route::post('/products/import', [ProductImportController::class, 'import']);
+    Route::get('/products/export', [ProductController::class, 'export']);
     Route::apiResource('products', ProductController::class);
 });
