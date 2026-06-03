@@ -10,5 +10,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/import-template', [ProductImportController::class, 'downloadTemplate']);
     Route::post('/products/import', [ProductImportController::class, 'import']);
     Route::get('/products/export', [ProductController::class, 'export']);
+    Route::get('/products/{product}/stock-movements', [ProductController::class, 'stockMovements']);
     Route::apiResource('products', ProductController::class);
 });

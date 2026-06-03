@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductCollection;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\StockMovementCollection;
 use App\Services\Contracts\ProductServiceInterface;
+use App\Services\Contracts\StockMovementServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -17,6 +19,7 @@ class ProductController extends Controller
 {
     public function __construct(
         protected ProductServiceInterface $productService,
+        protected StockMovementServiceInterface $stockMovementService,
     ) {}
 
     public function index(Request $request): ProductCollection
@@ -63,6 +66,14 @@ class ProductController extends Controller
     {
         $businessId = $request->user()->business_id;
         return new ProductCollection($this->productService->getLowStock($businessId));
+    }
+
+    public function stockMovements(Request $request, int $id): StockMovementCollection
+    {
+        $businessId = $request->user()->business_id;
+        return new StockMovementCollection(
+            $this->stockMovementService->getByProduct($businessId, $id)
+        );
     }
 
     public function export(Request $request)
