@@ -13,8 +13,10 @@ class ShiftRequest extends FormRequest
 
     public function rules(): array
     {
+        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+
         return [
-            'clock_in' => ['required', 'date'],
+            'clock_in' => $isUpdate ? ['nullable', 'date'] : ['required', 'date'],
             'clock_out' => ['nullable', 'date', 'after:clock_in'],
             'total_sales' => ['numeric', 'min:0'],
             'total_cash' => ['numeric', 'min:0'],

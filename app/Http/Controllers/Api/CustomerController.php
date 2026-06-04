@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerRequest;
 use App\Http\Resources\CustomerCollection;
 use App\Http\Resources\CustomerResource;
+use App\Http\Resources\SaleCollection;
 use App\Services\Contracts\CustomerServiceInterface;
+use App\Services\Contracts\SaleServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,6 +16,7 @@ class CustomerController extends Controller
 {
     public function __construct(
         protected CustomerServiceInterface $customerService,
+        protected SaleServiceInterface $saleService,
     ) {}
 
     public function index(Request $request): CustomerCollection
@@ -48,5 +51,11 @@ class CustomerController extends Controller
     {
         $this->customerService->delete($id);
         return response()->json(null, 204);
+    }
+
+    public function purchases(int $id, Request $request): SaleCollection
+    {
+        $businessId = $request->user()->business_id;
+        return new SaleCollection($this->saleService->getByCustomer($businessId, $id));
     }
 }

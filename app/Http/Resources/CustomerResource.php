@@ -16,9 +16,9 @@ class CustomerResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'total_purchases' => $this->total_purchases,
-            'last_purchase_at' => $this->last_purchase_at,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'last_purchase_at' => $this->last_purchase_at?->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

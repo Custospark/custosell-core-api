@@ -7,8 +7,9 @@ Route::post('/businesses/register', [BusinessController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/businesses/mine', [BusinessController::class, 'mine']);
-    Route::get('/businesses/{business}', [BusinessController::class, 'show']);
-    Route::put('/businesses/{business}', [BusinessController::class, 'update']);
+    Route::put('/businesses/profile', [BusinessController::class, 'updateProfile']);
+    Route::get('/businesses/{id}', [BusinessController::class, 'show']);
+    Route::put('/businesses/{id}', [BusinessController::class, 'update']);
     Route::get('/businesses/settings', [BusinessController::class, 'settings']);
     Route::put('/businesses/settings', [BusinessController::class, 'updateSettings']);
 });

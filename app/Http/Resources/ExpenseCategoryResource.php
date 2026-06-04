@@ -15,8 +15,10 @@ class ExpenseCategoryResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'sort_order' => $this->sort_order,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'budget_amount' => $this->budget_amount,
+            'budget_period' => $this->budget_period,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -51,4 +51,17 @@ class StockMovementController extends Controller
         $this->stockMovementService->delete($id);
         return response()->json(null, 204);
     }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'exists:stock_movements,id'],
+        ]);
+
+        $businessId = $request->user()->business_id;
+        $count = $this->stockMovementService->bulkDelete($data['ids'], $businessId);
+
+        return response()->json(['deleted' => $count]);
+    }
 }

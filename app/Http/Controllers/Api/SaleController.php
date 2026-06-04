@@ -68,4 +68,23 @@ class SaleController extends Controller
         ]));
         return new SaleResource($sale);
     }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'exists:sales,id'],
+        ]);
+
+        $businessId = $request->user()->business_id;
+        $count = $this->saleService->bulkDelete($data['ids'], $businessId);
+
+        return response()->json(['deleted' => $count]);
+    }
+
+    public function byShift(int $shiftId, Request $request): SaleCollection
+    {
+        $businessId = $request->user()->business_id;
+        return new SaleCollection($this->saleService->getByShift($shiftId));
+    }
 }

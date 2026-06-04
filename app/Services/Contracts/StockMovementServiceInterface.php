@@ -17,6 +17,8 @@ interface StockMovementServiceInterface
 
     public function delete(int $id): bool;
 
+    public function bulkDelete(array $ids, int $businessId): int;
+
     public function getByProduct(int $businessId, int $productId): Collection;
 
     public function getByType(int $businessId, string $type): Collection;

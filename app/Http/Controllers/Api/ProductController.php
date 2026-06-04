@@ -56,6 +56,19 @@ class ProductController extends Controller
         return response()->json(null, 204);
     }
 
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'exists:products,id'],
+        ]);
+
+        $businessId = $request->user()->business_id;
+        $count = $this->productService->bulkDelete($data['ids'], $businessId);
+
+        return response()->json(['deleted' => $count]);
+    }
+
     public function active(Request $request): ProductCollection
     {
         $businessId = $request->user()->business_id;

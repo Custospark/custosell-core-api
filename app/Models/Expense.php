@@ -17,6 +17,11 @@ class Expense extends Model
         'amount',
         'description',
         'reference',
+        'receipt_path',
+        'is_recurring',
+        'recurrence_interval',
+        'recurrence_end_date',
+        'next_due_date',
         'expense_date',
     ];
 
@@ -25,6 +30,9 @@ class Expense extends Model
         return [
             'amount' => 'decimal:2',
             'expense_date' => 'datetime',
+            'is_recurring' => 'boolean',
+            'recurrence_end_date' => 'date',
+            'next_due_date' => 'date',
         ];
     }
 

@@ -35,8 +35,12 @@ class BusinessController extends Controller
 
     public function store(BusinessRequest $request): JsonResponse
     {
-        $userData = $request->only(['name', 'email', 'password']);
-        $businessData = $request->except(['password', 'password_confirmation']);
+        $userData = [
+            'name' => $request->input('owner_name'),
+            'email' => $request->input('email'),
+            'password' => $request->input('password'),
+        ];
+        $businessData = $request->except(['password', 'password_confirmation', 'owner_name']);
         $business = $this->businessService->register($userData, $businessData);
         return response()->json(new BusinessResource($business), 201);
     }
@@ -44,6 +48,16 @@ class BusinessController extends Controller
     public function update(BusinessRequest $request, int $id): BusinessResource
     {
         $business = $this->businessService->update($id, $request->validated());
+        return new BusinessResource($business);
+    }
+
+    public function updateProfile(BusinessRequest $request): BusinessResource
+    {
+        $business = $request->user()->business;
+        if (!$business) {
+            abort(404, 'Business not found');
+        }
+        $business = $this->businessService->update($business->id, $request->validated());
         return new BusinessResource($business);
     }
 

@@ -19,9 +19,14 @@ class ExpenseResource extends JsonResource
             'amount' => $this->amount,
             'description' => $this->description,
             'reference' => $this->reference,
-            'expense_date' => $this->expense_date,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'receipt_url' => $this->receipt_path ? url('storage/' . $this->receipt_path) : null,
+            'is_recurring' => $this->is_recurring,
+            'recurrence_interval' => $this->recurrence_interval,
+            'recurrence_end_date' => $this->recurrence_end_date,
+            'next_due_date' => $this->next_due_date,
+            'expense_date' => $this->expense_date?->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

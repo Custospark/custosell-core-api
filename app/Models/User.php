@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'is_active',
         'phone',
+        'avatar',
         'created_by',
     ];
 
@@ -69,6 +70,11 @@ class User extends Authenticatable
     public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);
+    }
+
+    public function activeShift()
+    {
+        return $this->hasOne(Shift::class)->where('status', 'active');
     }
 
     public function stockMovements(): HasMany

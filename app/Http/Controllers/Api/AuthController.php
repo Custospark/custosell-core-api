@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Shift;
 use App\Services\Contracts\UserServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,16 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = $this->userService->register($request->validated());
+        $user->load('business');
+
+        $activeShift = Shift::create([
+            'business_id' => $user->business_id,
+            'user_id' => $user->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $user->setRelation('activeShift', $activeShift);
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
@@ -36,6 +47,25 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
+        $user->load('business');
+
+        // Find active shift or create a new one
+        $activeShift = Shift::where('business_id', $user->business_id)
+            ->where('user_id', $user->id)
+            ->whereNull('clock_out')
+            ->where('status', 'active')
+            ->first();
+
+        if (!$activeShift) {
+            $activeShift = Shift::create([
+                'business_id' => $user->business_id,
+                'user_id' => $user->id,
+                'clock_in' => now(),
+                'status' => 'active',
+            ]);
+        }
+
+        $user->setRelation('activeShift', $activeShift);
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
@@ -52,6 +82,18 @@ class AuthController extends Controller
 
     public function me(Request $request): UserResource
     {
-        return new UserResource($request->user()->load('role'));
+        $user = $request->user()->load(['role', 'business']);
+
+        $activeShift = Shift::where('business_id', $user->business_id)
+            ->where('user_id', $user->id)
+            ->whereNull('clock_out')
+            ->where('status', 'active')
+            ->first();
+
+        if ($activeShift) {
+            $user->setRelation('activeShift', $activeShift);
+        }
+
+        return new UserResource($user);
     }
 }

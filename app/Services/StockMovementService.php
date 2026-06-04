@@ -60,6 +60,13 @@ class StockMovementService implements StockMovementServiceInterface
         return $this->stockMovementRepository->delete($stockMovement);
     }
 
+    public function bulkDelete(array $ids, int $businessId): int
+    {
+        return \App\Models\StockMovement::whereIn('id', $ids)
+            ->where('business_id', $businessId)
+            ->delete();
+    }
+
     public function getByProduct(int $businessId, int $productId): Collection
     {
         return $this->stockMovementRepository->getByProduct($businessId, $productId);

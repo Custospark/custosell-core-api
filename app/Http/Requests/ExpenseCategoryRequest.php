@@ -14,9 +14,16 @@ class ExpenseCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'required', 'string', 'max:255',
+                \Illuminate\Validation\Rule::unique('expense_categories', 'name')
+                    ->where('business_id', $this->user()?->business_id)
+                    ->ignore($this->route('expense_category')),
+            ],
             'description' => ['nullable', 'string'],
             'sort_order' => ['integer', 'min:0'],
+            'budget_amount' => ['nullable', 'numeric', 'min:0'],
+            'budget_period' => ['nullable', 'string', 'in:weekly,monthly,quarterly,yearly'],
         ];
     }
 }

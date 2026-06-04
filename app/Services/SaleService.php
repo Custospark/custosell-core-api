@@ -30,7 +30,7 @@ class SaleService implements SaleServiceInterface
     public function create(int $businessId, int $userId, array $data): Sale
     {
         return DB::transaction(function () use ($businessId, $userId, $data) {
-            $business = \App\Models\Business::find($businessId);
+            $business = \App\Models\Business::findOrFail($businessId);
             $receiptNumber = $this->generateReceiptNumber($business);
 
             $sale = Sale::create([
@@ -43,6 +43,8 @@ class SaleService implements SaleServiceInterface
                 'tax_total' => $data['tax_total'] ?? 0,
                 'discount_amount' => $data['discount_amount'] ?? 0,
                 'total_amount' => $data['total_amount'],
+                'amount_tendered' => $data['amount_tendered'] ?? null,
+                'change_given' => $data['change_given'] ?? null,
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'paid',
                 'notes' => $data['notes'] ?? null,
@@ -93,7 +95,7 @@ class SaleService implements SaleServiceInterface
                 }
             }
 
-            return $sale->load('items');
+            return $sale->load(['saleItems', 'business', 'user']);
         });
     }
 
@@ -111,6 +113,21 @@ class SaleService implements SaleServiceInterface
         return $this->saleRepository->delete($sale);
     }
 
+    public function bulkDelete(array $ids, int $businessId): int
+    {
+        $deleted = Sale::whereIn('id', $ids)
+            ->where('business_id', $businessId)
+            ->get();
+
+        $count = 0;
+        foreach ($deleted as $sale) {
+            $sale->delete();
+            $count++;
+        }
+
+        return $count;
+    }
+
     public function getByDateRange(int $businessId, string $start, string $end): Collection
     {
         return $this->saleRepository->getByDateRange($businessId, $start, $end);
@@ -124,30 +141,67 @@ class SaleService implements SaleServiceInterface
     public function refund(int $id, array $data): Sale
     {
         return DB::transaction(function () use ($id, $data) {
-            $sale = Sale::with('items')->findOrFail($id);
+            $sale = Sale::with('saleItems')->findOrFail($id);
+            $saleSubtotal = (float) $sale->subtotal;
+            $saleDiscount = (float) $sale->discount_amount;
+            $discountRatio = $saleSubtotal > 0 ? $saleDiscount / $saleSubtotal : 0;
+
+            $processedItems = [];
+            $rawTotal = 0;
 
             foreach ($data['items'] as $refundItem) {
                 $saleItem = SaleItem::findOrFail($refundItem['id']);
                 $refundQty = (int) ($refundItem['quantity'] ?? $saleItem->quantity);
-                $refundAmount = $refundItem['amount'] ?? ($saleItem->unit_price * $refundQty);
 
-                $saleItem->refunded_quantity += $refundQty;
-                $saleItem->refunded_amount += $refundAmount;
-                $saleItem->save();
+                if ($saleItem->refunded_quantity + $refundQty > $saleItem->quantity) {
+                    abort(422, "Cannot refund {$refundQty} of '{$saleItem->product_name}'. Only " . ($saleItem->quantity - $saleItem->refunded_quantity) . " remaining.");
+                }
+
+                $rawAmount = $saleItem->unit_price * $refundQty;
+                $rawTotal += $rawAmount;
+                $proportionalAmount = $rawAmount * (1 - $discountRatio);
+
+                $processedItems[] = [
+                    'saleItem' => $saleItem,
+                    'refundQty' => $refundQty,
+                    'proportionalAmount' => $proportionalAmount,
+                    'rawAmount' => $rawAmount,
+                ];
+            }
+
+            // Expected total refund for this batch = raw total minus proportional share of discount
+            $expectedTotal = $rawTotal * (1 - $discountRatio);
+
+            foreach ($processedItems as $i => $pi) {
+                $isLast = $i === count($processedItems) - 1;
+                $refundAmount = $pi['proportionalAmount'];
+
+                // Absorb any rounding difference into the last item
+                if ($isLast && count($processedItems) > 1) {
+                    $sumOthers = collect($processedItems)->take(count($processedItems) - 1)->sum('proportionalAmount');
+                    $refundAmount = $expectedTotal - $sumOthers;
+                }
+
+                $refundAmount = round($refundAmount, 2);
+
+                $pi['saleItem']->refunded_quantity += $pi['refundQty'];
+                $pi['saleItem']->refunded_amount += $refundAmount;
+                $pi['saleItem']->save();
+                $pi['saleItem']->refresh();
 
                 // Restore stock
-                $product = Product::find($saleItem->product_id);
+                $product = Product::find($pi['saleItem']->product_id);
                 if ($product) {
                     $stockBefore = $product->stock_quantity;
-                    $product->stock_quantity += $refundQty;
+                    $product->stock_quantity += $pi['refundQty'];
                     $product->save();
 
                     StockMovement::create([
                         'business_id' => $sale->business_id,
                         'product_id' => $product->id,
-                        'sale_item_id' => $saleItem->id,
+                        'sale_item_id' => $pi['saleItem']->id,
                         'type' => 'return',
-                        'quantity_change' => $refundQty,
+                        'quantity_change' => $pi['refundQty'],
                         'stock_before' => $stockBefore,
                         'stock_after' => $product->stock_quantity,
                         'notes' => "Refund from sale {$sale->receipt_number}",
@@ -155,11 +209,12 @@ class SaleService implements SaleServiceInterface
                 }
             }
 
-            $totalRefunded = $sale->items->sum('refunded_amount');
-            $sale->payment_status = $totalRefunded >= $sale->total_amount ? 'refunded' : 'partially_refunded';
+            $totalRefunded = (float) SaleItem::where('sale_id', $sale->id)->sum('refunded_amount');
+            $saleTotal = (float) $sale->total_amount;
+            $sale->payment_status = abs($totalRefunded - $saleTotal) < 0.01 ? 'refunded' : ($totalRefunded > 0 ? 'partially_refunded' : 'paid');
             $sale->save();
 
-            return $sale->load('items');
+            return $sale->load(['saleItems', 'business', 'user']);
         });
     }
 
@@ -169,15 +224,17 @@ class SaleService implements SaleServiceInterface
         return $this->saleRepository->getByDateRange($businessId, $date . ' 00:00:00', $date . ' 23:59:59');
     }
 
+    public function getByCustomer(int $businessId, int $customerId): Collection
+    {
+        return $this->saleRepository->getByCustomer($businessId, $customerId);
+    }
+
     protected function generateReceiptNumber(\App\Models\Business $business): string
     {
-        $prefix = $business->slug ?? 'pos';
-        $last = Sale::where('business_id', $business->id)
-            ->where('receipt_number', 'like', $prefix . '-%')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $next = $last ? (int) explode('-', $last->receipt_number)[1] + 1 : 1;
-        return $prefix . '-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        // First 4 chars of slug uppercased — always short, always readable
+        $prefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $business->slug ?? 'POS'), 0, 4));
+        $date = now()->format('ymd');
+        $rand = strtoupper(substr(bin2hex(random_bytes(4)), 0, 7));
+        return $prefix . '-' . $date . '-' . $rand;
     }
 }

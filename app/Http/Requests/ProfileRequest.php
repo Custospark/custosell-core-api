@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RegisterRequest extends FormRequest
+class ProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,11 +15,10 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $this->user()->id],
             'phone' => ['nullable', 'string', 'max:50'],
-            'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
-            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'password' => ['nullable', 'string', 'min:6'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ];
     }
 }

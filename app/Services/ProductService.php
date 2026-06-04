@@ -47,6 +47,13 @@ class ProductService implements ProductServiceInterface
         return $this->productRepository->delete($product);
     }
 
+    public function bulkDelete(array $ids, int $businessId): int
+    {
+        return \App\Models\Product::whereIn('id', $ids)
+            ->where('business_id', $businessId)
+            ->delete();
+    }
+
     public function getActive(int $businessId): Collection
     {
         return $this->productRepository->getActive($businessId);

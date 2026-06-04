@@ -17,7 +17,14 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
+            'avatar' => $this->avatar
+                ? (str_starts_with($this->avatar, 'http') ? $this->avatar : url($this->avatar))
+                : null,
+            'business_name' => $this->whenLoaded('business', fn() => $this->business->name, null),
+            'business' => new BusinessResource($this->whenLoaded('business')),
             'role' => $this->whenLoaded('role'),
+            'shift_clock_in' => $this->activeShift?->clock_in?->toISOString(),
+            'shift_id' => $this->activeShift?->id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

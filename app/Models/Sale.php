@@ -21,6 +21,8 @@ class Sale extends Model
         'tax_total',
         'discount_amount',
         'total_amount',
+        'amount_tendered',
+        'change_given',
         'payment_method',
         'payment_status',
         'notes',
@@ -34,6 +36,8 @@ class Sale extends Model
             'tax_total' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'amount_tendered' => 'decimal:2',
+            'change_given' => 'decimal:2',
             'sale_date' => 'datetime',
         ];
     }

@@ -17,6 +17,8 @@ interface ProductServiceInterface
 
     public function delete(int $id): bool;
 
+    public function bulkDelete(array $ids, int $businessId): int;
+
     public function getActive(int $businessId): Collection;
 
     public function getLowStock(int $businessId): Collection;

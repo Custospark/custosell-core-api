@@ -26,8 +26,8 @@ class ProductResource extends JsonResource
             'low_stock_threshold' => $this->low_stock_threshold,
             'tax_percentage' => $this->tax_percentage,
             'is_active' => $this->is_active,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

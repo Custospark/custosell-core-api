@@ -13,12 +13,15 @@ class ExpenseCategory extends Model
         'name',
         'description',
         'sort_order',
+        'budget_amount',
+        'budget_period',
     ];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'budget_amount' => 'decimal:2',
         ];
     }
 

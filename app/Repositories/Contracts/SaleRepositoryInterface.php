@@ -22,4 +22,6 @@ interface SaleRepositoryInterface
     public function getByDateRange(int $businessId, string $start, string $end): Collection;
 
     public function getByShift(int $shiftId): Collection;
+
+    public function getByCustomer(int $businessId, int $customerId): Collection;
 }

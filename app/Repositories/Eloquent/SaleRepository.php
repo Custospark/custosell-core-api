@@ -11,14 +11,14 @@ class SaleRepository implements SaleRepositoryInterface
     public function all(int $businessId): Collection
     {
         return Sale::where('business_id', $businessId)
-            ->with(['user', 'customer', 'shift', 'saleItems'])
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
 
     public function find(int $id): ?Sale
     {
-        return Sale::with(['user', 'customer', 'shift', 'saleItems'])->find($id);
+        return Sale::with(['user', 'customer', 'shift', 'saleItems', 'business'])->find($id);
     }
 
     public function findByReceipt(int $businessId, string $receiptNumber): ?Sale
@@ -48,7 +48,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->whereBetween('sale_date', [$start, $end])
-            ->with(['user', 'customer', 'shift', 'saleItems'])
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
@@ -56,7 +56,16 @@ class SaleRepository implements SaleRepositoryInterface
     public function getByShift(int $shiftId): Collection
     {
         return Sale::where('shift_id', $shiftId)
-            ->with(['user', 'customer', 'saleItems'])
+            ->with(['user', 'customer', 'saleItems', 'business'])
+            ->orderBy('sale_date', 'desc')
+            ->get();
+    }
+
+    public function getByCustomer(int $businessId, int $customerId): Collection
+    {
+        return Sale::where('business_id', $businessId)
+            ->where('customer_id', $customerId)
+            ->with(['user', 'saleItems', 'business'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }

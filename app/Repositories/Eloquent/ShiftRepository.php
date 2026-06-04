@@ -41,6 +41,7 @@ class ShiftRepository implements ShiftRepositoryInterface
     {
         return Shift::where('business_id', $businessId)
             ->where('user_id', $userId)
+            ->whereNull('clock_out')
             ->where('status', 'active')
             ->first();
     }

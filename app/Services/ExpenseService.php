@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Expense;
 use App\Repositories\Contracts\ExpenseRepositoryInterface;
 use App\Services\Contracts\ExpenseServiceInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class ExpenseService implements ExpenseServiceInterface
@@ -13,9 +14,9 @@ class ExpenseService implements ExpenseServiceInterface
         protected ExpenseRepositoryInterface $expenseRepository,
     ) {}
 
-    public function getAll(int $businessId): Collection
+    public function getAll(int $businessId, array $filters = []): LengthAwarePaginator
     {
-        return $this->expenseRepository->all($businessId);
+        return $this->expenseRepository->all($businessId, $filters);
     }
 
     public function getById(int $id): ?Expense
@@ -55,5 +56,10 @@ class ExpenseService implements ExpenseServiceInterface
     public function getByCategory(int $businessId, int $categoryId): Collection
     {
         return $this->expenseRepository->getByCategory($businessId, $categoryId);
+    }
+
+    public function getSummary(int $businessId, array $filters = []): array
+    {
+        return $this->expenseRepository->getSummary($businessId, $filters);
     }
 }
