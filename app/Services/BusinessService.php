@@ -34,7 +34,13 @@ class BusinessService implements BusinessServiceInterface
             $user = $this->userRepository->create($userData);
 
             $businessData['owner_id'] = $user->id;
-            $businessData['slug'] = $businessData['slug'] ?? Str::slug($businessData['name']);
+            $baseSlug = $businessData['slug'] ?? Str::slug($businessData['name']);
+            $slug = $baseSlug;
+            $counter = 1;
+            while (\App\Models\Business::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $counter++;
+            }
+            $businessData['slug'] = $slug;
             $business = $this->businessRepository->create($businessData);
 
             $user->business_id = $business->id;
