@@ -21,7 +21,6 @@
             margin: 40px auto;
             background-color: #ffffff;
             border-radius: 10px;
-            overflow: hidden;
             box-shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
             border: 1px solid #e5e7eb;
         }
