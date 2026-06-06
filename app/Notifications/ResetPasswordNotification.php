@@ -43,8 +43,6 @@ class ResetPasswordNotification extends Notification
             logoPath: public_path('images/custosell-logo.png'),
         );
 
-        $email->to($notifiable->email);
-
-        Mail::send($email);
+        Mail::to($notifiable->email)->send($email);
     }
 }
