@@ -87,7 +87,7 @@ class User extends Authenticatable
         return $this->hasMany(Expense::class, 'recorded_by');
     }
 
-    public function sendPasswordResetNotification(string $token): void
+    public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
     }
