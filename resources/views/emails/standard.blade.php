@@ -132,7 +132,7 @@
         {{-- ── Header ──────────────────────────────────────────────────── --}}
         <div class="email-header">
             @php
-                $logoToUse = $logoPath ?? public_path('images/continuousLogoLight.png');
+                $logoToUse = $logoPath ?? public_path('images/custosell-logo.png');
                 $logoExists = file_exists($logoToUse);
             @endphp
 
