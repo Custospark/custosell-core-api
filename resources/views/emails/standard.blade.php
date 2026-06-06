@@ -31,7 +31,7 @@
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #1E3A8A 0%, #10B981 100%);
+            background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
             z-index: 1;
         }
 
@@ -83,28 +83,28 @@
             display: inline-block;
             margin: 24px 0;
             padding: 14px 32px;
-            background: linear-gradient(90deg, #1E3A8A 0%, #10B981 100%);
+            background: #2563eb;
             color: #ffffff !important;
             text-decoration: none;
             font-weight: 600;
-            border-radius: 30px;
-            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
         }
 
         .email-tip {
-            background: linear-gradient(90deg, #eff6ff 0%, #ecfdf5 100%);
-            border-left: 4px solid #10B981;
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
             padding: 20px;
             margin: 24px 0;
             border-radius: 8px;
             font-size: 15px;
-            color: #065f46;
+            color: #1e40af;
         }
 
-        .email-tip strong { color: #1E3A8A; }
+        .email-tip strong { color: #2563eb; }
 
         .email-footer {
-            background: linear-gradient(135deg, #1E3A8A 0%, #0F766E 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
             padding: 32px 24px;
             text-align: center;
             font-size: 13px;
