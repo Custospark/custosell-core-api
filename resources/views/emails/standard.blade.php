@@ -131,13 +131,8 @@
 
         {{-- ── Header ──────────────────────────────────────────────────── --}}
         <div class="email-header">
-            @php
-                $logoToUse = $logoPath ?? public_path('images/custosell-logo.png');
-                $logoExists = file_exists($logoToUse);
-            @endphp
-
-            @if($logoExists)
-                <img src="{{ $message->embed($logoToUse) }}"
+            @if(!empty($logoDataUri))
+                <img src="{{ $logoDataUri }}"
                      alt="{{ config('app.name') }}"
                      class="logo-rounded">
             @else
