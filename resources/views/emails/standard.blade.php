@@ -130,7 +130,11 @@
 
         {{-- ── Header ──────────────────────────────────────────────────── --}}
         <div class="email-header">
-            <div style="font-size: 32px; font-weight: bold; margin-bottom: 12px; color: #2563eb;">⚡</div>
+            @if(!empty($logoUrl))
+                <img src="{{ $logoUrl }}" alt="Custosell" class="logo-rounded" style="max-height:48px; width:auto;">
+            @else
+                <div style="font-size: 24px; font-weight: bold; margin-bottom: 12px; color: #2563eb;">C</div>
+            @endif
 
             <div class="brand-section">
                 <div class="brand-name">Custosell</div>

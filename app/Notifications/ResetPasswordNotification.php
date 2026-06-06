@@ -30,8 +30,11 @@ class ResetPasswordNotification extends Notification
         }
         $resetUrl = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->email);
 
+        $logoUrl = url('/images/custosell-logo-email.png');
+
         Mail::send('emails.standard', [
             'title' => 'Reset Your Custosell Password',
+            'logoUrl' => file_exists(public_path('images/custosell-logo-email.png')) ? $logoUrl : null,
             'mailBody' => '
                 <p>Hello <strong>' . e($notifiable->name) . '</strong>,</p>
                 <p>You are receiving this email because we received a password reset request for your Custosell account.</p>
