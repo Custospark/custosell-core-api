@@ -69,6 +69,45 @@ class SaleController extends Controller
         return new SaleResource($sale);
     }
 
+    public function batch(Request $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $userId = $request->user()->id;
+
+        $data = $request->validate([
+            'sales' => ['required', 'array', 'min:1', 'max:50'],
+            'sales.*.subtotal' => ['required', 'numeric', 'min:0'],
+            'sales.*.total_amount' => ['required', 'numeric', 'min:0'],
+            'sales.*.payment_method' => ['required', 'string', 'in:cash,mobile_money,card,other'],
+            'sales.*.items' => ['required', 'array', 'min:1'],
+            'sales.*.items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'sales.*.items.*.quantity' => ['required', 'integer', 'min:1'],
+            'sales.*.items.*.unit_price' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $results = [];
+        $errors = [];
+
+        foreach ($data['sales'] as $i => $saleData) {
+            try {
+                $sale = $this->saleService->create($businessId, $userId, $saleData);
+                $results[] = new SaleResource($sale);
+            } catch (\Throwable $e) {
+                $errors[] = [
+                    'index' => $i,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'synced' => count($results),
+            'failed' => count($errors),
+            'sales' => $results,
+            'errors' => $errors,
+        ]);
+    }
+
     public function bulkDelete(Request $request): JsonResponse
     {
         $data = $request->validate([
