@@ -130,13 +130,7 @@
 
         {{-- ── Header ──────────────────────────────────────────────────── --}}
         <div class="email-header">
-            @if(!empty($logoDataUri))
-                <img src="{{ $logoDataUri }}"
-                     alt="{{ config('app.name') }}"
-                     class="logo-rounded">
-            @else
-                <div style="font-size: 32px; font-weight: bold; margin-bottom: 12px; color: #1e293b;">📧</div>
-            @endif
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 12px; color: #2563eb;">⚡</div>
 
             <div class="brand-section">
                 <div class="brand-name">Custosell</div>

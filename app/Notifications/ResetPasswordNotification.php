@@ -30,14 +30,6 @@ class ResetPasswordNotification extends Notification
         }
         $resetUrl = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->email);
 
-        $logoDataUri = null;
-        $logoPath = public_path('images/custosell-logo.png');
-        if (file_exists($logoPath)) {
-            $logoData = file_get_contents($logoPath);
-            $logoMime = mime_content_type($logoPath);
-            $logoDataUri = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
-        }
-
         Mail::send('emails.standard', [
             'title' => 'Reset Your Custosell Password',
             'mailBody' => '
@@ -49,7 +41,6 @@ class ResetPasswordNotification extends Notification
             'ctaUrl' => $resetUrl,
             'ctaLabel' => 'Reset My Password',
             'tip' => 'Never share this email with anyone. Custosell will never ask for your password.',
-            'logoDataUri' => $logoDataUri,
             'isHtml' => true,
         ], function ($message) use ($notifiable) {
             $message->to($notifiable->email)
