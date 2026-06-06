@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Password;
 use App\Models\Shift;
 use App\Services\Contracts\UserServiceInterface;
 use Illuminate\Http\JsonResponse;
@@ -78,6 +81,32 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status === Password::RESET_LINK_SENT
+            ? response()->json(['message' => 'If that email address is associated with an account, a password reset link has been sent.'])
+            : response()->json(['message' => 'Unable to send password reset link.'], 500);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = bcrypt($password);
+                $user->save();
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? response()->json(['message' => 'Password has been reset successfully.'])
+            : response()->json(['message' => 'Invalid or expired reset token.'], 400);
     }
 
     public function me(Request $request): UserResource
