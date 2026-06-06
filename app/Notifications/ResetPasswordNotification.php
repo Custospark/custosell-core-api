@@ -24,7 +24,10 @@ class ResetPasswordNotification extends Notification
 
     public function toMail(object $notifiable): void
     {
-        $frontendUrl = config('app.frontend_url', 'https://custosell.com');
+        $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+        if (!str_starts_with($frontendUrl, 'http://') && !str_starts_with($frontendUrl, 'https://')) {
+            $frontendUrl = 'http://' . $frontendUrl;
+        }
         $resetUrl = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->email);
 
         $logoDataUri = null;
