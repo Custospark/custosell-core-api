@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Mail\StandardEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Mail;
 
 class ResetPasswordNotification extends Notification
 {
@@ -23,7 +22,7 @@ class ResetPasswordNotification extends Notification
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): void
+    public function toMail(object $notifiable): StandardEmail
     {
         $frontendUrl = config('app.frontend_url', 'https://custosell.com');
         $resetUrl = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->email);
@@ -34,7 +33,7 @@ class ResetPasswordNotification extends Notification
         <p style="font-size:14px; color:#64748b;">This password reset link will expire in 60 minutes.</p>
         <p style="font-size:14px; color:#64748b;">If you did not request a password reset, no further action is required.</p>';
 
-        $email = new StandardEmail(
+        return new StandardEmail(
             title: 'Reset Your Custosell Password',
             mailBody: $body,
             ctaUrl: $resetUrl,
@@ -42,7 +41,5 @@ class ResetPasswordNotification extends Notification
             tip: 'Never share this email with anyone. Custosell will never ask for your password.',
             logoPath: public_path('images/custosell-logo.png'),
         );
-
-        Mail::to($notifiable->email)->send($email);
     }
 }
