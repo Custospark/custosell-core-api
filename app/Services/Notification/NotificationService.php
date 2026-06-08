@@ -71,6 +71,21 @@ class NotificationService
             ->update(['read_at' => now()]);
     }
 
+    public function deleteForUser(User $user, int $notificationId): bool
+    {
+        return Notification::query()
+            ->where('user_id', $user->id)
+            ->where('id', $notificationId)
+            ->delete() > 0;
+    }
+
+    public function deleteAllForUser(User $user): int
+    {
+        return Notification::query()
+            ->where('user_id', $user->id)
+            ->delete();
+    }
+
     public function buildContentDedupeKey(
         ?int $businessId,
         string $type,

@@ -61,6 +61,27 @@ class NotificationController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $deleted = $this->notifications->deleteForUser($request->user(), $id);
+
+        if (! $deleted) {
+            return response()->json(['message' => 'Notification not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Notification deleted.']);
+    }
+
+    public function destroyAll(Request $request): JsonResponse
+    {
+        $count = $this->notifications->deleteAllForUser($request->user());
+
+        return response()->json([
+            'message' => "{$count} notification(s) deleted.",
+            'deleted' => $count,
+        ]);
+    }
+
     /** @return array<string, mixed> */
     private function transform($notification): array
     {

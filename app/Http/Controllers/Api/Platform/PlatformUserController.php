@@ -26,13 +26,6 @@ class PlatformUserController extends Controller
         return PlatformUserResource::collection($paginator)->response();
     }
 
-    public function platformTeam(Request $request): JsonResponse
-    {
-        $paginator = $this->userService->paginatePlatformTeam((int) $request->query('per_page', 15));
-
-        return PlatformUserResource::collection($paginator)->response();
-    }
-
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
@@ -81,6 +74,87 @@ class PlatformUserController extends Controller
         return response()->json([
             'data' => new PlatformUserResource($updated),
             'message' => 'Platform role revoked.',
+        ]);
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $target = User::findOrFail($id);
+        $this->userService->delete($request->user(), $target, $validated['reason']);
+
+        return response()->json(['message' => 'User deleted.']);
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:users,id'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $result = $this->userService->bulkDelete(
+            $request->user(),
+            $validated['ids'],
+            $validated['reason'],
+        );
+
+        $message = "{$result['deleted']} user(s) deleted.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} skipped.";
+        }
+
+        return response()->json([
+            'message' => $message,
+            'deleted' => $result['deleted'],
+            'skipped' => $result['skipped'],
+            'errors' => $result['errors'],
+        ]);
+    }
+
+    public function bulkAssignRoles(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'emails' => ['sometimes', 'array'],
+            'emails.*' => ['email'],
+            'ids' => ['sometimes', 'array'],
+            'ids.*' => ['integer', 'exists:users,id'],
+            'role' => ['required', 'string', 'exists:platform_roles,name'],
+            'action' => ['sometimes', 'in:assign,revoke'],
+        ]);
+
+        if (empty($validated['emails'] ?? []) && empty($validated['ids'] ?? [])) {
+            return response()->json(['message' => 'Provide at least one user email or id.'], 422);
+        }
+
+        $result = $this->userService->bulkPlatformRoles(
+            $request->user(),
+            $validated['role'],
+            $validated['action'] ?? 'assign',
+            $validated['emails'] ?? null,
+            $validated['ids'] ?? null,
+        );
+
+        $actionLabel = ($validated['action'] ?? 'assign') === 'revoke' ? 'revoked from' : 'assigned to';
+        $message = "Role {$actionLabel} {$result['processed']} user(s).";
+
+        if (count($result['not_found']) > 0) {
+            $message .= ' '.count($result['not_found']).' email(s) not found.';
+        }
+
+        if (count($result['errors']) > 0) {
+            $message .= ' '.count($result['errors']).' failed.';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'processed' => $result['processed'],
+            'not_found' => $result['not_found'],
+            'errors' => $result['errors'],
         ]);
     }
 }
