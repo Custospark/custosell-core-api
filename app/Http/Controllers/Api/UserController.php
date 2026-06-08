@@ -26,9 +26,9 @@ class UserController extends Controller
         return new UserCollection($this->userService->getAll($businessId));
     }
 
-    public function show(int $id): UserResource
+    public function show(Request $request, int $id): UserResource
     {
-        $user = $this->userService->getById($id);
+        $user = $this->userService->getByIdForBusiness($id, $request->user()->business_id);
         if (!$user) {
             abort(404, 'User not found');
         }
@@ -46,7 +46,12 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, int $id): UserResource
     {
-        $user = $this->userService->update($id, $request->validated());
+        $user = $this->userService->update(
+            $id,
+            $request->user()->business_id,
+            $request->user()->id,
+            $request->validated(),
+        );
         return new UserResource($user);
     }
 
@@ -79,9 +84,9 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $this->userService->delete($id);
+        $this->userService->delete($id, $request->user()->business_id, $request->user()->id);
         return response()->json(null, 204);
     }
 }

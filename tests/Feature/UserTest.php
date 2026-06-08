@@ -161,6 +161,107 @@ class UserTest extends TestCase
         $this->assertSoftDeleted('users', ['id' => $this->staff->id]);
     }
 
+    public function test_update_staff_allows_preserved_admin_role(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/users/{$this->admin->id}", [
+                'name' => 'Updated Admin',
+                'email' => $this->admin->email,
+                'phone' => '+256700000002',
+                'role_id' => $this->admin->role_id,
+                'is_active' => true,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'Updated Admin')
+            ->assertJsonPath('data.role.name', 'Admin');
+    }
+
+    public function test_update_business_owner_without_assigned_role(): void
+    {
+        $this->admin->forceFill(['role_id' => null])->save();
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/users/{$this->admin->id}", [
+                'name' => 'Updated Owner',
+                'email' => $this->admin->email,
+                'phone' => '+256700000003',
+                'role_id' => null,
+                'is_active' => true,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'Updated Owner')
+            ->assertJsonPath('data.role_id', null);
+    }
+
+    public function test_update_staff_rejects_other_business_role(): void
+    {
+        $otherBusiness = Business::factory()->create([
+            'owner_id' => $this->admin->id,
+            'currency' => 'UGX',
+            'status' => 'active',
+        ]);
+        $otherRole = Role::create([
+            'business_id' => $otherBusiness->id,
+            'name' => 'Other Staff',
+            'slug' => 'other-staff',
+            'permissions' => [],
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/users/{$this->staff->id}", [
+                'name' => $this->staff->name,
+                'email' => $this->staff->email,
+                'phone' => $this->staff->phone,
+                'role_id' => $otherRole->id,
+                'is_active' => true,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role_id']);
+    }
+
+    public function test_update_staff_rejects_admin_role_change(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/users/{$this->admin->id}", [
+                'name' => $this->admin->name,
+                'email' => $this->admin->email,
+                'phone' => $this->admin->phone,
+                'role_id' => $this->staff->role_id,
+                'is_active' => true,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role_id']);
+    }
+
+    public function test_cannot_delete_self(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->deleteJson("/api/v1/users/{$this->admin->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['user']);
+    }
+
+    public function test_cannot_delete_business_owner(): void
+    {
+        $manager = User::factory()->create([
+            'business_id' => $this->business->id,
+            'role_id' => $this->staff->role_id,
+            'is_active' => true,
+        ]);
+        $managerToken = $manager->createToken('manager')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', "Bearer $managerToken")
+            ->deleteJson("/api/v1/users/{$this->admin->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['user']);
+    }
+
     public function test_created_by_set_on_creation(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")

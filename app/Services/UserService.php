@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Business;
+use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\UserServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class UserService implements UserServiceInterface
 {
@@ -23,6 +27,11 @@ class UserService implements UserServiceInterface
     public function getById(int $id): ?User
     {
         return $this->userRepository->find($id);
+    }
+
+    public function getByIdForBusiness(int $id, int $businessId): ?User
+    {
+        return $this->userRepository->findForBusiness($id, $businessId);
     }
 
     public function register(array $data): User
@@ -45,14 +54,21 @@ class UserService implements UserServiceInterface
         $data['business_id'] = $businessId;
         $data['password'] = Hash::make($data['password']);
         $data['created_by'] = Auth::id();
-        return $this->userRepository->create($data);
+        return $this->userRepository->create($data)->load('role');
     }
 
-    public function update(int $id, array $data): User
+    public function update(int $id, int $businessId, int $actorId, array $data): User
     {
-        $user = $this->userRepository->find($id);
+        $user = $this->userRepository->findForBusiness($id, $businessId);
         if (!$user) {
-            throw new \RuntimeException('User not found');
+            throw new NotFoundHttpException('User not found');
+        }
+
+        $this->validateRoleUpdate($user, $businessId, $actorId, $data);
+        $this->validateActivationUpdate($user, $businessId, $actorId, $data);
+
+        if (isset($data['password']) && trim((string) $data['password']) === '') {
+            unset($data['password']);
         }
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -60,17 +76,137 @@ class UserService implements UserServiceInterface
         return $this->userRepository->update($user, $data);
     }
 
-    public function delete(int $id): bool
+    public function delete(int $id, int $businessId, int $actorId): bool
     {
-        $user = $this->userRepository->find($id);
+        $user = $this->userRepository->findForBusiness($id, $businessId);
         if (!$user) {
-            throw new \RuntimeException('User not found');
+            throw new NotFoundHttpException('User not found');
         }
+        $this->validateDelete($user, $businessId, $actorId);
         return $this->userRepository->delete($user);
     }
 
     public function countByBusiness(int $businessId): int
     {
         return $this->userRepository->countByBusiness($businessId);
+    }
+
+    protected function validateRoleUpdate(User $user, int $businessId, int $actorId, array $data): void
+    {
+        if (!array_key_exists('role_id', $data)) {
+            return;
+        }
+
+        if ($data['role_id'] === null) {
+            if ($user->role_id === null) {
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                'role_id' => 'Select a valid staff role before changing this account role.',
+            ]);
+        }
+
+        $nextRoleId = (int) $data['role_id'];
+        if ($nextRoleId === (int) $user->role_id) {
+            return;
+        }
+
+        if ($user->id === $actorId) {
+            throw ValidationException::withMessages([
+                'role_id' => 'You cannot change your own role.',
+            ]);
+        }
+
+        if ($this->isBusinessOwner($user, $businessId)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'The business owner account role cannot be changed.',
+            ]);
+        }
+
+        $user->loadMissing('role');
+        if ($this->isSystemRole($user->role)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Admin and system account roles cannot be changed here.',
+            ]);
+        }
+
+        $nextRole = Role::query()
+            ->where('business_id', $businessId)
+            ->whereKey($nextRoleId)
+            ->first();
+
+        if (!$nextRole) {
+            throw ValidationException::withMessages([
+                'role_id' => 'The selected role is not available for this business.',
+            ]);
+        }
+
+        if ($this->isSystemRole($nextRole)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Admin and system roles cannot be assigned from the staff drawer.',
+            ]);
+        }
+    }
+
+    protected function validateActivationUpdate(User $user, int $businessId, int $actorId, array $data): void
+    {
+        if (!array_key_exists('is_active', $data) || (bool) $data['is_active']) {
+            return;
+        }
+
+        if ($user->id === $actorId) {
+            throw ValidationException::withMessages([
+                'is_active' => 'You cannot deactivate your own account.',
+            ]);
+        }
+
+        if ($this->isBusinessOwner($user, $businessId)) {
+            throw ValidationException::withMessages([
+                'is_active' => 'The business owner account cannot be deactivated.',
+            ]);
+        }
+    }
+
+    protected function validateDelete(User $user, int $businessId, int $actorId): void
+    {
+        if ($user->id === $actorId) {
+            throw ValidationException::withMessages([
+                'user' => 'You cannot delete your own account.',
+            ]);
+        }
+
+        if ($this->isBusinessOwner($user, $businessId)) {
+            throw ValidationException::withMessages([
+                'user' => 'The business owner account cannot be deleted.',
+            ]);
+        }
+    }
+
+    protected function isBusinessOwner(User $user, int $businessId): bool
+    {
+        return Business::query()
+            ->whereKey($businessId)
+            ->where('owner_id', $user->id)
+            ->exists();
+    }
+
+    protected function isSystemRole(?Role $role): bool
+    {
+        if (!$role) {
+            return false;
+        }
+
+        $identifier = strtolower(trim((string) ($role->slug ?: $role->name)));
+
+        return in_array($identifier, [
+            'admin',
+            'owner',
+            'business-owner',
+            'business_owner',
+            'system',
+            'super-admin',
+            'super_admin',
+        ], true);
     }
 }

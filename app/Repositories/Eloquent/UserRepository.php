@@ -10,12 +10,20 @@ class UserRepository implements UserRepositoryInterface
 {
     public function all(int $businessId): Collection
     {
-        return User::where('business_id', $businessId)->get();
+        return User::with('role')->where('business_id', $businessId)->get();
     }
 
     public function find(int $id): ?User
     {
         return User::find($id);
+    }
+
+    public function findForBusiness(int $id, int $businessId): ?User
+    {
+        return User::with('role')
+            ->where('business_id', $businessId)
+            ->whereKey($id)
+            ->first();
     }
 
     public function findByEmail(string $email): ?User
@@ -31,7 +39,7 @@ class UserRepository implements UserRepositoryInterface
     public function update(User $user, array $data): User
     {
         $user->update($data);
-        return $user->fresh();
+        return $user->fresh(['role']);
     }
 
     public function delete(User $user): bool

@@ -11,6 +11,8 @@ interface UserRepositoryInterface
 
     public function find(int $id): ?User;
 
+    public function findForBusiness(int $id, int $businessId): ?User;
+
     public function findByEmail(string $email): ?User;
 
     public function create(array $data): User;

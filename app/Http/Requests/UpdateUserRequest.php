@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -13,13 +14,22 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
+        $userId = $this->route('user');
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $this->route('user')],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'role_id' => ['nullable', 'integer'],
             'is_active' => ['boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'role_id.integer' => 'Select a valid staff role.',
         ];
     }
 }
