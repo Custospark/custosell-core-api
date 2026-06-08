@@ -48,20 +48,8 @@ class PlatformBusinessService
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $windowStart = now()->subDays($this->activityWindowDays());
-        $today = now()->toDateString();
-        $sevenDaysAgo = now()->subDays(6)->startOfDay();
 
-        $query = Business::query()
-            ->with(['owner:id,name,email,phone', 'subscription.plan:id,name'])
-            ->select('businesses.*')
-            ->selectSub($this->staffCountSubquery(), 'staff_count')
-            ->selectSub($this->grossSalesSubquery($today, true), 'gross_sales_today')
-            ->selectSub($this->grossSalesSubquery($sevenDaysAgo), 'gross_sales_7d')
-            ->selectSub($this->grossSalesSubquery($windowStart), 'gross_sales_30d')
-            ->selectSub($this->grossSalesSubquery(), 'gross_sales_all_time')
-            ->selectSub($this->attributedSalesCountSubquery($windowStart), 'transactions_30d')
-            ->selectSub($this->attributedLastSaleSubquery(), 'last_sale_at')
-            ->selectSub($this->linkedUsersLastLoginSubquery(), 'last_user_login_at');
+        $query = $this->businessMetricsQuery($windowStart);
 
         if (! empty($filters['search'])) {
             $search = '%'.$filters['search'].'%';
@@ -107,27 +95,32 @@ class PlatformBusinessService
     {
         $windowStart ??= now()->subDays($this->activityWindowDays());
 
-        $grossByBusiness = Sale::query()
-            ->where('sale_date', '>=', $windowStart)
-            ->groupBy('business_id')
-            ->selectRaw('business_id')
-            ->selectRaw('COALESCE(SUM(total_amount), 0) as gross_sales_30d')
-            ->pluck('gross_sales_30d', 'business_id');
+        $businesses = $this->businessMetricsQuery($windowStart)->get();
+        $this->hydrateOwners($businesses);
 
-        return Business::query()
-            ->with(['owner:id,name,email,phone', 'subscription.plan:id,name'])
-            ->select('businesses.*')
-            ->selectSub($this->staffCountSubquery(), 'staff_count')
-            ->get()
-            ->map(function (Business $business) use ($grossByBusiness, $windowStart) {
-                $business->gross_sales_30d = (float) ($grossByBusiness[$business->id] ?? 0);
+        return $businesses->map(function (Business $business) use ($windowStart) {
+            $gross30d = (float) ($business->getAttributes()['gross_sales_30d'] ?? 0);
+            $business->gross_sales_30d = $gross30d;
 
-                return [
-                    'business' => $business,
-                    'gross_sales_30d' => $business->gross_sales_30d,
-                    'row' => $this->transformBusiness($business, $windowStart),
-                ];
-            });
+            return [
+                'business' => $business,
+                'gross_sales_30d' => $gross30d,
+                'row' => $this->transformBusiness($business, $windowStart),
+            ];
+        });
+    }
+
+    public function countBusinessesWithAttributedSalesOnDate(string $date): int
+    {
+        return (int) Business::query()
+            ->whereExists(function ($query) use ($date): void {
+                $query->selectRaw('1')
+                    ->from('sales')
+                    ->whereNull('sales.deleted_at')
+                    ->whereDate('sales.sale_date', $date);
+                $this->applyAttributedSalesConstraint($query);
+            })
+            ->count();
     }
 
     /**
@@ -298,10 +291,9 @@ class PlatformBusinessService
         $restrictedCount = Business::where('status', 'restricted')->count();
         $activeStatusCount = Business::where('status', 'active')->count();
 
-        $withGrossSales30d = (int) Sale::query()
-            ->where('sale_date', '>=', $windowStart)
-            ->distinct('business_id')
-            ->count('business_id');
+        $withGrossSales30d = $this->businessesWithGrossSales30d($windowStart)
+            ->filter(fn (array $entry) => $entry['gross_sales_30d'] > 0)
+            ->count();
 
         $platformTransactions30d = (int) Sale::where('sale_date', '>=', $windowStart)->count();
         $platformGrossSales30d = (float) Sale::where('sale_date', '>=', $windowStart)->sum('total_amount');
@@ -640,6 +632,25 @@ class PlatformBusinessService
         };
     }
 
+    private function businessMetricsQuery(?Carbon $windowStart = null)
+    {
+        $windowStart ??= now()->subDays($this->activityWindowDays());
+        $today = now()->toDateString();
+        $sevenDaysAgo = now()->subDays(6)->startOfDay();
+
+        return Business::query()
+            ->with(['owner:id,name,email,phone', 'subscription.plan:id,name'])
+            ->select('businesses.*')
+            ->selectSub($this->staffCountSubquery(), 'staff_count')
+            ->selectSub($this->grossSalesSubquery($today, true), 'gross_sales_today')
+            ->selectSub($this->grossSalesSubquery($sevenDaysAgo), 'gross_sales_7d')
+            ->selectSub($this->grossSalesSubquery($windowStart), 'gross_sales_30d')
+            ->selectSub($this->grossSalesSubquery(), 'gross_sales_all_time')
+            ->selectSub($this->attributedSalesCountSubquery($windowStart), 'transactions_30d')
+            ->selectSub($this->attributedLastSaleSubquery(), 'last_sale_at')
+            ->selectSub($this->linkedUsersLastLoginSubquery(), 'last_user_login_at');
+    }
+
     private function applyAttributedSalesConstraint($query): void
     {
         $query->whereNull('sales.deleted_at')
@@ -771,7 +782,7 @@ class PlatformBusinessService
     private function tierForAmount(float $amount, float $min, float $max, int $tierCount): int
     {
         if ($max <= $min) {
-            return 1;
+            return $amount > 0 ? $tierCount : 1;
         }
 
         $step = ($max - $min) / $tierCount;

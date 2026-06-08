@@ -88,9 +88,7 @@ class PlatformOverviewService
 
             $signups = \App\Models\Business::whereDate('created_at', $date)->count();
             $transactions = Sale::whereDate('sale_date', $date)->count();
-            $activeBusinesses = Sale::whereDate('sale_date', $date)
-                ->distinct('business_id')
-                ->count('business_id');
+            $activeBusinesses = $this->businessService->countBusinessesWithAttributedSalesOnDate($date);
             $grossSales = (float) Sale::whereDate('sale_date', $date)->sum('total_amount');
 
             $trend[] = [
