@@ -115,6 +115,15 @@ class BusinessTest extends TestCase
         $response->assertStatus(401);
     }
 
+    public function test_staff_can_get_business_by_membership_not_owner(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->getJson('/api/v1/businesses/mine');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $this->business->id);
+    }
+
     public function test_get_specific_business(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")

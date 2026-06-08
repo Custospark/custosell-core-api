@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class);
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);

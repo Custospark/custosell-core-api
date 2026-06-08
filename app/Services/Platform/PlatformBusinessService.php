@@ -358,7 +358,13 @@ class PlatformBusinessService
         ];
     }
 
-    public function updateStatus(User $actor, Business $business, string $status, string $reason): Business
+    public function updateStatus(
+        User $actor,
+        Business $business,
+        string $status,
+        string $reason,
+        string $channel = 'both',
+    ): Business
     {
         $previous = $business->status;
 
@@ -377,18 +383,22 @@ class PlatformBusinessService
         );
 
         $this->notifications->notifyBusinessStatusChange(
-            $business->name,
-            $business->owner?->email,
-            $business->email,
+            $business,
             $status,
             $reason,
+            $channel,
         );
 
         return $business->fresh(['owner', 'subscription.plan']);
     }
 
-    public function bulkUpdateStatus(User $actor, array $ids, string $status, string $reason): int
-    {
+    public function bulkUpdateStatus(
+        User $actor,
+        array $ids,
+        string $status,
+        string $reason,
+        string $channel = 'both',
+    ): int {
         $count = 0;
         $businesses = Business::with('owner')->whereIn('id', $ids)->get();
 
@@ -396,7 +406,7 @@ class PlatformBusinessService
             if ($business->status === $status) {
                 continue;
             }
-            $this->updateStatus($actor, $business, $status, $reason);
+            $this->updateStatus($actor, $business, $status, $reason, $channel);
             $count++;
         }
 
@@ -455,15 +465,17 @@ class PlatformBusinessService
         string $message,
         ?string $subject = null,
         bool $markAsNotified = false,
+        string $channel = 'both',
     ): int {
         $businesses = Business::with('owner')->whereIn('id', $businessIds)->get();
         $sent = 0;
 
         foreach ($businesses as $business) {
-            $this->notifications->notifyBusinessMessage($business, $intention, $message, $subject);
+            $this->notifications->notifyBusinessMessage($business, $intention, $message, $subject, $channel);
             $this->audit->log($actor, 'business.notified', 'business', $business->id, null, [
                 'intention' => $intention,
                 'subject' => $subject,
+                'channel' => $channel,
                 'mark_as_notified' => $markAsNotified,
             ]);
 

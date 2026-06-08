@@ -3,12 +3,15 @@
 namespace App\Services\Contracts;
 
 use App\Models\Business;
+use App\Models\User;
 
 interface BusinessServiceInterface
 {
     public function getById(int $id): ?Business;
 
     public function getByOwner(int $ownerId): ?Business;
+
+    public function getForUser(User $user): ?Business;
 
     public function register(array $userData, array $businessData): Business;
 

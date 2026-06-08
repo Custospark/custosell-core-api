@@ -47,7 +47,13 @@ class PlatformUserService
             ->paginate($perPage);
     }
 
-    public function updateStatus(User $actor, User $target, bool $isActive, ?string $reason): User
+    public function updateStatus(
+        User $actor,
+        User $target,
+        bool $isActive,
+        ?string $reason,
+        string $channel = 'both',
+    ): User
     {
         if ($actor->id === $target->id) {
             throw ValidationException::withMessages(['is_active' => 'You cannot change your own account status.']);
@@ -70,7 +76,7 @@ class PlatformUserService
             $reason,
         );
 
-        $this->notifications->notifyUserStatusChange($target, $isActive, $reason);
+        $this->notifications->notifyUserStatusChange($target, $isActive, $reason, $channel);
 
         return $target->fresh(['business', 'role', 'roles']);
     }

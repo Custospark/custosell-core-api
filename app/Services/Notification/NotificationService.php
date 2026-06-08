@@ -1,315 +1,229 @@
 <?php
-// app/Services/Notification/NotificationService.php
-
-declare(strict_types=1);
 
 namespace App\Services\Notification;
 
 use App\Mail\StandardEmail;
-use App\Models\Facility;
 use App\Models\Notification;
-use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-/**
- * Handles in-app notification persistence and transactional email delivery.
- *
- * This service is intentionally NOT event-aware — it is a pure delivery
- * mechanism called by Event Listeners. This keeps concerns cleanly separated:
- *
- *   Event → Listener → NotificationService → (DB record + Mail)
- *
- * Memory safety: bulk operations use chunk() rather than loading all
- * User records into memory at once.
- */
 class NotificationService
 {
-    /** Number of users processed per chunk in broadcast operations. */
-    private const BROADCAST_CHUNK_SIZE = 100;
+    private const EMAIL_DEDUPE_HOURS = 24;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Send a notification to a specific user.
-     *
-     * @param User   $user    Fully-loaded User model (avoids extra DB query)
-     * @param string $title   Notification / email subject
-     * @param string $body    HTML or plain-text body
-     * @param string $type    Logical type tag (e.g. 'email_verification', 'security_alert')
-     * @param string $channel 'email' | 'in_app' | 'both'
-     */
-    public function sendToUser(
-        User   $user,
-        string $title,
-        string $body,
-        string $type,
-        string $channel = 'email',
-        ?string $ctaUrl = null,
-        ?string $ctaLabel = null,
-    ): void {
-        if (in_array($channel, ['in_app', 'both'], true)) {
-            $this->persistNotification($user->id, $title, $body, $type, $channel);
-        }
-
-        if (in_array($channel, ['email', 'both'], true)) {
-            $this->dispatchEmail($user, $title, $body, $ctaUrl, $ctaLabel);
-        }
-    }
-
-    /**
-     * Send a billing email to a facility's owner(s) and the facility's direct email.
-     *
-     * @param  Facility                                            $facility
-     * @param  string                                              $subject
-     * @param  string                                              $body        HTML body
-     * @param  array<int, array{data: string, name: string, mime: string}>  $attachments
-     */
-    public function sendBillingToFacility(
-        Facility $facility,
-        string   $subject,
-        string   $body,
-        array    $attachments = [],
-    ): void {
-        $emails = [];
-
-        // Facility's direct email
-        if ($facility->email) {
-            $emails[] = $facility->email;
-        }
-
-        // Facility owners' emails (facility_owners → staff → users)
-        $owners = DB::table('facility_owners')
-            ->join('staff', 'facility_owners.staff_id', '=', 'staff.id')
-            ->join('users', 'staff.user_id', '=', 'users.id')
-            ->where('facility_owners.facility_id', $facility->id)
-            ->whereNotNull('users.email_encrypted')
-            ->select('users.id', 'users.email_encrypted')
-            ->get();
-
-        foreach ($owners as $owner) {
-            try {
-                $emails[] = decrypt($owner->email_encrypted);
-            } catch (\Exception $e) {
-                Log::warning('sendBillingToFacility: failed to decrypt owner email', [
-                    'user_id'     => $owner->id,
-                    'facility_id' => $facility->id,
-                ]);
-            }
-        }
-
-        $emails = array_unique(array_filter($emails));
-
-        foreach ($emails as $email) {
-            try {
-                Mail::to($email)->send(new StandardEmail(
-                    title:           $subject,
-                    mailBody:        $body,
-                    isHtml:          true,
-                    fileAttachments: $attachments,
-                ));
-
-                Log::info('Billing email sent', [
-                    'email'       => $email,
-                    'facility_id' => $facility->id,
-                    'subject'     => $subject,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Billing email failed', [
-                    'email'       => $email,
-                    'facility_id' => $facility->id,
-                    'error'       => $e->getMessage(),
-                ]);
-            }
-        }
-    }
-
-    /**
-     * Build a formatted billing info block for email bodies.
-     */
-    public static function billingInfoBlock(?Subscription $subscription): string
+    /** @return list<string> */
+    public function allowedChannels(): array
     {
-        if (! $subscription) return '';
-
-        $plan = $subscription->plan;
-        $cycle = $subscription->billing_cycle === 'yearly' ? 'Annual' : 'Monthly';
-        $price = $plan?->price_usd ?? 0;
-        $displayPrice = $subscription->billing_cycle === 'yearly'
-            ? round($price * 10 / 12, 2) . " USD / mo (billed annually — $" . round($price * 10, 2) . "/yr)"
-            : $price . " USD / mo";
-
-        $lines = [
-            "<strong>Plan:</strong> {$plan?->name}",
-            "<strong>Billing Cycle:</strong> {$cycle}",
-            "<strong>Price:</strong> {$displayPrice}",
-        ];
-
-        if ($subscription->starts_at) {
-            $lines[] = "<strong>Started:</strong> " . $subscription->starts_at->format('M j, Y');
-        }
-
-        if ($subscription->trial_ends_at && $subscription->trial_ends_at->isFuture()) {
-            $lines[] = "<strong>Trial Ends:</strong> " . $subscription->trial_ends_at->format('M j, Y');
-        }
-
-        if ($subscription->next_billing_date) {
-            $lines[] = "<strong>Next Renewal:</strong> " . $subscription->next_billing_date->format('M j, Y');
-        }
-
-        $html = '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;background:#f9fafb;border-radius:8px;">';
-        $html .= '<tbody>';
-        foreach ($lines as $line) {
-            $html .= '<tr><td style="padding:6px 16px;border-bottom:1px solid #e5e7eb;">' . $line . '</td></tr>';
-        }
-        $html .= '</tbody></table>';
-
-        return $html;
+        return config('platform.notification_channels', ['email', 'in_app', 'both']);
     }
 
-    /**
-     * Broadcast a notification to ALL users.
-     * Chunks the query to prevent loading the entire users table into memory.
-     *
-     * @param string $title
-     * @param string $body
-     * @param string $type
-     * @param string $channel  'email' | 'in_app' | 'both'
-     */
-    public function broadcastToAll(
-        string $title,
-        string $body,
+    public function defaultChannel(): string
+    {
+        return (string) config('platform.default_notification_channel', 'both');
+    }
+
+    public function paginateForUser(User $user, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Notification::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('sent_at');
+
+        if (! empty($filters['unread_only'])) {
+            $query->whereNull('read_at');
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    public function unreadCountForUser(User $user): int
+    {
+        return (int) Notification::query()
+            ->where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
+    }
+
+    public function markRead(User $user, int $notificationId): ?Notification
+    {
+        $notification = Notification::query()
+            ->where('user_id', $user->id)
+            ->where('id', $notificationId)
+            ->first();
+
+        if (! $notification || $notification->read_at) {
+            return $notification;
+        }
+
+        $notification->update(['read_at' => now()]);
+
+        return $notification->fresh();
+    }
+
+    public function markAllRead(User $user): int
+    {
+        return Notification::query()
+            ->where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
+
+    public function buildContentDedupeKey(
+        ?int $businessId,
         string $type,
-        string $channel = 'in_app'
-    ): void {
-        // Persist a single system-wide notification record (no user_id)
-        if (in_array($channel, ['in_app', 'both'], true)) {
-            $this->persistSystemNotification($title, $body, $type, $channel);
-        }
-
-        // Send individual emails — chunked to avoid OOM
-        if (in_array($channel, ['email', 'both'], true)) {
-            User::query()
-                ->whereNotNull('email_encrypted') // Only users with an email on file
-                ->chunk(self::BROADCAST_CHUNK_SIZE, function ($users) use ($title, $body) {
-                    foreach ($users as $user) {
-                        $this->dispatchEmail($user, $title, $body);
-                    }
-                });
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Legacy compatibility shim
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * @deprecated Use sendToUser() or broadcastToAll() directly.
-     *             Kept for backward compatibility with any existing callers.
-     */
-    public function sendNotification(
-        string  $title,
-        string  $body,
-        string  $type,
-        string  $channel,
-        ?int    $userId = null
-    ): void {
-        if ($userId !== null) {
-            $user = User::find($userId);
-
-            if (!$user) {
-                Log::warning('sendNotification: user not found', ['user_id' => $userId]);
-                return;
-            }
-
-            $this->sendToUser($user, $title, $body, $type, $channel);
-            return;
-        }
-
-        $this->broadcastToAll($title, $body, $type, $channel);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Persist an in-app notification record for a specific user.
-     */
-    private function persistNotification(
-        int    $userId,
+        ?string $intention,
         string $title,
-        string $body,
+        string $plainMessage,
+    ): string {
+        return hash('sha256', implode('|', [
+            (string) ($businessId ?? 0),
+            $type,
+            $intention ?? '',
+            trim($title),
+            trim($plainMessage),
+        ]));
+    }
+
+    public function buildUserDedupeKey(int $userId, string $contentKey): string
+    {
+        return hash('sha256', $userId.'|'.$contentKey);
+    }
+
+    public function persistInAppIfNew(
+        int $userId,
+        string $title,
+        string $plainBody,
         string $type,
-        string $channel
-    ): void {
+        ?int $businessId = null,
+        ?string $intention = null,
+        ?array $metadata = null,
+        ?string $contentKey = null,
+    ): bool {
+        $contentKey ??= $this->buildContentDedupeKey($businessId, $type, $intention, $title, $plainBody);
+        $dedupeKey = $this->buildUserDedupeKey($userId, $contentKey);
+
+        if ($this->hasInAppDuplicate($userId, $dedupeKey)) {
+            return false;
+        }
+
         Notification::create([
-            'user_id'     => $userId,
-            'title'       => $title,
-            'message'     => $body,
-            'target_type' => $type,
-            'channel'     => $channel,
-            'sent_at'     => Carbon::now(),
+            'user_id' => $userId,
+            'business_id' => $businessId,
+            'title' => $title,
+            'message' => $plainBody,
+            'type' => $type,
+            'intention' => $intention,
+            'channel' => 'in_app',
+            'metadata' => $metadata,
+            'dedupe_key' => $dedupeKey,
+            'sent_at' => Carbon::now(),
         ]);
+
+        return true;
     }
 
-    /**
-     * Persist a system-wide broadcast notification (no specific user).
-     */
-    private function persistSystemNotification(
+    public function sendEmailIfNew(
+        string $email,
+        string $contentKey,
         string $title,
-        string $body,
-        string $type,
-        string $channel
-    ): void {
-        Notification::create([
-            'user_id'     => null,
-            'title'       => $title,
-            'message'     => $body,
-            'target_type' => $type,
-            'channel'     => $channel,
-            'sent_at'     => Carbon::now(),
-        ]);
-    }
-
-    /**
-     * Decrypt the user's email and send a transactional email.
-     * Failures are caught and logged so one bad address never kills a batch.
-     */
-    private function dispatchEmail(
-        User    $user,
-        string  $title,
-        string  $body,
+        string $htmlBody,
         ?string $ctaUrl = null,
         ?string $ctaLabel = null,
-    ): void {
-        if (empty($user->email_encrypted)) {
-            Log::warning('dispatchEmail: user has no encrypted email', ['user_id' => $user->id]);
-            return;
+        ?string $tip = null,
+    ): bool {
+        if ($email === '') {
+            return false;
+        }
+
+        $cacheKey = 'notif_email:'.hash('sha256', strtolower($email).'|'.$contentKey);
+
+        if (Cache::has($cacheKey)) {
+            return false;
         }
 
         try {
-            $email = decrypt($user->email_encrypted);
-
             Mail::to($email)->send(new StandardEmail(
-                title:    $title,
-                mailBody: $body,
-                ctaUrl:   $ctaUrl,
+                title: $title,
+                mailBody: $htmlBody,
+                ctaUrl: $ctaUrl,
                 ctaLabel: $ctaLabel,
-                isHtml:   true
+                tip: $tip,
+                isHtml: true,
             ));
 
-            Log::info('Email dispatched', ['user_id' => $user->id]);
+            Cache::put($cacheKey, true, now()->addHours(self::EMAIL_DEDUPE_HOURS));
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (\Throwable $e) {
             Log::error('Email dispatch failed', [
-                'user_id' => $user->id,
-                'error'   => $e->getMessage(),
+                'email' => $email,
+                'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
+    }
+
+    public function sendToUser(
+        User $user,
+        string $title,
+        string $body,
+        string $type,
+        string $channel = 'both',
+        ?int $businessId = null,
+        ?string $intention = null,
+        ?array $metadata = null,
+        ?string $ctaUrl = null,
+        ?string $ctaLabel = null,
+        ?string $tip = null,
+    ): void {
+        $plainBody = $this->plainTextFromHtml($body);
+        $contentKey = $this->buildContentDedupeKey($businessId, $type, $intention, $title, $plainBody);
+
+        if (in_array($channel, ['in_app', 'both'], true)) {
+            $this->persistInAppIfNew(
+                $user->id,
+                $title,
+                $plainBody,
+                $type,
+                $businessId,
+                $intention,
+                $metadata,
+                $contentKey,
+            );
+        }
+
+        if (in_array($channel, ['email', 'both'], true)) {
+            $this->sendEmailIfNew(
+                $user->email ?? '',
+                $contentKey,
+                $title,
+                $body,
+                $ctaUrl,
+                $ctaLabel,
+                $tip,
+            );
+        }
+    }
+
+    private function hasInAppDuplicate(int $userId, string $dedupeKey): bool
+    {
+        return Notification::query()
+            ->where('user_id', $userId)
+            ->where('dedupe_key', $dedupeKey)
+            ->exists();
+    }
+
+    public function plainTextFromHtml(string $html): string
+    {
+        $text = str_replace(['<br>', '<br/>', '<br />', '</p>', '</li>'], "\n", $html);
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        return trim($text);
     }
 }

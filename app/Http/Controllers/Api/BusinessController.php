@@ -26,10 +26,11 @@ class BusinessController extends Controller
 
     public function mine(Request $request): BusinessResource
     {
-        $business = $this->businessService->getByOwner($request->user()->id);
-        if (!$business) {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
             abort(404, 'No business found for this user');
         }
+
         return new BusinessResource($business);
     }
 
@@ -53,30 +54,33 @@ class BusinessController extends Controller
 
     public function updateProfile(BusinessRequest $request): BusinessResource
     {
-        $business = $request->user()->business;
-        if (!$business) {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
             abort(404, 'Business not found');
         }
         $business = $this->businessService->update($business->id, $request->validated());
+
         return new BusinessResource($business);
     }
 
     public function settings(Request $request): BusinessResource
     {
-        $business = $request->user()->business;
-        if (!$business) {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
             abort(404, 'Business not found');
         }
+
         return new BusinessResource($business);
     }
 
     public function updateSettings(BusinessRequest $request): BusinessResource
     {
-        $business = $request->user()->business;
-        if (!$business) {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
             abort(404, 'Business not found');
         }
         $business = $this->businessService->updateSettings($business->id, $request->validated());
+
         return new BusinessResource($business);
     }
 }

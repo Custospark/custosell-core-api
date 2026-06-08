@@ -49,9 +49,12 @@ class PlatformBusinessController extends Controller
     {
         $allowed = implode(',', $this->businessService->allowedStatuses());
 
+        $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
+
         $validated = $request->validate([
             'status' => ['required', 'in:'.$allowed],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
+            'channel' => ['sometimes', 'in:'.$channels],
         ]);
 
         $business = Business::with('owner')->findOrFail($id);
@@ -60,6 +63,7 @@ class PlatformBusinessController extends Controller
             $business,
             $validated['status'],
             $validated['reason'],
+            $validated['channel'] ?? config('platform.default_notification_channel', 'both'),
         );
 
         return response()->json([
@@ -72,11 +76,14 @@ class PlatformBusinessController extends Controller
     {
         $allowed = implode(',', $this->businessService->allowedStatuses());
 
+        $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
+
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:businesses,id'],
             'status' => ['required', 'in:'.$allowed],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
+            'channel' => ['sometimes', 'in:'.$channels],
         ]);
 
         $count = $this->businessService->bulkUpdateStatus(
@@ -84,6 +91,7 @@ class PlatformBusinessController extends Controller
             $validated['ids'],
             $validated['status'],
             $validated['reason'],
+            $validated['channel'] ?? config('platform.default_notification_channel', 'both'),
         );
 
         return response()->json([
@@ -128,6 +136,8 @@ class PlatformBusinessController extends Controller
     {
         $intentions = implode(',', $this->businessService->notificationIntentions());
 
+        $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
+
         $validated = $request->validate([
             'business_ids' => ['required', 'array', 'min:1'],
             'business_ids.*' => ['integer', 'exists:businesses,id'],
@@ -135,6 +145,7 @@ class PlatformBusinessController extends Controller
             'message' => ['required', 'string', 'min:3', 'max:5000'],
             'subject' => ['nullable', 'string', 'max:200'],
             'mark_as_notified' => ['sometimes', 'boolean'],
+            'channel' => ['sometimes', 'in:'.$channels],
         ]);
 
         $sent = $this->businessService->notify(
@@ -144,6 +155,7 @@ class PlatformBusinessController extends Controller
             $validated['message'],
             $validated['subject'] ?? null,
             (bool) ($validated['mark_as_notified'] ?? false),
+            $validated['channel'] ?? config('platform.default_notification_channel', 'both'),
         );
 
         return response()->json([

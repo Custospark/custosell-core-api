@@ -35,9 +35,12 @@ class PlatformUserController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
+        $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
+
         $validated = $request->validate([
             'is_active' => ['required', 'boolean'],
             'reason' => ['nullable', 'string', 'max:1000'],
+            'channel' => ['sometimes', 'in:'.$channels],
         ]);
 
         $target = User::findOrFail($id);
@@ -46,6 +49,7 @@ class PlatformUserController extends Controller
             $target,
             (bool) $validated['is_active'],
             $validated['reason'] ?? null,
+            $validated['channel'] ?? config('platform.default_notification_channel', 'both'),
         );
 
         return response()->json([

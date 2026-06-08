@@ -2,41 +2,22 @@
 
 namespace App\Services\Platform;
 
-use App\Mail\StandardEmail;
 use App\Models\Business;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use App\Services\Notification\NotificationService;
+use Illuminate\Support\Collection;
 
 class PlatformNotificationService
 {
-    public function sendToEmail(string $email, string $title, string $body): void
-    {
-        if ($email === '') {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send(new StandardEmail(
-                title: $title,
-                mailBody: $body,
-                isHtml: true,
-            ));
-        } catch (\Throwable $e) {
-            Log::warning('Platform email failed', [
-                'email' => $email,
-                'subject' => $title,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
+    public function __construct(
+        protected NotificationService $notificationService,
+    ) {}
 
     public function notifyBusinessStatusChange(
-        string $businessName,
-        ?string $ownerEmail,
-        ?string $businessEmail,
+        Business $business,
         string $status,
         string $reason,
+        string $channel = 'both',
     ): void {
         $loginUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/').'/login';
         $reasonLine = '<p><strong>Reason:</strong> '.e($reason).'</p>';
@@ -45,29 +26,29 @@ class PlatformNotificationService
             'suspended' => [
                 'Your Custosell business account has been suspended',
                 '<p>Hello,</p>'
-                    .'<p>Your business <strong>'.e($businessName).'</strong> has been suspended on Custosell.</p>'
+                    .'<p>Your business <strong>'.e($business->name).'</strong> has been suspended on Custosell.</p>'
                     .$reasonLine
                     .'<p>While suspended, you and your staff cannot sign in or use Custosell until the account is reactivated.</p>'
-                    .'<p>If you believe this is a mistake, please contact Custospark support.</p>',
+                    .'<p>If you believe this is a mistake, please reach out to the Custosell team.</p>',
                 'Contact Support',
-                'mailto:support@custospark.com',
+                'mailto:support@custosell.com',
                 'Only an active business account can access sales, inventory, and reports.',
             ],
             'restricted' => [
                 'Your Custosell business account has been restricted',
                 '<p>Hello,</p>'
-                    .'<p>Your business <strong>'.e($businessName).'</strong> has been restricted on Custosell.</p>'
+                    .'<p>Your business <strong>'.e($business->name).'</strong> has been restricted on Custosell.</p>'
                     .$reasonLine
                     .'<p>While restricted, you and your staff cannot sign in until the restriction is lifted.</p>'
-                    .'<p>Please contact Custospark support to resolve this.</p>',
+                    .'<p>Please contact the Custosell team so we can help resolve this.</p>',
                 'Contact Support',
-                'mailto:support@custospark.com',
+                'mailto:support@custosell.com',
                 'Resolve the issue promptly to restore access for your team.',
             ],
             'warning' => [
                 'Important notice about your Custosell business account',
                 '<p>Hello,</p>'
-                    .'<p>Your business <strong>'.e($businessName).'</strong> has received an account warning on Custosell.</p>'
+                    .'<p>Your business <strong>'.e($business->name).'</strong> has received an account warning on Custosell.</p>'
                     .$reasonLine
                     .'<p>Your account remains active, but please address this matter to avoid further action.</p>',
                 'Sign in to Custosell',
@@ -75,11 +56,11 @@ class PlatformNotificationService
                 'Ignoring warnings may lead to account restriction or suspension.',
             ],
             'notified' => [
-                'Notification recorded for your Custosell business',
+                'We have been in touch about your business',
                 '<p>Hello,</p>'
-                    .'<p>Your business <strong>'.e($businessName).'</strong> has been marked as notified on Custosell.</p>'
+                    .'<p>Your business <strong>'.e($business->name).'</strong> has a recent message on file from the Custosell team.</p>'
                     .$reasonLine
-                    .'<p>Your account remains fully active. This status is for platform tracking after a communication was sent.</p>',
+                    .'<p>Your account is still fully active — no action is needed unless we asked you to respond.</p>',
                 'Sign in to Custosell',
                 $loginUrl,
                 'No action is required unless you received a separate message asking you to respond.',
@@ -87,7 +68,7 @@ class PlatformNotificationService
             default => [
                 'Your Custosell business account has been reactivated',
                 '<p>Hello,</p>'
-                    .'<p>Your business <strong>'.e($businessName).'</strong> is now active on Custosell.</p>'
+                    .'<p>Your business <strong>'.e($business->name).'</strong> is now active on Custosell.</p>'
                     .$reasonLine
                     .'<p>You and your staff can sign in and continue using the platform.</p>',
                 'Sign in to Custosell',
@@ -96,9 +77,25 @@ class PlatformNotificationService
             ],
         };
 
-        foreach (array_unique(array_filter([$ownerEmail, $businessEmail])) as $email) {
-            $this->sendBrandedEmail($email, $title, $body, $ctaUrl, $ctaLabel, $tip);
-        }
+        $metadata = [
+            'business_id' => $business->id,
+            'business_name' => $business->name,
+            'status' => $status,
+            'reason' => $reason,
+        ];
+
+        $this->deliverToBusinessRecipients(
+            $business,
+            $title,
+            $body,
+            'business_status',
+            $channel,
+            null,
+            $metadata,
+            $ctaUrl,
+            $ctaLabel,
+            $tip,
+        );
     }
 
     public function notifyBusinessMessage(
@@ -106,6 +103,7 @@ class PlatformNotificationService
         string $intention,
         string $message,
         ?string $subject = null,
+        string $channel = 'both',
     ): void {
         $title = $subject ?: $this->defaultSubjectForIntention($intention, $business->name);
         $reasonLine = '<p>'.nl2br(e($message)).'</p>';
@@ -126,7 +124,7 @@ class PlatformNotificationService
                     .'<p>This is a payment reminder for <strong>'.e($business->name).'</strong>.</p>'
                     .$reasonLine,
                 'Contact Billing',
-                'mailto:support@custospark.com',
+                'mailto:support@custosell.com',
                 'Keep your subscription current to avoid service interruption.',
             ],
             'policy_update' => [
@@ -148,7 +146,7 @@ class PlatformNotificationService
             ],
             'announcement' => [
                 '<p>Hello,</p>'
-                    .'<p>A message from Custospark regarding <strong>'.e($business->name).'</strong>:</p>'
+                    .'<p>A message from the Custosell team regarding <strong>'.e($business->name).'</strong>:</p>'
                     .$reasonLine,
                 'Sign in to Custosell',
                 $loginUrl,
@@ -156,7 +154,7 @@ class PlatformNotificationService
             ],
             default => [
                 '<p>Hello,</p>'
-                    .'<p>A message from Custospark regarding <strong>'.e($business->name).'</strong>:</p>'
+                    .'<p>A message from the Custosell team regarding <strong>'.e($business->name).'</strong>:</p>'
                     .$reasonLine,
                 'Sign in to Custosell',
                 $loginUrl,
@@ -164,18 +162,154 @@ class PlatformNotificationService
             ],
         };
 
-        foreach ($this->businessRecipientEmails($business) as $email) {
-            $this->sendBrandedEmail($email, $title, $body, $ctaUrl, $ctaLabel, $tip);
-        }
+        $metadata = [
+            'business_id' => $business->id,
+            'business_name' => $business->name,
+            'intention' => $intention,
+            'message' => $message,
+        ];
+
+        $this->deliverToBusinessRecipients(
+            $business,
+            $title,
+            $body,
+            'platform_message',
+            $channel,
+            $intention,
+            $metadata,
+            $ctaUrl,
+            $ctaLabel,
+            $tip,
+        );
+    }
+
+    public function notifyUserStatusChange(
+        User $user,
+        bool $isActive,
+        ?string $reason,
+        string $channel = 'both',
+    ): void {
+        $title = $isActive
+            ? 'Your Custosell account has been reactivated'
+            : 'Your Custosell account has been deactivated';
+
+        $reasonLine = $reason ? '<p><strong>Reason:</strong> '.e($reason).'</p>' : '';
+        $body = $isActive
+            ? '<p>Hello '.e($user->name).',</p><p>Your Custosell account is active again. You can sign in normally.</p>'
+            : '<p>Hello '.e($user->name).',</p><p>Your Custosell account has been deactivated.</p>'.$reasonLine;
+
+        $this->notificationService->sendToUser(
+            $user,
+            $title,
+            $body,
+            'user_status',
+            $channel,
+            $user->business_id,
+            null,
+            [
+                'is_active' => $isActive,
+                'reason' => $reason,
+            ],
+        );
+    }
+
+    /** @return Collection<int, User> */
+    public function businessRecipientUsers(Business $business): Collection
+    {
+        return User::query()
+            ->whereNull('deleted_at')
+            ->where('is_active', true)
+            ->where(function ($q) use ($business): void {
+                $q->where('business_id', $business->id);
+                if ($business->owner_id) {
+                    $q->orWhere('id', $business->owner_id);
+                }
+                if ($business->email) {
+                    $q->orWhere('email', $business->email);
+                }
+            })
+            ->get();
     }
 
     /** @return list<string> */
     private function businessRecipientEmails(Business $business): array
     {
-        return array_values(array_unique(array_filter([
-            $business->owner?->email,
-            $business->email,
-        ])));
+        $emails = $this->businessRecipientUsers($business)
+            ->pluck('email')
+            ->filter()
+            ->all();
+
+        if ($business->email) {
+            $emails[] = $business->email;
+        }
+
+        return array_values(array_unique(array_filter($emails)));
+    }
+
+    private function deliverToBusinessRecipients(
+        Business $business,
+        string $title,
+        string $htmlBody,
+        string $type,
+        string $channel,
+        ?string $intention = null,
+        ?array $metadata = null,
+        ?string $ctaUrl = null,
+        ?string $ctaLabel = null,
+        ?string $tip = null,
+    ): void {
+        $plainBody = $this->notificationService->plainTextFromHtml($htmlBody);
+        $contentKey = $this->notificationService->buildContentDedupeKey(
+            $business->id,
+            $type,
+            $intention,
+            $title,
+            $plainBody,
+        );
+
+        if (in_array($channel, ['in_app', 'both'], true)) {
+            $seenUserIds = [];
+
+            foreach ($this->businessRecipientUsers($business) as $user) {
+                if (isset($seenUserIds[$user->id])) {
+                    continue;
+                }
+                $seenUserIds[$user->id] = true;
+
+                $this->notificationService->persistInAppIfNew(
+                    $user->id,
+                    $title,
+                    $plainBody,
+                    $type,
+                    $business->id,
+                    $intention,
+                    $metadata,
+                    $contentKey,
+                );
+            }
+        }
+
+        if (in_array($channel, ['email', 'both'], true)) {
+            $seenEmails = [];
+
+            foreach ($this->businessRecipientEmails($business) as $email) {
+                $normalized = strtolower(trim($email));
+                if ($normalized === '' || isset($seenEmails[$normalized])) {
+                    continue;
+                }
+                $seenEmails[$normalized] = true;
+
+                $this->notificationService->sendEmailIfNew(
+                    $email,
+                    $contentKey,
+                    $title,
+                    $htmlBody,
+                    $ctaUrl,
+                    $ctaLabel,
+                    $tip,
+                );
+            }
+        }
     }
 
     private function defaultSubjectForIntention(string $intention, string $businessName): string
@@ -186,51 +320,8 @@ class PlatformNotificationService
             'policy_update' => "Policy update for {$businessName}",
             'reactivation_nudge' => "We'd love to see {$businessName} back on Custosell",
             'announcement' => "Announcement for {$businessName}",
-            default => "Message from Custospark for {$businessName}",
+            default => "Message from the Custosell team for {$businessName}",
         };
     }
 
-    private function sendBrandedEmail(
-        string $email,
-        string $title,
-        string $body,
-        ?string $ctaUrl = null,
-        ?string $ctaLabel = null,
-        ?string $tip = null,
-    ): void {
-        if ($email === '') {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send(new StandardEmail(
-                title: $title,
-                mailBody: $body,
-                ctaUrl: $ctaUrl,
-                ctaLabel: $ctaLabel,
-                tip: $tip,
-                isHtml: true,
-            ));
-        } catch (\Throwable $e) {
-            Log::warning('Platform email failed', [
-                'email' => $email,
-                'subject' => $title,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    public function notifyUserStatusChange(User $user, bool $isActive, ?string $reason): void
-    {
-        $title = $isActive
-            ? 'Your Custosell account has been reactivated'
-            : 'Your Custosell account has been deactivated';
-
-        $reasonLine = $reason ? "<p><strong>Reason:</strong> ".e($reason).'</p>' : '';
-        $body = $isActive
-            ? '<p>Hello '.e($user->name).',</p><p>Your Custosell account is active again. You can sign in normally.</p>'
-            : '<p>Hello '.e($user->name).',</p><p>Your Custosell account has been deactivated.</p>'.$reasonLine;
-
-        $this->sendToEmail($user->email, $title, $body);
-    }
 }

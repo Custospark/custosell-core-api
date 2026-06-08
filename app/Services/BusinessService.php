@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\User;
 use App\Repositories\Contracts\BusinessRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\BusinessServiceInterface;
@@ -27,6 +28,33 @@ class BusinessService implements BusinessServiceInterface
     public function getByOwner(int $ownerId): ?Business
     {
         return $this->businessRepository->findByOwner($ownerId);
+    }
+
+    public function getForUser(User $user): ?Business
+    {
+        if ($user->business_id) {
+            $business = $this->businessRepository->find($user->business_id);
+            if ($business) {
+                return $business;
+            }
+        }
+
+        $owned = $this->businessRepository->findByOwner($user->id);
+        if ($owned) {
+            return $owned;
+        }
+
+        if ($user->email) {
+            $byEmail = Business::query()
+                ->where('email', $user->email)
+                ->first();
+
+            if ($byEmail) {
+                return $byEmail;
+            }
+        }
+
+        return null;
     }
 
     public function register(array $userData, array $businessData): Business

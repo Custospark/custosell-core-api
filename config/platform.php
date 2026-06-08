@@ -24,5 +24,9 @@ return [
         'reactivation_nudge',
         'custom',
     ],
+
+    'notification_channels' => ['email', 'in_app', 'both'],
+
+    'default_notification_channel' => env('PLATFORM_DEFAULT_NOTIFICATION_CHANNEL', 'both'),
 ];
 
