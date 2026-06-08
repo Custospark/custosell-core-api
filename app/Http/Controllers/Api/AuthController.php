@@ -27,7 +27,7 @@ class AuthController extends Controller
     {
         $user = $this->userService->register($request->validated());
         $this->platformAdminService->assignIfEligible($user);
-        $user->load(['business', 'roles']);
+        $user->load(['business', 'role', 'roles']);
 
         $activeShift = Shift::create([
             'business_id' => $user->business_id,
@@ -57,7 +57,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $user->load(['business', 'roles']);
+        $user->load(['business', 'role', 'roles']);
 
         if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
             $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);

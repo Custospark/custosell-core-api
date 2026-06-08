@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Services\ModuleAccessService;
 use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
@@ -23,6 +24,8 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', 'string', 'min:6'],
             'role_id' => ['nullable', 'integer'],
             'is_active' => ['boolean'],
+            'modules' => ['sometimes', 'array'],
+            'modules.*' => ['string', Rule::in(ModuleAccessService::BUSINESS_MODULES)],
         ];
     }
 

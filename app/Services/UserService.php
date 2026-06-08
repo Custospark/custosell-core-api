@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\ModuleAccessService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,7 @@ class UserService implements UserServiceInterface
 {
     public function __construct(
         protected UserRepositoryInterface $userRepository,
+        protected ModuleAccessService $moduleAccess,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -54,6 +56,13 @@ class UserService implements UserServiceInterface
         $data['business_id'] = $businessId;
         $data['password'] = Hash::make($data['password']);
         $data['created_by'] = Auth::id();
+
+        if (array_key_exists('modules', $data)) {
+            $data['modules'] = $this->moduleAccess->validateBusinessModules($data['modules'], allowEmpty: true);
+        } else {
+            $data['modules'] = [];
+        }
+
         return $this->userRepository->create($data)->load('role');
     }
 
@@ -66,6 +75,7 @@ class UserService implements UserServiceInterface
 
         $this->validateRoleUpdate($user, $businessId, $actorId, $data);
         $this->validateActivationUpdate($user, $businessId, $actorId, $data);
+        $this->validateModulesUpdate($user, $businessId, $data);
 
         if (isset($data['password']) && trim((string) $data['password']) === '') {
             unset($data['password']);
@@ -166,6 +176,21 @@ class UserService implements UserServiceInterface
                 'is_active' => 'The business owner account cannot be deactivated.',
             ]);
         }
+    }
+
+    protected function validateModulesUpdate(User $user, int $businessId, array &$data): void
+    {
+        if (! array_key_exists('modules', $data)) {
+            return;
+        }
+
+        if ($this->isBusinessOwner($user, $businessId)) {
+            unset($data['modules']);
+
+            return;
+        }
+
+        $data['modules'] = $this->moduleAccess->validateBusinessModules($data['modules'], allowEmpty: true);
     }
 
     protected function validateDelete(User $user, int $businessId, int $actorId): void

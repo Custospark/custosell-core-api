@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use App\Services\ModuleAccessService;
 
 class RegisterRequest extends FormRequest
 {
@@ -20,6 +22,8 @@ class RegisterRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:50'],
             'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'modules' => ['sometimes', 'array'],
+            'modules.*' => ['string', Rule::in(ModuleAccessService::BUSINESS_MODULES)],
         ];
     }
 }

@@ -13,6 +13,8 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [UserController::class, 'updateProfile']);
+});
 
+Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group(function () {
     Route::apiResource('users', UserController::class);
 });

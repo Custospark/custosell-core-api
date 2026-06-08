@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\ModuleAccessService;
 use App\Services\Platform\PlatformAdminService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -12,6 +13,8 @@ class UserResource extends JsonResource
     {
         /** @var PlatformAdminService $platformAdmin */
         $platformAdmin = app(PlatformAdminService::class);
+        /** @var ModuleAccessService $moduleAccess */
+        $moduleAccess = app(ModuleAccessService::class);
         $platformMeta = $platformAdmin->platformMetaFor($this->resource);
 
         return [
@@ -24,6 +27,9 @@ class UserResource extends JsonResource
             'is_active' => $this->is_active,
             'is_platform_admin' => $platformMeta['is_platform_admin'],
             'platform_roles' => $platformMeta['platform_roles'],
+            'is_business_owner' => $moduleAccess->isBusinessOwner($this->resource),
+            'modules' => $moduleAccess->storedBusinessModules($this->resource),
+            'accessible_modules' => $moduleAccess->accessibleModules($this->resource),
             'avatar' => $this->avatar
                 ? (str_starts_with($this->avatar, 'http') ? $this->avatar : url($this->avatar))
                 : null,

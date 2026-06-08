@@ -28,6 +28,7 @@ class User extends Authenticatable
         'phone',
         'avatar',
         'created_by',
+        'modules',
     ];
 
     protected $hidden = [
@@ -42,6 +43,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'modules' => 'array',
         ];
     }
 
