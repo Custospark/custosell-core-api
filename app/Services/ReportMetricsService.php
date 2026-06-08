@@ -464,6 +464,7 @@ class ReportMetricsService
             $shiftExpenses = (float) Expense::where('business_id', $businessId)
                 ->where('shift_id', $shift->id)
                 ->sum('amount');
+            $netSales = max(0, $gross - $refunds - $shiftExpenses);
             $cashHandover = max(0, $cash - $shiftExpenses);
 
             return [
@@ -473,6 +474,7 @@ class ReportMetricsService
                 'gross_sales' => $gross,
                 'refunds' => $refunds,
                 'net_after_refunds' => $netAfterRefunds,
+                'net_sales' => $netSales,
                 'shift_expenses' => $shiftExpenses,
                 'cash' => $cash,
                 'mobile_money' => $mobile,
@@ -480,6 +482,87 @@ class ReportMetricsService
                 'cash_handover' => $cashHandover,
             ];
         })->all();
+    }
+
+    /**
+     * Single-shift close report for cashier handover (PDF).
+     *
+     * @return array{
+     *   shift: Shift,
+     *   cashier: string,
+     *   duration: string|null,
+     *   transaction_count: int,
+     *   gross_sales: float,
+     *   refunds: float,
+     *   net_after_refunds: float,
+     *   net_sales: float,
+     *   shift_expenses: float,
+     *   cash: float,
+     *   mobile_money: float,
+     *   card_other: float,
+     *   cash_handover: float
+     * }
+     */
+    public function shiftCloseReport(int $businessId, int $shiftId): array
+    {
+        $shift = Shift::where('business_id', $businessId)
+            ->where('id', $shiftId)
+            ->with('user')
+            ->firstOrFail();
+
+        $reconciliation = $this->shiftReconciliation(
+            $businessId,
+            $shift->clock_in->format('Y-m-d'),
+            $shift->clock_in->format('Y-m-d'),
+            $shiftId,
+            null,
+        );
+
+        $metrics = $reconciliation[0] ?? [
+            'transaction_count' => 0,
+            'gross_sales' => 0.0,
+            'refunds' => 0.0,
+            'net_after_refunds' => 0.0,
+            'net_sales' => 0.0,
+            'shift_expenses' => 0.0,
+            'cash' => 0.0,
+            'mobile_money' => 0.0,
+            'card_other' => 0.0,
+            'cash_handover' => 0.0,
+        ];
+
+        return [
+            'shift' => $shift,
+            'cashier' => $shift->user?->name ?? '—',
+            'duration' => $this->formatShiftDuration($shift),
+            'transaction_count' => (int) $metrics['transaction_count'],
+            'gross_sales' => (float) $metrics['gross_sales'],
+            'refunds' => (float) $metrics['refunds'],
+            'net_after_refunds' => (float) $metrics['net_after_refunds'],
+            'net_sales' => (float) $metrics['net_sales'],
+            'shift_expenses' => (float) $metrics['shift_expenses'],
+            'cash' => (float) $metrics['cash'],
+            'mobile_money' => (float) $metrics['mobile_money'],
+            'card_other' => (float) $metrics['card_other'],
+            'cash_handover' => (float) $metrics['cash_handover'],
+        ];
+    }
+
+    public function formatShiftDuration(Shift $shift): ?string
+    {
+        if (! $shift->clock_out) {
+            return null;
+        }
+
+        $minutes = $shift->clock_in->diffInMinutes($shift->clock_out);
+        $hours = intdiv($minutes, 60);
+        $mins = $minutes % 60;
+
+        if ($hours > 0) {
+            return "{$hours}h {$mins}m";
+        }
+
+        return "{$mins}m";
     }
 
     public function plSummaryCards(array $summary, string $currency, ReportExportService $formatter): array

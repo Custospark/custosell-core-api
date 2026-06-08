@@ -20,8 +20,8 @@
         <th class="col-num">Txns</th>
         <th class="col-money">Gross ({{ $ccy }})</th>
         <th class="col-money">Refunds ({{ $ccy }})</th>
-        <th class="col-money">Net ({{ $ccy }})</th>
         <th class="col-money">Expenses ({{ $ccy }})</th>
+        <th class="col-money">Net Sales ({{ $ccy }})</th>
         <th class="col-money">Handover ({{ $ccy }})</th>
       </tr>
     </thead>
@@ -33,8 +33,8 @@
           <td class="col-num">{{ $row['transaction_count'] }}</td>
           <td class="col-money">{{ $formatter->formatTableNumber($row['gross_sales']) }}</td>
           <td class="col-money text-red">-{{ $formatter->formatTableNumber($row['refunds']) }}</td>
-          <td class="col-money">{{ $formatter->formatTableNumber($row['net_after_refunds']) }}</td>
           <td class="col-money text-red">-{{ $formatter->formatTableNumber($row['shift_expenses']) }}</td>
+          <td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($row['net_sales']) }}</td>
           <td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($row['cash_handover']) }}</td>
         </tr>
         <tr class="line-items-row">

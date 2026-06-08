@@ -62,6 +62,15 @@ class ReportExportService
         return implode('-', $parts);
     }
 
+    public function buildShiftCloseFilename(Business $business, string $cashierName, ?\DateTimeInterface $closedAt = null): string
+    {
+        $namePart = $this->sanitizeFilenamePart($business->name ?: $business->slug ?: 'business');
+        $cashierPart = $this->sanitizeFilenamePart($cashierName ?: 'cashier');
+        $stamp = ($closedAt ?? now())->format('Y-m-d-Hi');
+
+        return "{$namePart}-shift-close-{$cashierPart}-{$stamp}";
+    }
+
     public function sanitizeFilenamePart(string $value): string
     {
         $value = preg_replace('/[^\p{L}\p{N}\s_-]/u', '', $value) ?? '';

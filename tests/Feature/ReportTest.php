@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Role;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\Shift;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -326,5 +327,135 @@ class ReportTest extends TestCase
 
         $disposition = $response->headers->get('content-disposition');
         $this->assertStringContainsString('acme-shop-daily-sales', $disposition);
+    }
+
+    public function test_staff_without_shift_close_permission_is_forbidden(): void
+    {
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->staff->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->get("/api/v1/reports/shift-close?shift_id={$shift->id}");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_cashier_can_download_own_shift_close_pdf(): void
+    {
+        $this->staff->role->update([
+            'permissions' => array_merge($this->staff->role->permissions, ['shifts.close_report' => true]),
+        ]);
+
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->staff->id,
+            'clock_in' => now()->subHours(4),
+            'clock_out' => now(),
+            'status' => 'completed',
+        ]);
+
+        $sale = Sale::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->staff->id,
+            'shift_id' => $shift->id,
+            'receipt_number' => 'SC-001',
+            'subtotal' => 5000,
+            'total_amount' => 5000,
+            'payment_method' => 'cash',
+            'sale_date' => now(),
+        ]);
+        SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_name' => 'Item',
+            'product_price' => 5000,
+            'quantity' => 1,
+            'unit_price' => 5000,
+            'subtotal' => 5000,
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->get("/api/v1/reports/shift-close?shift_id={$shift->id}");
+
+        $response->assertStatus(200)
+            ->assertHeader('content-type', 'application/pdf');
+
+        $disposition = $response->headers->get('content-disposition');
+        $this->assertStringContainsString('shift-close', $disposition);
+    }
+
+    public function test_shift_reconciliation_csv_uses_net_sales_formula(): void
+    {
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->admin->id,
+            'clock_in' => now()->subHours(6),
+            'clock_out' => now(),
+            'status' => 'completed',
+        ]);
+
+        $sale = Sale::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->admin->id,
+            'shift_id' => $shift->id,
+            'receipt_number' => 'SR-001',
+            'subtotal' => 10000,
+            'total_amount' => 10000,
+            'payment_method' => 'cash',
+            'sale_date' => now(),
+        ]);
+        SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_name' => 'Item',
+            'product_price' => 10000,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'subtotal' => 10000,
+            'refunded_amount' => 2000,
+        ]);
+
+        $category = ExpenseCategory::create([
+            'business_id' => $this->business->id,
+            'name' => 'Petty Cash',
+        ]);
+        Expense::create([
+            'business_id' => $this->business->id,
+            'expense_category_id' => $category->id,
+            'recorded_by' => $this->admin->id,
+            'shift_id' => $shift->id,
+            'amount' => 1500,
+            'description' => 'Supplies',
+            'expense_date' => now(),
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->get("/api/v1/reports/shift-reconciliation?format=csv&shift_id={$shift->id}");
+
+        $response->assertStatus(200);
+        $body = $response->getContent();
+        // net sales = 10000 - 2000 - 1500 = 6500
+        $this->assertStringContainsString('6500', $body);
+    }
+
+    public function test_cashier_cannot_download_another_users_shift_close_pdf(): void
+    {
+        $this->staff->role->update([
+            'permissions' => array_merge($this->staff->role->permissions, ['shifts.close_report' => true]),
+        ]);
+
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->admin->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->get("/api/v1/reports/shift-close?shift_id={$shift->id}");
+
+        $response->assertStatus(403);
     }
 }

@@ -76,6 +76,7 @@ class RoleService implements RoleServiceInterface
                 'users.edit' => true,
                 'users.delete' => true,
                 'reports.view' => true,
+                'shifts.close_report' => true,
                 'settings.view' => true,
                 'settings.edit' => true,
             ],
@@ -90,6 +91,7 @@ class RoleService implements RoleServiceInterface
             'permissions' => [
                 'sales.create' => true,
                 'sales.view' => true,
+                'shifts.close_report' => true,
                 'sales.refund' => false,
                 'sales.discount' => false,
                 'sales.delete' => false,

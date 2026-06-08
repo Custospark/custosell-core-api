@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\Shift;
 use App\Support\ReportDateRange;
 use App\Services\ReportExportService;
 use App\Services\ReportMetricsService;
@@ -457,15 +458,15 @@ class ReportsController extends Controller
 
         $shifts = $this->metrics->shiftReconciliation($business->id, $dateFrom, $dateTo, $filters['shift_id'], $filters['user_id']);
 
-        $headers = ['Shift', 'Cashier', 'Transactions', 'Gross', 'Refunds', 'Net Sales', 'Expenses', 'Cash Handover'];
+        $headers = ['Shift', 'Cashier', 'Transactions', 'Gross', 'Refunds', 'Expenses', 'Net Sales', 'Cash Handover'];
         $exportRows = array_map(fn ($row) => [
             $row['shift']->clock_in->format('Y-m-d H:i'),
             $row['cashier'],
             $row['transaction_count'],
             $row['gross_sales'],
             $row['refunds'],
-            $row['net_after_refunds'],
             $row['shift_expenses'],
+            $row['net_sales'],
             $row['cash_handover'],
         ], $shifts);
 
@@ -492,6 +493,73 @@ class ReportsController extends Controller
                 'summaryCards' => $summaryCards,
             ]), $filename, $this->pdfOrientation('shift-reconciliation')),
         };
+    }
+
+    public function shiftClose(Request $request)
+    {
+        $request->validate(['shift_id' => 'required|integer']);
+        $business = $this->getBusiness($request);
+        $shiftId = (int) $request->query('shift_id');
+        $user = $request->user();
+
+        $shift = Shift::where('business_id', $business->id)->where('id', $shiftId)->first();
+        if (! $shift) {
+            return response()->json(['message' => 'Shift not found'], 404);
+        }
+
+        if (! $this->canAccessShiftCloseReport($user, $shift)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $report = $this->metrics->shiftCloseReport($business->id, $shiftId);
+        $currency = $business->currency;
+
+        $summaryCards = [
+            ['label' => 'Cash at handover', 'value' => $this->export->formatMoney($report['cash_handover'], $currency), 'tone' => 'positive'],
+            ['label' => 'Net sales', 'value' => $this->export->formatMoney($report['net_sales'], $currency), 'tone' => 'positive'],
+            ['label' => 'Transactions', 'value' => (string) $report['transaction_count']],
+            ['label' => 'Shift expenses', 'value' => '-'.$this->export->formatMoney($report['shift_expenses'], $currency), 'tone' => 'negative'],
+        ];
+
+        $shift = $report['shift'];
+        $subtitle = $shift->clock_out
+            ? collect([
+                'Closed '.$shift->clock_out->format('M d, Y H:i'),
+                $report['duration'] ? 'Duration '.$report['duration'] : null,
+            ])->filter()->implode(' · ')
+            : 'Started '.$shift->clock_in->format('M d, Y H:i').' · Report as of '.now()->format('M d, Y H:i');
+
+        $filename = $this->export->buildShiftCloseFilename(
+            $business,
+            $report['cashier'],
+            $report['shift']->clock_out,
+        );
+
+        return $this->export->downloadPdf('reports.shift-close', $this->pdfData($request, [
+            'report' => $report,
+            'accent' => '#1e40af',
+            'reportTitle' => 'Shift Close Report',
+            'reportPurpose' => null,
+            'reportSubtitle' => $subtitle,
+            'summaryCards' => $summaryCards,
+        ]), $filename, 'portrait');
+    }
+
+    private function canAccessShiftCloseReport($user, Shift $shift): bool
+    {
+        if ((int) $shift->business_id !== (int) $user->business_id) {
+            return false;
+        }
+
+        if ($user->hasPermission('reports.view')) {
+            return true;
+        }
+
+        if ($user->hasPermission('shifts.close_report')) {
+            return (int) $shift->user_id === (int) $user->id;
+        }
+
+        return false;
     }
 
     public function productPerformance(Request $request)
