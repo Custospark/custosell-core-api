@@ -34,8 +34,13 @@ class EnsureBusinessActive
         }
 
         $business = $user->relationLoaded('business') ? $user->business : $user->business()->select('id', 'status')->first();
-        if ($business && $business->status === 'suspended') {
-            return response()->json(['message' => 'Your business account has been suspended.'], 403);
+        $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+        if ($business && in_array($business->status, $blocked, true)) {
+            $message = $business->status === 'suspended'
+                ? 'Your business account has been suspended.'
+                : 'Your business account has been restricted.';
+
+            return response()->json(['message' => $message], 403);
         }
 
         return $next($request);

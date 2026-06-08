@@ -47,8 +47,10 @@ class PlatformBusinessController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
+        $allowed = implode(',', $this->businessService->allowedStatuses());
+
         $validated = $request->validate([
-            'status' => ['required', 'in:active,suspended'],
+            'status' => ['required', 'in:'.$allowed],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ]);
 
@@ -62,7 +64,91 @@ class PlatformBusinessController extends Controller
 
         return response()->json([
             'data' => $this->businessService->transformBusiness($updated),
-            'message' => $validated['status'] === 'suspended' ? 'Business suspended.' : 'Business reactivated.',
+            'message' => 'Business status updated.',
+        ]);
+    }
+
+    public function bulkUpdateStatus(Request $request): JsonResponse
+    {
+        $allowed = implode(',', $this->businessService->allowedStatuses());
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:businesses,id'],
+            'status' => ['required', 'in:'.$allowed],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $count = $this->businessService->bulkUpdateStatus(
+            $request->user(),
+            $validated['ids'],
+            $validated['status'],
+            $validated['reason'],
+        );
+
+        return response()->json([
+            'message' => "{$count} business(es) updated.",
+            'updated' => $count,
+        ]);
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $business = Business::findOrFail($id);
+        $this->businessService->delete($request->user(), $business, $validated['reason']);
+
+        return response()->json(['message' => 'Business deleted.']);
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:businesses,id'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $count = $this->businessService->bulkDelete(
+            $request->user(),
+            $validated['ids'],
+            $validated['reason'],
+        );
+
+        return response()->json([
+            'message' => "{$count} business(es) deleted.",
+            'deleted' => $count,
+        ]);
+    }
+
+    public function notify(Request $request): JsonResponse
+    {
+        $intentions = implode(',', $this->businessService->notificationIntentions());
+
+        $validated = $request->validate([
+            'business_ids' => ['required', 'array', 'min:1'],
+            'business_ids.*' => ['integer', 'exists:businesses,id'],
+            'intention' => ['required', 'in:'.$intentions],
+            'message' => ['required', 'string', 'min:3', 'max:5000'],
+            'subject' => ['nullable', 'string', 'max:200'],
+            'mark_as_notified' => ['sometimes', 'boolean'],
+        ]);
+
+        $sent = $this->businessService->notify(
+            $request->user(),
+            $validated['business_ids'],
+            $validated['intention'],
+            $validated['message'],
+            $validated['subject'] ?? null,
+            (bool) ($validated['mark_as_notified'] ?? false),
+        );
+
+        return response()->json([
+            'message' => "Notification sent to {$sent} business(es).",
+            'sent' => $sent,
         ]);
     }
 }

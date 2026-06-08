@@ -18,7 +18,11 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
     });
 
     Route::middleware(['platform:platform.businesses.manage'])->group(function () {
+        Route::post('/businesses/bulk-delete', [PlatformBusinessController::class, 'bulkDelete']);
+        Route::post('/businesses/bulk-status', [PlatformBusinessController::class, 'bulkUpdateStatus']);
+        Route::post('/businesses/notify', [PlatformBusinessController::class, 'notify']);
         Route::patch('/businesses/{id}/status', [PlatformBusinessController::class, 'updateStatus']);
+        Route::delete('/businesses/{id}', [PlatformBusinessController::class, 'destroy']);
     });
 
     Route::middleware(['platform:platform.users.view'])->group(function () {

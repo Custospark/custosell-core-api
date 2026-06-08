@@ -18,6 +18,15 @@ class Business extends Model
         'status' => 'active',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Business $business): void {
+            if ($business->status_changed_at === null) {
+                $business->status_changed_at = now();
+            }
+        });
+    }
+
     protected $fillable = [
         'owner_id',
         'name',
@@ -37,6 +46,7 @@ class Business extends Model
         'receipt_footer',
         'logo_path',
         'status',
+        'status_changed_at',
         'trial_ends_at',
     ];
 
@@ -44,6 +54,7 @@ class Business extends Model
     {
         return [
             'trial_ends_at' => 'datetime',
+            'status_changed_at' => 'datetime',
         ];
     }
 

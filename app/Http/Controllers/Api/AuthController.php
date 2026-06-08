@@ -61,8 +61,13 @@ class AuthController extends Controller
 
         if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
             $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
-            if ($business && $business->status === 'suspended') {
-                return response()->json(['message' => 'Your business account has been suspended.'], 403);
+            $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+            if ($business && in_array($business->status, $blocked, true)) {
+                $message = $business->status === 'suspended'
+                    ? 'Your business account has been suspended.'
+                    : 'Your business account has been restricted.';
+
+                return response()->json(['message' => $message], 403);
             }
         }
 

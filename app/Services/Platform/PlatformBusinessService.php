@@ -8,6 +8,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PlatformBusinessService
 {
@@ -19,6 +20,24 @@ class PlatformBusinessService
     public function activityWindowDays(): int
     {
         return (int) config('platform.activity_window_days', 30);
+    }
+
+    /** @return list<string> */
+    public function allowedStatuses(): array
+    {
+        return config('platform.business_statuses', ['active', 'warning', 'restricted', 'suspended']);
+    }
+
+    /** @return list<string> */
+    public function blockedStatuses(): array
+    {
+        return config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+    }
+
+    /** @return list<string> */
+    public function notificationIntentions(): array
+    {
+        return config('platform.notification_intentions', ['announcement', 'custom']);
     }
 
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -182,7 +201,7 @@ class PlatformBusinessService
         $hasRecentLogin = $lastLoginAt && $lastLoginAt->gte($windowStart);
 
         $activityStatus = 'dormant';
-        if ($business->status === 'suspended') {
+        if (in_array($business->status, $this->blockedStatuses(), true)) {
             $activityStatus = 'suspended';
         } elseif (! $hasSalesEver && ! $lastLoginAt) {
             $activityStatus = 'never_used';
@@ -197,6 +216,7 @@ class PlatformBusinessService
             'email' => $business->email,
             'currency' => $business->currency,
             'status' => $business->status,
+            'status_changed_at' => $business->status_changed_at?->toIso8601String(),
             'activity_status' => $activityStatus,
             'owner_name' => $business->owner?->name,
             'owner_email' => $business->owner?->email,
@@ -240,6 +260,9 @@ class PlatformBusinessService
 
         $totalBusinesses = Business::count();
         $suspendedCount = Business::where('status', 'suspended')->count();
+        $warningCount = Business::where('status', 'warning')->count();
+        $notifiedCount = Business::where('status', 'notified')->count();
+        $restrictedCount = Business::where('status', 'restricted')->count();
         $activeStatusCount = Business::where('status', 'active')->count();
 
         $withGrossSales30d = (int) Sale::query()
@@ -284,6 +307,9 @@ class PlatformBusinessService
             'totals' => [
                 'total' => $totalBusinesses,
                 'active_status' => $activeStatusCount,
+                'warning' => $warningCount,
+                'notified' => $notifiedCount,
+                'restricted' => $restrictedCount,
                 'suspended' => $suspendedCount,
                 'with_gross_sales_30d' => $withGrossSales30d,
                 'transactions_30d' => $platformTransactions30d,
@@ -309,9 +335,21 @@ class PlatformBusinessService
 
     public function updateStatus(User $actor, Business $business, string $status, string $reason): Business
     {
-        $business->update(['status' => $status]);
+        $previous = $business->status;
 
-        $this->audit->log($actor, $status === 'suspended' ? 'business.suspended' : 'business.reactivated', 'business', $business->id, $reason);
+        $business->update([
+            'status' => $status,
+            'status_changed_at' => now(),
+        ]);
+
+        $this->audit->log(
+            $actor,
+            $this->auditActionForStatus($status),
+            'business',
+            $business->id,
+            $reason,
+            ['from' => $previous, 'to' => $status],
+        );
 
         $this->notifications->notifyBusinessStatusChange(
             $business->name,
@@ -322,6 +360,116 @@ class PlatformBusinessService
         );
 
         return $business->fresh(['owner', 'subscription.plan']);
+    }
+
+    public function bulkUpdateStatus(User $actor, array $ids, string $status, string $reason): int
+    {
+        $count = 0;
+        $businesses = Business::with('owner')->whereIn('id', $ids)->get();
+
+        foreach ($businesses as $business) {
+            if ($business->status === $status) {
+                continue;
+            }
+            $this->updateStatus($actor, $business, $status, $reason);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function delete(User $actor, Business $business, string $reason): void
+    {
+        DB::transaction(function () use ($actor, $business, $reason): void {
+            $salesDeleted = $this->purgeSalesData($business);
+
+            $this->audit->log($actor, 'business.deleted', 'business', $business->id, $reason, [
+                'name' => $business->name,
+                'status' => $business->status,
+                'sales_deleted' => $salesDeleted,
+            ]);
+
+            $business->delete();
+        });
+    }
+
+    private function purgeSalesData(Business $business): int
+    {
+        $deleted = 0;
+
+        Sale::withTrashed()
+            ->where('business_id', $business->id)
+            ->orderBy('id')
+            ->chunkById(200, function ($sales) use (&$deleted): void {
+                foreach ($sales as $sale) {
+                    $sale->forceDelete();
+                    $deleted++;
+                }
+            });
+
+        return $deleted;
+    }
+
+    public function bulkDelete(User $actor, array $ids, string $reason): int
+    {
+        $count = 0;
+        $businesses = Business::whereIn('id', $ids)->get();
+
+        foreach ($businesses as $business) {
+            $this->delete($actor, $business, $reason);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function notify(
+        User $actor,
+        array $businessIds,
+        string $intention,
+        string $message,
+        ?string $subject = null,
+        bool $markAsNotified = false,
+    ): int {
+        $businesses = Business::with('owner')->whereIn('id', $businessIds)->get();
+        $sent = 0;
+
+        foreach ($businesses as $business) {
+            $this->notifications->notifyBusinessMessage($business, $intention, $message, $subject);
+            $this->audit->log($actor, 'business.notified', 'business', $business->id, null, [
+                'intention' => $intention,
+                'subject' => $subject,
+                'mark_as_notified' => $markAsNotified,
+            ]);
+
+            if ($markAsNotified) {
+                $previous = $business->status;
+                $business->update([
+                    'status' => 'notified',
+                    'status_changed_at' => now(),
+                ]);
+                $this->audit->log($actor, 'business.marked_notified', 'business', $business->id, null, [
+                    'from' => $previous,
+                    'intention' => $intention,
+                ]);
+            }
+
+            $sent++;
+        }
+
+        return $sent;
+    }
+
+    private function auditActionForStatus(string $status): string
+    {
+        return match ($status) {
+            'suspended' => 'business.suspended',
+            'restricted' => 'business.restricted',
+            'warning' => 'business.warned',
+            'notified' => 'business.marked_notified',
+            'active' => 'business.reactivated',
+            default => 'business.status_changed',
+        };
     }
 
     private function grossSalesSubquery(?Carbon $since = null): \Closure
