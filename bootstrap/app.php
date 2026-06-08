@@ -17,7 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform' => \App\Http\Middleware\EnsurePlatformAccess::class,
             'business.active' => \App\Http\Middleware\EnsureBusinessActive::class,
         ]);
-        $middleware->appendToGroup('api', \App\Http\Middleware\EnsureBusinessActive::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

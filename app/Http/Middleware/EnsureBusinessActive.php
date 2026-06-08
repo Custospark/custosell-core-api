@@ -29,7 +29,11 @@ class EnsureBusinessActive
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $business = $user->business;
+        if ($user->business_id === null) {
+            return $next($request);
+        }
+
+        $business = $user->relationLoaded('business') ? $user->business : $user->business()->select('id', 'status')->first();
         if ($business && $business->status === 'suspended') {
             return response()->json(['message' => 'Your business account has been suspended.'], 403);
         }

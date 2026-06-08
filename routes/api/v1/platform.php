@@ -6,13 +6,14 @@ use App\Http\Controllers\Api\Platform\PlatformRoleController;
 use App\Http\Controllers\Api\Platform\PlatformUserController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->prefix('platform')->group(function () {
+Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->group(function () {
     Route::middleware(['platform:platform.overview.view'])->group(function () {
         Route::get('/overview', [PlatformOverviewController::class, 'summary']);
         Route::get('/metrics', [PlatformOverviewController::class, 'metrics']);
     });
 
     Route::middleware(['platform:platform.businesses.view'])->group(function () {
+        Route::get('/businesses/stats', [PlatformBusinessController::class, 'stats']);
         Route::get('/businesses', [PlatformBusinessController::class, 'index']);
     });
 

@@ -57,9 +57,16 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
-        $this->platformAdminService->assignIfEligible($user);
         $user->load(['business', 'roles']);
+
+        if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
+            $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
+            if ($business && $business->status === 'suspended') {
+                return response()->json(['message' => 'Your business account has been suspended.'], 403);
+            }
+        }
+
+        $user->forceFill(['last_login_at' => now()])->save();
 
         // Find active shift or create a new one
         $activeShift = Shift::where('business_id', $user->business_id)

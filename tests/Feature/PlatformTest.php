@@ -34,7 +34,7 @@ class PlatformTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/platform/overview')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['businesses', 'users', 'system']]);
+            ->assertJsonStructure(['data' => ['businesses', 'users', 'system', 'pricing_insights', 'top_businesses_30d']]);
     }
 
     public function test_configured_admin_email_gets_role_on_business_registration(): void

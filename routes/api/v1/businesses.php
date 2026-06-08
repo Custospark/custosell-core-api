@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/businesses/register', [BusinessController::class, 'store']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::get('/businesses/mine', [BusinessController::class, 'mine']);
     Route::put('/businesses/profile', [BusinessController::class, 'updateProfile']);
     Route::get('/businesses/{id}', [BusinessController::class, 'show']);

@@ -2,7 +2,6 @@
 
 namespace App\Services\Platform;
 
-use App\Models\Business;
 use App\Models\PlatformAuditLog;
 use App\Models\Sale;
 use App\Models\User;
@@ -19,7 +18,7 @@ class PlatformOverviewService
     public function summary(): array
     {
         $windowStart = now()->subDays($this->businessService->activityWindowDays());
-        $businesses = Business::query()->with(['subscription.plan'])->get();
+        $businessRows = $this->businessService->businessesWithGrossSales30d($windowStart);
 
         $activityCounts = [
             'active' => 0,
@@ -28,60 +27,35 @@ class PlatformOverviewService
             'suspended' => 0,
         ];
 
-        foreach ($businesses as $business) {
-            $row = $this->businessService->transformBusiness($business, $windowStart);
-            $activityCounts[$row['activity_status']]++;
+        foreach ($businessRows as $entry) {
+            $activityCounts[$entry['row']['activity_status']]++;
         }
 
-        $usersTotal = User::count();
-        $usersActive = User::where('is_active', true)->count();
+        $withGrossSales = $businessRows->filter(fn (array $e) => $e['gross_sales_30d'] > 0)->count();
+        $totalBusinesses = $businessRows->count();
 
-        $revenueByCurrency = Sale::query()
-            ->join('businesses', 'businesses.id', '=', 'sales.business_id')
-            ->where('sales.sale_date', '>=', $windowStart)
-            ->groupBy('businesses.currency')
-            ->selectRaw('businesses.currency as currency')
-            ->selectRaw('COALESCE(SUM(sales.total_amount), 0) as revenue_30d_gross')
-            ->selectRaw('COUNT(DISTINCT sales.business_id) as business_count')
-            ->get()
-            ->map(function ($row) use ($windowStart) {
-                $refunds = (float) DB::table('sale_items')
-                    ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-                    ->join('businesses', 'businesses.id', '=', 'sales.business_id')
-                    ->where('businesses.currency', $row->currency)
-                    ->where('sales.sale_date', '>=', $windowStart)
-                    ->sum('sale_items.refunded_amount');
-
-                return [
-                    'currency' => $row->currency,
-                    'revenue_30d' => number_format(max(0, (float) $row->revenue_30d_gross - $refunds), 2, '.', ''),
-                    'business_count' => (int) $row->business_count,
-                ];
-            })
-            ->values()
-            ->all();
-
-        $topBusinesses = Business::query()
-            ->with('owner:id,name,email')
-            ->get()
-            ->map(fn (Business $b) => $this->businessService->transformBusiness($b, $windowStart))
-            ->sortByDesc(fn (array $row) => (float) $row['revenue_30d'])
+        $topBusinesses = $businessRows
+            ->sortByDesc('gross_sales_30d')
             ->take(10)
+            ->map(fn (array $e) => $e['row'])
             ->values()
             ->all();
+
+        $grossIncomeDistribution = $this->businessService->grossIncomeDistribution($windowStart);
 
         return [
             'businesses' => [
-                'total' => $businesses->count(),
+                'total' => $totalBusinesses,
                 'active' => $activityCounts['active'],
                 'dormant' => $activityCounts['dormant'],
                 'never_used' => $activityCounts['never_used'],
                 'suspended' => $activityCounts['suspended'],
+                'with_gross_sales_30d' => $withGrossSales,
             ],
             'users' => [
-                'total' => $usersTotal,
-                'active' => $usersActive,
-                'deactivated' => $usersTotal - $usersActive,
+                'total' => User::count(),
+                'active' => User::where('is_active', true)->count(),
+                'deactivated' => User::where('is_active', false)->count(),
             ],
             'system' => [
                 'api_status' => 'healthy',
@@ -89,7 +63,12 @@ class PlatformOverviewService
                 'queue_pending' => $this->queuePendingCount(),
                 'version' => config('app.version', '1.0.0'),
             ],
-            'revenue_by_currency' => $revenueByCurrency,
+            'pricing_insights' => [
+                'activity_window_days' => $this->businessService->activityWindowDays(),
+                'businesses_with_gross_sales_30d' => $withGrossSales,
+                'businesses_without_gross_sales_30d' => $totalBusinesses - $withGrossSales,
+                'gross_income_distribution' => $grossIncomeDistribution,
+            ],
             'top_businesses_30d' => $topBusinesses,
             'recent_events' => $this->recentEvents(),
         ];
@@ -101,20 +80,20 @@ class PlatformOverviewService
         $trend = [];
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
-            $dayStart = Carbon::parse($date)->startOfDay();
-            $dayEnd = Carbon::parse($date)->endOfDay();
 
-            $signups = Business::whereBetween('created_at', [$dayStart, $dayEnd])->count();
+            $signups = \App\Models\Business::whereDate('created_at', $date)->count();
             $transactions = Sale::whereDate('sale_date', $date)->count();
             $activeBusinesses = Sale::whereDate('sale_date', $date)
                 ->distinct('business_id')
                 ->count('business_id');
+            $grossSales = (float) Sale::whereDate('sale_date', $date)->sum('total_amount');
 
             $trend[] = [
                 'date' => $date,
                 'signups' => $signups,
                 'transactions' => $transactions,
                 'active_businesses' => $activeBusinesses,
+                'gross_sales' => number_format($grossSales, 2, '.', ''),
             ];
         }
 
@@ -144,7 +123,7 @@ class PlatformOverviewService
         return PlatformAuditLog::query()
             ->with('actor:id,name')
             ->latest()
-            ->limit(10)
+            ->limit(8)
             ->get()
             ->map(fn (PlatformAuditLog $log) => [
                 'id' => $log->id,

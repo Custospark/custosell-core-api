@@ -18,8 +18,13 @@ class PlatformAdminService
             return;
         }
 
-        if (! $user->hasRole('platform-admin')) {
-            $user->assignRole('platform-admin');
+        if ($this->isPlatformAdmin($user)) {
+            return;
+        }
+
+        $user->assignRole('platform-admin');
+        if ($user->relationLoaded('roles')) {
+            $user->load('roles');
         }
     }
 
@@ -39,19 +44,37 @@ class PlatformAdminService
 
     public function isPlatformAdmin(User $user): bool
     {
+        if ($user->relationLoaded('roles')) {
+            return $user->roles->isNotEmpty();
+        }
+
         return $user->roles()->where('guard_name', 'web')->exists();
+    }
+
+    /** @return array{is_platform_admin: bool, platform_roles: list<string>} */
+    public function platformMetaFor(User $user): array
+    {
+        if ($user->relationLoaded('roles')) {
+            $roles = $user->roles->pluck('name')->values()->all();
+
+            return [
+                'is_platform_admin' => $roles !== [],
+                'platform_roles' => $roles,
+            ];
+        }
+
+        $roles = $user->getRoleNames()->values()->all();
+
+        return [
+            'is_platform_admin' => $roles !== [],
+            'platform_roles' => $roles,
+        ];
     }
 
     /** @return list<string> */
     public function platformRolesFor(User $user): array
     {
-        return $user->getRoleNames()->values()->all();
-    }
-
-    /** @return list<string> */
-    public function platformPermissionsFor(User $user): array
-    {
-        return $user->getAllPermissions()->pluck('name')->values()->all();
+        return $this->platformMetaFor($user)['platform_roles'];
     }
 
     public function userHasPlatformPermission(User $user, string $permission): bool

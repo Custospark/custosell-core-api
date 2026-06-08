@@ -12,6 +12,7 @@ class UserResource extends JsonResource
     {
         /** @var PlatformAdminService $platformAdmin */
         $platformAdmin = app(PlatformAdminService::class);
+        $platformMeta = $platformAdmin->platformMetaFor($this->resource);
 
         return [
             'id' => $this->id,
@@ -21,13 +22,12 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
-            'is_platform_admin' => $platformAdmin->isPlatformAdmin($this->resource),
-            'platform_roles' => $platformAdmin->platformRolesFor($this->resource),
-            'platform_permissions' => $platformAdmin->platformPermissionsFor($this->resource),
+            'is_platform_admin' => $platformMeta['is_platform_admin'],
+            'platform_roles' => $platformMeta['platform_roles'],
             'avatar' => $this->avatar
                 ? (str_starts_with($this->avatar, 'http') ? $this->avatar : url($this->avatar))
                 : null,
-            'business_name' => $this->whenLoaded('business', fn() => $this->business->name, null),
+            'business_name' => $this->whenLoaded('business', fn () => $this->business->name, null),
             'business' => new BusinessResource($this->whenLoaded('business')),
             'role' => $this->whenLoaded('role'),
             'shift_clock_in' => $this->activeShift?->clock_in?->toISOString(),
