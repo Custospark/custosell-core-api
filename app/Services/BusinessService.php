@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Repositories\Contracts\BusinessRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\BusinessServiceInterface;
+use App\Services\Platform\PlatformAdminService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ class BusinessService implements BusinessServiceInterface
     public function __construct(
         protected BusinessRepositoryInterface $businessRepository,
         protected UserRepositoryInterface $userRepository,
+        protected PlatformAdminService $platformAdminService,
     ) {}
 
     public function getById(int $id): ?Business
@@ -45,6 +47,8 @@ class BusinessService implements BusinessServiceInterface
 
             $user->business_id = $business->id;
             $user->save();
+
+            $this->platformAdminService->assignIfEligible($user);
 
             return $business;
         });

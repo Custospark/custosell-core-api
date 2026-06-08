@@ -14,7 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'permission' => \App\Http\Middleware\EnsurePermission::class,
+            'platform' => \App\Http\Middleware\EnsurePlatformAccess::class,
+            'business.active' => \App\Http\Middleware\EnsureBusinessActive::class,
         ]);
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnsureBusinessActive::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

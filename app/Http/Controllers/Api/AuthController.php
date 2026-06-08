@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Password;
 use App\Models\Shift;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\Platform\PlatformAdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,12 +20,14 @@ class AuthController extends Controller
 {
     public function __construct(
         protected UserServiceInterface $userService,
+        protected PlatformAdminService $platformAdminService,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = $this->userService->register($request->validated());
-        $user->load('business');
+        $this->platformAdminService->assignIfEligible($user);
+        $user->load(['business', 'roles']);
 
         $activeShift = Shift::create([
             'business_id' => $user->business_id,
@@ -50,7 +53,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        $user->load('business');
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Your account has been deactivated.'], 403);
+        }
+
+        $user->forceFill(['last_login_at' => now()])->save();
+        $this->platformAdminService->assignIfEligible($user);
+        $user->load(['business', 'roles']);
 
         // Find active shift or create a new one
         $activeShift = Shift::where('business_id', $user->business_id)
@@ -111,7 +120,7 @@ class AuthController extends Controller
 
     public function me(Request $request): UserResource
     {
-        $user = $request->user()->load(['role', 'business']);
+        $user = $request->user()->load(['role', 'business', 'roles']);
 
         $activeShift = Shift::where('business_id', $user->business_id)
             ->where('user_id', $user->id)
