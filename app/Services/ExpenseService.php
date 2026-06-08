@@ -58,6 +58,11 @@ class ExpenseService implements ExpenseServiceInterface
         return $this->expenseRepository->getByCategory($businessId, $categoryId);
     }
 
+    public function getByShift(int $businessId, int $shiftId): Collection
+    {
+        return $this->expenseRepository->getByShift($businessId, $shiftId);
+    }
+
     public function getSummary(int $businessId, array $filters = []): array
     {
         return $this->expenseRepository->getSummary($businessId, $filters);

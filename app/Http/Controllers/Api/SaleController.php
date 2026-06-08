@@ -124,6 +124,6 @@ class SaleController extends Controller
     public function byShift(int $shiftId, Request $request): SaleCollection
     {
         $businessId = $request->user()->business_id;
-        return new SaleCollection($this->saleService->getByShift($shiftId));
+        return new SaleCollection($this->saleService->getByShift($businessId, $shiftId));
     }
 }

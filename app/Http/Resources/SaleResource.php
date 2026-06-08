@@ -9,6 +9,9 @@ class SaleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $refunds = (float) $this->whenLoaded('saleItems', fn() => $this->saleItems->sum('refunded_amount'), 0);
+        $gross = (float) $this->total_amount;
+
         return [
             'id' => $this->id,
             'business_id' => $this->business_id,
@@ -24,6 +27,8 @@ class SaleResource extends JsonResource
             'tax_total' => $this->tax_total,
             'discount_amount' => $this->discount_amount,
             'total_amount' => $this->total_amount,
+            'refunds' => $refunds,
+            'net_amount' => $gross - $refunds,
             'amount_tendered' => $this->amount_tendered,
             'change_given' => $this->change_given,
             'payment_method' => $this->payment_method,

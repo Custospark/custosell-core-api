@@ -21,7 +21,7 @@ interface SaleServiceInterface
 
     public function getByDateRange(int $businessId, string $start, string $end): Collection;
 
-    public function getByShift(int $shiftId): Collection;
+    public function getByShift(int $businessId, int $shiftId): Collection;
 
     public function refund(int $id, array $data): Sale;
 

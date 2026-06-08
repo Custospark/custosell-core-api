@@ -152,6 +152,60 @@ class ExpenseTest extends TestCase
             ->assertJsonPath('amount', '150000.00');
     }
 
+    public function test_create_shift_expense_and_filter_by_shift(): void
+    {
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->staff->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->postJson('/api/v1/expenses', [
+                'shift_id' => $shift->id,
+                'amount' => 25000,
+                'description' => 'Delivery fuel',
+                'expense_date' => now()->toDateTimeString(),
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('shift_id', $shift->id)
+            ->assertJsonPath('amount', '25000.00');
+
+        $list = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->getJson("/api/v1/expenses/by-shift/{$shift->id}");
+
+        $list->assertStatus(200);
+        $this->assertEquals(['Delivery fuel'], collect($list->json('data'))->pluck('description')->all());
+    }
+
+    public function test_create_expense_rejects_other_business_shift(): void
+    {
+        $otherBusiness = Business::factory()->create([
+            'owner_id' => $this->admin->id,
+            'currency' => 'UGX',
+            'status' => 'active',
+        ]);
+        $otherShift = Shift::create([
+            'business_id' => $otherBusiness->id,
+            'user_id' => $this->admin->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->postJson('/api/v1/expenses', [
+                'shift_id' => $otherShift->id,
+                'amount' => 25000,
+                'description' => 'Invalid shift',
+                'expense_date' => now()->toDateTimeString(),
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['shift_id']);
+    }
+
     public function test_negative_expense_amount_returns_422(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")

@@ -3,6 +3,13 @@
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::get('health', function () {
+        return response()->json([
+            'status' => 'ok',
+            'version' => config('app.version'),
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
     require __DIR__ . '/api/v1/plans.php';
     require __DIR__ . '/api/v1/users.php';
     require __DIR__ . '/api/v1/businesses.php';

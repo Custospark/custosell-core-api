@@ -17,6 +17,9 @@ class ExpenseRepository implements ExpenseRepositoryInterface
         if (!empty($filters['category_id'])) {
             $query->where('expense_category_id', $filters['category_id']);
         }
+        if (!empty($filters['shift_id'])) {
+            $query->where('shift_id', $filters['shift_id']);
+        }
         if (!empty($filters['date_from'])) {
             $query->where('expense_date', '>=', $filters['date_from']);
         }
@@ -67,6 +70,15 @@ class ExpenseRepository implements ExpenseRepositoryInterface
             ->get();
     }
 
+    public function getByShift(int $businessId, int $shiftId): Collection
+    {
+        return Expense::where('business_id', $businessId)
+            ->where('shift_id', $shiftId)
+            ->with(['expenseCategory', 'recordedBy'])
+            ->orderBy('expense_date', 'desc')
+            ->get();
+    }
+
     public function getSummary(int $businessId, array $filters = []): array
     {
         $query = Expense::where('business_id', $businessId);
@@ -79,6 +91,9 @@ class ExpenseRepository implements ExpenseRepositoryInterface
         }
         if (!empty($filters['category_id'])) {
             $query->where('expense_category_id', $filters['category_id']);
+        }
+        if (!empty($filters['shift_id'])) {
+            $query->where('shift_id', $filters['shift_id']);
         }
 
         $totalAmount = (float) $query->sum('amount');

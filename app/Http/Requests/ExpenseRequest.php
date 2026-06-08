@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ExpenseRequest extends FormRequest
 {
@@ -15,6 +16,11 @@ class ExpenseRequest extends FormRequest
     {
         return [
             'expense_category_id' => ['nullable', 'integer', 'exists:expense_categories,id'],
+            'shift_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('shifts', 'id')->where(fn($query) => $query->where('business_id', $this->user()?->business_id)),
+            ],
             'amount' => ['required', 'numeric', 'min:0'],
             'description' => ['required', 'string'],
             'reference' => ['nullable', 'string', 'max:255'],

@@ -133,9 +133,9 @@ class SaleService implements SaleServiceInterface
         return $this->saleRepository->getByDateRange($businessId, $start, $end);
     }
 
-    public function getByShift(int $shiftId): Collection
+    public function getByShift(int $businessId, int $shiftId): Collection
     {
-        return $this->saleRepository->getByShift($shiftId);
+        return $this->saleRepository->getByShift($businessId, $shiftId);
     }
 
     public function refund(int $id, array $data): Sale

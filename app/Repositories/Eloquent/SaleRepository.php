@@ -53,9 +53,10 @@ class SaleRepository implements SaleRepositoryInterface
             ->get();
     }
 
-    public function getByShift(int $shiftId): Collection
+    public function getByShift(int $businessId, int $shiftId): Collection
     {
-        return Sale::where('shift_id', $shiftId)
+        return Sale::where('business_id', $businessId)
+            ->where('shift_id', $shiftId)
             ->with(['user', 'customer', 'saleItems', 'business'])
             ->orderBy('sale_date', 'desc')
             ->get();

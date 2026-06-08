@@ -21,7 +21,7 @@ class ExpenseController extends Controller
     public function index(Request $request): ExpenseCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['category_id', 'date_from', 'date_to']);
+        $filters = $request->only(['category_id', 'date_from', 'date_to', 'shift_id']);
         return new ExpenseCollection(
             $this->expenseService->getAll($businessId, $filters)
         );
@@ -34,6 +34,13 @@ class ExpenseController extends Controller
             abort(404, 'Expense not found');
         }
         return new ExpenseResource($expense);
+    }
+
+    public function byShift(Request $request, int $shiftId): ExpenseCollection
+    {
+        return new ExpenseCollection(
+            $this->expenseService->getByShift($request->user()->business_id, $shiftId)
+        );
     }
 
     public function store(ExpenseRequest $request): JsonResponse
@@ -71,7 +78,7 @@ class ExpenseController extends Controller
     public function summary(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['date_from', 'date_to', 'category_id']);
+        $filters = $request->only(['date_from', 'date_to', 'category_id', 'shift_id']);
         $summary = $this->expenseService->getSummary($businessId, $filters);
         return response()->json($summary);
     }
@@ -79,7 +86,7 @@ class ExpenseController extends Controller
     public function export(Request $request)
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['category_id', 'date_from', 'date_to']);
+        $filters = $request->only(['category_id', 'date_from', 'date_to', 'shift_id']);
         $expenses = $this->expenseService->getAll($businessId, $filters);
         $format = $request->query('format', 'csv');
 

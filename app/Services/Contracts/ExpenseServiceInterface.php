@@ -21,5 +21,7 @@ interface ExpenseServiceInterface
 
     public function getByCategory(int $businessId, int $categoryId): \Illuminate\Database\Eloquent\Collection;
 
+    public function getByShift(int $businessId, int $shiftId): \Illuminate\Database\Eloquent\Collection;
+
     public function getSummary(int $businessId, array $filters = []): array;
 }
