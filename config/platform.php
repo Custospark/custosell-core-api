@@ -6,7 +6,11 @@ return [
         explode(',', (string) env('PLATFORM_ADMIN_EMAILS', '')),
     ))),
 
+    // Businesses with sale or login within this window are "active".
     'activity_window_days' => (int) env('PLATFORM_ACTIVITY_WINDOW_DAYS', 30),
+
+    // After active window but within this window → "dormant". Beyond → "churned".
+    'activity_dormant_days' => (int) env('PLATFORM_ACTIVITY_DORMANT_DAYS', 90),
 
     'business_statuses' => ['active', 'warning', 'restricted', 'suspended', 'notified'],
 

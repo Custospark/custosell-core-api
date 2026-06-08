@@ -23,12 +23,16 @@ class PlatformOverviewService
         $activityCounts = [
             'active' => 0,
             'dormant' => 0,
+            'churned' => 0,
             'never_used' => 0,
             'suspended' => 0,
         ];
 
         foreach ($businessRows as $entry) {
-            $activityCounts[$entry['row']['activity_status']]++;
+            $status = $entry['row']['activity_status'];
+            if (isset($activityCounts[$status])) {
+                $activityCounts[$status]++;
+            }
         }
 
         $withGrossSales = $businessRows->filter(fn (array $e) => $e['gross_sales_30d'] > 0)->count();
@@ -48,6 +52,7 @@ class PlatformOverviewService
                 'total' => $totalBusinesses,
                 'active' => $activityCounts['active'],
                 'dormant' => $activityCounts['dormant'],
+                'churned' => $activityCounts['churned'],
                 'never_used' => $activityCounts['never_used'],
                 'suspended' => $activityCounts['suspended'],
                 'with_gross_sales_30d' => $withGrossSales,

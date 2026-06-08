@@ -22,6 +22,11 @@ class PlatformBusinessService
         return (int) config('platform.activity_window_days', 30);
     }
 
+    public function activityDormantDays(): int
+    {
+        return max($this->activityWindowDays(), (int) config('platform.activity_dormant_days', 90));
+    }
+
     /** @return list<string> */
     public function allowedStatuses(): array
     {
@@ -47,34 +52,16 @@ class PlatformBusinessService
         $sevenDaysAgo = now()->subDays(6)->startOfDay();
 
         $query = Business::query()
-            ->with(['owner:id,name,email', 'subscription.plan:id,name'])
-            ->withCount('users as staff_count')
+            ->with(['owner:id,name,email,phone', 'subscription.plan:id,name'])
             ->select('businesses.*')
-            ->selectSub(function ($sub) use ($today) {
-                $sub->from('sales')
-                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                    ->whereColumn('sales.business_id', 'businesses.id')
-                    ->whereDate('sale_date', $today);
-            }, 'gross_sales_today')
+            ->selectSub($this->staffCountSubquery(), 'staff_count')
+            ->selectSub($this->grossSalesSubquery($today, true), 'gross_sales_today')
             ->selectSub($this->grossSalesSubquery($sevenDaysAgo), 'gross_sales_7d')
             ->selectSub($this->grossSalesSubquery($windowStart), 'gross_sales_30d')
             ->selectSub($this->grossSalesSubquery(), 'gross_sales_all_time')
-            ->selectSub(function ($sub) use ($windowStart) {
-                $sub->from('sales')
-                    ->selectRaw('COUNT(*)')
-                    ->whereColumn('sales.business_id', 'businesses.id')
-                    ->where('sale_date', '>=', $windowStart);
-            }, 'transactions_30d')
-            ->selectSub(function ($sub) {
-                $sub->from('sales')
-                    ->selectRaw('MAX(sale_date)')
-                    ->whereColumn('sales.business_id', 'businesses.id');
-            }, 'last_sale_at')
-            ->selectSub(function ($sub) {
-                $sub->from('users')
-                    ->selectRaw('MAX(last_login_at)')
-                    ->whereColumn('users.business_id', 'businesses.id');
-            }, 'last_user_login_at');
+            ->selectSub($this->attributedSalesCountSubquery($windowStart), 'transactions_30d')
+            ->selectSub($this->attributedLastSaleSubquery(), 'last_sale_at')
+            ->selectSub($this->linkedUsersLastLoginSubquery(), 'last_user_login_at');
 
         if (! empty($filters['search'])) {
             $search = '%'.$filters['search'].'%';
@@ -105,6 +92,7 @@ class PlatformBusinessService
         }
 
         $paginator = $query->paginate($perPage);
+        $this->hydrateOwners($paginator->getCollection());
         $paginator->getCollection()->transform(fn (Business $business) => $this->transformBusiness($business, $windowStart));
 
         return $paginator;
@@ -127,8 +115,9 @@ class PlatformBusinessService
             ->pluck('gross_sales_30d', 'business_id');
 
         return Business::query()
-            ->with(['owner:id,name,email', 'subscription.plan:id,name'])
-            ->withCount('users as staff_count')
+            ->with(['owner:id,name,email,phone', 'subscription.plan:id,name'])
+            ->select('businesses.*')
+            ->selectSub($this->staffCountSubquery(), 'staff_count')
             ->get()
             ->map(function (Business $business) use ($grossByBusiness, $windowStart) {
                 $business->gross_sales_30d = (float) ($grossByBusiness[$business->id] ?? 0);
@@ -190,24 +179,11 @@ class PlatformBusinessService
     {
         $windowStart ??= now()->subDays($this->activityWindowDays());
 
-        $lastSaleAt = $business->last_sale_at ? Carbon::parse($business->last_sale_at) : null;
-        $lastLoginAt = $business->last_user_login_at ? Carbon::parse($business->last_user_login_at) : null;
-        $lastActivityAt = collect([$lastSaleAt, $lastLoginAt])->filter()->max();
+        $activity = $this->resolveActivityProfile($business, $windowStart);
+
+        $owner = $this->resolveOwner($business);
 
         $gross30d = (float) ($business->getAttributes()['gross_sales_30d'] ?? $business->gross_sales_30d ?? 0);
-
-        $hasSalesEver = $lastSaleAt !== null || Sale::where('business_id', $business->id)->exists();
-        $hasRecentSale = $gross30d > 0 || ($lastSaleAt && $lastSaleAt->gte($windowStart));
-        $hasRecentLogin = $lastLoginAt && $lastLoginAt->gte($windowStart);
-
-        $activityStatus = 'dormant';
-        if (in_array($business->status, $this->blockedStatuses(), true)) {
-            $activityStatus = 'suspended';
-        } elseif (! $hasSalesEver && ! $lastLoginAt) {
-            $activityStatus = 'never_used';
-        } elseif ($hasRecentSale || $hasRecentLogin) {
-            $activityStatus = 'active';
-        }
 
         return [
             'id' => $business->id,
@@ -217,20 +193,77 @@ class PlatformBusinessService
             'currency' => $business->currency,
             'status' => $business->status,
             'status_changed_at' => $business->status_changed_at?->toIso8601String(),
-            'activity_status' => $activityStatus,
-            'owner_name' => $business->owner?->name,
-            'owner_email' => $business->owner?->email,
+            'activity_status' => $activity['activity_status'],
+            'last_sale_at' => $activity['last_sale_at'],
+            'last_login_at' => $activity['last_login_at'],
+            'last_activity_at' => $activity['last_activity_at'],
+            'days_since_activity' => $activity['days_since_activity'],
+            'activity_active_days' => $activity['activity_active_days'],
+            'activity_dormant_days' => $activity['activity_dormant_days'],
+            'owner_name' => $owner?->name,
+            'owner_email' => $owner?->email ?? $business->email,
+            'owner_phone' => $owner?->phone ?? $business->phone,
             'plan_name' => $business->subscription?->plan?->name,
             'subscription_status' => $business->subscription?->status,
             'trial_ends_at' => $business->trial_ends_at?->toIso8601String(),
-            'staff_count' => (int) ($business->staff_count ?? 0),
+            'staff_count' => $this->resolveStaffCount($business),
             'gross_sales_today' => $this->formatGross((float) ($business->getAttributes()['gross_sales_today'] ?? 0)),
             'gross_sales_7d' => $this->formatGross((float) ($business->getAttributes()['gross_sales_7d'] ?? 0)),
             'gross_sales_30d' => $this->formatGross($gross30d),
             'gross_sales_all_time' => $this->formatGross((float) ($business->getAttributes()['gross_sales_all_time'] ?? 0)),
             'transactions_30d' => (int) ($business->transactions_30d ?? 0),
-            'last_activity_at' => $lastActivityAt?->toIso8601String(),
             'created_at' => $business->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Activity is based on recency of the latest sale OR staff login — not lifetime sale volume.
+     *
+     * @return array{
+     *     activity_status: string,
+     *     last_sale_at: string|null,
+     *     last_login_at: string|null,
+     *     last_activity_at: string|null,
+     *     days_since_activity: int|null,
+     *     activity_active_days: int,
+     *     activity_dormant_days: int,
+     * }
+     */
+    private function resolveActivityProfile(Business $business, ?Carbon $windowStart = null): array
+    {
+        $activeDays = $this->activityWindowDays();
+        $dormantDays = $this->activityDormantDays();
+        $windowStart ??= now()->subDays($activeDays);
+
+        $lastSaleAt = $business->last_sale_at ? Carbon::parse($business->last_sale_at) : null;
+        $lastLoginAt = $business->last_user_login_at ? Carbon::parse($business->last_user_login_at) : null;
+        $lastActivityAt = collect([$lastSaleAt, $lastLoginAt])->filter()->max();
+
+        $daysSinceActivity = $lastActivityAt
+            ? (int) $lastActivityAt->diffInDays(now())
+            : null;
+
+        $activityStatus = 'never_used';
+        if (in_array($business->status, $this->blockedStatuses(), true)) {
+            $activityStatus = 'suspended';
+        } elseif ($lastActivityAt === null) {
+            $activityStatus = 'never_used';
+        } elseif ($daysSinceActivity <= $activeDays) {
+            $activityStatus = 'active';
+        } elseif ($daysSinceActivity <= $dormantDays) {
+            $activityStatus = 'dormant';
+        } else {
+            $activityStatus = 'churned';
+        }
+
+        return [
+            'activity_status' => $activityStatus,
+            'last_sale_at' => $lastSaleAt?->toIso8601String(),
+            'last_login_at' => $lastLoginAt?->toIso8601String(),
+            'last_activity_at' => $lastActivityAt?->toIso8601String(),
+            'days_since_activity' => $daysSinceActivity,
+            'activity_active_days' => $activeDays,
+            'activity_dormant_days' => $dormantDays,
         ];
     }
 
@@ -472,17 +505,228 @@ class PlatformBusinessService
         };
     }
 
-    private function grossSalesSubquery(?Carbon $since = null): \Closure
+    private function staffCountSubquery(): \Closure
     {
-        return function ($sub) use ($since) {
-            $sub->from('sales')
-                ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                ->whereColumn('sales.business_id', 'businesses.id');
+        return function ($sub): void {
+            $sub->from('users')
+                ->selectRaw('COUNT(DISTINCT users.id)')
+                ->whereNull('users.deleted_at')
+                ->where(function ($q): void {
+                    $q->whereColumn('users.business_id', 'businesses.id')
+                        ->orWhereColumn('users.id', 'businesses.owner_id')
+                        ->orWhere(function ($q2): void {
+                            $q2->whereNotNull('businesses.email')
+                                ->whereColumn('users.email', 'businesses.email');
+                        });
+                });
+        };
+    }
 
-            if ($since) {
-                $sub->where('sale_date', '>=', $since);
+    private function resolveStaffCount(Business $business): int
+    {
+        $fromQuery = $business->getAttributes()['staff_count'] ?? null;
+        if ($fromQuery !== null) {
+            return (int) $fromQuery;
+        }
+
+        return (int) User::query()
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($business): void {
+                $q->where('business_id', $business->id);
+                if ($business->owner_id) {
+                    $q->orWhere('id', $business->owner_id);
+                }
+                if ($business->email) {
+                    $q->orWhere('email', $business->email);
+                }
+            })
+            ->distinct()
+            ->count('id');
+    }
+
+    private function hydrateOwners(Collection $businesses): void
+    {
+        if ($businesses->isEmpty()) {
+            return;
+        }
+
+        $ownerIds = $businesses->pluck('owner_id')->filter()->unique()->values();
+        $emails = $businesses->pluck('email')->filter()->unique()->values();
+        $businessIds = $businesses->pluck('id');
+
+        $users = User::query()
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($ownerIds, $emails, $businessIds): void {
+                if ($ownerIds->isNotEmpty()) {
+                    $q->orWhereIn('id', $ownerIds);
+                }
+                if ($emails->isNotEmpty()) {
+                    $q->orWhereIn('email', $emails);
+                }
+                $q->orWhereIn('business_id', $businessIds);
+            })
+            ->get(['id', 'name', 'email', 'phone', 'business_id']);
+
+        foreach ($businesses as $business) {
+            $owner = $this->pickOwnerUser($business, $users);
+            if ($owner) {
+                $business->setRelation('owner', $owner);
+            }
+        }
+    }
+
+    private function resolveOwner(Business $business): ?User
+    {
+        if ($business->relationLoaded('owner') && $business->owner) {
+            return $business->owner;
+        }
+
+        return $this->pickOwnerUser($business, $this->candidateOwnerUsers($business));
+    }
+
+    /** @return Collection<int, User> */
+    private function candidateOwnerUsers(Business $business): Collection
+    {
+        return User::query()
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($business): void {
+                if ($business->owner_id) {
+                    $q->orWhere('id', $business->owner_id);
+                }
+                if ($business->email) {
+                    $q->orWhere('email', $business->email);
+                }
+                $q->orWhere('business_id', $business->id);
+            })
+            ->get(['id', 'name', 'email', 'phone', 'business_id']);
+    }
+
+    /** @param Collection<int, User> $users */
+    private function pickOwnerUser(Business $business, Collection $users): ?User
+    {
+        if ($business->owner_id) {
+            $byId = $users->firstWhere('id', $business->owner_id);
+            if ($byId) {
+                return $byId;
+            }
+        }
+
+        if ($business->email) {
+            $byEmail = $users->first(
+                fn (User $user): bool => strcasecmp((string) $user->email, (string) $business->email) === 0,
+            );
+            if ($byEmail) {
+                return $byEmail;
+            }
+        }
+
+        return $users->where('business_id', $business->id)->sortBy('id')->first();
+    }
+
+    private function linkedUsersSubquery(): \Closure
+    {
+        return function ($userQuery): void {
+            $userQuery->from('users')
+                ->select('users.id')
+                ->whereNull('users.deleted_at')
+                ->where(function ($q): void {
+                    $q->whereColumn('users.business_id', 'businesses.id')
+                        ->orWhereColumn('users.id', 'businesses.owner_id')
+                        ->orWhere(function ($q2): void {
+                            $q2->whereNotNull('businesses.email')
+                                ->whereColumn('users.email', 'businesses.email');
+                        });
+                });
+        };
+    }
+
+    private function applyAttributedSalesConstraint($query): void
+    {
+        $query->whereNull('sales.deleted_at')
+            ->where(function ($q): void {
+                $q->whereColumn('sales.business_id', 'businesses.id')
+                    ->orWhereIn('sales.user_id', $this->linkedUsersSubquery());
+            });
+    }
+
+    private function grossSalesSubquery(Carbon|string|null $since = null, bool $todayOnly = false): \Closure
+    {
+        return function ($sub) use ($since, $todayOnly): void {
+            $sub->from('sales')
+                ->selectRaw('COALESCE(SUM(sales.total_amount), 0)');
+            $this->applyAttributedSalesConstraint($sub);
+
+            if ($todayOnly && is_string($since)) {
+                $sub->whereDate('sales.sale_date', $since);
+            } elseif ($since instanceof Carbon) {
+                $sub->where('sales.sale_date', '>=', $since);
             }
         };
+    }
+
+    private function attributedSalesCountSubquery(Carbon $since): \Closure
+    {
+        return function ($sub) use ($since): void {
+            $sub->from('sales')
+                ->selectRaw('COUNT(*)');
+            $this->applyAttributedSalesConstraint($sub);
+            $sub->where('sales.sale_date', '>=', $since);
+        };
+    }
+
+    private function attributedLastSaleSubquery(): \Closure
+    {
+        return function ($sub): void {
+            $sub->from('sales')
+                ->selectRaw('MAX(sales.sale_date)');
+            $this->applyAttributedSalesConstraint($sub);
+        };
+    }
+
+    private function linkedUsersLastLoginSubquery(): \Closure
+    {
+        return function ($sub): void {
+            $sub->from('users')
+                ->selectRaw('MAX(users.last_login_at)')
+                ->whereNull('users.deleted_at')
+                ->where(function ($q): void {
+                    $q->whereColumn('users.business_id', 'businesses.id')
+                        ->orWhereColumn('users.id', 'businesses.owner_id')
+                        ->orWhere(function ($q2): void {
+                            $q2->whereNotNull('businesses.email')
+                                ->whereColumn('users.email', 'businesses.email');
+                        });
+                });
+        };
+    }
+
+    private function businessHasAttributedSales(Business $business): bool
+    {
+        return Sale::query()
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($business): void {
+                $q->where('business_id', $business->id)
+                    ->orWhereIn('user_id', $this->linkedUserIdsForBusiness($business));
+            })
+            ->exists();
+    }
+
+    /** @return list<int> */
+    private function linkedUserIdsForBusiness(Business $business): array
+    {
+        return User::query()
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($business): void {
+                $q->where('business_id', $business->id);
+                if ($business->owner_id) {
+                    $q->orWhere('id', $business->owner_id);
+                }
+                if ($business->email) {
+                    $q->orWhere('email', $business->email);
+                }
+            })
+            ->pluck('id')
+            ->all();
     }
 
     /** @return list<array<string, mixed>> */
