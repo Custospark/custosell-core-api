@@ -17,6 +17,7 @@ class RoleResource extends JsonResource
             'description' => $this->description,
             'permissions' => $this->permissions,
             'is_default' => $this->is_default,
+            'is_system' => $this->business_id === null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

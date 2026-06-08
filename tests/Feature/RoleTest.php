@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\{Business, Category, Customer, Plan, Product, Role, Sale, SaleItem, Shift, StockMovement, Subscription, ExpenseCategory, Expense, User};
-use Database\Seeders\PlanSeeder;
+use Database\Seeders\{PlanSeeder, SystemRoleSeeder};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,6 +22,7 @@ class RoleTest extends TestCase
         parent::setUp();
 
         $this->seed(PlanSeeder::class);
+        $this->seed(SystemRoleSeeder::class);
 
         $this->admin = User::factory()->create(['is_active' => true]);
         $this->adminToken = $this->admin->createToken('admin')->plainTextToken;
@@ -34,19 +35,7 @@ class RoleTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
-        $adminRole = Role::create([
-            'business_id' => $this->business->id,
-            'name' => 'Admin',
-            'slug' => 'admin',
-            'permissions' => [
-                'sales.create' => true, 'sales.view' => true, 'sales.refund' => true,
-                'inventory.view' => true, 'inventory.create' => true,
-                'customers.view' => true, 'customers.create' => true,
-                'expenses.view' => true, 'expenses.create' => true,
-                'users.view' => true, 'users.create' => true,
-                'reports.view' => true, 'settings.view' => true, 'settings.edit' => true,
-            ],
-        ]);
+        $adminRole = Role::query()->whereNull('business_id')->where('slug', 'admin')->firstOrFail();
         $this->admin->role_id = $adminRole->id;
         $this->admin->save();
 
@@ -54,19 +43,7 @@ class RoleTest extends TestCase
             'business_id' => $this->business->id,
             'is_active' => true,
         ]);
-        $staffRole = Role::create([
-            'business_id' => $this->business->id,
-            'name' => 'Staff',
-            'slug' => 'staff',
-            'permissions' => [
-                'sales.create' => true, 'sales.view' => true, 'sales.refund' => false,
-                'inventory.view' => true, 'inventory.create' => false,
-                'customers.view' => true, 'customers.create' => true,
-                'expenses.view' => false, 'expenses.create' => false,
-                'users.view' => false, 'users.create' => false,
-                'reports.view' => false, 'settings.view' => false, 'settings.edit' => false,
-            ],
-        ]);
+        $staffRole = Role::query()->whereNull('business_id')->where('slug', 'staff')->firstOrFail();
         $this->staff->role_id = $staffRole->id;
         $this->staff->save();
         $this->staffToken = $this->staff->createToken('staff')->plainTextToken;
@@ -83,7 +60,7 @@ class RoleTest extends TestCase
 
     public function test_get_single_role(): void
     {
-        $role = Role::where('business_id', $this->business->id)->first();
+        $role = Role::query()->whereNull('business_id')->where('slug', 'admin')->firstOrFail();
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->getJson("/api/v1/roles/{$role->id}");
@@ -125,12 +102,17 @@ class RoleTest extends TestCase
 
     public function test_update_role_permissions(): void
     {
-        $role = Role::where('business_id', $this->business->id)->where('slug', 'staff')->first();
+        $role = Role::create([
+            'business_id' => $this->business->id,
+            'name' => 'Custom Staff',
+            'slug' => 'custom-staff',
+            'permissions' => ['sales.create' => true, 'sales.view' => true],
+        ]);
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->putJson("/api/v1/roles/{$role->id}", [
-                'name' => 'Staff',
-                'slug' => 'staff',
+                'name' => 'Custom Staff',
+                'slug' => 'custom-staff',
                 'permissions' => [
                     'sales.create' => true,
                     'sales.view' => true,
@@ -148,13 +130,44 @@ class RoleTest extends TestCase
 
     public function test_delete_role(): void
     {
-        $role = Role::where('business_id', $this->business->id)->where('slug', 'staff')->first();
+        $role = Role::create([
+            'business_id' => $this->business->id,
+            'name' => 'Temporary',
+            'slug' => 'temporary',
+            'permissions' => ['sales.view' => true],
+        ]);
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->deleteJson("/api/v1/roles/{$role->id}");
 
         $response->assertStatus(204);
         $this->assertDatabaseMissing('roles', ['id' => $role->id]);
+    }
+
+    public function test_cannot_update_system_role(): void
+    {
+        $role = Role::query()->whereNull('business_id')->where('slug', 'staff')->firstOrFail();
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/roles/{$role->id}", [
+                'name' => 'Staff',
+                'slug' => 'staff',
+                'permissions' => ['sales.create' => true],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role']);
+    }
+
+    public function test_cannot_delete_system_role(): void
+    {
+        $role = Role::query()->whereNull('business_id')->where('slug', 'staff')->firstOrFail();
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->deleteJson("/api/v1/roles/{$role->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role']);
     }
 
     public function test_roles_scoped_per_business(): void
@@ -179,28 +192,40 @@ class RoleTest extends TestCase
         $names = collect($response->json('data'))->pluck('name')->toArray();
         $this->assertContains('Admin', $names);
         $this->assertContains('Staff', $names);
+        $this->assertContains('Manager', $names);
         $this->assertNotContains('Other Role', $names);
     }
 
-    public function test_seeded_admin_role_exists(): void
+    public function test_system_admin_role_exists(): void
     {
         $this->assertDatabaseHas('roles', [
-            'business_id' => $this->business->id,
+            'business_id' => null,
             'slug' => 'admin',
         ]);
     }
 
-    public function test_seeded_staff_role_exists(): void
+    public function test_system_staff_role_exists(): void
     {
         $this->assertDatabaseHas('roles', [
-            'business_id' => $this->business->id,
+            'business_id' => null,
             'slug' => 'staff',
+            'is_default' => true,
         ]);
+    }
+
+    public function test_list_includes_system_flag(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson('/api/v1/roles');
+
+        $response->assertStatus(200);
+        $staff = collect($response->json('data'))->firstWhere('slug', 'staff');
+        $this->assertTrue($staff['is_system']);
     }
 
     public function test_permissions_is_object_or_array(): void
     {
-        $role = Role::where('business_id', $this->business->id)->where('slug', 'admin')->first();
+        $role = Role::query()->whereNull('business_id')->where('slug', 'admin')->firstOrFail();
 
         $this->assertIsArray($role->permissions);
         $this->assertArrayHasKey('sales.create', $role->permissions);

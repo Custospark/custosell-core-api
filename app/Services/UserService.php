@@ -63,6 +63,10 @@ class UserService implements UserServiceInterface
             $data['modules'] = [];
         }
 
+        if (array_key_exists('role_id', $data) && $data['role_id'] !== null) {
+            $this->assertRoleAvailableForBusiness($businessId, (int) $data['role_id']);
+        }
+
         return $this->userRepository->create($data)->load('role');
     }
 
@@ -134,27 +138,17 @@ class UserService implements UserServiceInterface
             ]);
         }
 
-        $user->loadMissing('role');
-        if ($this->isSystemRole($user->role)) {
-            throw ValidationException::withMessages([
-                'role_id' => 'Admin and system account roles cannot be changed here.',
-            ]);
-        }
-
         $nextRole = Role::query()
-            ->where('business_id', $businessId)
             ->whereKey($nextRoleId)
+            ->where(function ($query) use ($businessId) {
+                $query->whereNull('business_id')
+                    ->orWhere('business_id', $businessId);
+            })
             ->first();
 
         if (!$nextRole) {
             throw ValidationException::withMessages([
                 'role_id' => 'The selected role is not available for this business.',
-            ]);
-        }
-
-        if ($this->isSystemRole($nextRole)) {
-            throw ValidationException::withMessages([
-                'role_id' => 'Admin and system roles cannot be assigned from the staff drawer.',
             ]);
         }
     }
@@ -216,22 +210,20 @@ class UserService implements UserServiceInterface
             ->exists();
     }
 
-    protected function isSystemRole(?Role $role): bool
+    protected function assertRoleAvailableForBusiness(int $businessId, int $roleId): void
     {
-        if (!$role) {
-            return false;
+        $available = Role::query()
+            ->whereKey($roleId)
+            ->where(function ($query) use ($businessId) {
+                $query->whereNull('business_id')
+                    ->orWhere('business_id', $businessId);
+            })
+            ->exists();
+
+        if (!$available) {
+            throw ValidationException::withMessages([
+                'role_id' => 'The selected role is not available for this business.',
+            ]);
         }
-
-        $identifier = strtolower(trim((string) ($role->slug ?: $role->name)));
-
-        return in_array($identifier, [
-            'admin',
-            'owner',
-            'business-owner',
-            'business_owner',
-            'system',
-            'super-admin',
-            'super_admin',
-        ], true);
     }
 }
