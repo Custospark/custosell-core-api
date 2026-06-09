@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::patch('/users/{id}/status', [PlatformUserController::class, 'updateStatus']);
         Route::delete('/users/{id}', [PlatformUserController::class, 'destroy']);
         Route::post('/users/bulk-delete', [PlatformUserController::class, 'bulkDelete']);
+        Route::post('/users/notify', [PlatformUserController::class, 'notify']);
     });
 
     Route::middleware(['platform:platform.roles.view'])->group(function () {
@@ -74,5 +75,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
 
     Route::middleware(['platform:platform.guide.feedback.manage'])->prefix('guide')->group(function () {
         Route::patch('/feedback/{guideFeedback}', [PlatformGuideFeedbackController::class, 'update']);
+        Route::delete('/feedback/{guideFeedback}', [PlatformGuideFeedbackController::class, 'destroy']);
+        Route::post('/feedback/bulk-delete', [PlatformGuideFeedbackController::class, 'bulkDestroy']);
     });
 });

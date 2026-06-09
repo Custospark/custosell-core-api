@@ -50,6 +50,35 @@ class GuideFeedbackController extends Controller
         ], 201);
     }
 
+    public function destroy(Request $request, GuideFeedback $guideFeedback): JsonResponse
+    {
+        if ((int) $guideFeedback->user_id !== (int) $request->user()->id) {
+            abort(403, 'You can only delete your own submissions.');
+        }
+
+        $guideFeedback->delete();
+
+        return response()->json(['message' => 'Submission deleted.']);
+    }
+
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $deleted = GuideFeedback::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('id', $data['ids'])
+            ->delete();
+
+        return response()->json([
+            'message' => "{$deleted} submission(s) deleted.",
+            'deleted' => $deleted,
+        ]);
+    }
+
     /** @return array<string, mixed> */
     private function serializeMine(GuideFeedback $r): array
     {

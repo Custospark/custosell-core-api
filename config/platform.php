@@ -25,6 +25,15 @@ return [
         'custom',
     ],
 
+    'user_notification_intentions' => [
+        'announcement',
+        'warning_notice',
+        'policy_update',
+        'reactivation_nudge',
+        'account_notice',
+        'custom',
+    ],
+
     'notification_channels' => ['email', 'in_app', 'both'],
 
     'default_notification_channel' => env('PLATFORM_DEFAULT_NOTIFICATION_CHANNEL', 'both'),

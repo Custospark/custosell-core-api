@@ -79,6 +79,19 @@ class NotificationService
             ->delete() > 0;
     }
 
+    /** @param  list<int>  $notificationIds */
+    public function bulkDeleteForUser(User $user, array $notificationIds): int
+    {
+        if ($notificationIds === []) {
+            return 0;
+        }
+
+        return Notification::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $notificationIds)
+            ->delete();
+    }
+
     public function deleteAllForUser(User $user): int
     {
         return Notification::query()

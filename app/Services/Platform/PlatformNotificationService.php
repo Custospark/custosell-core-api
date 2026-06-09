@@ -213,6 +213,96 @@ class PlatformNotificationService
         );
     }
 
+    public function notifyUserMessage(
+        User $user,
+        string $intention,
+        string $message,
+        ?string $subject = null,
+        string $channel = 'both',
+    ): void {
+        $title = $subject ?: $this->defaultUserSubjectForIntention($intention, $user->name);
+        $reasonLine = '<p>'.nl2br(e($message)).'</p>';
+        $loginUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/').'/login';
+
+        [$body, $ctaLabel, $ctaUrl, $tip] = match ($intention) {
+            'warning_notice' => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>This is an important notice about your Custosell account.</p>'
+                    .$reasonLine
+                    .'<p>Please review and take action if required.</p>',
+                'Sign in to Custosell',
+                $loginUrl,
+                'Addressing notices promptly helps keep your account in good standing.',
+            ],
+            'policy_update' => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>We have a policy update that applies to your Custosell account.</p>'
+                    .$reasonLine,
+                'Sign in to Custosell',
+                $loginUrl,
+                'Review policy changes to stay compliant.',
+            ],
+            'reactivation_nudge' => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>We noticed you have not signed in to Custosell recently.</p>'
+                    .$reasonLine
+                    .'<p>Sign back in to continue managing your business.</p>',
+                'Sign in to Custosell',
+                $loginUrl,
+                'Your data is safe and waiting for you.',
+            ],
+            'account_notice' => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>A notice regarding your Custosell account:</p>'
+                    .$reasonLine,
+                'Sign in to Custosell',
+                $loginUrl,
+                null,
+            ],
+            'announcement' => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>A message from the Custosell team:</p>'
+                    .$reasonLine,
+                'Sign in to Custosell',
+                $loginUrl,
+                null,
+            ],
+            default => [
+                '<p>Hello '.e($user->name).',</p>'
+                    .'<p>A message from the Custosell team:</p>'
+                    .$reasonLine,
+                'Sign in to Custosell',
+                $loginUrl,
+                null,
+            ],
+        };
+
+        $metadata = [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'intention' => $intention,
+            'message' => $message,
+        ];
+
+        if ($user->business_id) {
+            $metadata['business_id'] = $user->business_id;
+        }
+
+        $this->notificationService->sendToUser(
+            $user,
+            $title,
+            $body,
+            'platform_message',
+            $channel,
+            $user->business_id,
+            $intention,
+            $metadata,
+            $ctaUrl,
+            $ctaLabel,
+            $tip,
+        );
+    }
+
     /** @return Collection<int, User> */
     public function businessRecipientUsers(Business $business): Collection
     {
@@ -321,6 +411,18 @@ class PlatformNotificationService
             'reactivation_nudge' => "We'd love to see {$businessName} back on Custosell",
             'announcement' => "Announcement for {$businessName}",
             default => "Message from the Custosell team for {$businessName}",
+        };
+    }
+
+    private function defaultUserSubjectForIntention(string $intention, string $userName): string
+    {
+        return match ($intention) {
+            'warning_notice' => "Important notice for {$userName}",
+            'policy_update' => "Policy update for your Custosell account",
+            'reactivation_nudge' => "We'd love to see you back on Custosell",
+            'account_notice' => "Account notice for {$userName}",
+            'announcement' => 'Announcement from Custosell',
+            default => 'Message from the Custosell team',
         };
     }
 

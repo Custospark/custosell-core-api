@@ -72,6 +72,21 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Notification deleted.']);
     }
 
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $deleted = $this->notifications->bulkDeleteForUser($request->user(), $data['ids']);
+
+        return response()->json([
+            'message' => "{$deleted} notification(s) deleted.",
+            'deleted' => $deleted,
+        ]);
+    }
+
     public function destroyAll(Request $request): JsonResponse
     {
         $count = $this->notifications->deleteAllForUser($request->user());

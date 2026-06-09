@@ -157,4 +157,35 @@ class PlatformUserController extends Controller
             'errors' => $result['errors'],
         ]);
     }
+
+    public function notify(Request $request): JsonResponse
+    {
+        $intentions = implode(',', $this->userService->notificationIntentions());
+        $channels = implode(',', config('platform.notification_channels', ['email', 'in_app', 'both']));
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+            'intention' => ['required', 'in:'.$intentions],
+            'message' => ['required', 'string', 'min:3', 'max:5000'],
+            'subject' => ['nullable', 'string', 'max:200'],
+            'mark_as_notified' => ['sometimes', 'boolean'],
+            'channel' => ['sometimes', 'in:'.$channels],
+        ]);
+
+        $sent = $this->userService->notify(
+            $request->user(),
+            $validated['user_ids'],
+            $validated['intention'],
+            $validated['message'],
+            $validated['subject'] ?? null,
+            (bool) ($validated['mark_as_notified'] ?? false),
+            $validated['channel'] ?? config('platform.default_notification_channel', 'both'),
+        );
+
+        return response()->json([
+            'message' => "Notification sent to {$sent} user(s).",
+            'sent' => $sent,
+        ]);
+    }
 }

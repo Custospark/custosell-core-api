@@ -214,6 +214,56 @@ class PlatformUserService
         return $target->fresh(['business', 'role', 'roles']);
     }
 
+    /** @return list<string> */
+    public function notificationIntentions(): array
+    {
+        return config('platform.user_notification_intentions', [
+            'announcement',
+            'warning_notice',
+            'policy_update',
+            'reactivation_nudge',
+            'account_notice',
+            'custom',
+        ]);
+    }
+
+    public function notify(
+        User $actor,
+        array $userIds,
+        string $intention,
+        string $message,
+        ?string $subject = null,
+        bool $markAsNotified = false,
+        string $channel = 'both',
+    ): int {
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $sent = 0;
+
+        foreach ($users as $target) {
+            $this->notifications->notifyUserMessage($target, $intention, $message, $subject, $channel);
+            $this->audit->log($actor, 'user.notified', 'user', $target->id, null, [
+                'intention' => $intention,
+                'subject' => $subject,
+                'channel' => $channel,
+                'mark_as_notified' => $markAsNotified,
+            ]);
+
+            if ($markAsNotified) {
+                $this->audit->log($actor, 'user.marked_notified', 'user', $target->id, null, [
+                    'intention' => $intention,
+                ]);
+            }
+
+            $sent++;
+        }
+
+        return $sent;
+    }
+
     public function assignPlatformRole(User $actor, User $target, string $roleName): User
     {
         if (! $target->hasRole($roleName)) {

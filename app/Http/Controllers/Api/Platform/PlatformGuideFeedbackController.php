@@ -72,6 +72,28 @@ class PlatformGuideFeedbackController extends Controller
         ]);
     }
 
+    public function destroy(GuideFeedback $guideFeedback): JsonResponse
+    {
+        $guideFeedback->delete();
+
+        return response()->json(['message' => 'Feedback deleted.']);
+    }
+
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:guide_feedback,id'],
+        ]);
+
+        $deleted = GuideFeedback::query()->whereIn('id', $data['ids'])->delete();
+
+        return response()->json([
+            'message' => "{$deleted} submission(s) deleted.",
+            'deleted' => $deleted,
+        ]);
+    }
+
     /** @return array<string, mixed> */
     private function serializeAdminRow(GuideFeedback $r): array
     {

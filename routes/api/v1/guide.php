@@ -11,4 +11,6 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('guide')->group(f
 
     Route::get('/feedback/mine', [GuideFeedbackController::class, 'mine']);
     Route::post('/feedback', [GuideFeedbackController::class, 'store']);
+    Route::post('/feedback/bulk-delete', [GuideFeedbackController::class, 'bulkDestroy']);
+    Route::delete('/feedback/{guideFeedback}', [GuideFeedbackController::class, 'destroy']);
 });
