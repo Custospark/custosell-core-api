@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Platform\PlatformBusinessController;
 use App\Http\Controllers\Api\Platform\PlatformGuideFaqController;
 use App\Http\Controllers\Api\Platform\PlatformGuideFeedbackController;
 use App\Http\Controllers\Api\Platform\PlatformGuideTutorialController;
+use App\Http\Controllers\Api\Platform\PlatformNotificationDispatchController;
 use App\Http\Controllers\Api\Platform\PlatformOverviewController;
 use App\Http\Controllers\Api\Platform\PlatformRoleController;
 use App\Http\Controllers\Api\Platform\PlatformUserController;
@@ -13,6 +14,10 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
     Route::middleware(['platform:platform.overview.view'])->group(function () {
         Route::get('/overview', [PlatformOverviewController::class, 'summary']);
         Route::get('/metrics', [PlatformOverviewController::class, 'metrics']);
+        Route::get('/notification-dispatches', [PlatformNotificationDispatchController::class, 'index']);
+        Route::post('/notification-dispatches/bulk-delete', [PlatformNotificationDispatchController::class, 'bulkDestroy']);
+        Route::get('/notification-dispatches/{id}', [PlatformNotificationDispatchController::class, 'show']);
+        Route::delete('/notification-dispatches/{id}', [PlatformNotificationDispatchController::class, 'destroy']);
     });
 
     Route::middleware(['platform:platform.businesses.view'])->group(function () {

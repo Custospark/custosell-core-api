@@ -15,6 +15,7 @@ class PlatformBusinessService
     public function __construct(
         protected PlatformNotificationService $notifications,
         protected PlatformAuditService $audit,
+        protected PlatformNotificationDispatchService $dispatches,
     ) {}
 
     public function activityWindowDays(): int
@@ -389,6 +390,19 @@ class PlatformBusinessService
             $channel,
         );
 
+        $inAppRecipients = $this->notifications->businessRecipientUsers($business)->count();
+
+        $this->dispatches->recordStatusChange(
+            $actor,
+            'business',
+            $reason,
+            $channel,
+            $previous,
+            $status,
+            [$this->dispatches->recipientFromBusiness($business->loadMissing('owner'), $inAppRecipients)],
+            $status === 'warning' ? 'warning_notice' : null,
+        );
+
         return $business->fresh(['owner', 'subscription.plan']);
     }
 
@@ -492,6 +506,23 @@ class PlatformBusinessService
             }
 
             $sent++;
+        }
+
+        if ($businesses->isNotEmpty()) {
+            $this->dispatches->recordMessage(
+                $actor,
+                'business',
+                $intention,
+                $message,
+                $channel,
+                $businesses->map(function (Business $business) {
+                    $inAppRecipients = $this->notifications->businessRecipientUsers($business)->count();
+
+                    return $this->dispatches->recipientFromBusiness($business, $inAppRecipients);
+                })->all(),
+                $subject,
+                $markAsNotified,
+            );
         }
 
         return $sent;

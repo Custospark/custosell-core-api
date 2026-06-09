@@ -12,6 +12,7 @@ class PlatformUserService
         protected PlatformAdminService $adminService,
         protected PlatformNotificationService $notifications,
         protected PlatformAuditService $audit,
+        protected PlatformNotificationDispatchService $dispatches,
     ) {}
 
     public function paginateTenantUsers(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -199,6 +200,8 @@ class PlatformUserService
             }
         }
 
+        $wasActive = (bool) $target->is_active;
+
         $target->update(['is_active' => $isActive]);
 
         $this->audit->log(
@@ -210,6 +213,17 @@ class PlatformUserService
         );
 
         $this->notifications->notifyUserStatusChange($target, $isActive, $reason, $channel);
+
+        $this->dispatches->recordStatusChange(
+            $actor,
+            'user',
+            $reason ?? '',
+            $channel,
+            $wasActive ? 'active' : 'inactive',
+            $isActive ? 'active' : 'inactive',
+            [$this->dispatches->recipientFromUser($target->loadMissing('business'))],
+            $isActive ? 'account_notice' : 'warning_notice',
+        );
 
         return $target->fresh(['business', 'role', 'roles']);
     }
@@ -237,6 +251,7 @@ class PlatformUserService
         string $channel = 'both',
     ): int {
         $users = User::query()
+            ->with('business:id,name')
             ->whereIn('id', $userIds)
             ->whereNull('deleted_at')
             ->get();
@@ -259,6 +274,19 @@ class PlatformUserService
             }
 
             $sent++;
+        }
+
+        if ($users->isNotEmpty()) {
+            $this->dispatches->recordMessage(
+                $actor,
+                'user',
+                $intention,
+                $message,
+                $channel,
+                $users->map(fn (User $user) => $this->dispatches->recipientFromUser($user))->all(),
+                $subject,
+                $markAsNotified,
+            );
         }
 
         return $sent;
