@@ -252,4 +252,38 @@ class ProductTest extends TestCase
         $this->assertContains('Our Product', $names);
         $this->assertNotContains('Other Product', $names);
     }
+
+    public function test_sales_only_staff_can_list_active_products_for_pos(): void
+    {
+        $cashier = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['sales'],
+            'role_id' => $this->staff->role_id,
+        ]);
+        $cashierToken = $cashier->createToken('cashier')->plainTextToken;
+
+        Product::factory()->create([
+            'business_id' => $this->business->id,
+            'name' => 'POS Item',
+            'is_active' => true,
+        ]);
+        Product::factory()->create([
+            'business_id' => $this->business->id,
+            'name' => 'Inactive Item',
+            'is_active' => false,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->getJson('/api/v1/products')
+            ->assertStatus(403);
+
+        $response = $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->getJson('/api/v1/products/active');
+
+        $response->assertStatus(200);
+        $names = collect($response->json('data'))->pluck('name')->toArray();
+        $this->assertContains('POS Item', $names);
+        $this->assertNotContains('Inactive Item', $names);
+    }
 }

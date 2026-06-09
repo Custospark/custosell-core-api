@@ -53,6 +53,7 @@ class ExpenseTest extends TestCase
         $this->staff = User::factory()->create([
             'business_id' => $this->business->id,
             'is_active' => true,
+            'modules' => ['sales'],
         ]);
         $staffRole = Role::create([
             'business_id' => $this->business->id,
@@ -112,7 +113,8 @@ class ExpenseTest extends TestCase
                 'name' => 'Salaries',
             ]);
 
-        $response->assertStatus(500);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_list_expenses(): void
@@ -288,5 +290,54 @@ class ExpenseTest extends TestCase
         $descriptions = collect($response->json('data'))->pluck('description')->toArray();
         $this->assertContains('Our expense', $descriptions);
         $this->assertNotContains('Other business expense', $descriptions);
+    }
+
+    public function test_sales_only_staff_can_record_and_read_shift_expenses(): void
+    {
+        $cashier = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['sales'],
+            'role_id' => $this->staff->role_id,
+        ]);
+        $cashierToken = $cashier->createToken('cashier')->plainTextToken;
+
+        $category = ExpenseCategory::create([
+            'business_id' => $this->business->id,
+            'name' => 'Petty cash',
+        ]);
+
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $cashier->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->getJson('/api/v1/expenses/summary')
+            ->assertStatus(403);
+
+        $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->getJson('/api/v1/expense-categories')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.name', 'Petty cash');
+
+        $create = $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->postJson('/api/v1/expenses', [
+                'expense_category_id' => $category->id,
+                'description' => 'Lunch for team',
+                'amount' => 15000,
+                'shift_id' => $shift->id,
+                'expense_date' => now()->toDateTimeString(),
+            ]);
+
+        $create->assertStatus(201)
+            ->assertJsonPath('description', 'Lunch for team');
+
+        $this->withHeader('Authorization', "Bearer $cashierToken")
+            ->getJson("/api/v1/expenses/by-shift/{$shift->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.description', 'Lunch for team');
     }
 }
