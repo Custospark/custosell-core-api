@@ -88,16 +88,18 @@ class RoleTest extends TestCase
             ->assertJsonPath('name', 'Manager');
     }
 
-    public function test_create_role_invalid_permissions_returns_422(): void
+    public function test_create_role_without_permissions_succeeds(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/roles', [
-                'name' => 'Bad Role',
-                'slug' => 'bad-role',
+                'name' => 'Label Only Role',
+                'slug' => 'label-only-role',
+                'description' => 'Access is controlled by staff module checkboxes',
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['permissions']);
+        $response->assertStatus(201)
+            ->assertJsonPath('name', 'Label Only Role')
+            ->assertJsonPath('permissions', []);
     }
 
     public function test_update_role_permissions(): void

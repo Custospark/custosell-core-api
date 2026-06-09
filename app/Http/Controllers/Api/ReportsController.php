@@ -551,11 +551,13 @@ class ReportsController extends Controller
             return false;
         }
 
-        if ($user->hasPermission('reports.view')) {
+        $moduleAccess = app(\App\Services\ModuleAccessService::class);
+
+        if ($moduleAccess->canAccess($user, 'dashboard')) {
             return true;
         }
 
-        if ($user->hasPermission('shifts.close_report')) {
+        if ($moduleAccess->canAccess($user, 'sales')) {
             return (int) $shift->user_id === (int) $user->id;
         }
 

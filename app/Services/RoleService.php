@@ -27,6 +27,8 @@ class RoleService implements RoleServiceInterface
     public function create(int $businessId, array $data): Role
     {
         $data['business_id'] = $businessId;
+        $data['permissions'] = $data['permissions'] ?? [];
+
         return $this->roleRepository->create($data);
     }
 
@@ -38,6 +40,10 @@ class RoleService implements RoleServiceInterface
         }
 
         $this->assertEditableRole($role);
+
+        if (array_key_exists('permissions', $data) && $data['permissions'] === null) {
+            unset($data['permissions']);
+        }
 
         return $this->roleRepository->update($role, $data);
     }

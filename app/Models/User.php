@@ -108,21 +108,6 @@ class User extends Authenticatable
             return $this->hasPermissionTo($permission);
         }
 
-        if ($this->relationLoaded('business') ? $this->business?->owner_id === $this->id : false) {
-            return true;
-        }
-
-        if (! $this->relationLoaded('business') && $this->business_id) {
-            $this->load('business');
-            if ($this->business?->owner_id === $this->id) {
-                return true;
-            }
-        }
-
-        if (! $this->relationLoaded('role') && $this->role_id) {
-            $this->load('role');
-        }
-
-        return (bool) ($this->role?->permissions[$permission] ?? false);
+        return app(\App\Services\ModuleAccessService::class)->canPerform($this, $permission);
     }
 }

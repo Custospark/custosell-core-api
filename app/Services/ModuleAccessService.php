@@ -125,4 +125,53 @@ class ModuleAccessService
     {
         return self::BUSINESS_MODULES;
     }
+
+    /**
+     * Maps legacy permission keys to the business module that grants them.
+     * Staff module access is the source of truth — role permission flags are not enforced.
+     */
+    public function moduleForPermission(string $permission): ?string
+    {
+        if (str_starts_with($permission, 'platform.')) {
+            return null;
+        }
+
+        $area = explode('.', $permission, 2)[0];
+
+        return match ($area) {
+            'sales', 'shifts' => 'sales',
+            'inventory', 'products' => 'inventory',
+            'customers' => 'customers',
+            'expenses' => 'expenses',
+            'users', 'staff' => 'settings',
+            'settings' => 'settings',
+            'reports' => 'dashboard',
+            default => null,
+        };
+    }
+
+    /** Sales or Expenses module — record/read shift and general expenses. */
+    public function canAccessExpenseWorkflow(User $user): bool
+    {
+        return $this->canAccess($user, 'sales') || $this->canAccess($user, 'expenses');
+    }
+
+    /** Whether a staff member may perform an action based on assigned modules (owners: always). */
+    public function canPerform(User $user, string $permission): bool
+    {
+        if ($this->isBusinessOwner($user)) {
+            return true;
+        }
+
+        if (str_starts_with($permission, 'expenses.')) {
+            return $this->canAccessExpenseWorkflow($user);
+        }
+
+        $module = $this->moduleForPermission($permission);
+        if ($module === null) {
+            return false;
+        }
+
+        return $this->canAccess($user, $module);
+    }
 }

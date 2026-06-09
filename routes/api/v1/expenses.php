@@ -9,7 +9,10 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:expenses'])->group
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->whereNumber('expense');
 });
 
-/** Shift / POS expense workflow — sales staff record and read shift expenses. */
+/**
+ * Shift expense API — sales module (My Shift UI) or expenses module.
+ * The Expenses nav is not shown to sales-only staff; this route group exists for My Shift.
+ */
 Route::middleware(['auth:sanctum', 'business.active', 'module:sales,expenses'])->group(function () {
     Route::get('/expenses/by-shift/{shiftId}', [ExpenseController::class, 'byShift'])->whereNumber('shiftId');
     Route::get('/expenses', [ExpenseController::class, 'index']);
