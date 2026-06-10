@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\Shift;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
@@ -33,11 +34,13 @@ class SaleService implements SaleServiceInterface
             $business = \App\Models\Business::findOrFail($businessId);
             $receiptNumber = $this->generateReceiptNumber($business);
 
+            $shiftId = $this->resolveShiftId($businessId, $userId, $data['shift_id'] ?? null);
+
             $sale = Sale::create([
                 'business_id' => $businessId,
                 'user_id' => $userId,
                 'customer_id' => $data['customer_id'] ?? null,
-                'shift_id' => $data['shift_id'] ?? null,
+                'shift_id' => $shiftId,
                 'receipt_number' => $receiptNumber,
                 'subtotal' => $data['subtotal'],
                 'tax_total' => $data['tax_total'] ?? 0,
@@ -227,6 +230,20 @@ class SaleService implements SaleServiceInterface
     public function getByCustomer(int $businessId, int $customerId): Collection
     {
         return $this->saleRepository->getByCustomer($businessId, $customerId);
+    }
+
+    protected function resolveShiftId(int $businessId, int $userId, ?int $shiftId): ?int
+    {
+        if ($shiftId) {
+            return $shiftId;
+        }
+
+        return Shift::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $userId)
+            ->whereNull('clock_out')
+            ->where('status', 'active')
+            ->value('id');
     }
 
     protected function generateReceiptNumber(\App\Models\Business $business): string

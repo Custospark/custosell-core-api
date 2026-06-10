@@ -75,6 +75,7 @@ class BusinessTest extends TestCase
     public function test_register_business_with_user(): void
     {
         $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Shop Owner',
             'name' => 'My Shop',
             'email' => 'owner@shop.com',
             'password' => 'password123',
@@ -84,6 +85,28 @@ class BusinessTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonStructure(['id', 'name', 'owner_id', 'currency', 'status'])
             ->assertJsonPath('name', 'My Shop');
+    }
+
+    public function test_register_duplicate_email_returns_422(): void
+    {
+        $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'First Owner',
+            'name' => 'First Shop',
+            'email' => 'owner@shop.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertStatus(201);
+
+        $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Second Owner',
+            'name' => 'Second Shop',
+            'email' => 'owner@shop.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
     }
 
     public function test_register_missing_name_returns_422(): void
@@ -149,6 +172,7 @@ class BusinessTest extends TestCase
     public function test_register_sets_user_business_id(): void
     {
         $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Another Owner',
             'name' => 'Another Shop',
             'email' => 'another@shop.com',
             'password' => 'password123',
@@ -166,6 +190,7 @@ class BusinessTest extends TestCase
     public function test_default_currency_is_ugx(): void
     {
         $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Currency Owner',
             'name' => 'Currency Test Shop',
             'email' => 'currency@shop.com',
             'password' => 'password123',

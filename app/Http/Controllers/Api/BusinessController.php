@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BusinessRegisterRequest;
 use App\Http\Requests\BusinessRequest;
 use App\Http\Resources\BusinessResource;
 use App\Services\Contracts\BusinessServiceInterface;
@@ -34,7 +35,7 @@ class BusinessController extends Controller
         return new BusinessResource($business);
     }
 
-    public function store(BusinessRequest $request): JsonResponse
+    public function store(BusinessRegisterRequest $request): JsonResponse
     {
         $userData = [
             'name' => $request->input('owner_name'),
