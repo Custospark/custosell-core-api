@@ -420,6 +420,7 @@ class ReportTest extends TestCase
         $category = ExpenseCategory::create([
             'business_id' => $this->business->id,
             'name' => 'Petty Cash',
+            'slug' => 'petty-cash',
         ]);
         Expense::create([
             'business_id' => $this->business->id,

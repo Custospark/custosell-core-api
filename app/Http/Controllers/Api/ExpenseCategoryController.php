@@ -22,9 +22,10 @@ class ExpenseCategoryController extends Controller
         return new ExpenseCategoryCollection($this->expenseCategoryService->getAll($businessId));
     }
 
-    public function show(int $id): ExpenseCategoryResource
+    public function show(Request $request, int $id): ExpenseCategoryResource
     {
-        $expenseCategory = $this->expenseCategoryService->getById($id);
+        $businessId = $request->user()->business_id;
+        $expenseCategory = $this->expenseCategoryService->getByIdForBusiness($businessId, $id);
         if (!$expenseCategory) {
             abort(404, 'Expense category not found');
         }
@@ -40,13 +41,15 @@ class ExpenseCategoryController extends Controller
 
     public function update(ExpenseCategoryRequest $request, int $id): ExpenseCategoryResource
     {
-        $expenseCategory = $this->expenseCategoryService->update($id, $request->validated());
+        $businessId = $request->user()->business_id;
+        $expenseCategory = $this->expenseCategoryService->update($businessId, $id, $request->validated());
         return new ExpenseCategoryResource($expenseCategory);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $this->expenseCategoryService->delete($id);
+        $businessId = $request->user()->business_id;
+        $this->expenseCategoryService->delete($businessId, $id);
         return response()->json(null, 204);
     }
 }

@@ -77,7 +77,8 @@ class ExpenseTest extends TestCase
     {
         ExpenseCategory::create([
             'business_id' => $this->business->id,
-            'name' => 'Utilities',
+            'name' => 'Custom Utilities',
+            'slug' => 'custom-utilities',
         ]);
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
@@ -85,20 +86,36 @@ class ExpenseTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data']);
+
+        $names = collect($response->json('data'))->pluck('name')->toArray();
+        $this->assertContains('Rent', $names);
+        $this->assertContains('Custom Utilities', $names);
     }
 
     public function test_create_expense_category(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/expense-categories', [
-                'name' => 'Rent',
+                'name' => 'Store Rent',
                 'description' => 'Office and store rent',
                 'sort_order' => 1,
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'business_id'])
-            ->assertJsonPath('name', 'Rent');
+            ->assertJsonStructure(['id', 'name', 'business_id', 'is_system'])
+            ->assertJsonPath('name', 'Store Rent')
+            ->assertJsonPath('is_system', false);
+    }
+
+    public function test_cannot_create_category_with_system_name(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/expense-categories', [
+                'name' => 'Rent',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_duplicate_category_name_returns_422(): void
@@ -136,10 +153,10 @@ class ExpenseTest extends TestCase
 
     public function test_create_expense(): void
     {
-        $category = ExpenseCategory::create([
-            'business_id' => $this->business->id,
-            'name' => 'Utilities',
-        ]);
+        $category = ExpenseCategory::query()
+            ->whereNull('business_id')
+            ->where('slug', 'utilities')
+            ->firstOrFail();
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/expenses', [
@@ -305,6 +322,7 @@ class ExpenseTest extends TestCase
         $category = ExpenseCategory::create([
             'business_id' => $this->business->id,
             'name' => 'Petty cash',
+            'slug' => 'petty-cash',
         ]);
 
         $shift = Shift::create([
@@ -321,7 +339,7 @@ class ExpenseTest extends TestCase
         $this->withHeader('Authorization', "Bearer $cashierToken")
             ->getJson('/api/v1/expense-categories')
             ->assertStatus(200)
-            ->assertJsonPath('data.0.name', 'Petty cash');
+            ->assertJsonFragment(['name' => 'Petty cash']);
 
         $create = $this->withHeader('Authorization', "Bearer $cashierToken")
             ->postJson('/api/v1/expenses', [
@@ -339,5 +357,48 @@ class ExpenseTest extends TestCase
             ->getJson("/api/v1/expenses/by-shift/{$shift->id}")
             ->assertStatus(200)
             ->assertJsonPath('data.0.description', 'Lunch for team');
+    }
+
+    public function test_system_expense_categories_are_seeded(): void
+    {
+        $this->assertDatabaseHas('expense_categories', [
+            'business_id' => null,
+            'slug' => 'rent',
+        ]);
+    }
+
+    public function test_cannot_update_system_expense_category(): void
+    {
+        $category = ExpenseCategory::query()->whereNull('business_id')->where('slug', 'rent')->firstOrFail();
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/expense-categories/{$category->id}", [
+                'name' => 'Rent',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['expense_category']);
+    }
+
+    public function test_cannot_delete_system_expense_category(): void
+    {
+        $category = ExpenseCategory::query()->whereNull('business_id')->where('slug', 'miscellaneous')->firstOrFail();
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->deleteJson("/api/v1/expense-categories/{$category->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['expense_category']);
+    }
+
+    public function test_list_includes_system_flag_on_categories(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson('/api/v1/expense-categories');
+
+        $response->assertStatus(200);
+        $rent = collect($response->json('data'))->firstWhere('slug', 'rent');
+        $this->assertNotNull($rent);
+        $this->assertTrue($rent['is_system']);
     }
 }

@@ -11,6 +11,7 @@ class ExpenseCategory extends Model
     protected $fillable = [
         'business_id',
         'name',
+        'slug',
         'description',
         'sort_order',
         'budget_amount',

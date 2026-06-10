@@ -11,9 +11,11 @@ interface ExpenseCategoryServiceInterface
 
     public function getById(int $id): ?ExpenseCategory;
 
+    public function getByIdForBusiness(int $businessId, int $id): ?ExpenseCategory;
+
     public function create(int $businessId, array $data): ExpenseCategory;
 
-    public function update(int $id, array $data): ExpenseCategory;
+    public function update(int $businessId, int $id, array $data): ExpenseCategory;
 
-    public function delete(int $id): bool;
+    public function delete(int $businessId, int $id): bool;
 }
