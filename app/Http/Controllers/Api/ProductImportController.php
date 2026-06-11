@@ -31,13 +31,15 @@ class ProductImportController extends Controller
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
         ]);
 
         $businessId = $request->user()->business_id;
         if (!$businessId) {
             return response()->json(['message' => 'No business associated with this user'], 400);
         }
+
+        set_time_limit(600);
 
         $results = $this->importService->import($businessId, $request->file('file')->getPathname());
 

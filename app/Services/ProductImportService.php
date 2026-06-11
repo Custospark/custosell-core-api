@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -14,6 +15,8 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ProductImportService
 {
+    protected const CHUNK_SIZE = 100;
+
     protected const TAX_CLASSES = ['standard', 'exempt', 'zero_rated'];
 
     protected const HEADERS = [
@@ -58,66 +61,124 @@ class ProductImportService
 
     public function import(int $businessId, string $filePath): array
     {
-        $spreadsheet = IOFactory::load($filePath);
-        $worksheet = $spreadsheet->getActiveSheet();
+        $reader = IOFactory::createReaderForFile($filePath);
+        $reader->setReadDataOnly(true);
+        $worksheet = $reader->load($filePath)->getActiveSheet();
         $rows = $worksheet->toArray();
         array_shift($rows);
 
-        $results = ['imported' => 0, 'errors' => [], 'total_rows' => count($rows)];
-        $categories = \App\Models\Category::where('business_id', $businessId)->pluck('id', 'name')->toArray();
-
+        $rowEntries = [];
         foreach ($rows as $index => $row) {
-            $rowNum = $index + 2;
-            $data = $this->mapRow($row, $categories);
-
-            $validator = Validator::make($data, [
-                'name' => ['required', 'string', 'max:255'],
-                'unit' => ['nullable', 'string', 'max:50'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'unit_price' => ['required', 'numeric', 'min:0'],
-                'wholesale_price' => ['nullable', 'numeric', 'min:0'],
-                'cost_price' => ['nullable', 'numeric', 'min:0'],
-                'stock_quantity' => ['nullable', 'integer', 'min:0'],
-                'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
-                'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
-                'barcode' => ['nullable', 'string', 'max:100'],
-                'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
-                'tax_class' => ['nullable', 'string', 'in:standard,exempt,zero_rated'],
-                'description' => ['nullable', 'string'],
-            ]);
-
-            if ($validator->fails()) {
-                $results['errors'][] = ['row' => $rowNum, 'errors' => $validator->errors()->toArray()];
+            if ($this->isEmptyRow($row)) {
                 continue;
             }
+            $rowEntries[] = ['index' => $index, 'row' => $row];
+        }
 
-            DB::transaction(function () use ($businessId, $data, &$results) {
-                $data['business_id'] = $businessId;
-                $stockQty = (int) ($data['stock_quantity'] ?? 0);
-                unset($data['stock_quantity']);
+        $results = ['imported' => 0, 'errors' => [], 'total_rows' => count($rowEntries)];
+        if ($rowEntries === []) {
+            return $results;
+        }
 
-                $product = Product::create($data);
+        $categories = \App\Models\Category::where('business_id', $businessId)->pluck('id', 'name')->toArray();
+        $existingSkus = Product::query()
+            ->where('business_id', $businessId)
+            ->whereNotNull('sku')
+            ->pluck('sku')
+            ->map(fn ($sku) => strtolower(trim((string) $sku)))
+            ->flip()
+            ->all();
+        $importSkus = [];
 
-                if ($stockQty > 0) {
-                    StockMovement::create([
-                        'business_id' => $businessId,
-                        'product_id' => $product->id,
-                        'type' => 'initial',
-                        'quantity_change' => $stockQty,
-                        'stock_before' => 0,
-                        'stock_after' => $stockQty,
-                        'notes' => 'Initial stock from import',
-                    ]);
+        foreach (array_chunk($rowEntries, self::CHUNK_SIZE) as $chunk) {
+            DB::transaction(function () use ($businessId, $chunk, $categories, &$existingSkus, &$importSkus, &$results) {
+                foreach ($chunk as $entry) {
+                    $rowNum = $entry['index'] + 2;
+                    $data = $this->mapRow($entry['row'], $categories);
+                    $skuKey = $data['sku'] ? strtolower(trim($data['sku'])) : null;
 
-                    $product->stock_quantity = $stockQty;
-                    $product->save();
+                    $validator = Validator::make($data, $this->validationRules($businessId));
+
+                    if ($skuKey) {
+                        if (isset($existingSkus[$skuKey]) || isset($importSkus[$skuKey])) {
+                            $validator->after(function ($v) {
+                                $v->errors()->add('sku', 'The sku has already been taken.');
+                            });
+                        }
+                    }
+
+                    if ($validator->fails()) {
+                        $results['errors'][] = ['row' => $rowNum, 'errors' => $validator->errors()->toArray()];
+                        continue;
+                    }
+
+                    $data['business_id'] = $businessId;
+                    $stockQty = (int) ($data['stock_quantity'] ?? 0);
+                    unset($data['stock_quantity']);
+
+                    $product = Product::create($data);
+
+                    if ($stockQty > 0) {
+                        StockMovement::create([
+                            'business_id' => $businessId,
+                            'product_id' => $product->id,
+                            'type' => 'initial',
+                            'quantity_change' => $stockQty,
+                            'stock_before' => 0,
+                            'stock_after' => $stockQty,
+                            'notes' => 'Initial stock from import',
+                        ]);
+
+                        $product->stock_quantity = $stockQty;
+                        $product->save();
+                    }
+
+                    if ($skuKey) {
+                        $importSkus[$skuKey] = true;
+                    }
+
+                    $results['imported']++;
                 }
-
-                $results['imported']++;
             });
         }
 
         return $results;
+    }
+
+    /** @return array<string, mixed> */
+    protected function validationRules(int $businessId): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'unit' => ['nullable', 'string', 'max:50'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'unit_price' => ['required', 'numeric', 'min:0'],
+            'wholesale_price' => ['nullable', 'numeric', 'min:0'],
+            'cost_price' => ['nullable', 'numeric', 'min:0'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
+            'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')->where(fn ($q) => $q->where('business_id', $businessId)),
+            ],
+            'barcode' => ['nullable', 'string', 'max:100'],
+            'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tax_class' => ['nullable', 'string', 'in:standard,exempt,zero_rated'],
+            'description' => ['nullable', 'string'],
+        ];
+    }
+
+    protected function isEmptyRow(array $row): bool
+    {
+        foreach ($row as $cell) {
+            if ($cell !== null && trim((string) $cell) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function mapRow(array $row, array $categories): array
