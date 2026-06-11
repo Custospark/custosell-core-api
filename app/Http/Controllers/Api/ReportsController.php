@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Support\TaxJurisdictions;
 use App\Models\Sale;
 use App\Models\Shift;
 use App\Support\ReportDateRange;
@@ -610,6 +611,80 @@ class ReportsController extends Controller
                 'reportSubtitle' => $this->dateSubtitle($dateFrom, $dateTo),
                 'summaryCards' => $summaryCards,
             ]), $filename, $this->pdfOrientation('product-performance')),
+        };
+    }
+
+    public function vatSummary(Request $request)
+    {
+        [$dateFrom, $dateTo] = $this->getDateRange($request);
+        $business = $this->getBusiness($request);
+        $format = $request->query('format', 'pdf');
+
+        $summary = $this->metrics->vatSummary($business->id, $dateFrom, $dateTo);
+        $inputRows = $this->metrics->vatInputExpenseRows($business->id, $dateFrom, $dateTo);
+
+        $jurisdiction = $business->jurisdiction;
+        $filingHint = TaxJurisdictions::filingHint($jurisdiction);
+        $reportPurpose = 'Prepare VAT return workbook: output VAT, input VAT, and estimated VAT payable.';
+
+        if ($format === 'json') {
+            return response()->json([
+                'data' => array_merge($summary, [
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateTo,
+                    'currency' => $business->currency,
+                    'jurisdiction' => $jurisdiction,
+                    'jurisdiction_label' => TaxJurisdictions::label($jurisdiction),
+                    'tax_regime' => $business->tax_regime,
+                    'tax_id' => $business->tax_id,
+                    'filing_hint' => $filingHint,
+                    'input_vat_expenses' => $inputRows,
+                ]),
+            ]);
+        }
+
+        $headers = ['Date', 'Category', 'Description', 'Supplier TIN', 'Invoice No', 'Amount', 'Input VAT'];
+        $exportRows = array_map(fn ($row) => [
+            $row['date'],
+            $row['category'],
+            $row['description'],
+            $row['supplier_tin'] ?? '—',
+            $row['supplier_invoice_no'] ?? '—',
+            $row['amount'],
+            $row['vat_amount'],
+        ], $inputRows);
+
+        $exportRows[] = ['', '', '', '', 'Output VAT', '', $summary['output_vat']];
+        $exportRows[] = ['', '', '', '', 'Output VAT Refunded', '', $summary['output_vat_refunded']];
+        $exportRows[] = ['', '', '', '', 'Net Output VAT', '', $summary['net_output_vat']];
+        $exportRows[] = ['', '', '', '', 'Input VAT (claimable)', '', $summary['input_vat']];
+        $exportRows[] = ['', '', '', '', 'VAT Payable (estimate)', '', $summary['vat_payable']];
+
+        $filename = $this->export->buildFilename($business, 'vat-summary', $dateFrom, $dateTo);
+        $ccy = $business->currency;
+        $summaryCards = [
+            ['label' => 'Net Output VAT', 'value' => $this->export->formatMoney($summary['net_output_vat'], $ccy)],
+            ['label' => 'Input VAT', 'value' => $this->export->formatMoney($summary['input_vat'], $ccy)],
+            ['label' => 'VAT Payable', 'value' => $this->export->formatMoney($summary['vat_payable'], $ccy), 'tone' => $summary['vat_payable'] >= 0 ? 'negative' : 'positive'],
+            ['label' => 'Taxable Sales (net)', 'value' => $this->export->formatMoney($summary['taxable_sales_net'], $ccy)],
+        ];
+
+        return match ($format) {
+            'xlsx' => $this->xlsx($business, 'vat-summary', $dateFrom, $dateTo, 'VAT Summary Report', '#7c3aed', $summaryCards, $headers, $exportRows, $this->dateSubtitle($dateFrom, $dateTo), $reportPurpose),
+            'csv' => $this->export->downloadCsv($filename, $headers, $exportRows),
+            default => $this->export->downloadPdf('reports.vat-summary', $this->pdfData($request, [
+                'summary' => $summary,
+                'inputRows' => $inputRows,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+                'jurisdictionLabel' => TaxJurisdictions::label($jurisdiction),
+                'filingHint' => $filingHint,
+                'accent' => '#7c3aed',
+                'reportTitle' => 'VAT Summary Report',
+                'reportPurpose' => $reportPurpose,
+                'reportSubtitle' => $this->dateSubtitle($dateFrom, $dateTo),
+                'summaryCards' => $summaryCards,
+            ]), $filename, $this->pdfOrientation('vat-summary')),
         };
     }
 }

@@ -28,6 +28,7 @@ class ProductRequest extends FormRequest
             'stock_quantity' => ['integer', 'min:0'],
             'low_stock_threshold' => ['integer', 'min:0'],
             'tax_percentage' => ['numeric', 'min:0', 'max:100'],
+            'tax_class' => ['nullable', 'string', 'in:standard,exempt,zero_rated'],
             'is_active' => ['boolean'],
         ];
     }

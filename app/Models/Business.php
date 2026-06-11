@@ -40,6 +40,10 @@ class Business extends Model
         'postal_code',
         'country',
         'tax_id',
+        'tax_regime',
+        'jurisdiction',
+        'default_vat_rate',
+        'prices_include_tax',
         'timezone',
         'business_type',
         'currency',
@@ -55,6 +59,8 @@ class Business extends Model
         return [
             'trial_ends_at' => 'datetime',
             'status_changed_at' => 'datetime',
+            'default_vat_rate' => 'decimal:2',
+            'prices_include_tax' => 'boolean',
         ];
     }
 

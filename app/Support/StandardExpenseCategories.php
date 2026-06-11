@@ -62,7 +62,7 @@ class StandardExpenseCategories
             [
                 'slug' => 'licenses-taxes',
                 'name' => 'Licenses & Taxes',
-                'description' => 'Business licenses, URA, and statutory taxes',
+                'description' => 'Business licenses and statutory taxes',
                 'sort_order' => 90,
             ],
             [

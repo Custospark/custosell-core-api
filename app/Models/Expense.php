@@ -18,6 +18,10 @@ class Expense extends Model
         'amount',
         'description',
         'reference',
+        'supplier_tin',
+        'supplier_invoice_no',
+        'vat_amount',
+        'vat_claimable',
         'receipt_path',
         'is_recurring',
         'recurrence_interval',
@@ -30,6 +34,8 @@ class Expense extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'vat_amount' => 'decimal:2',
+            'vat_claimable' => 'boolean',
             'expense_date' => 'datetime',
             'is_recurring' => 'boolean',
             'recurrence_end_date' => 'date',

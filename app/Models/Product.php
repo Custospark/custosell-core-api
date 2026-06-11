@@ -26,6 +26,7 @@ class Product extends Model
         'stock_quantity',
         'low_stock_threshold',
         'tax_percentage',
+        'tax_class',
         'is_active',
     ];
 

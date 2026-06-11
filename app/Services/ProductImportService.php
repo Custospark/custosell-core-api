@@ -14,9 +14,11 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ProductImportService
 {
+    protected const TAX_CLASSES = ['standard', 'exempt', 'zero_rated'];
+
     protected const HEADERS = [
         'Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price',
-        'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Description',
+        'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description',
     ];
 
     protected const REQUIRED = ['name', 'unit_price'];
@@ -30,7 +32,8 @@ class ProductImportService
         $sheet->setTitle('Products');
 
         $bold = ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2563EB']], 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]];
-        $sheet->getStyle('A1:L1')->applyFromArray($bold);
+        $lastCol = chr(65 + count(self::HEADERS) - 1);
+        $sheet->getStyle("A1:{$lastCol}1")->applyFromArray($bold);
 
         foreach (self::HEADERS as $i => $h) {
             $col = chr(65 + $i);
@@ -38,15 +41,15 @@ class ProductImportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', '', '', '0', 'Premium maize flour (delete this example row)'];
+        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', '', '', '18', 'standard', 'Premium maize flour (delete this example row)'];
         foreach ($example as $i => $val) {
             $sheet->setCellValue(chr(65 + $i) . '2', $val);
         }
 
-        $sheet->getStyle('A2:L2')->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0FDF4']]]);
+        $sheet->getStyle("A2:{$lastCol}2")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0FDF4']]]);
 
         $sheet->setCellValue('A3', '');
-        $sheet->getStyle('A3:L3')->applyFromArray(['borders' => ['bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'E5E7EB']]]]);
+        $sheet->getStyle("A3:{$lastCol}3")->applyFromArray(['borders' => ['bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'E5E7EB']]]]);
 
         $sheet->freezePane('A2');
 
@@ -79,6 +82,7 @@ class ProductImportService
                 'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
                 'barcode' => ['nullable', 'string', 'max:100'],
                 'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'tax_class' => ['nullable', 'string', 'in:standard,exempt,zero_rated'],
                 'description' => ['nullable', 'string'],
             ]);
 
@@ -141,7 +145,19 @@ class ProductImportService
             'sku' => $get(8),
             'barcode' => $get(9),
             'tax_percentage' => $get(10),
-            'description' => $get(11),
+            'tax_class' => $this->normalizeTaxClass($get(11)),
+            'description' => $get(12),
         ];
+    }
+
+    protected function normalizeTaxClass(?string $value): string
+    {
+        if ($value === null || trim($value) === '') {
+            return 'standard';
+        }
+
+        $normalized = strtolower(str_replace([' ', '-'], '_', trim($value)));
+
+        return in_array($normalized, self::TAX_CLASSES, true) ? $normalized : 'standard';
     }
 }

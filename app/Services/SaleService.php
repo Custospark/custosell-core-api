@@ -10,12 +10,14 @@ use App\Models\StockMovement;
 use App\Repositories\Contracts\SaleRepositoryInterface;
 use App\Services\Contracts\SaleServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
+use App\Support\TaxEngine;
 use Illuminate\Support\Facades\DB;
 
 class SaleService implements SaleServiceInterface
 {
     public function __construct(
         protected SaleRepositoryInterface $saleRepository,
+        protected TaxEngine $taxEngine,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -36,16 +38,33 @@ class SaleService implements SaleServiceInterface
 
             $shiftId = $this->resolveShiftId($businessId, $userId, $data['shift_id'] ?? null);
 
+            $saleItemsInput = [];
+            foreach ($data['items'] as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $saleItemsInput[] = [
+                    'product' => $product,
+                    'quantity' => (int) ($item['quantity'] ?? 1),
+                    'unit_price' => (float) ($item['unit_price'] ?? $product->unit_price),
+                    'discount_amount' => (float) ($item['discount_amount'] ?? 0),
+                ];
+            }
+
+            $computed = $this->taxEngine->computeSale(
+                $business,
+                $saleItemsInput,
+                (float) ($data['discount_amount'] ?? 0),
+            );
+
             $sale = Sale::create([
                 'business_id' => $businessId,
                 'user_id' => $userId,
                 'customer_id' => $data['customer_id'] ?? null,
                 'shift_id' => $shiftId,
                 'receipt_number' => $receiptNumber,
-                'subtotal' => $data['subtotal'],
-                'tax_total' => $data['tax_total'] ?? 0,
-                'discount_amount' => $data['discount_amount'] ?? 0,
-                'total_amount' => $data['total_amount'],
+                'subtotal' => $computed['subtotal'],
+                'tax_total' => $computed['tax_total'],
+                'discount_amount' => $computed['discount_amount'],
+                'total_amount' => $computed['total_amount'],
                 'amount_tendered' => $data['amount_tendered'] ?? null,
                 'change_given' => $data['change_given'] ?? null,
                 'payment_method' => $data['payment_method'],
@@ -54,11 +73,9 @@ class SaleService implements SaleServiceInterface
                 'sale_date' => $data['sale_date'] ?? now(),
             ]);
 
-            foreach ($data['items'] as $item) {
-                $product = Product::findOrFail($item['product_id']);
-                $qty = (int) ($item['quantity'] ?? 1);
-                $unitPrice = $item['unit_price'] ?? $product->unit_price;
-                $subtotal = $qty * $unitPrice;
+            foreach ($computed['lines'] as $line) {
+                $product = $line['product'];
+                $qty = $line['quantity'];
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
@@ -66,10 +83,10 @@ class SaleService implements SaleServiceInterface
                     'product_name' => $product->name,
                     'product_price' => $product->unit_price,
                     'quantity' => $qty,
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $subtotal,
-                    'tax_amount' => $item['tax_amount'] ?? 0,
-                    'discount_amount' => $item['discount_amount'] ?? 0,
+                    'unit_price' => $line['unit_price'],
+                    'subtotal' => $line['subtotal'],
+                    'tax_amount' => $line['tax_amount'],
+                    'discount_amount' => (float) ($line['discount_amount'] ?? 0),
                 ]);
 
                 $stockBefore = $product->stock_quantity;
@@ -92,7 +109,7 @@ class SaleService implements SaleServiceInterface
             if ($sale->customer_id) {
                 $customer = \App\Models\Customer::find($sale->customer_id);
                 if ($customer) {
-                    $customer->total_purchases = ($customer->total_purchases ?? 0) + $data['total_amount'];
+                    $customer->total_purchases = ($customer->total_purchases ?? 0) + $computed['total_amount'];
                     $customer->last_purchase_at = now();
                     $customer->save();
                 }
@@ -187,8 +204,15 @@ class SaleService implements SaleServiceInterface
 
                 $refundAmount = round($refundAmount, 2);
 
+                $taxRefund = $this->taxEngine->computeLineTaxRefund(
+                    (float) $pi['saleItem']->tax_amount,
+                    (int) $pi['saleItem']->quantity,
+                    $pi['refundQty'],
+                );
+
                 $pi['saleItem']->refunded_quantity += $pi['refundQty'];
                 $pi['saleItem']->refunded_amount += $refundAmount;
+                $pi['saleItem']->tax_refunded_amount = round((float) $pi['saleItem']->tax_refunded_amount + $taxRefund, 2);
                 $pi['saleItem']->save();
                 $pi['saleItem']->refresh();
 
