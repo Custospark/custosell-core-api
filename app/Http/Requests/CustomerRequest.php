@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CustomerRequest extends FormRequest
+class CustomerRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -35,8 +34,9 @@ class CustomerRequest extends FormRequest
 
     public function messages(): array
     {
-        return [
+        return array_merge(parent::messages(), [
             'phone.unique' => 'A customer with this phone number already exists.',
-        ];
+            'email.email' => 'Please enter a valid email address.',
+        ]);
     }
 }
