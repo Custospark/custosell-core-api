@@ -34,11 +34,11 @@ class CustomerController extends Controller
         return new CustomerResource($customer);
     }
 
-    public function store(CustomerRequest $request): JsonResponse
+    public function store(CustomerRequest $request): CustomerResource
     {
         $businessId = $request->user()->business_id;
         $customer = $this->customerService->create($businessId, $request->validated());
-        return response()->json(new CustomerResource($customer), 201);
+        return new CustomerResource($customer);
     }
 
     public function update(CustomerRequest $request, int $id): CustomerResource
