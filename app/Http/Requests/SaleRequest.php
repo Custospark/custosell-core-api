@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class SaleRequest extends FormRequest
+class SaleRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -31,5 +29,41 @@ class SaleRequest extends FormRequest
             'notes' => ['nullable', 'string'],
             'sale_date' => ['nullable', 'date'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'customer_id.exists' => 'The selected customer does not exist.',
+            'shift_id.exists' => 'The selected shift does not exist.',
+            'items.required' => 'Please add at least one item to the sale.',
+            'items.array' => 'Items must be provided as a list.',
+            'items.min' => 'Please add at least one item to the sale.',
+            'items.*.product_id.required' => 'Each item must have a product selected.',
+            'items.*.product_id.exists' => 'One or more selected products do not exist.',
+            'items.*.quantity.required' => 'Each item must have a quantity.',
+            'items.*.quantity.integer' => 'Item quantities must be whole numbers.',
+            'items.*.quantity.min' => 'Each item quantity must be at least 1.',
+            'items.*.unit_price.required' => 'Each item must have a unit price.',
+            'items.*.unit_price.numeric' => 'Item unit prices must be numbers.',
+            'items.*.unit_price.min' => 'Item unit prices must be 0 or more.',
+            'subtotal.required' => 'Please enter the subtotal.',
+            'subtotal.numeric' => 'The subtotal must be a number.',
+            'subtotal.min' => 'The subtotal must be 0 or more.',
+            'tax_total.numeric' => 'The tax total must be a number.',
+            'tax_total.min' => 'The tax total must be 0 or more.',
+            'discount_amount.numeric' => 'The discount must be a number.',
+            'discount_amount.min' => 'The discount must be 0 or more.',
+            'total_amount.required' => 'Please enter the total amount.',
+            'total_amount.numeric' => 'The total amount must be a number.',
+            'total_amount.min' => 'The total amount must be 0 or more.',
+            'amount_tendered.numeric' => 'The amount tendered must be a number.',
+            'amount_tendered.min' => 'The amount tendered must be 0 or more.',
+            'change_given.numeric' => 'The change given must be a number.',
+            'change_given.min' => 'The change given must be 0 or more.',
+            'payment_method.required' => 'Please select a payment method.',
+            'payment_method.in' => 'Please select a valid payment method: cash, mobile money, card, or other.',
+            'sale_date.date' => 'The sale date is not valid.',
+        ]);
     }
 }

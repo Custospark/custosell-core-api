@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class BusinessRegisterRequest extends FormRequest
+class BusinessRegisterRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

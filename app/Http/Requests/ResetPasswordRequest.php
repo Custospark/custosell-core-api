@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class ResetPasswordRequest extends FormRequest
+class ResetPasswordRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -18,5 +16,17 @@ class ResetPasswordRequest extends FormRequest
             'token' => ['required', 'string'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'email.required' => 'Please enter your email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'token.required' => 'The reset token is missing. Please try resetting your password again.',
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Your new password must be at least 6 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
     }
 }

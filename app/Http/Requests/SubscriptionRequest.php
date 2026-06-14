@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class SubscriptionRequest extends FormRequest
+class SubscriptionRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -22,5 +20,18 @@ class SubscriptionRequest extends FormRequest
             'ends_at' => ['nullable', 'date'],
             'cancelled_at' => ['nullable', 'date'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'business_id.required' => 'Please select a business.',
+            'business_id.exists' => 'The selected business does not exist.',
+            'plan_id.required' => 'Please select a plan.',
+            'plan_id.exists' => 'The selected plan does not exist.',
+            'status.required' => 'Please select a subscription status.',
+            'status.in' => 'Please select a valid status: active, trialing, cancelled, or expired.',
+            'starts_at.required' => 'Please enter the subscription start date.',
+        ]);
     }
 }

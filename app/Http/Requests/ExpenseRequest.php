@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ExpenseRequest extends FormRequest
+class ExpenseRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -35,5 +34,30 @@ class ExpenseRequest extends FormRequest
             'next_due_date' => ['nullable', 'date'],
             'expense_date' => ['required', 'date'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'expense_category_id.exists' => 'The selected expense category does not exist.',
+            'shift_id.exists' => 'The selected shift does not exist or is not part of your business.',
+            'amount.required' => 'Please enter the expense amount.',
+            'amount.numeric' => 'The expense amount must be a number.',
+            'amount.min' => 'The expense amount must be 0 or more.',
+            'description.required' => 'Please provide a description for the expense.',
+            'receipt.file' => 'The receipt must be a file.',
+            'receipt.mimes' => 'The receipt must be a JPG, JPEG, PNG, or PDF file.',
+            'receipt.max' => 'The receipt must not exceed 5 MB.',
+            'recurrence_interval.in' => 'Please select a valid recurrence interval: daily, weekly, monthly, or yearly.',
+            'recurrence_end_date.after' => 'The recurrence end date must be after the expense date.',
+            'expense_date.required' => 'Please select the expense date.',
+            'vat_amount.numeric' => 'The VAT amount must be a number.',
+            'vat_amount.min' => 'The VAT amount must be 0 or more.',
+            'vat_claimable.boolean' => 'The VAT claimable field must be true or false.',
+            'is_recurring.boolean' => 'The recurring field must be true or false.',
+            'reference.max' => 'The reference must not exceed 255 characters.',
+            'supplier_tin.max' => 'The supplier TIN must not exceed 100 characters.',
+            'supplier_invoice_no.max' => 'The supplier invoice number must not exceed 100 characters.',
+        ]);
     }
 }

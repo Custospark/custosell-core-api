@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class RoleRequest extends FormRequest
+class RoleRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -20,5 +18,15 @@ class RoleRequest extends FormRequest
             'permissions' => ['nullable', 'array'],
             'is_default' => ['boolean'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'name.required' => 'Please enter a role name.',
+            'slug.required' => 'Please enter a URL slug for the role.',
+            'permissions.array' => 'Permissions must be provided as a list.',
+            'is_default.boolean' => 'The default status must be true or false.',
+        ]);
     }
 }

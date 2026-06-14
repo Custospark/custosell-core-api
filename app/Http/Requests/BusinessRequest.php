@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class BusinessRequest extends FormRequest
+class BusinessRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -37,5 +35,14 @@ class BusinessRequest extends FormRequest
             'receipt_footer' => ['nullable', 'string'],
             'logo_path' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'slug.unique' => 'This business URL slug is already taken.',
+            'website.url' => 'Please enter a valid website URL (e.g. https://example.com).',
+            'tax_regime.in' => 'Tax regime must be either none or vat_registered.',
+        ]);
     }
 }
