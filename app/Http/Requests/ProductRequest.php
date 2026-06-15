@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
+
 class ProductRequest extends BaseFormRequest
 {
     public function authorize(): bool
@@ -12,12 +14,20 @@ class ProductRequest extends BaseFormRequest
     public function rules(): array
     {
         $productId = $this->route('product');
+        $businessId = $this->user()?->business_id;
 
         return [
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku,' . $productId],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')
+                    ->where(fn ($q) => $q->where('business_id', $businessId))
+                    ->ignore($productId),
+            ],
             'barcode' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', 'string', 'max:50'],
             'unit_price' => ['required', 'numeric', 'min:0'],
