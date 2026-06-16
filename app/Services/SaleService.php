@@ -90,7 +90,18 @@ class SaleService implements SaleServiceInterface
                 ]);
 
                 $stockBefore = $product->stock_quantity;
-                $stockAfter = max(0, $stockBefore - $qty);
+
+                if ($qty > $stockBefore) {
+                    throw new \Illuminate\Validation\ValidationException(
+                        validator([], []),
+                        response()->json([
+                            'message' => "Insufficient stock for {$product->name}. Only {$stockBefore} available, requested {$qty}.",
+                            'errors' => ['items.*.quantity' => ["Only {$stockBefore} in stock for {$product->name}."]],
+                        ], 422),
+                    );
+                }
+
+                $stockAfter = $stockBefore - $qty;
 
                 StockMovement::create([
                     'business_id' => $businessId,
