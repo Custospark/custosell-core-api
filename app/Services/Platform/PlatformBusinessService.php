@@ -206,6 +206,7 @@ class PlatformBusinessService
             'gross_sales_30d' => $this->formatGross($gross30d),
             'gross_sales_all_time' => $this->formatGross((float) ($business->getAttributes()['gross_sales_all_time'] ?? 0)),
             'transactions_30d' => (int) ($business->transactions_30d ?? 0),
+            'total_stock' => (int) ($business->total_stock ?? 0),
             'created_at' => $business->created_at?->toIso8601String(),
         ];
     }
@@ -691,7 +692,8 @@ class PlatformBusinessService
             ->selectSub($this->grossSalesSubquery(), 'gross_sales_all_time')
             ->selectSub($this->attributedSalesCountSubquery($windowStart), 'transactions_30d')
             ->selectSub($this->attributedLastSaleSubquery(), 'last_sale_at')
-            ->selectSub($this->linkedUsersLastLoginSubquery(), 'last_user_login_at');
+            ->selectSub($this->linkedUsersLastLoginSubquery(), 'last_user_login_at')
+            ->selectSub($this->totalStockSubquery(), 'total_stock');
     }
 
     private function applyAttributedSalesConstraint($query): void
@@ -725,6 +727,16 @@ class PlatformBusinessService
                 ->selectRaw('COUNT(*)');
             $this->applyAttributedSalesConstraint($sub);
             $sub->where('sales.sale_date', '>=', $since);
+        };
+    }
+
+    private function totalStockSubquery(): \Closure
+    {
+        return function ($sub): void {
+            $sub->from('products')
+                ->selectRaw('COALESCE(SUM(products.stock_quantity), 0)')
+                ->whereColumn('products.business_id', 'businesses.id')
+                ->whereNull('products.deleted_at');
         };
     }
 
