@@ -734,7 +734,7 @@ class PlatformBusinessService
     {
         return function ($sub): void {
             $sub->from('products')
-                ->selectRaw('COALESCE(SUM(products.stock_quantity), 0)')
+                ->selectRaw('COUNT(*)')
                 ->whereColumn('products.business_id', 'businesses.id')
                 ->whereNull('products.deleted_at');
         };
