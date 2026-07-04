@@ -16,10 +16,14 @@ class RatioService
 
     public function calculateAll(int $businessId, int $periodId): array
     {
+        // Cache financial statements so each ratio group doesn't recompute them
+        $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
+        $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
+
         $liquidity = $this->getLiquidityRatios($businessId, $periodId);
-        $profitability = $this->getProfitabilityRatios($businessId, $periodId);
-        $solvency = $this->getSolvencyRatios($businessId, $periodId);
-        $efficiency = $this->getEfficiencyRatios($businessId, $periodId);
+        $profitability = $this->getProfitabilityRatios($businessId, $periodId, $is, $bs);
+        $solvency = $this->getSolvencyRatios($businessId, $periodId, $is, $bs);
+        $efficiency = $this->getEfficiencyRatios($businessId, $periodId, $is, $bs);
 
         $grouped = compact('liquidity', 'profitability', 'solvency', 'efficiency');
 
@@ -81,10 +85,10 @@ class RatioService
         ];
     }
 
-    public function getProfitabilityRatios(int $businessId, int $periodId): array
+    public function getProfitabilityRatios(int $businessId, int $periodId, ?array $is = null, ?array $bs = null): array
     {
-        $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
-        $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
+        $is ??= $this->financialStatementService->incomeStatement($businessId, $periodId);
+        $bs ??= $this->financialStatementService->balanceSheet($businessId, $periodId);
 
         $revenue = abs($is['total_revenue'] ?? 0);
         $netIncome = $is['net_income'] ?? 0;
@@ -101,10 +105,10 @@ class RatioService
         ];
     }
 
-    public function getSolvencyRatios(int $businessId, int $periodId): array
+    public function getSolvencyRatios(int $businessId, int $periodId, ?array $is = null, ?array $bs = null): array
     {
-        $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
-        $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
+        $bs ??= $this->financialStatementService->balanceSheet($businessId, $periodId);
+        $is ??= $this->financialStatementService->incomeStatement($businessId, $periodId);
 
         $totalLiabilities = abs($bs['total_liabilities'] ?? 0);
         $totalAssets = abs($bs['total_assets'] ?? 0);
@@ -119,10 +123,10 @@ class RatioService
         ];
     }
 
-    public function getEfficiencyRatios(int $businessId, int $periodId): array
+    public function getEfficiencyRatios(int $businessId, int $periodId, ?array $is = null, ?array $bs = null): array
     {
-        $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
-        $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
+        $bs ??= $this->financialStatementService->balanceSheet($businessId, $periodId);
+        $is ??= $this->financialStatementService->incomeStatement($businessId, $periodId);
 
         $revenue = abs($is['total_revenue'] ?? 0);
         $cogs = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']));
