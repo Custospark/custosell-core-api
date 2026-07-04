@@ -16,6 +16,7 @@ class ModuleAccessService
         'inventory',
         'customers',
         'expenses',
+        'accounting',
         'settings',
     ];
 
@@ -146,6 +147,7 @@ class ModuleAccessService
             'users', 'staff' => 'settings',
             'settings' => 'settings',
             'reports' => 'dashboard',
+            'accounting' => 'accounting',
             default => null,
         };
     }

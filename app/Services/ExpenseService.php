@@ -10,6 +10,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
+use App\Events\ExpenseCreatedForAccounting;
+
 class ExpenseService implements ExpenseServiceInterface
 {
     public function __construct(
@@ -32,7 +34,11 @@ class ExpenseService implements ExpenseServiceInterface
         $data['business_id'] = $businessId;
         $this->assertCategoryAvailable($businessId, $data['expense_category_id'] ?? null);
 
-        return $this->expenseRepository->create($data);
+        $expense = $this->expenseRepository->create($data);
+
+        event(new ExpenseCreatedForAccounting($expense));
+
+        return $expense;
     }
 
     public function update(int $id, array $data): Expense

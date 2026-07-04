@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Collection;
 use App\Support\TaxEngine;
 use Illuminate\Support\Facades\DB;
 
+use App\Events\SaleCreatedForAccounting;
+use App\Events\SaleRefundedForAccounting;
+
 class SaleService implements SaleServiceInterface
 {
     public function __construct(
@@ -125,6 +128,8 @@ class SaleService implements SaleServiceInterface
                     $customer->save();
                 }
             }
+
+            event(new SaleCreatedForAccounting($sale));
 
             return $sale->load(['saleItems', 'business', 'user']);
         });
@@ -251,6 +256,8 @@ class SaleService implements SaleServiceInterface
             $saleTotal = (float) $sale->total_amount;
             $sale->payment_status = abs($totalRefunded - $saleTotal) < 0.01 ? 'refunded' : ($totalRefunded > 0 ? 'partially_refunded' : 'paid');
             $sale->save();
+
+            event(new SaleRefundedForAccounting($sale));
 
             return $sale->load(['saleItems', 'business', 'user']);
         });

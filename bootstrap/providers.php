@@ -7,7 +7,8 @@ use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
 use App\Providers\PlanServiceProvider;
-use App\Providers\SyncServiceProvider;
+use App\Providers\AccountingServiceProvider;
+use App\Providers\EventServiceProvider;
 use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
 use App\Providers\SaleItemServiceProvider;
@@ -15,6 +16,7 @@ use App\Providers\SaleServiceProvider;
 use App\Providers\ShiftServiceProvider;
 use App\Providers\StockMovementServiceProvider;
 use App\Providers\SubscriptionServiceProvider;
+use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
 
 return [
@@ -34,4 +36,6 @@ return [
     ExpenseCategoryServiceProvider::class,
     ExpenseServiceProvider::class,
     SyncServiceProvider::class,
+    AccountingServiceProvider::class,
+    EventServiceProvider::class,
 ];
