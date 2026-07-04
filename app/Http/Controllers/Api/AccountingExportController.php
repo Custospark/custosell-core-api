@@ -174,6 +174,10 @@ class AccountingExportController extends Controller
 
     protected function exportRatios(Business $business, int $periodId, string $format)
     {
+        $request = request();
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
         $ratios = $this->ratioService->calculateAll($business->id, $periodId);
         $period = \App\Models\AccountingPeriod::find($periodId);
 
@@ -183,6 +187,10 @@ class AccountingExportController extends Controller
                 $rows[] = [ucfirst($cat), $key, $val !== null ? number_format($val, 2) : 'N/A'];
             }
         }
+
+        $reportSubtitle = $dateFrom && $dateTo
+            ? "{$dateFrom} to {$dateTo}"
+            : ($period->name ?? "Period #{$periodId}");
 
         $headers = ['Category', 'Ratio', 'Value'];
         $filename = $this->export->buildFilename($business, "ratios-period-{$periodId}");
@@ -195,8 +203,9 @@ class AccountingExportController extends Controller
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.ratios', [
                 'business' => $business, 'ratios' => $ratios, 'formatter' => $this->export,
-                'reportTitle' => 'Financial Ratios — ' . ($period->name ?? "Period #{$periodId}"),
+                'reportTitle' => 'Financial Ratios',
                 'accent' => '#0891b2',
+                'reportSubtitle' => $reportSubtitle,
                 'periodName' => $period->name ?? "Period #{$periodId}",
                 'periodStart' => $period?->start_date?->toDateString(),
                 'periodEnd' => $period?->end_date?->toDateString(),
