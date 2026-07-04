@@ -220,9 +220,6 @@ class AccountingExportController extends Controller
                 'reportTitle' => 'Financial Ratios',
                 'accent' => '#0891b2',
                 'reportSubtitle' => $reportSubtitle,
-                'periodName' => $period->name ?? "Period #{$periodId}",
-                'periodStart' => $period?->start_date?->toDateString(),
-                'periodEnd' => $period?->end_date?->toDateString(),
             ], $filename, 'portrait'),
         };
     }

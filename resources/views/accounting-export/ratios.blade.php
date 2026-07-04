@@ -5,12 +5,6 @@
     $catLabels = ['liquidity' => 'Liquidity Ratios', 'profitability' => 'Profitability Ratios', 'solvency' => 'Solvency Ratios', 'efficiency' => 'Efficiency Ratios'];
   @endphp
 
-  @if(!empty($periodName))
-    <p style="text-align:center;font-size:10px;color:#4b5563;margin-bottom:12px;">
-      Period: {{ $periodName }}@if($periodStart) ({{ $periodStart }} to {{ $periodEnd }})@endif
-    </p>
-  @endif
-
   @foreach ($catLabels as $cat => $title)
     <div class="section-title">{{ $title }}</div>
     <table class="data">
