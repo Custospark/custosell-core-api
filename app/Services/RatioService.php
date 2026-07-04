@@ -21,14 +21,12 @@ class RatioService
         $solvency = $this->getSolvencyRatios($businessId, $periodId);
         $efficiency = $this->getEfficiencyRatios($businessId, $periodId);
 
-        return [
-            'liquidity' => $liquidity,
-            'profitability' => $profitability,
-            'solvency' => $solvency,
-            'efficiency' => $efficiency,
-            'recommendations' => $this->getRecommendations($businessId, $periodId),
+        $grouped = compact('liquidity', 'profitability', 'solvency', 'efficiency');
+
+        return array_merge($grouped, [
+            'recommendations' => $this->getRecommendationsFromRatios($grouped),
             'period_id' => $periodId,
-        ];
+        ]);
     }
 
     public function getTrends(int $businessId, string $interval = 'monthly', int $count = 12): array
@@ -71,10 +69,15 @@ class RatioService
         $inventory = $this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1104']);
         $cashAndEquivalents = $this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1101', '1102']);
 
+        $currentRatio = $this->safeDivide($currentAssets, $currentLiabilities);
+        $quickAssets = $currentAssets - $inventory;
+        $quickRatio = $this->safeDivide($quickAssets, $currentLiabilities);
+        $cashRatio = $this->safeDivide($cashAndEquivalents, $currentLiabilities);
+
         return [
-            'current_ratio' => $currentLiabilities != 0 ? round($currentAssets / $currentLiabilities, 2) : null,
-            'quick_ratio' => $currentLiabilities != 0 ? round(($currentAssets - $inventory) / $currentLiabilities, 2) : null,
-            'cash_ratio' => $currentLiabilities != 0 ? round($cashAndEquivalents / $currentLiabilities, 2) : null,
+            'current_ratio' => $currentRatio !== null ? round($currentRatio, 2) : null,
+            'quick_ratio' => $quickRatio !== null ? round($quickRatio, 2) : null,
+            'cash_ratio' => $cashRatio !== null ? round($cashRatio, 2) : null,
         ];
     }
 
@@ -83,18 +86,18 @@ class RatioService
         $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
         $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
 
-        $revenue = $is['total_revenue'] ?? 0;
+        $revenue = abs($is['total_revenue'] ?? 0);
         $netIncome = $is['net_income'] ?? 0;
-        $cogs = $this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']);
-        $totalAssets = $bs['total_assets'] ?? 0;
-        $totalEquity = $bs['total_equity'] ?? 0;
+        $cogs = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']));
+        $totalAssets = abs($bs['total_assets'] ?? 0);
+        $totalEquity = abs($bs['total_equity'] ?? 0);
         $grossProfit = $revenue - $cogs;
 
         return [
             'gross_profit_margin' => $revenue != 0 ? round(($grossProfit / $revenue) * 100, 2) : null,
             'net_profit_margin' => $revenue != 0 ? round(($netIncome / $revenue) * 100, 2) : null,
-            'return_on_assets' => $totalAssets != 0 ? round(($netIncome / $totalAssets) * 100, 2) : null,
-            'return_on_equity' => $totalEquity != 0 ? round(($netIncome / $totalEquity) * 100, 2) : null,
+            'return_on_assets' => $this->safeDivide($netIncome, $totalAssets) !== null ? round($this->safeDivide($netIncome, $totalAssets) * 100, 2) : null,
+            'return_on_equity' => $this->safeDivide($netIncome, $totalEquity) !== null ? round($this->safeDivide($netIncome, $totalEquity) * 100, 2) : null,
         ];
     }
 
@@ -103,16 +106,16 @@ class RatioService
         $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
         $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
 
-        $totalLiabilities = $bs['total_liabilities'] ?? 0;
-        $totalAssets = $bs['total_assets'] ?? 0;
-        $totalEquity = $bs['total_equity'] ?? 0;
+        $totalLiabilities = abs($bs['total_liabilities'] ?? 0);
+        $totalAssets = abs($bs['total_assets'] ?? 0);
+        $totalEquity = abs($bs['total_equity'] ?? 0);
         $operatingIncome = $is['operating_income'] ?? 0;
-        $interestExpense = $this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['6400']);
+        $interestExpense = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['6400']));
 
         return [
-            'debt_to_equity' => $totalEquity != 0 ? round($totalLiabilities / $totalEquity, 2) : null,
-            'debt_ratio' => $totalAssets != 0 ? round($totalLiabilities / $totalAssets, 2) : null,
-            'interest_coverage_ratio' => $interestExpense != 0 ? round($operatingIncome / $interestExpense, 2) : null,
+            'debt_to_equity' => $this->safeDivide($totalLiabilities, $totalEquity) !== null ? round($this->safeDivide($totalLiabilities, $totalEquity), 2) : null,
+            'debt_ratio' => $this->safeDivide($totalLiabilities, $totalAssets) !== null ? round($this->safeDivide($totalLiabilities, $totalAssets), 2) : null,
+            'interest_coverage_ratio' => $this->safeDivide($operatingIncome, $interestExpense) !== null ? round($this->safeDivide($operatingIncome, $interestExpense), 2) : null,
         ];
     }
 
@@ -121,23 +124,29 @@ class RatioService
         $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
         $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
 
-        $revenue = $is['total_revenue'] ?? 0;
-        $cogs = $this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']);
-        $totalAssets = $bs['total_assets'] ?? 0;
-        $inventory = $this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1104']);
-        $accountsReceivable = $this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1103']);
+        $revenue = abs($is['total_revenue'] ?? 0);
+        $cogs = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']));
+        $totalAssets = abs($bs['total_assets'] ?? 0);
+        $inventory = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1104']));
+        $accountsReceivable = abs($this->getAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1103']));
 
         return [
-            'asset_turnover' => $totalAssets != 0 ? round($revenue / $totalAssets, 2) : null,
-            'inventory_turnover' => $inventory != 0 ? round($cogs / $inventory, 2) : null,
-            'accounts_receivable_turnover' => $accountsReceivable != 0 ? round($revenue / $accountsReceivable, 2) : null,
+            'asset_turnover' => $this->safeDivide($revenue, $totalAssets) !== null ? round($this->safeDivide($revenue, $totalAssets), 2) : null,
+            'inventory_turnover' => $this->safeDivide($cogs, $inventory) !== null ? round($this->safeDivide($cogs, $inventory), 2) : null,
+            'accounts_receivable_turnover' => $this->safeDivide($revenue, $accountsReceivable) !== null ? round($this->safeDivide($revenue, $accountsReceivable), 2) : null,
         ];
     }
 
-    public function getRecommendations(int $businessId, int $periodId): array
+    protected function safeDivide(float $numerator, float $denominator): ?float
     {
-        $ratios = $this->calculateAll($businessId, $periodId);
+        if ($denominator == 0) {
+            return $numerator > 0 ? 999.99 : ($numerator < 0 ? -999.99 : 0);
+        }
+        return $numerator / $denominator;
+    }
 
+    public function getRecommendationsFromRatios(array $ratios): array
+    {
         $recs = [];
 
         $mapping = [
