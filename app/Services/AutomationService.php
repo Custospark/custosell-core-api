@@ -19,6 +19,12 @@ class AutomationService
     {
         try {
             $businessId = $sale->business_id;
+
+            // Guard: skip if already accounted for
+            if ($this->journalEntryService->getEntryByReference('sale', $sale->id, $businessId)) {
+                return;
+            }
+
             $codes = config('accounting.default_account_codes');
             $date = $sale->sale_date instanceof \Carbon\Carbon
                 ? $sale->sale_date->toDateString()
@@ -101,6 +107,12 @@ class AutomationService
     {
         try {
             $businessId = $expense->business_id;
+
+            // Guard: skip if already accounted for
+            if ($this->journalEntryService->getEntryByReference('expense', $expense->id, $businessId)) {
+                return;
+            }
+
             $codes = config('accounting.default_account_codes');
             $date = $expense->expense_date instanceof \Carbon\Carbon
                 ? $expense->expense_date->toDateString()
