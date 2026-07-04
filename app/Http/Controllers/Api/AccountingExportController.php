@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
+use App\Services\RatioService;
 use App\Services\ReportExportService;
 use Illuminate\Http\Request;
 
@@ -14,6 +15,7 @@ class AccountingExportController extends Controller
     public function __construct(
         protected FinancialStatementService $financialStatementService,
         protected LedgerService $ledgerService,
+        protected RatioService $ratioService,
         protected ReportExportService $export,
     ) {}
 
@@ -33,6 +35,7 @@ class AccountingExportController extends Controller
             'income-statement' => 'exportIncomeStatement',
             'balance-sheet' => 'exportBalanceSheet',
             'general-ledger' => 'exportGeneralLedger',
+            'ratios' => 'exportRatios',
             default => null,
         };
 
@@ -166,6 +169,32 @@ class AccountingExportController extends Controller
                 'ledgerRows' => $ledgerRows,
                 'formatter' => $this->export,
             ], $filename, 'landscape'),
+        };
+    }
+
+    protected function exportRatios(Business $business, int $periodId, string $format)
+    {
+        $ratios = $this->ratioService->calculateAll($business->id, $periodId);
+
+        $rows = [];
+        foreach (['liquidity', 'profitability', 'solvency', 'efficiency'] as $cat) {
+            foreach ($ratios[$cat] as $key => $val) {
+                $rows[] = [ucfirst($cat), $key, $val !== null ? number_format($val, 2) : 'N/A'];
+            }
+        }
+
+        $headers = ['Category', 'Ratio', 'Value'];
+        $filename = $this->export->buildFilename($business, "ratios-period-{$periodId}");
+
+        return match ($format) {
+            'xlsx' => $this->export->downloadRichXlsx([
+                'filename' => $filename, 'business' => $business,
+                'reportTitle' => 'Financial Ratios', 'headers' => $headers, 'rows' => $rows,
+            ]),
+            'csv' => $this->export->downloadCsv($filename, $headers, $rows),
+            default => $this->export->downloadPdf('accounting-export.ratios', [
+                'business' => $business, 'ratios' => $ratios, 'formatter' => $this->export,
+            ], $filename, 'portrait'),
         };
     }
 }
