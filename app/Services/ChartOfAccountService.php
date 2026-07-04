@@ -83,6 +83,24 @@ class ChartOfAccountService
         $this->chartOfAccountRepository->update($account, ['is_active' => false]);
     }
 
+    public function destroy(int $id): void
+    {
+        $account = $this->getById($id);
+
+        if ($account->is_system) {
+            throw new \RuntimeException('Cannot delete a system account.');
+        }
+
+        if ($account->journalEntryLines()->exists()) {
+            // Has transactions — soft deactivate instead
+            $this->chartOfAccountRepository->update($account, ['is_active' => false]);
+            return;
+        }
+
+        // No transactions — hard delete
+        $this->chartOfAccountRepository->delete($account);
+    }
+
     public function seedDefaultTemplate(int $businessId): void
     {
         $seeder = new \Database\Seeders\DefaultAccountingTemplateSeeder();

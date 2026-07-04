@@ -56,7 +56,7 @@ class ChartOfAccountController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $this->chartOfAccountService->deactivate($id);
+        $this->chartOfAccountService->destroy($id);
         return response()->json(null, 204);
     }
 }
