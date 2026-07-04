@@ -140,7 +140,12 @@ class RatioService
     protected function safeDivide(float $numerator, float $denominator): ?float
     {
         if ($denominator == 0) {
-            return $numerator > 0 ? 999.99 : ($numerator < 0 ? -999.99 : 0);
+            // No liabilities = excellent liquidity, but ratio is technically undefined
+            // Return null so the frontend can display N/A with context
+            return null;
+        }
+        if ($denominator < 0) {
+            $denominator = abs($denominator);
         }
         return $numerator / $denominator;
     }
