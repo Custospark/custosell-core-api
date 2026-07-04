@@ -39,7 +39,23 @@ class GeneralLedgerController extends Controller
         if ($periodId) {
             return (int) $periodId;
         }
+
         $businessId = $request->user()->business_id;
+
+        // Support date_from / date_to as alternative to period_id
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+        if ($dateFrom && $dateTo) {
+            $period = \App\Models\AccountingPeriod::where('business_id', $businessId)
+                ->where('start_date', '<=', $dateTo)
+                ->where('end_date', '>=', $dateFrom)
+                ->orderBy('start_date', 'desc')
+                ->first();
+            if ($period) {
+                return $period->id;
+            }
+        }
+
         $current = $this->accountingPeriodService->getCurrentPeriod($businessId);
         return $current->id;
     }
