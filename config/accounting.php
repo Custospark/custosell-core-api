@@ -14,5 +14,6 @@ return [
         'retained_earnings' => '3200',
         'depreciation_expense' => '6300',
         'accumulated_depreciation' => '1205',
+        'operating_expense' => '6101',
     ],
 ];
