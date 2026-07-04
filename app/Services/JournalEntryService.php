@@ -28,8 +28,9 @@ class JournalEntryService
         ?string $referenceType = null,
         ?int $referenceId = null,
         ?int $createdBy = null,
+        ?string $attachmentPath = null,
     ): JournalEntry {
-        return DB::transaction(function () use ($businessId, $date, $description, $lines, $referenceType, $referenceId, $createdBy) {
+        return DB::transaction(function () use ($businessId, $date, $description, $lines, $referenceType, $referenceId, $createdBy, $attachmentPath) {
             $period = $this->accountingPeriodRepository->getPeriodByDate($businessId, $date);
 
             if (!$period) {
@@ -89,6 +90,7 @@ class JournalEntryService
                 'created_by' => $createdBy ?? auth()->id() ?? 1,
                 'locked' => false,
                 'posted_at' => null,
+                'attachment_path' => $attachmentPath,
             ]);
 
             $this->journalEntryRepository->createLines($entry->id, $entryLines);
@@ -241,6 +243,7 @@ class JournalEntryService
             $data['reference_type'] ?? null,
             $data['reference_id'] ?? null,
             $userId,
+            $data['attachment_path'] ?? null,
         );
     }
 
