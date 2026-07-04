@@ -17,7 +17,12 @@ class JournalEntryRepository implements JournalEntryRepositoryInterface
             ->with(['createdBy', 'accountingPeriod']);
 
         if (!empty($filters['period_id'])) {
-            $query->where('period_id', $filters['period_id']);
+            if (str_contains($filters['period_id'], ',')) {
+                $ids = array_map('intval', explode(',', $filters['period_id']));
+                $query->whereIn('period_id', $ids);
+            } else {
+                $query->where('period_id', $filters['period_id']);
+            }
         }
         if (!empty($filters['date_from'])) {
             $query->where('date', '>=', $filters['date_from']);
