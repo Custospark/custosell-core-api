@@ -5,6 +5,12 @@
     $catLabels = ['liquidity' => 'Liquidity Ratios', 'profitability' => 'Profitability Ratios', 'solvency' => 'Solvency Ratios', 'efficiency' => 'Efficiency Ratios'];
   @endphp
 
+  @if(!empty($periodName))
+    <p style="text-align:center;font-size:10px;color:#4b5563;margin-bottom:12px;">
+      Period: {{ $periodName }}@if($periodStart) ({{ $periodStart }} to {{ $periodEnd }})@endif
+    </p>
+  @endif
+
   @foreach ($catLabels as $cat => $title)
     <div class="section-title">{{ $title }}</div>
     <table class="data">
@@ -42,7 +48,7 @@
       <colgroup><col style="width:15%"><col style="width:20%"><col style="width:65%"></colgroup>
       <thead><tr><th class="text-left">Priority</th><th class="text-left">Ratio</th><th class="text-left">Recommendation</th></tr></thead>
       <tbody>
-        @foreach ($ratios['recommendations'] as $rec)
+        @foreach (array_slice($ratios['recommendations'], 0, 5) as $rec)
           <tr>
             <td class="text-left">
               <span class="badge {{ $rec['priority'] === 'high' ? 'badge-refunded' : ($rec['priority'] === 'medium' ? 'badge-partial' : 'badge-paid') }}">

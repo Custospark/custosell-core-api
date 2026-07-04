@@ -175,6 +175,7 @@ class AccountingExportController extends Controller
     protected function exportRatios(Business $business, int $periodId, string $format)
     {
         $ratios = $this->ratioService->calculateAll($business->id, $periodId);
+        $period = \App\Models\AccountingPeriod::find($periodId);
 
         $rows = [];
         foreach (['liquidity', 'profitability', 'solvency', 'efficiency'] as $cat) {
@@ -194,7 +195,11 @@ class AccountingExportController extends Controller
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.ratios', [
                 'business' => $business, 'ratios' => $ratios, 'formatter' => $this->export,
-                'reportTitle' => 'Financial Ratios', 'accent' => '#0891b2',
+                'reportTitle' => 'Financial Ratios — ' . ($period->name ?? "Period #{$periodId}"),
+                'accent' => '#0891b2',
+                'periodName' => $period->name ?? "Period #{$periodId}",
+                'periodStart' => $period?->start_date?->toDateString(),
+                'periodEnd' => $period?->end_date?->toDateString(),
             ], $filename, 'portrait'),
         };
     }
