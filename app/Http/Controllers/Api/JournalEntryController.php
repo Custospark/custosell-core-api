@@ -44,21 +44,21 @@ class JournalEntryController extends Controller
         }
 
         $entry = $this->journalEntryService->createDraft($businessId, $userId, $data);
-        return response()->json(new JournalEntryResource($entry), 201);
+        return response()->json(['data' => new JournalEntryResource($entry)], 201);
     }
 
     public function post(Request $request, int $id): JsonResponse
     {
         $userId = $request->user()->id;
         $entry = $this->journalEntryService->post($id, $userId);
-        return response()->json(new JournalEntryResource($entry));
+        return response()->json(['data' => new JournalEntryResource($entry)]);
     }
 
     public function reverse(Request $request, int $id): JsonResponse
     {
         $userId = $request->user()->id;
         $entry = $this->journalEntryService->createReversingEntry($id, $userId);
-        return response()->json(new JournalEntryResource($entry), 201);
+        return response()->json(['data' => new JournalEntryResource($entry)], 201);
     }
 
     public function lines(int $id): JsonResponse
