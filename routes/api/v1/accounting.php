@@ -45,4 +45,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:accounting'])->gro
 
     Route::get('/ratios', [RatioController::class, 'index']);
     Route::get('/ratios/trends', [RatioController::class, 'trends']);
+
+    Route::get('/accounting/export/{type}', [\App\Http\Controllers\Api\AccountingExportController::class, 'export']);
 });
