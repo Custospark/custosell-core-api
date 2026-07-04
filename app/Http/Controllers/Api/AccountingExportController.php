@@ -78,7 +78,7 @@ class AccountingExportController extends Controller
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
                 'filename' => $filename, 'business' => $business,
-                'reportTitle' => 'Trial Balance', 'headers' => $headers, 'rows' => $rows,
+                'reportTitle' => 'Trial Balance', 'accent' => '#1e40af', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.trial-balance', [
@@ -116,7 +116,7 @@ class AccountingExportController extends Controller
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
                 'filename' => $filename, 'business' => $business,
-                'reportTitle' => 'Income Statement', 'headers' => $headers, 'rows' => $rows,
+                'reportTitle' => 'Income Statement', 'accent' => '#16a34a', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.income-statement', [
@@ -151,7 +151,7 @@ class AccountingExportController extends Controller
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
                 'filename' => $filename, 'business' => $business,
-                'reportTitle' => 'Balance Sheet', 'headers' => $headers, 'rows' => $rows,
+                'reportTitle' => 'Balance Sheet', 'accent' => '#7c3aed', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.balance-sheet', [
@@ -176,7 +176,7 @@ class AccountingExportController extends Controller
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
                 'filename' => $filename, 'business' => $business,
-                'reportTitle' => 'General Ledger', 'headers' => $headers, 'rows' => $rows,
+                'reportTitle' => 'General Ledger', 'accent' => '#2563eb', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.general-ledger', [
@@ -212,7 +212,10 @@ class AccountingExportController extends Controller
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
                 'filename' => $filename, 'business' => $business,
-                'reportTitle' => 'Financial Ratios', 'headers' => $headers, 'rows' => $rows,
+                'reportTitle' => 'Financial Ratios',
+                'reportSubtitle' => $reportSubtitle,
+                'accent' => '#0891b2',
+                'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.ratios', [
