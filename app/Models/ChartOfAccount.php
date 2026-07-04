@@ -19,12 +19,14 @@ class ChartOfAccount extends Model
         'type_id',
         'normal_balance',
         'is_active',
+        'is_system',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'is_system' => 'boolean',
         ];
     }
 

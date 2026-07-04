@@ -120,6 +120,7 @@ class DefaultAccountingTemplateSeeder extends Seeder
                 'type_id' => $account['type_id'],
                 'normal_balance' => $account['normal_balance'],
                 'is_active' => true,
+                'is_system' => true,
             ]);
 
             $inserted[$account['code']] = $model->id;

@@ -20,6 +20,7 @@ class ChartOfAccountResource extends JsonResource
             'type_id' => $this->type_id,
             'normal_balance' => $this->normal_balance,
             'is_active' => (bool) $this->is_active,
+            'is_system' => (bool) $this->is_system,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
