@@ -75,7 +75,14 @@ class LedgerService
             $query->where('period_id', $periodId);
         }
 
-        return (float) $query->sum('closing_balance');
+        $account = \App\Models\ChartOfAccount::find($accountId);
+        $isDebit = $account && $account->normal_balance === 'debit';
+
+        if ($isDebit) {
+            return (float) $query->sum(\Illuminate\Support\Facades\DB::raw('total_debits - total_credits'));
+        }
+
+        return (float) $query->sum(\Illuminate\Support\Facades\DB::raw('total_credits - total_debits'));
     }
 
     public function generateTrialBalance(int $businessId, int $periodId): array
