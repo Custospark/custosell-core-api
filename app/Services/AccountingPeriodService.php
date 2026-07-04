@@ -33,7 +33,7 @@ class AccountingPeriodService
     {
         $period = $this->accountingPeriodRepository->getCurrentPeriod($businessId);
         if (!$period) {
-            throw new \RuntimeException('No current open accounting period found.');
+            return $this->accountingPeriodRepository->findOrCreatePeriod($businessId, now()->toDateString());
         }
         return $period;
     }
