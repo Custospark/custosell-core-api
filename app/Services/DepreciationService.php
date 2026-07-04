@@ -127,4 +127,47 @@ class DepreciationService
             return $depreciationEntry;
         });
     }
+
+    public function runDepreciation(int $businessId, int $periodId, int $userId): array
+    {
+        $period = AccountingPeriod::find($periodId);
+        if (!$period) {
+            throw new \RuntimeException("Accounting period not found.");
+        }
+
+        $assets = $this->fixedAssetRepository->getDueForDepreciation($businessId, $periodId);
+        $results = [];
+
+        foreach ($assets as $asset) {
+            try {
+                $entry = $this->calculateDepreciationForPeriod($asset, $period);
+                $results[] = [
+                    'asset_id' => $asset->id,
+                    'asset_name' => $asset->name,
+                    'amount' => $entry ? (float) $entry->amount : 0,
+                    'status' => $entry ? 'depreciated' : 'skipped',
+                ];
+            } catch (\Throwable $e) {
+                Log::error("Depreciation failed for asset {$asset->id}", [
+                    'error' => $e->getMessage(),
+                ]);
+                $results[] = [
+                    'asset_id' => $asset->id,
+                    'asset_name' => $asset->name,
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return $results;
+    }
+
+    public function getSchedule(int $assetId): \Illuminate\Support\Collection
+    {
+        return DepreciationEntry::where('asset_id', $assetId)
+            ->with(['accountingPeriod', 'journalEntry'])
+            ->orderBy('id')
+            ->get();
+    }
 }

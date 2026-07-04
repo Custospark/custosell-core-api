@@ -150,6 +150,11 @@ class LedgerService
         return $rows;
     }
 
+    public function getTrialBalance(int $businessId, int $periodId): \Illuminate\Support\Collection
+    {
+        return $this->generalLedgerRepository->getTrialBalance($businessId, $periodId);
+    }
+
     protected function calculateOpeningBalance(int $businessId, int $accountId, int $periodId): float
     {
         $period = AccountingPeriod::find($periodId);

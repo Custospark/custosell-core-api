@@ -44,10 +44,17 @@ class JournalEntryService
             $entryLines = [];
 
             foreach ($lines as $line) {
-                $account = $this->chartOfAccountRepository->findByCode($businessId, $line['account_code']);
+                $account = null;
+
+                if (!empty($line['account_code'])) {
+                    $account = $this->chartOfAccountRepository->findByCode($businessId, $line['account_code']);
+                } elseif (!empty($line['account_id'])) {
+                    $account = $this->chartOfAccountRepository->find($line['account_id']);
+                }
 
                 if (!$account) {
-                    throw new \RuntimeException("Account with code {$line['account_code']} not found for this business.");
+                    $identifier = $line['account_code'] ?? $line['account_id'] ?? 'unknown';
+                    throw new \RuntimeException("Account '{$identifier}' not found for this business.");
                 }
 
                 $debit = (float) ($line['debit'] ?? 0);
@@ -187,5 +194,52 @@ class JournalEntryService
             ->where('business_id', $businessId)
             ->sortByDesc('id')
             ->first();
+    }
+
+    // ── Adapter methods for controller compatibility ──
+
+    public function getAll(int $businessId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return $this->journalEntryRepository->all($businessId, $filters);
+    }
+
+    public function getById(int $id): ?JournalEntry
+    {
+        return $this->journalEntryRepository->find($id);
+    }
+
+    public function createDraft(int $businessId, int $userId, array $data): JournalEntry
+    {
+        $lines = [];
+        foreach ($data['lines'] ?? [] as $line) {
+            $lines[] = [
+                'account_code' => $line['account_code'] ?? '',
+                'debit' => $line['debit_amount'] ?? $line['debit'] ?? 0,
+                'credit' => $line['credit_amount'] ?? $line['credit'] ?? 0,
+                'description' => $line['description'] ?? null,
+            ];
+        }
+
+        return $this->createEntry(
+            $businessId,
+            $data['date'],
+            $data['description'],
+            $lines,
+            $data['reference_type'] ?? null,
+            $data['reference_id'] ?? null,
+            $userId,
+        );
+    }
+
+    public function post(int $id, int $userId): JournalEntry
+    {
+        $entry = $this->postEntry($id);
+        Log::info("Journal entry {$entry->entry_number} posted by user {$userId}");
+        return $entry;
+    }
+
+    public function getLines(int $entryId): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->journalEntryRepository->getLines($entryId);
     }
 }
