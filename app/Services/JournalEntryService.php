@@ -246,4 +246,16 @@ class JournalEntryService
     {
         return $this->journalEntryRepository->getLines($entryId);
     }
+
+    public function deleteEntry(int $id): void
+    {
+        $entry = $this->journalEntryRepository->find($id);
+        if (!$entry) {
+            throw new \RuntimeException('Journal entry not found.');
+        }
+        if ($entry->posted_at) {
+            throw new \RuntimeException('Cannot delete a posted journal entry. Use reverse instead.');
+        }
+        $entry->delete();
+    }
 }

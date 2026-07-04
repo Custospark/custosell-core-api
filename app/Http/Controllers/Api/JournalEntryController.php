@@ -63,4 +63,10 @@ class JournalEntryController extends Controller
             ),
         ]);
     }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $this->journalEntryService->deleteEntry($id);
+        return response()->json(null, 204);
+    }
 }

@@ -12,11 +12,11 @@ class StoreChartOfAccountRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:20'],
-            'name' => ['required', 'string', 'max:200'],
-            'type_id' => ['required', 'integer', 'exists:account_types,id'],
+            'code' => ['sometimes', 'required', 'string', 'max:20'],
+            'name' => ['sometimes', 'required', 'string', 'max:200'],
+            'type_id' => ['sometimes', 'required', 'integer', 'exists:account_types,id'],
             'parent_id' => ['nullable', 'integer', 'exists:chart_of_accounts,id'],
-            'normal_balance' => ['required', 'string', 'in:debit,credit'],
+            'normal_balance' => ['sometimes', 'required', 'string', 'in:debit,credit'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

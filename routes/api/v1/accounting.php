@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:accounting'])->gro
     Route::post('/journal-entries', [JournalEntryController::class, 'store']);
     Route::post('/journal-entries/{id}/post', [JournalEntryController::class, 'post'])->whereNumber('id');
     Route::post('/journal-entries/{id}/reverse', [JournalEntryController::class, 'reverse'])->whereNumber('id');
+    Route::delete('/journal-entries/{id}', [JournalEntryController::class, 'destroy'])->whereNumber('id');
 
     Route::get('/general-ledger', [GeneralLedgerController::class, 'index']);
     Route::get('/general-ledger/trial-balance', [GeneralLedgerController::class, 'trialBalance']);

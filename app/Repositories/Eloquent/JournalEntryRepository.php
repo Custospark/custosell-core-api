@@ -83,6 +83,7 @@ class JournalEntryRepository implements JournalEntryRepositoryInterface
             ->where('entry_number', 'like', $prefix . '%')
             ->orderBy('entry_number', 'desc')
             ->lockForUpdate()
+            ->withTrashed()
             ->first();
 
         if ($last) {
