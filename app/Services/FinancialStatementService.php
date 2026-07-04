@@ -31,6 +31,8 @@ class FinancialStatementService
         $totalRevenue = 0;
         foreach ($revenueAccounts as $account) {
             $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $periodId);
+            // Skip zero-balance grouping accounts
+            if ($balance == 0 && in_array($account->code, ['4000'])) continue;
             $revenues[] = [
                 'account_code' => $account->code,
                 'account_name' => $account->name,
@@ -43,6 +45,8 @@ class FinancialStatementService
         $totalExpenses = 0;
         foreach ($expenseAccounts as $account) {
             $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $periodId);
+            // Skip zero-balance grouping accounts
+            if ($balance == 0 && in_array($account->code, ['5000', '6000', '6100', '6200'])) continue;
             $expenses[] = [
                 'account_code' => $account->code,
                 'account_name' => $account->name,
@@ -61,20 +65,25 @@ class FinancialStatementService
         });
         $taxExpense = array_sum(array_column($taxAccounts, 'balance'));
 
+        // Operating expenses = all expenses minus COGS minus parent grouping accounts
+        $operatingExpenses = array_values(array_filter($expenses, function ($e) {
+            return !in_array($e['account_code'], ['5100', '5200', '5300', '6400', '6500', '6300', '5000', '6000']);
+        }));
+        $totalOperatingExpenses = array_sum(array_column($operatingExpenses, 'balance'));
+
         $grossProfit = $totalRevenue - $cogs;
-        $operatingExpenses = $totalExpenses - $cogs;
-        $operatingIncome = $grossProfit - $operatingExpenses;
+        $operatingIncome = $grossProfit - $totalOperatingExpenses;
 
         return [
             'sections' => [
                 'revenue' => $revenues,
                 'cost_of_goods_sold' => array_values($cogsAccounts),
-                'operating_expenses' => $expenses,
+                'operating_expenses' => $operatingExpenses,
             ],
             'total_revenue' => round($totalRevenue, 2),
             'total_cost_of_goods_sold' => round($cogs, 2),
             'gross_profit' => round($grossProfit, 2),
-            'total_operating_expenses' => round($operatingExpenses, 2),
+            'total_operating_expenses' => round($totalOperatingExpenses, 2),
             'operating_income' => round($operatingIncome, 2),
             'other_income' => 0,
             'other_expenses' => 0,
