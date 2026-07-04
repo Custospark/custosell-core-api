@@ -24,6 +24,7 @@ class JournalEntryResource extends JsonResource
             'locked' => (bool) $this->locked,
             'posted_at' => $this->posted_at?->toISOString(),
             'lines' => JournalEntryLineResource::collection($this->lines),
+            'attachment_url' => $this->attachment_path ? \Illuminate\Support\Facades\Storage::url($this->attachment_path) : null,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

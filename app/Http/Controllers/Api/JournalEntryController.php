@@ -37,7 +37,13 @@ class JournalEntryController extends Controller
     {
         $businessId = $request->user()->business_id;
         $userId = $request->user()->id;
-        $entry = $this->journalEntryService->createDraft($businessId, $userId, $request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('attachment')) {
+            $data['attachment_path'] = $request->file('attachment')->store('journal-attachments', 'public');
+        }
+
+        $entry = $this->journalEntryService->createDraft($businessId, $userId, $data);
         return response()->json(new JournalEntryResource($entry), 201);
     }
 

@@ -21,6 +21,7 @@ class StoreJournalEntryRequest extends BaseFormRequest
             'lines.*.debit_amount' => ['numeric', 'min:0'],
             'lines.*.credit_amount' => ['numeric', 'min:0'],
             'lines.*.description' => ['nullable', 'string', 'max:250'],
+            'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf,doc,docx,xlsx', 'max:10240'],
         ];
     }
 

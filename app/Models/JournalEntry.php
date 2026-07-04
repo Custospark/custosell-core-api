@@ -22,6 +22,7 @@ class JournalEntry extends Model
         'created_by',
         'locked',
         'posted_at',
+        'attachment_path',
     ];
 
     protected function casts(): array
