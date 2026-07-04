@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             SystemRoleSeeder::class,
             SystemExpenseCategorySeeder::class,
+            AccountingModuleSeeder::class,
         ]);
     }
 }
