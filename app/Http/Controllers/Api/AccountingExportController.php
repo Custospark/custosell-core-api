@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountingPeriod;
 use App\Models\Business;
 use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
@@ -21,13 +22,21 @@ class AccountingExportController extends Controller
 
     public function export(Request $request, string $type)
     {
-        $request->validate([
-            'period_id' => 'required|integer|exists:accounting_periods,id',
-            'format' => 'nullable|in:pdf,xlsx,csv',
-        ]);
+        $rules = ['format' => 'nullable|in:pdf,xlsx,csv'];
+
+        if ($request->has('period_id')) {
+            $rules['period_id'] = 'required|integer|exists:accounting_periods,id';
+        } else {
+            $rules['date_from'] = 'required|date';
+            $rules['date_to'] = 'required|date|after_or_equal:date_from';
+        }
+
+        $request->validate($rules);
 
         $business = Business::findOrFail((int) $request->user()->business_id);
-        $periodId = (int) $request->query('period_id');
+        $periodId = (int) ($request->query('period_id') ?? $this->resolvePeriodIdFromRange(
+            $request->query('date_from'), $request->query('date_to'), $business->id,
+        ));
         $format = $request->query('format', 'pdf');
 
         $method = match ($type) {
@@ -46,6 +55,17 @@ class AccountingExportController extends Controller
         return $this->$method($business, $periodId, $format);
     }
 
+    protected function resolvePeriodIdFromRange(string $dateFrom, string $dateTo, int $businessId): int
+    {
+        $period = AccountingPeriod::where('business_id', $businessId)
+            ->where('start_date', '<=', $dateTo)
+            ->where('end_date', '>=', $dateFrom)
+            ->orderBy('start_date', 'desc')
+            ->first();
+
+        return $period?->id ?? throw new \RuntimeException('No accounting period found for the given date range.');
+    }
+
     protected function exportTrialBalance(Business $business, int $periodId, string $format)
     {
         $trialBalance = $this->ledgerService->generateTrialBalance($business->id, $periodId);
@@ -57,11 +77,8 @@ class AccountingExportController extends Controller
 
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
-                'filename' => $filename,
-                'business' => $business,
-                'reportTitle' => 'Trial Balance',
-                'headers' => $headers,
-                'rows' => $rows,
+                'filename' => $filename, 'business' => $business,
+                'reportTitle' => 'Trial Balance', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.trial-balance', [
@@ -158,11 +175,8 @@ class AccountingExportController extends Controller
 
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
-                'filename' => $filename,
-                'business' => $business,
-                'reportTitle' => 'General Ledger',
-                'headers' => $headers,
-                'rows' => $rows,
+                'filename' => $filename, 'business' => $business,
+                'reportTitle' => 'General Ledger', 'headers' => $headers, 'rows' => $rows,
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.general-ledger', [
@@ -179,7 +193,7 @@ class AccountingExportController extends Controller
         $dateTo = $request->query('date_to');
 
         $ratios = $this->ratioService->calculateAll($business->id, $periodId);
-        $period = \App\Models\AccountingPeriod::find($periodId);
+        $period = AccountingPeriod::find($periodId);
 
         $rows = [];
         foreach (['liquidity', 'profitability', 'solvency', 'efficiency'] as $cat) {
