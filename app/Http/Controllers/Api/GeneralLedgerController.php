@@ -99,4 +99,20 @@ class GeneralLedgerController extends Controller
         $result = $this->financialStatementService->balanceSheet($businessId, $periodId);
         return response()->json(['data' => $result]);
     }
+
+    public function cashFlow(Request $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $periodId = $this->resolvePeriodId($request);
+        $result = $this->financialStatementService->cashFlowStatement($businessId, $periodId);
+        return response()->json(['data' => $result]);
+    }
+
+    public function equity(Request $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $periodId = $this->resolvePeriodId($request);
+        $result = $this->financialStatementService->statementOfEquity($businessId, $periodId);
+        return response()->json(['data' => $result]);
+    }
 }

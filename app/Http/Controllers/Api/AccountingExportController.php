@@ -45,6 +45,8 @@ class AccountingExportController extends Controller
             'balance-sheet' => 'exportBalanceSheet',
             'general-ledger' => 'exportGeneralLedger',
             'ratios' => 'exportRatios',
+            'cash-flow' => 'exportCashFlow',
+            'equity' => 'exportEquity',
             default => null,
         };
 
@@ -223,6 +225,73 @@ class AccountingExportController extends Controller
                 'reportTitle' => 'Financial Ratios',
                 'accent' => '#0891b2',
                 'reportSubtitle' => $reportSubtitle,
+            ], $filename, 'portrait'),
+        };
+    }
+
+    protected function exportCashFlow(Business $business, int $periodId, string $format)
+    {
+        $stmt = $this->financialStatementService->cashFlowStatement($business->id, $periodId);
+
+        $rows = [];
+        foreach ($stmt['operating']['items'] ?? [] as $item) {
+            $rows[] = ['Operating', $item['label'], $item['amount']];
+        }
+        $rows[] = ['Operating', 'Net Cash from Operating Activities', $stmt['operating']['total']];
+        foreach ($stmt['investing']['items'] ?? [] as $item) {
+            $rows[] = ['Investing', $item['label'], $item['amount']];
+        }
+        $rows[] = ['Investing', 'Net Cash from Investing Activities', $stmt['investing']['total']];
+        foreach ($stmt['financing']['items'] ?? [] as $item) {
+            $rows[] = ['Financing', $item['label'], $item['amount']];
+        }
+        $rows[] = ['Financing', 'Net Cash from Financing Activities', $stmt['financing']['total']];
+        $rows[] = ['', 'Net Change in Cash', $stmt['net_change']];
+
+        $headers = ['Section', 'Item', 'Amount'];
+        $filename = $this->export->buildFilename($business, "cash-flow-period-{$periodId}");
+
+        return match ($format) {
+            'xlsx' => $this->export->downloadRichXlsx([
+                'filename' => $filename, 'business' => $business,
+                'reportTitle' => 'Cash Flow Statement', 'accent' => '#d97706',
+                'headers' => $headers, 'rows' => $rows,
+            ]),
+            'csv' => $this->export->downloadCsv($filename, $headers, $rows),
+            default => $this->export->downloadPdf('accounting-export.cash-flow', [
+                'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
+                'reportTitle' => 'Cash Flow Statement', 'accent' => '#d97706',
+            ], $filename, 'portrait'),
+        };
+    }
+
+    protected function exportEquity(Business $business, int $periodId, string $format)
+    {
+        $stmt = $this->financialStatementService->statementOfEquity($business->id, $periodId);
+
+        $rows = [];
+        foreach ($stmt['equity_components'] ?? [] as $e) {
+            $rows[] = [$e['account_code'], $e['account_name'], $e['balance']];
+        }
+        $rows[] = ['', 'Opening Retained Earnings', $stmt['opening_retained_earnings']];
+        $rows[] = ['', 'Net Income', $stmt['net_income']];
+        $rows[] = ['', 'Dividends', -$stmt['dividends']];
+        $rows[] = ['', 'Closing Retained Earnings', $stmt['closing_retained_earnings']];
+        $rows[] = ['', 'Total Equity', $stmt['total_equity']];
+
+        $headers = ['Code', 'Component', 'Amount'];
+        $filename = $this->export->buildFilename($business, "equity-period-{$periodId}");
+
+        return match ($format) {
+            'xlsx' => $this->export->downloadRichXlsx([
+                'filename' => $filename, 'business' => $business,
+                'reportTitle' => 'Statement of Changes in Equity', 'accent' => '#7c3aed',
+                'headers' => $headers, 'rows' => $rows,
+            ]),
+            'csv' => $this->export->downloadCsv($filename, $headers, $rows),
+            default => $this->export->downloadPdf('accounting-export.equity', [
+                'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
+                'reportTitle' => 'Statement of Changes in Equity', 'accent' => '#7c3aed',
             ], $filename, 'portrait'),
         };
     }

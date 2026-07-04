@@ -34,6 +34,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:accounting'])->gro
     Route::get('/general-ledger/trial-balance', [GeneralLedgerController::class, 'trialBalance']);
     Route::get('/general-ledger/profit-loss', [GeneralLedgerController::class, 'profitLoss']);
     Route::get('/general-ledger/balance-sheet', [GeneralLedgerController::class, 'balanceSheet']);
+    Route::get('/general-ledger/cash-flow', [GeneralLedgerController::class, 'cashFlow']);
+    Route::get('/general-ledger/equity', [GeneralLedgerController::class, 'equity']);
 
     Route::get('/fixed-assets', [FixedAssetController::class, 'index']);
     Route::get('/fixed-assets/{id}', [FixedAssetController::class, 'show'])->whereNumber('id');

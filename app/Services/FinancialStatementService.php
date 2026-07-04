@@ -119,6 +119,153 @@ class FinancialStatementService
         ];
     }
 
+    public function cashFlowStatement(int $businessId, int $periodId): array
+    {
+        $is = $this->incomeStatement($businessId, $periodId);
+        $netIncome = $is['net_income'] ?? 0;
+
+        $period = \App\Models\AccountingPeriod::findOrFail($periodId);
+        $prevPeriod = \App\Models\AccountingPeriod::where('business_id', $businessId)
+            ->where('end_date', '<', $period->start_date)
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        $prevId = $prevPeriod?->id;
+
+        $assetTypeId = AccountType::where('name', 'Asset')->first()?->id;
+        $liabilityTypeId = AccountType::where('name', 'Liability')->first()?->id;
+
+        $currentAssets = $this->getAccountsWithBalances($businessId, $periodId, $assetTypeId);
+        $currentLiabilities = $this->getAccountsWithBalances($businessId, $periodId, $liabilityTypeId);
+
+        $prevAssets = $prevId ? $this->getAccountsWithBalances($businessId, $prevId, $assetTypeId) : [];
+        $prevLiabilities = $prevId ? $this->getAccountsWithBalances($businessId, $prevId, $liabilityTypeId) : [];
+
+        $getBal = function ($list, $code) {
+            foreach ($list as $item) {
+                if ($item['account_code'] === $code) {
+                    return $item['balance'];
+                }
+            }
+            return 0;
+        };
+
+        $depreciationAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '6300')->first();
+        $depreciation = $depreciationAccount ? $this->ledgerService->calculateAccountBalance($depreciationAccount->id, $businessId, $periodId) : 0;
+
+        $arChange = $getBal($currentAssets, '1103') - $getBal($prevAssets, '1103');
+        $invChange = $getBal($currentAssets, '1104') - $getBal($prevAssets, '1104');
+        $prepaidChange = $getBal($currentAssets, '1105') - $getBal($prevAssets, '1105');
+
+        $apChange = $getBal($currentLiabilities, '2101') - $getBal($prevLiabilities, '2101');
+        $vatChange = $getBal($currentLiabilities, '2102') - $getBal($prevLiabilities, '2102');
+        $accruedChange = $getBal($currentLiabilities, '2103') - $getBal($prevLiabilities, '2103');
+
+        $operatingItems = [
+            ['label' => 'Net Income', 'amount' => $netIncome],
+            ['label' => 'Depreciation & Amortization', 'amount' => abs($depreciation)],
+            ['label' => 'Change in Accounts Receivable', 'amount' => -$arChange],
+            ['label' => 'Change in Inventory', 'amount' => -$invChange],
+            ['label' => 'Change in Prepaid Expenses', 'amount' => -$prepaidChange],
+            ['label' => 'Change in Accounts Payable', 'amount' => $apChange],
+            ['label' => 'Change in VAT Payable', 'amount' => $vatChange],
+            ['label' => 'Change in Accrued Expenses', 'amount' => $accruedChange],
+        ];
+
+        $operatingTotal = array_sum(array_column($operatingItems, 'amount'));
+
+        $fixedAssetAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '1200')->first();
+        $fixedAssetPurchases = $fixedAssetAccount ? $this->ledgerService->calculateAccountBalance($fixedAssetAccount->id, $businessId, $periodId) : 0;
+
+        $investingItems = [
+            ['label' => 'Purchase of Fixed Assets', 'amount' => -abs($fixedAssetPurchases)],
+        ];
+        $investingTotal = array_sum(array_column($investingItems, 'amount'));
+
+        $loanChange = $getBal($currentLiabilities, '2201') - $getBal($prevLiabilities, '2201');
+
+        $dividendAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '3700')->first();
+        $dividends = $dividendAccount ? abs($this->ledgerService->calculateAccountBalance($dividendAccount->id, $businessId, $periodId)) : 0;
+
+        $financingItems = [
+            ['label' => 'Change in Bank Loans', 'amount' => $loanChange],
+            ['label' => 'Dividends Paid', 'amount' => -$dividends],
+        ];
+        $financingTotal = array_sum(array_column($financingItems, 'amount'));
+
+        $netChange = $operatingTotal + $investingTotal + $financingTotal;
+
+        return [
+            'operating' => [
+                'items' => $operatingItems,
+                'total' => round($operatingTotal, 2),
+            ],
+            'investing' => [
+                'items' => $investingItems,
+                'total' => round($investingTotal, 2),
+            ],
+            'financing' => [
+                'items' => $financingItems,
+                'total' => round($financingTotal, 2),
+            ],
+            'net_change' => round($netChange, 2),
+            'period_id' => $periodId,
+        ];
+    }
+
+    public function statementOfEquity(int $businessId, int $periodId): array
+    {
+        $is = $this->incomeStatement($businessId, $periodId);
+        $netIncome = $is['net_income'] ?? 0;
+
+        $period = \App\Models\AccountingPeriod::findOrFail($periodId);
+
+        $equityType = AccountType::where('name', 'Equity')->first();
+        $equityAccounts = ChartOfAccount::where('business_id', $businessId)
+            ->where('type_id', $equityType?->id)
+            ->where('is_active', true)
+            ->get();
+
+        $equitySections = [];
+        $totalEquity = 0;
+
+        foreach ($equityAccounts as $account) {
+            $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $periodId);
+            if ($balance != 0 || in_array($account->code, ['3100', '3200', '3400', '3500', '3600', '3700'])) {
+                $equitySections[] = [
+                    'account_code' => $account->code,
+                    'account_name' => $account->name,
+                    'balance' => $balance,
+                ];
+            }
+        }
+
+        $retainedEarnings = ChartOfAccount::where('business_id', $businessId)->where('code', '3200')->first();
+        $retainedOpening = 0;
+        if ($retainedEarnings) {
+            $prevPeriod = \App\Models\AccountingPeriod::where('business_id', $businessId)
+                ->where('end_date', '<', $period->start_date)
+                ->orderBy('end_date', 'desc')
+                ->first();
+            if ($prevPeriod) {
+                $retainedOpening = $this->ledgerService->calculateAccountBalance($retainedEarnings->id, $businessId, $prevPeriod->id);
+            }
+        }
+
+        $dividendAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '3700')->first();
+        $dividends = $dividendAccount ? abs($this->ledgerService->calculateAccountBalance($dividendAccount->id, $businessId, $periodId)) : 0;
+
+        return [
+            'opening_retained_earnings' => round($retainedOpening, 2),
+            'net_income' => round($netIncome, 2),
+            'dividends' => round($dividends, 2),
+            'closing_retained_earnings' => round($retainedOpening + $netIncome - $dividends, 2),
+            'equity_components' => $equitySections,
+            'total_equity' => round($retainedOpening + $netIncome - $dividends + array_sum(array_column($equitySections, 'balance')), 2),
+            'period_id' => $periodId,
+        ];
+    }
+
     protected function getAccountsWithBalances(int $businessId, int $periodId, ?int $typeId): array
     {
         if (!$typeId) {
