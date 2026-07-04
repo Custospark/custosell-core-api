@@ -65,9 +65,8 @@ class AccountingExportController extends Controller
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.trial-balance', [
-                'business' => $business,
-                'trialBalance' => $trialBalance,
-                'formatter' => $this->export,
+                'business' => $business, 'trialBalance' => $trialBalance, 'formatter' => $this->export,
+                'reportTitle' => 'Trial Balance', 'accent' => '#1e40af',
             ], $filename, 'portrait'),
         };
     }
@@ -105,6 +104,7 @@ class AccountingExportController extends Controller
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.income-statement', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
+                'reportTitle' => 'Income Statement', 'accent' => '#16a34a',
             ], $filename, 'portrait'),
         };
     }
@@ -139,6 +139,7 @@ class AccountingExportController extends Controller
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.balance-sheet', [
                 'business' => $business, 'sheet' => $sheet, 'formatter' => $this->export,
+                'reportTitle' => 'Balance Sheet', 'accent' => '#7c3aed',
             ], $filename, 'portrait'),
         };
     }
@@ -165,9 +166,8 @@ class AccountingExportController extends Controller
             ]),
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.general-ledger', [
-                'business' => $business,
-                'ledgerRows' => $ledgerRows,
-                'formatter' => $this->export,
+                'business' => $business, 'ledgerRows' => $ledgerRows, 'formatter' => $this->export,
+                'reportTitle' => 'General Ledger', 'accent' => '#2563eb',
             ], $filename, 'landscape'),
         };
     }
@@ -194,6 +194,7 @@ class AccountingExportController extends Controller
             'csv' => $this->export->downloadCsv($filename, $headers, $rows),
             default => $this->export->downloadPdf('accounting-export.ratios', [
                 'business' => $business, 'ratios' => $ratios, 'formatter' => $this->export,
+                'reportTitle' => 'Financial Ratios', 'accent' => '#0891b2',
             ], $filename, 'portrait'),
         };
     }

@@ -1,20 +1,59 @@
 @extends('reports.layouts.base')
 
 @section('content')
-  @foreach (['liquidity' => 'Liquidity Ratios', 'profitability' => 'Profitability Ratios', 'solvency' => 'Solvency Ratios', 'efficiency' => 'Efficiency Ratios'] as $cat => $title)
+  @php
+    $catLabels = ['liquidity' => 'Liquidity Ratios', 'profitability' => 'Profitability Ratios', 'solvency' => 'Solvency Ratios', 'efficiency' => 'Efficiency Ratios'];
+  @endphp
+
+  @foreach ($catLabels as $cat => $title)
     <div class="section-title">{{ $title }}</div>
     <table class="data">
       <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-      <thead><tr><th class="text-left">Ratio</th><th class="text-left">Value</th><th class="text-left">Status</th></tr></thead>
+      <thead><tr><th class="text-left">Ratio</th><th class="col-money">Value</th><th class="text-left">Health</th></tr></thead>
       <tbody>
         @foreach ($ratios[$cat] as $key => $val)
           <tr>
             <td class="text-left">{{ ucwords(str_replace('_', ' ', $key)) }}</td>
             <td class="col-money">{{ $val !== null ? number_format($val, 2) : 'N/A' }}</td>
-            <td class="text-left">{{ $val !== null ? ($val > 0 ? 'Positive' : 'Negative') : 'No data' }}</td>
+            <td class="text-left">
+              @if($val === null)
+                No data
+              @elseif(in_array($key, ['debt_to_equity','debt_ratio']) && $val <= 1)
+                Healthy
+              @elseif(in_array($key, ['current_ratio','quick_ratio','cash_ratio']) && $val >= 1)
+                Healthy
+              @elseif(in_array($key, ['gross_profit_margin','net_profit_margin','return_on_assets','return_on_equity','interest_coverage_ratio']) && $val >= 10)
+                Healthy
+              @elseif($val > 0)
+                Monitor
+              @else
+                Critical
+              @endif
+            </td>
           </tr>
         @endforeach
       </tbody>
     </table>
   @endforeach
+
+  @if(!empty($ratios['recommendations']))
+    <div class="section-title">Recommendations</div>
+    <table class="data">
+      <colgroup><col style="width:15%"><col style="width:20%"><col style="width:65%"></colgroup>
+      <thead><tr><th class="text-left">Priority</th><th class="text-left">Ratio</th><th class="text-left">Recommendation</th></tr></thead>
+      <tbody>
+        @foreach ($ratios['recommendations'] as $rec)
+          <tr>
+            <td class="text-left">
+              <span class="badge {{ $rec['priority'] === 'high' ? 'badge-refunded' : ($rec['priority'] === 'medium' ? 'badge-partial' : 'badge-paid') }}">
+                {{ ucfirst($rec['priority']) }}
+              </span>
+            </td>
+            <td class="text-left">{{ $rec['label'] }}</td>
+            <td class="text-left">{{ $rec['message'] }}</td>
+          </tr>
+        @endforeach
+      </tbody>
+    </table>
+  @endif
 @endsection
