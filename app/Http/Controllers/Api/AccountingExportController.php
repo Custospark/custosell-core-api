@@ -68,6 +68,20 @@ class AccountingExportController extends Controller
         return $period?->id ?? throw new \RuntimeException('No accounting period found for the given date range.');
     }
 
+    protected function resolveReportSubtitle(int $periodId): string
+    {
+        $request = request();
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        if ($dateFrom && $dateTo) {
+            return "{$dateFrom} to {$dateTo}";
+        }
+
+        $period = AccountingPeriod::find($periodId);
+        return $period->name ?? "Period #{$periodId}";
+    }
+
     protected function exportTrialBalance(Business $business, int $periodId, string $format)
     {
         $trialBalance = $this->ledgerService->generateTrialBalance($business->id, $periodId);
@@ -86,6 +100,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.trial-balance', [
                 'business' => $business, 'trialBalance' => $trialBalance, 'formatter' => $this->export,
                 'reportTitle' => 'Trial Balance', 'accent' => '#1e40af',
+                'reportSubtitle' => \App\Models\AccountingPeriod::find($periodId)?->name ?? "Period #{$periodId}",
             ], $filename, 'portrait'),
         };
     }
@@ -124,6 +139,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.income-statement', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Income Statement', 'accent' => '#16a34a',
+                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
             ], $filename, 'portrait'),
         };
     }
@@ -159,6 +175,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.balance-sheet', [
                 'business' => $business, 'sheet' => $sheet, 'formatter' => $this->export,
                 'reportTitle' => 'Balance Sheet', 'accent' => '#7c3aed',
+                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
             ], $filename, 'portrait'),
         };
     }
@@ -184,6 +201,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.general-ledger', [
                 'business' => $business, 'ledgerRows' => $ledgerRows, 'formatter' => $this->export,
                 'reportTitle' => 'General Ledger', 'accent' => '#2563eb',
+                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
             ], $filename, 'landscape'),
         };
     }
@@ -261,6 +279,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.cash-flow', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Cash Flow Statement', 'accent' => '#d97706',
+                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
             ], $filename, 'portrait'),
         };
     }
@@ -292,6 +311,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.equity', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Statement of Changes in Equity', 'accent' => '#7c3aed',
+                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
             ], $filename, 'portrait'),
         };
     }
