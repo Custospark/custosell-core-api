@@ -154,6 +154,15 @@ class JournalEntryService
                 throw new \RuntimeException("Cannot reverse an unposted entry.");
             }
 
+            $alreadyReversed = \App\Models\JournalEntry::where('business_id', $original->business_id)
+                ->where('description', 'LIKE', "Reversing entry for {$original->entry_number}:%")
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if ($alreadyReversed) {
+                throw new \RuntimeException("Entry {$original->entry_number} has already been reversed.");
+            }
+
             $originalLines = $this->journalEntryRepository->getLines($originalEntryId);
 
             $reversingLines = [];
