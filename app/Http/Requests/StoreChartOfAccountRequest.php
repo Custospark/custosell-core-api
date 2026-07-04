@@ -16,6 +16,7 @@ class StoreChartOfAccountRequest extends BaseFormRequest
             'name' => ['required', 'string', 'max:200'],
             'type_id' => ['required', 'integer', 'exists:account_types,id'],
             'parent_id' => ['nullable', 'integer', 'exists:chart_of_accounts,id'],
+            'normal_balance' => ['required', 'string', 'in:debit,credit'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

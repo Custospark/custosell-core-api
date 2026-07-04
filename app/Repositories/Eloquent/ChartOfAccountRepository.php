@@ -29,7 +29,7 @@ class ChartOfAccountRepository implements ChartOfAccountRepositoryInterface
         }
 
         return $query->orderBy('code')
-            ->paginate($filters['per_page'] ?? 15);
+            ->paginate($filters['per_page'] ?? 200);
     }
 
     public function find(int $id): ?ChartOfAccount

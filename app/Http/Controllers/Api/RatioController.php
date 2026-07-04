@@ -19,7 +19,9 @@ class RatioController extends Controller
         $periodId = $request->query('period_id');
 
         if (!$periodId) {
-            return response()->json(['message' => 'period_id is required'], 422);
+            $currentPeriod = app(\App\Services\AccountingPeriodService::class)
+                ->getCurrentPeriod($businessId);
+            $periodId = $currentPeriod->id;
         }
 
         return response()->json([

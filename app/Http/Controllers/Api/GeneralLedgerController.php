@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\GeneralLedgerResource;
+use App\Services\AccountingPeriodService;
 use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
 use Illuminate\Http\JsonResponse;
@@ -14,19 +14,16 @@ class GeneralLedgerController extends Controller
     public function __construct(
         protected LedgerService $ledgerService,
         protected FinancialStatementService $financialStatementService,
+        protected AccountingPeriodService $accountingPeriodService,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $request->query('period_id');
+        $periodId = $this->resolvePeriodId($request);
         $accountId = $request->query('account_id');
 
-        if (!$periodId) {
-            return response()->json(['message' => 'period_id is required'], 422);
-        }
-
-        $balances = $this->ledgerService->getTrialBalance($businessId, (int) $periodId);
+        $balances = $this->ledgerService->getTrialBalance($businessId, $periodId);
 
         $data = $balances;
         if ($accountId) {
@@ -36,26 +33,53 @@ class GeneralLedgerController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    protected function resolvePeriodId(Request $request): int
+    {
+        $periodId = $request->query('period_id');
+        if ($periodId) {
+            return (int) $periodId;
+        }
+        $businessId = $request->user()->business_id;
+        $current = $this->accountingPeriodService->getCurrentPeriod($businessId);
+        return $current->id;
+    }
+
     public function trialBalance(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $request->query('period_id');
+        $periodId = $this->resolvePeriodId($request);
+        $balances = $this->ledgerService->getTrialBalance($businessId, $periodId);
 
-        if (!$periodId) {
-            return response()->json(['message' => 'period_id is required'], 422);
-        }
+        $accounts = $balances->map(function ($row) {
+            $balance = (float) $row->closing_balance;
+            $isDebit = $row->normal_balance === 'debit';
+            return [
+                'account_id' => $row->account_id,
+                'code' => $row->account_code,
+                'name' => $row->account_name,
+                'type' => $row->account_type_name ?? ($isDebit ? 'Asset' : 'Liability'),
+                'debit_balance' => $isDebit ? $balance : 0,
+                'credit_balance' => $isDebit ? 0 : $balance,
+            ];
+        });
 
-        $balances = $this->ledgerService->getTrialBalance($businessId, (int) $periodId);
-
-        $totalDebits = $balances->sum('total_debits') + $balances->sum('opening_balance');
-        $totalCredits = $balances->sum('total_credits') + $balances->sum('opening_balance');
+        $totalDebits = $accounts->sum('debit_balance');
+        $totalCredits = $accounts->sum('credit_balance');
+        $period = \App\Models\AccountingPeriod::find($periodId);
 
         return response()->json([
-            'data' => $balances,
-            'totals' => [
+            'data' => [
+                'accounts' => $accounts,
                 'total_debits' => round($totalDebits, 2),
                 'total_credits' => round($totalCredits, 2),
-                'difference' => round($totalDebits - $totalCredits, 2),
+                'is_balanced' => abs($totalDebits - $totalCredits) < 0.01,
+                'period' => $period ? [
+                    'id' => $period->id,
+                    'name' => $period->name,
+                    'start_date' => $period->start_date->toDateString(),
+                    'end_date' => $period->end_date->toDateString(),
+                    'is_closed' => $period->is_closed,
+                ] : null,
             ],
         ]);
     }
@@ -63,28 +87,16 @@ class GeneralLedgerController extends Controller
     public function profitLoss(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $request->query('period_id');
-
-        if (!$periodId) {
-            return response()->json(['message' => 'period_id is required'], 422);
-        }
-
-        return response()->json(
-            $this->financialStatementService->getIncomeStatement($businessId, (int) $periodId)
-        );
+        $periodId = $this->resolvePeriodId($request);
+        $result = $this->financialStatementService->incomeStatement($businessId, $periodId);
+        return response()->json(['data' => $result]);
     }
 
     public function balanceSheet(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $request->query('period_id');
-
-        if (!$periodId) {
-            return response()->json(['message' => 'period_id is required'], 422);
-        }
-
-        return response()->json(
-            $this->financialStatementService->getBalanceSheet($businessId, (int) $periodId)
-        );
+        $periodId = $this->resolvePeriodId($request);
+        $result = $this->financialStatementService->balanceSheet($businessId, $periodId);
+        return response()->json(['data' => $result]);
     }
 }

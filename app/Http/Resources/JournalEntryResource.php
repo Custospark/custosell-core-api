@@ -23,7 +23,7 @@ class JournalEntryResource extends JsonResource
             'created_by_user' => new UserResource($this->whenLoaded('createdBy')),
             'locked' => (bool) $this->locked,
             'posted_at' => $this->posted_at?->toISOString(),
-            'lines' => JournalEntryLineResource::collection($this->whenLoaded('lines')),
+            'lines' => JournalEntryLineResource::collection($this->lines),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

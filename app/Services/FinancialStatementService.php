@@ -51,15 +51,36 @@ class FinancialStatementService
             $totalExpenses += $balance;
         }
 
-        $netIncome = $totalRevenue - $totalExpenses;
+        $cogsAccounts = array_filter($expenses, function ($e) {
+            return in_array($e['account_code'], ['5100', '5200', '5300']);
+        });
+        $cogs = array_sum(array_column($cogsAccounts, 'balance'));
+
+        $taxAccounts = array_filter($expenses, function ($e) {
+            return $e['account_code'] === '6500';
+        });
+        $taxExpense = array_sum(array_column($taxAccounts, 'balance'));
+
+        $grossProfit = $totalRevenue - $cogs;
+        $operatingExpenses = $totalExpenses - $cogs;
+        $operatingIncome = $grossProfit - $operatingExpenses;
 
         return [
-            'revenues' => $revenues,
+            'sections' => [
+                'revenue' => $revenues,
+                'cost_of_goods_sold' => array_values($cogsAccounts),
+                'operating_expenses' => $expenses,
+            ],
             'total_revenue' => round($totalRevenue, 2),
-            'expenses' => $expenses,
-            'total_expenses' => round($totalExpenses, 2),
-            'net_income' => round($netIncome, 2),
-            'period_id' => $periodId,
+            'total_cost_of_goods_sold' => round($cogs, 2),
+            'gross_profit' => round($grossProfit, 2),
+            'total_operating_expenses' => round($operatingExpenses, 2),
+            'operating_income' => round($operatingIncome, 2),
+            'other_income' => 0,
+            'other_expenses' => 0,
+            'net_income_before_tax' => round($operatingIncome, 2),
+            'tax_expense' => round($taxExpense, 2),
+            'net_income' => round($operatingIncome - $taxExpense, 2),
         ];
     }
 
@@ -77,15 +98,24 @@ class FinancialStatementService
         $totalLiabilities = collect($liabilities)->sum('balance');
         $totalEquity = collect($equities)->sum('balance');
 
+        // Include current period net income in equity for a complete balance sheet
+        $is = $this->incomeStatement($businessId, $periodId);
+        $netIncome = $is['net_income'] ?? 0;
+        $adjustedEquity = $totalEquity + $netIncome;
+
+        $totalLiabilitiesAndEquity = $totalLiabilities + $adjustedEquity;
+        $isBalanced = abs($totalAssets - $totalLiabilitiesAndEquity) < 0.01;
+
         return [
-            'assets' => $assets,
+            'sections' => [
+                'assets' => $assets,
+                'liabilities' => $liabilities,
+                'equity' => $equities,
+            ],
             'total_assets' => round($totalAssets, 2),
-            'liabilities' => $liabilities,
             'total_liabilities' => round($totalLiabilities, 2),
-            'equities' => $equities,
-            'total_equity' => round($totalEquity, 2),
-            'total_liabilities_and_equity' => round($totalLiabilities + $totalEquity, 2),
-            'period_id' => $periodId,
+            'total_equity' => round($adjustedEquity, 2),
+            'is_balanced' => $isBalanced,
         ];
     }
 

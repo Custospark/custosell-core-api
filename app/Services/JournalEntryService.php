@@ -17,6 +17,7 @@ class JournalEntryService
         protected ChartOfAccountRepositoryInterface $chartOfAccountRepository,
         protected AccountingPeriodRepositoryInterface $accountingPeriodRepository,
         protected GeneralLedgerRepositoryInterface $generalLedgerRepository,
+        protected \App\Services\LedgerService $ledgerService,
     ) {}
 
     public function createEntry(
@@ -118,6 +119,8 @@ class JournalEntryService
         $entry = $this->journalEntryRepository->lock($entryId);
         $entry->update(['posted_at' => now()]);
 
+        $this->ledgerService->postEntryToLedger($entryId);
+
         Log::info("Journal entry {$entry->entry_number} posted", [
             'entry_id' => $entry->id,
             'business_id' => $entry->business_id,
@@ -213,7 +216,8 @@ class JournalEntryService
         $lines = [];
         foreach ($data['lines'] ?? [] as $line) {
             $lines[] = [
-                'account_code' => $line['account_code'] ?? '',
+                'account_code' => $line['account_code'] ?? null,
+                'account_id' => $line['account_id'] ?? null,
                 'debit' => $line['debit_amount'] ?? $line['debit'] ?? 0,
                 'credit' => $line['credit_amount'] ?? $line['credit'] ?? 0,
                 'description' => $line['description'] ?? null,

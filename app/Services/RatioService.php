@@ -85,7 +85,6 @@ class RatioService
 
         $revenue = $is['total_revenue'] ?? 0;
         $netIncome = $is['net_income'] ?? 0;
-        $totalExpenses = $is['total_expenses'] ?? 0;
         $cogs = $this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['5100', '5200']);
         $totalAssets = $bs['total_assets'] ?? 0;
         $totalEquity = $bs['total_equity'] ?? 0;
@@ -107,12 +106,12 @@ class RatioService
         $totalLiabilities = $bs['total_liabilities'] ?? 0;
         $totalAssets = $bs['total_assets'] ?? 0;
         $totalEquity = $bs['total_equity'] ?? 0;
-        $operatingIncome = $is['total_revenue'] - ($is['total_expenses'] ?? 0);
+        $operatingIncome = $is['operating_income'] ?? 0;
         $interestExpense = $this->getAccountBalanceByCodes($businessId, $periodId, 'Expense', ['6400']);
 
         return [
             'debt_to_equity' => $totalEquity != 0 ? round($totalLiabilities / $totalEquity, 2) : null,
-            'debt_to_asset' => $totalAssets != 0 ? round($totalLiabilities / $totalAssets, 2) : null,
+            'debt_ratio' => $totalAssets != 0 ? round($totalLiabilities / $totalAssets, 2) : null,
             'interest_coverage_ratio' => $interestExpense != 0 ? round($operatingIncome / $interestExpense, 2) : null,
         ];
     }

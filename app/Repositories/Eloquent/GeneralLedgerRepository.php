@@ -42,6 +42,7 @@ class GeneralLedgerRepository implements GeneralLedgerRepositoryInterface
     {
         return DB::table('general_ledger')
             ->join('chart_of_accounts', 'general_ledger.account_id', '=', 'chart_of_accounts.id')
+            ->leftJoin('account_types', 'chart_of_accounts.type_id', '=', 'account_types.id')
             ->where('general_ledger.business_id', $businessId)
             ->where('general_ledger.period_id', $periodId)
             ->select(
@@ -49,6 +50,7 @@ class GeneralLedgerRepository implements GeneralLedgerRepositoryInterface
                 'chart_of_accounts.code as account_code',
                 'chart_of_accounts.name as account_name',
                 'chart_of_accounts.normal_balance',
+                'account_types.name as account_type_name',
                 'general_ledger.opening_balance',
                 'general_ledger.total_debits',
                 'general_ledger.total_credits',
