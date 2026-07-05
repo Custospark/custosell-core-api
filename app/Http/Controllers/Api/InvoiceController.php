@@ -128,6 +128,7 @@ class InvoiceController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
             'amount_tendered' => ['nullable', 'numeric', 'min:0'],
             'change_given' => ['nullable', 'numeric', 'min:0'],
+            'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'attachment' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf,doc,docx,xlsx'],
         ]);
 
@@ -145,6 +146,7 @@ class InvoiceController extends Controller
                 isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null,
                 isset($data['change_given']) ? (float) $data['change_given'] : null,
                 $attachmentPath,
+                isset($data['shift_id']) ? (int) $data['shift_id'] : null,
             );
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

@@ -39,6 +39,9 @@ class AccountForPaymentRecorded
         $amount = (float) $payment->amount;
 
         $originalEntry = $this->journalEntryService->getEntryByReference('invoice', $invoice->id, $businessId);
+        if (!$originalEntry && $invoice->sale_id) {
+            $originalEntry = $this->journalEntryService->getEntryByReference('sale', $invoice->sale_id, $businessId);
+        }
         if (!$originalEntry) {
             Log::warning('No invoice journal entry found for payment', [
                 'invoice_id' => $invoice->id,

@@ -19,6 +19,7 @@ class Payment extends Model
         'payment_method',
         'balance_after',
         'recorded_by',
+        'shift_id',
         'paid_at',
         'notes',
         'attachment_path',
@@ -48,5 +49,10 @@ class Payment extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

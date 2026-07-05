@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AccountType;
 use App\Models\ChartOfAccount;
+use App\Support\ReportPeriodContext;
 
 class FinancialStatementService
 {
@@ -22,6 +23,14 @@ class FinancialStatementService
 
   public function incomeStatement(int $businessId, int $periodId): array
   {
+    return $this->incomeStatementForPeriods($businessId, [$periodId]);
+  }
+
+  /**
+   * @param  int[]  $periodIds
+   */
+  public function incomeStatementForPeriods(int $businessId, array $periodIds): array
+  {
     $revenueType = AccountType::where('name', 'Revenue')->first();
     $expenseType = AccountType::where('name', 'Expense')->first();
 
@@ -38,7 +47,7 @@ class FinancialStatementService
     $revenues = [];
     $totalRevenue = 0.0;
     foreach ($revenueAccounts as $account) {
-      $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $periodId);
+      $balance = $this->ledgerService->calculateAccountBalanceForPeriods($account->id, $businessId, $periodIds);
       if ($balance == 0 && in_array($account->code, self::PARENT_GROUP_CODES, true)) {
         continue;
       }
@@ -54,7 +63,7 @@ class FinancialStatementService
     $expenses = [];
     $totalExpenses = 0.0;
     foreach ($expenseAccounts as $account) {
-      $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $periodId);
+      $balance = $this->ledgerService->calculateAccountBalanceForPeriods($account->id, $businessId, $periodIds);
       if ($balance == 0 && in_array($account->code, self::PARENT_GROUP_CODES, true)) {
         continue;
       }
@@ -389,5 +398,193 @@ class FinancialStatementService
     };
 
     return $this->getLeafStatementAccounts($businessId, $periodId, $typeId, $section);
+  }
+
+  public function incomeStatementForContext(int $businessId, ReportPeriodContext $ctx): array
+  {
+    $result = $this->incomeStatementForPeriods($businessId, $ctx->periodIds);
+
+    return $this->attachReportPeriodMeta($result, $ctx);
+  }
+
+  public function balanceSheetForContext(int $businessId, ReportPeriodContext $ctx): array
+  {
+    $sheet = $this->balanceSheet($businessId, $ctx->snapshotPeriodId);
+
+    if ($ctx->isRange) {
+      $rangeNetIncome = $this->incomeStatementForPeriods($businessId, $ctx->periodIds)['net_income'] ?? 0;
+      $monthlyNet = $sheet['current_period_net_income'] ?? 0;
+      $delta = $rangeNetIncome - $monthlyNet;
+      $sheet['current_period_net_income'] = round($rangeNetIncome, 2);
+      $sheet['total_equity'] = round($sheet['total_equity'] + $delta, 2);
+      $sheet['total_liabilities_and_equity'] = round($sheet['total_liabilities'] + $sheet['total_equity'], 2);
+      $sheet['is_balanced'] = abs($sheet['total_assets'] - $sheet['total_liabilities_and_equity']) < 0.01;
+    }
+
+    return $this->attachReportPeriodMeta($sheet, $ctx);
+  }
+
+  public function cashFlowStatementForContext(int $businessId, ReportPeriodContext $ctx): array
+  {
+    if ($ctx->isSinglePeriod()) {
+      return $this->attachReportPeriodMeta($this->cashFlowStatement($businessId, $ctx->primaryPeriodId()), $ctx);
+    }
+
+    $is = $this->incomeStatementForPeriods($businessId, $ctx->periodIds);
+    $netIncome = $is['net_income'] ?? 0;
+
+    $prevId = $ctx->priorSnapshotPeriodId;
+    $snapshotId = $ctx->snapshotPeriodId;
+
+    $assetTypeId = AccountType::where('name', 'Asset')->first()?->id;
+    $liabilityTypeId = AccountType::where('name', 'Liability')->first()?->id;
+
+    $currentAssets = $this->getLeafStatementAccounts($businessId, $snapshotId, $assetTypeId, 'asset');
+    $currentLiabilities = $this->getLeafStatementAccounts($businessId, $snapshotId, $liabilityTypeId, 'liability');
+    $prevAssets = $prevId ? $this->getLeafStatementAccounts($businessId, $prevId, $assetTypeId, 'asset') : [];
+    $prevLiabilities = $prevId ? $this->getLeafStatementAccounts($businessId, $prevId, $liabilityTypeId, 'liability') : [];
+
+    $getBal = function (array $list, string $code): float {
+      foreach ($list as $item) {
+        if ($item['account_code'] === $code) {
+          return (float) $item['balance'];
+        }
+      }
+
+      return 0.0;
+    };
+
+    $depreciationAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '6300')->first();
+    $depreciation = $depreciationAccount
+      ? $this->ledgerService->calculateAccountBalanceForPeriods($depreciationAccount->id, $businessId, $ctx->periodIds)
+      : 0;
+
+    $arChange = $getBal($currentAssets, '1103') - $getBal($prevAssets, '1103');
+    $invChange = $getBal($currentAssets, '1104') - $getBal($prevAssets, '1104');
+    $prepaidChange = $getBal($currentAssets, '1105') - $getBal($prevAssets, '1105');
+    $apChange = $getBal($currentLiabilities, '2101') - $getBal($prevLiabilities, '2101');
+    $vatChange = $getBal($currentLiabilities, '2102') - $getBal($prevLiabilities, '2102');
+    $accruedChange = $getBal($currentLiabilities, '2103') - $getBal($prevLiabilities, '2103');
+
+    $operatingItems = [
+      ['label' => 'Net Income', 'amount' => $netIncome],
+      ['label' => 'Depreciation & Amortization', 'amount' => abs($depreciation)],
+      ['label' => 'Change in Accounts Receivable', 'amount' => -$arChange],
+      ['label' => 'Change in Inventory', 'amount' => -$invChange],
+      ['label' => 'Change in Prepaid Expenses', 'amount' => -$prepaidChange],
+      ['label' => 'Change in Accounts Payable', 'amount' => $apChange],
+      ['label' => 'Change in VAT Payable', 'amount' => $vatChange],
+      ['label' => 'Change in Accrued Expenses', 'amount' => $accruedChange],
+    ];
+    $operatingTotal = array_sum(array_column($operatingItems, 'amount'));
+
+    $fixedAssetAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '1203')->first();
+    $fixedAssetPurchases = $fixedAssetAccount
+      ? max(0, $this->ledgerService->calculateAccountBalanceForPeriods($fixedAssetAccount->id, $businessId, $ctx->periodIds)
+        - ($prevId ? $this->ledgerService->calculateAccountBalance($fixedAssetAccount->id, $businessId, $prevId) : 0))
+      : 0;
+
+    $investingItems = [['label' => 'Purchase of Fixed Assets', 'amount' => -$fixedAssetPurchases]];
+    $investingTotal = array_sum(array_column($investingItems, 'amount'));
+
+    $loanChange = $getBal($currentLiabilities, '2201') - $getBal($prevLiabilities, '2201');
+    $dividendAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '3700')->first();
+    $dividends = $dividendAccount
+      ? abs($this->ledgerService->calculateAccountBalanceForPeriods($dividendAccount->id, $businessId, $ctx->periodIds))
+      : 0;
+    $drawingsAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '3300')->first();
+    $drawings = $drawingsAccount
+      ? $this->ledgerService->calculateAccountBalanceForPeriods($drawingsAccount->id, $businessId, $ctx->periodIds)
+      : 0;
+
+    $financingItems = [
+      ['label' => 'Change in Bank Loans', 'amount' => $loanChange],
+      ['label' => 'Dividends Paid', 'amount' => -$dividends],
+      ['label' => 'Owner Drawings', 'amount' => -abs($drawings)],
+    ];
+    $financingTotal = array_sum(array_column($financingItems, 'amount'));
+    $netChange = $operatingTotal + $investingTotal + $financingTotal;
+
+    return $this->attachReportPeriodMeta([
+      'operating' => ['items' => $operatingItems, 'total' => round($operatingTotal, 2)],
+      'investing' => ['items' => $investingItems, 'total' => round($investingTotal, 2)],
+      'financing' => ['items' => $financingItems, 'total' => round($financingTotal, 2)],
+      'net_change' => round($netChange, 2),
+      'period_id' => $ctx->snapshotPeriodId,
+    ], $ctx);
+  }
+
+  public function statementOfEquityForContext(int $businessId, ReportPeriodContext $ctx): array
+  {
+    if ($ctx->isSinglePeriod()) {
+      return $this->attachReportPeriodMeta($this->statementOfEquity($businessId, $ctx->primaryPeriodId()), $ctx);
+    }
+
+    $is = $this->incomeStatementForPeriods($businessId, $ctx->periodIds);
+    $netIncome = $is['net_income'] ?? 0;
+
+    $equityType = AccountType::where('name', 'Equity')->first();
+    $equityAccounts = ChartOfAccount::where('business_id', $businessId)
+      ->where('type_id', $equityType?->id)
+      ->where('is_active', true)
+      ->get();
+
+    $equitySections = [];
+    $ledgerEquity = 0.0;
+    foreach ($equityAccounts as $account) {
+      if (!$this->isLeafAccount($account)) {
+        continue;
+      }
+      $balance = $this->ledgerService->calculateAccountBalance($account->id, $businessId, $ctx->snapshotPeriodId);
+      $signed = $this->signedBalanceForSection($account, $balance, 'equity');
+      if ($signed != 0 || in_array($account->code, ['3100', '3200', '3400', '3500', '3600', '3700'], true)) {
+        $equitySections[] = [
+          'account_code' => $account->code,
+          'account_name' => $account->name,
+          'balance' => round($signed, 2),
+        ];
+        $ledgerEquity += $signed;
+      }
+    }
+
+    $retainedEarnings = ChartOfAccount::where('business_id', $businessId)->where('code', '3200')->first();
+    $retainedOpening = 0.0;
+    if ($retainedEarnings && $ctx->priorSnapshotPeriodId) {
+      $raw = $this->ledgerService->calculateAccountBalance($retainedEarnings->id, $businessId, $ctx->priorSnapshotPeriodId);
+      $retainedOpening = $this->signedBalanceForSection($retainedEarnings, $raw, 'equity');
+    }
+
+    $dividendAccount = ChartOfAccount::where('business_id', $businessId)->where('code', '3700')->first();
+    $dividends = $dividendAccount
+      ? abs($this->ledgerService->calculateAccountBalanceForPeriods($dividendAccount->id, $businessId, $ctx->periodIds))
+      : 0;
+
+    $closingRetained = $retainedOpening + $netIncome - $dividends;
+
+    return $this->attachReportPeriodMeta([
+      'opening_retained_earnings' => round($retainedOpening, 2),
+      'net_income' => round($netIncome, 2),
+      'dividends' => round($dividends, 2),
+      'closing_retained_earnings' => round($closingRetained, 2),
+      'equity_components' => $equitySections,
+      'ledger_equity' => round($ledgerEquity, 2),
+      'total_equity' => round($ledgerEquity + $netIncome, 2),
+      'period_id' => $ctx->snapshotPeriodId,
+    ], $ctx);
+  }
+
+  protected function attachReportPeriodMeta(array $payload, ReportPeriodContext $ctx): array
+  {
+    $payload['period'] = [
+      'id' => $ctx->snapshotPeriodId,
+      'name' => $ctx->label,
+      'start_date' => $ctx->dateFrom,
+      'end_date' => $ctx->dateTo,
+      'is_closed' => false,
+      'period_ids' => $ctx->periodIds,
+      'is_range' => $ctx->isRange,
+    ];
+
+    return $payload;
   }
 }

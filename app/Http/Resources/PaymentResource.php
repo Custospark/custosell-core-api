@@ -27,6 +27,7 @@ class PaymentResource extends JsonResource
                 ? url('storage/' . ltrim($this->attachment_path, '/'))
                 : null,
             'recorded_by' => $this->recorded_by,
+            'shift_id' => $this->shift_id,
             'recorded_by_user' => new UserResource($this->whenLoaded('recordedBy')),
             'created_at' => $this->created_at?->toISOString(),
         ];

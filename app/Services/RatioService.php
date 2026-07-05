@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AccountType;
 use App\Models\ChartOfAccount;
 use App\Models\AccountingPeriod;
+use App\Support\ReportPeriodContext;
 use Illuminate\Support\Facades\Log;
 
 class RatioService
@@ -16,20 +17,46 @@ class RatioService
 
     public function calculateAll(int $businessId, int $periodId): array
     {
-        // Cache financial statements so each ratio group doesn't recompute them
-        $is = $this->financialStatementService->incomeStatement($businessId, $periodId);
-        $bs = $this->financialStatementService->balanceSheet($businessId, $periodId);
+        $ctx = new ReportPeriodContext(
+            periodIds: [$periodId],
+            snapshotPeriodId: $periodId,
+            priorSnapshotPeriodId: AccountingPeriod::query()
+                ->where('business_id', $businessId)
+                ->where('end_date', '<', AccountingPeriod::findOrFail($periodId)->start_date)
+                ->orderByDesc('end_date')
+                ->value('id'),
+            dateFrom: AccountingPeriod::findOrFail($periodId)->start_date->toDateString(),
+            dateTo: AccountingPeriod::findOrFail($periodId)->end_date->toDateString(),
+            label: AccountingPeriod::findOrFail($periodId)->name,
+            isRange: false,
+        );
 
-        $liquidity = $this->getLiquidityRatios($businessId, $periodId);
-        $profitability = $this->getProfitabilityRatios($businessId, $periodId, $is, $bs);
-        $solvency = $this->getSolvencyRatios($businessId, $periodId, $is, $bs);
-        $efficiency = $this->getEfficiencyRatios($businessId, $periodId, $is, $bs);
+        return $this->calculateAllForContext($businessId, $ctx);
+    }
+
+    public function calculateAllForContext(int $businessId, ReportPeriodContext $ctx): array
+    {
+        $is = $this->financialStatementService->incomeStatementForPeriods($businessId, $ctx->periodIds);
+        $bs = $this->financialStatementService->balanceSheetForContext($businessId, $ctx);
+
+        $liquidity = $this->getLiquidityRatios($businessId, $ctx->snapshotPeriodId);
+        $profitability = $this->getProfitabilityRatios($businessId, $ctx->snapshotPeriodId, $is, $bs);
+        $solvency = $this->getSolvencyRatios($businessId, $ctx->snapshotPeriodId, $is, $bs);
+        $efficiency = $this->getEfficiencyRatios($businessId, $ctx->snapshotPeriodId, $is, $bs);
 
         $grouped = compact('liquidity', 'profitability', 'solvency', 'efficiency');
 
         return array_merge($grouped, [
             'recommendations' => $this->getRecommendationsFromRatios($grouped),
-            'period_id' => $periodId,
+            'period_id' => $ctx->snapshotPeriodId,
+            'period' => [
+                'id' => $ctx->snapshotPeriodId,
+                'name' => $ctx->label,
+                'start_date' => $ctx->dateFrom,
+                'end_date' => $ctx->dateTo,
+                'period_ids' => $ctx->periodIds,
+                'is_range' => $ctx->isRange,
+            ],
         ]);
     }
 

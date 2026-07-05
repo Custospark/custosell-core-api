@@ -167,6 +167,7 @@ class SaleService implements SaleServiceInterface
         ?float $amountTendered = null,
         ?float $changeGiven = null,
         ?string $attachmentPath = null,
+        ?int $shiftId = null,
     ): \App\Models\Payment {
         $sale = $this->saleRepository->find($id);
         if (!$sale) {
@@ -186,6 +187,7 @@ class SaleService implements SaleServiceInterface
             $amountTendered,
             $changeGiven,
             $attachmentPath,
+            $shiftId,
         );
     }
 

@@ -9,6 +9,8 @@ use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
 use App\Services\RatioService;
 use App\Services\ReportExportService;
+use App\Services\ReportPeriodResolver;
+use App\Support\ReportPeriodContext;
 use Illuminate\Http\Request;
 
 class AccountingExportController extends Controller
@@ -18,25 +20,24 @@ class AccountingExportController extends Controller
         protected LedgerService $ledgerService,
         protected RatioService $ratioService,
         protected ReportExportService $export,
+        protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
     public function export(Request $request, string $type)
     {
         $rules = ['format' => 'nullable|in:pdf,xlsx,csv'];
 
-        if ($request->has('period_id')) {
-            $rules['period_id'] = 'required|integer|exists:accounting_periods,id';
-        } else {
+        if ($request->filled('date_from') || $request->filled('date_to')) {
             $rules['date_from'] = 'required|date';
             $rules['date_to'] = 'required|date|after_or_equal:date_from';
+        } elseif ($request->filled('period_id')) {
+            $rules['period_id'] = 'required|string';
         }
 
         $request->validate($rules);
 
         $business = Business::findOrFail((int) $request->user()->business_id);
-        $periodId = (int) ($request->query('period_id') ?? $this->resolvePeriodIdFromRange(
-            $request->query('date_from'), $request->query('date_to'), $business->id,
-        ));
+        $ctx = $this->reportPeriodResolver->resolve($business->id, $request);
         $format = $request->query('format', 'pdf');
 
         $method = match ($type) {
@@ -54,36 +55,17 @@ class AccountingExportController extends Controller
             return response()->json(['message' => "Unknown export type: {$type}"], 404);
         }
 
-        return $this->$method($business, $periodId, $format);
+        return $this->$method($business, $ctx, $format);
     }
 
-    protected function resolvePeriodIdFromRange(string $dateFrom, string $dateTo, int $businessId): int
+    protected function resolveReportSubtitle(ReportPeriodContext $ctx): string
     {
-        $period = AccountingPeriod::where('business_id', $businessId)
-            ->where('start_date', '<=', $dateTo)
-            ->where('end_date', '>=', $dateFrom)
-            ->orderBy('start_date', 'desc')
-            ->first();
-
-        return $period?->id ?? throw new \RuntimeException('No accounting period found for the given date range.');
+        return $ctx->label;
     }
 
-    protected function resolveReportSubtitle(int $periodId): string
+    protected function exportTrialBalance(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $request = request();
-        $dateFrom = $request->query('date_from');
-        $dateTo = $request->query('date_to');
-
-        if ($dateFrom && $dateTo) {
-            return "{$dateFrom} to {$dateTo}";
-        }
-
-        $period = AccountingPeriod::find($periodId);
-        return $period->name ?? "Period #{$periodId}";
-    }
-
-    protected function exportTrialBalance(Business $business, int $periodId, string $format)
-    {
+        $periodId = $ctx->snapshotPeriodId;
         $trialBalance = $this->ledgerService->generateTrialBalance($business->id, $periodId);
         $rows = array_map(fn ($r) => [$r['account_code'], $r['account_name'], $r['debit'], $r['credit']], $trialBalance['rows']);
         $rows[] = ['', 'Total', $trialBalance['total_debits'], $trialBalance['total_credits']];
@@ -100,14 +82,15 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.trial-balance', [
                 'business' => $business, 'trialBalance' => $trialBalance, 'formatter' => $this->export,
                 'reportTitle' => 'Trial Balance', 'accent' => '#1e40af',
-                'reportSubtitle' => \App\Models\AccountingPeriod::find($periodId)?->name ?? "Period #{$periodId}",
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'portrait'),
         };
     }
 
-    protected function exportIncomeStatement(Business $business, int $periodId, string $format)
+    protected function exportIncomeStatement(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $stmt = $this->financialStatementService->incomeStatement($business->id, $periodId);
+        $periodId = $ctx->snapshotPeriodId;
+        $stmt = $this->financialStatementService->incomeStatementForContext($business->id, $ctx);
         $sections = $stmt['sections'] ?? [];
 
         $rows = [];
@@ -139,14 +122,15 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.income-statement', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Income Statement', 'accent' => '#16a34a',
-                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'portrait'),
         };
     }
 
-    protected function exportBalanceSheet(Business $business, int $periodId, string $format)
+    protected function exportBalanceSheet(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $sheet = $this->financialStatementService->balanceSheet($business->id, $periodId);
+        $periodId = $ctx->snapshotPeriodId;
+        $sheet = $this->financialStatementService->balanceSheetForContext($business->id, $ctx);
         $sections = $sheet['sections'] ?? [];
 
         $rows = [];
@@ -175,14 +159,18 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.balance-sheet', [
                 'business' => $business, 'sheet' => $sheet, 'formatter' => $this->export,
                 'reportTitle' => 'Balance Sheet', 'accent' => '#7c3aed',
-                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'portrait'),
         };
     }
 
-    protected function exportGeneralLedger(Business $business, int $periodId, string $format)
+    protected function exportGeneralLedger(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $ledgerRows = $this->ledgerService->getGeneralLedger($business->id, $periodId);
+        $periodId = $ctx->snapshotPeriodId;
+        $ledgerRows = [];
+        foreach ($ctx->periodIds as $pid) {
+            $ledgerRows = array_merge($ledgerRows, $this->ledgerService->getGeneralLedger($business->id, $pid));
+        }
 
         $headers = ['Date', 'Entry #', 'Description', 'Account Code', 'Account Name', 'Debit', 'Credit'];
         $rows = array_map(fn ($r) => [
@@ -201,19 +189,19 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.general-ledger', [
                 'business' => $business, 'ledgerRows' => $ledgerRows, 'formatter' => $this->export,
                 'reportTitle' => 'General Ledger', 'accent' => '#2563eb',
-                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'landscape'),
         };
     }
 
-    protected function exportRatios(Business $business, int $periodId, string $format)
+    protected function exportRatios(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $request = request();
-        $dateFrom = $request->query('date_from');
-        $dateTo = $request->query('date_to');
+        $periodId = $ctx->snapshotPeriodId;
+        $ratios = $this->ratioService->calculateAllForContext($business->id, $ctx);
+        $reportSubtitle = $this->resolveReportSubtitle($ctx);
 
-        $ratios = $this->ratioService->calculateAll($business->id, $periodId);
-        $period = AccountingPeriod::find($periodId);
+        $headers = ['Category', 'Ratio', 'Value'];
+        $filename = $this->export->buildFilename($business, "ratios-period-{$periodId}");
 
         $rows = [];
         foreach (['liquidity', 'profitability', 'solvency', 'efficiency'] as $cat) {
@@ -221,13 +209,6 @@ class AccountingExportController extends Controller
                 $rows[] = [ucfirst($cat), $key, $val !== null ? number_format($val, 2) : 'N/A'];
             }
         }
-
-        $reportSubtitle = $dateFrom && $dateTo
-            ? "{$dateFrom} to {$dateTo}"
-            : ($period->name ?? "Period #{$periodId}");
-
-        $headers = ['Category', 'Ratio', 'Value'];
-        $filename = $this->export->buildFilename($business, "ratios-period-{$periodId}");
 
         return match ($format) {
             'xlsx' => $this->export->downloadRichXlsx([
@@ -247,9 +228,10 @@ class AccountingExportController extends Controller
         };
     }
 
-    protected function exportCashFlow(Business $business, int $periodId, string $format)
+    protected function exportCashFlow(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $stmt = $this->financialStatementService->cashFlowStatement($business->id, $periodId);
+        $periodId = $ctx->snapshotPeriodId;
+        $stmt = $this->financialStatementService->cashFlowStatementForContext($business->id, $ctx);
 
         $rows = [];
         foreach ($stmt['operating']['items'] ?? [] as $item) {
@@ -279,14 +261,15 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.cash-flow', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Cash Flow Statement', 'accent' => '#d97706',
-                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'portrait'),
         };
     }
 
-    protected function exportEquity(Business $business, int $periodId, string $format)
+    protected function exportEquity(Business $business, ReportPeriodContext $ctx, string $format)
     {
-        $stmt = $this->financialStatementService->statementOfEquity($business->id, $periodId);
+        $periodId = $ctx->snapshotPeriodId;
+        $stmt = $this->financialStatementService->statementOfEquityForContext($business->id, $ctx);
 
         $rows = [];
         foreach ($stmt['equity_components'] ?? [] as $e) {
@@ -311,7 +294,7 @@ class AccountingExportController extends Controller
             default => $this->export->downloadPdf('accounting-export.equity', [
                 'business' => $business, 'statement' => $stmt, 'formatter' => $this->export,
                 'reportTitle' => 'Statement of Changes in Equity', 'accent' => '#7c3aed',
-                'reportSubtitle' => $this->resolveReportSubtitle($periodId),
+                'reportSubtitle' => $this->resolveReportSubtitle($ctx),
             ], $filename, 'portrait'),
         };
     }

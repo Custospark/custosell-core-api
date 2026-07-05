@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\RatioService;
+use App\Services\ReportPeriodResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -11,21 +12,16 @@ class RatioController extends Controller
 {
     public function __construct(
         protected RatioService $ratioService,
+        protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $request->query('period_id');
-
-        if (!$periodId) {
-            $currentPeriod = app(\App\Services\AccountingPeriodService::class)
-                ->getCurrentPeriod($businessId);
-            $periodId = $currentPeriod->id;
-        }
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
 
         return response()->json([
-            'data' => $this->ratioService->calculateAll($businessId, (int) $periodId),
+            'data' => $this->ratioService->calculateAllForContext($businessId, $ctx),
         ]);
     }
 

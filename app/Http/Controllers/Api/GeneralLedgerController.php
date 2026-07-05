@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountingPeriod;
 use App\Services\AccountingPeriodService;
 use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
+use App\Services\ReportPeriodResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,15 +17,15 @@ class GeneralLedgerController extends Controller
         protected LedgerService $ledgerService,
         protected FinancialStatementService $financialStatementService,
         protected AccountingPeriodService $accountingPeriodService,
+        protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+        $balances = $this->ledgerService->getTrialBalance($businessId, $ctx->snapshotPeriodId);
         $accountId = $request->query('account_id');
-
-        $balances = $this->ledgerService->getTrialBalance($businessId, $periodId);
 
         $data = $balances;
         if ($accountId) {
@@ -33,42 +35,16 @@ class GeneralLedgerController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    protected function resolvePeriodId(Request $request): int
-    {
-        $periodId = $request->query('period_id');
-        if ($periodId) {
-            return (int) $periodId;
-        }
-
-        $businessId = $request->user()->business_id;
-
-        // Support date_from / date_to as alternative to period_id
-        $dateFrom = $request->query('date_from');
-        $dateTo = $request->query('date_to');
-        if ($dateFrom && $dateTo) {
-            $period = \App\Models\AccountingPeriod::where('business_id', $businessId)
-                ->where('start_date', '<=', $dateTo)
-                ->where('end_date', '>=', $dateFrom)
-                ->orderBy('start_date', 'desc')
-                ->first();
-            if ($period) {
-                return $period->id;
-            }
-        }
-
-        $current = $this->accountingPeriodService->getCurrentPeriod($businessId);
-        return $current->id;
-    }
-
     public function trialBalance(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
-        $balances = $this->ledgerService->getTrialBalance($businessId, $periodId);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+        $balances = $this->ledgerService->getTrialBalance($businessId, $ctx->snapshotPeriodId);
 
         $accounts = $balances->map(function ($row) {
             $balance = (float) $row->closing_balance;
             $isDebit = $row->normal_balance === 'debit';
+
             return [
                 'account_id' => $row->account_id,
                 'code' => $row->account_code,
@@ -81,7 +57,6 @@ class GeneralLedgerController extends Controller
 
         $totalDebits = $accounts->sum('debit_balance');
         $totalCredits = $accounts->sum('credit_balance');
-        $period = \App\Models\AccountingPeriod::find($periodId);
 
         return response()->json([
             'data' => [
@@ -89,13 +64,7 @@ class GeneralLedgerController extends Controller
                 'total_debits' => round($totalDebits, 2),
                 'total_credits' => round($totalCredits, 2),
                 'is_balanced' => abs($totalDebits - $totalCredits) < 0.01,
-                'period' => $period ? [
-                    'id' => $period->id,
-                    'name' => $period->name,
-                    'start_date' => $period->start_date->toDateString(),
-                    'end_date' => $period->end_date->toDateString(),
-                    'is_closed' => $period->is_closed,
-                ] : null,
+                'period' => $this->periodPayload($ctx),
             ],
         ]);
     }
@@ -103,32 +72,55 @@ class GeneralLedgerController extends Controller
     public function profitLoss(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
-        $result = $this->financialStatementService->incomeStatement($businessId, $periodId);
-        return response()->json(['data' => $result]);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+
+        return response()->json([
+            'data' => $this->financialStatementService->incomeStatementForContext($businessId, $ctx),
+        ]);
     }
 
     public function balanceSheet(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
-        $result = $this->financialStatementService->balanceSheet($businessId, $periodId);
-        return response()->json(['data' => $result]);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+
+        return response()->json([
+            'data' => $this->financialStatementService->balanceSheetForContext($businessId, $ctx),
+        ]);
     }
 
     public function cashFlow(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
-        $result = $this->financialStatementService->cashFlowStatement($businessId, $periodId);
-        return response()->json(['data' => $result]);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+
+        return response()->json([
+            'data' => $this->financialStatementService->cashFlowStatementForContext($businessId, $ctx),
+        ]);
     }
 
     public function equity(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $periodId = $this->resolvePeriodId($request);
-        $result = $this->financialStatementService->statementOfEquity($businessId, $periodId);
-        return response()->json(['data' => $result]);
+        $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
+
+        return response()->json([
+            'data' => $this->financialStatementService->statementOfEquityForContext($businessId, $ctx),
+        ]);
+    }
+
+    protected function periodPayload(\App\Support\ReportPeriodContext $ctx): array
+    {
+        $period = AccountingPeriod::find($ctx->snapshotPeriodId);
+
+        return [
+            'id' => $ctx->snapshotPeriodId,
+            'name' => $ctx->label,
+            'start_date' => $ctx->dateFrom,
+            'end_date' => $ctx->dateTo,
+            'is_closed' => (bool) ($period?->is_closed ?? false),
+            'period_ids' => $ctx->periodIds,
+            'is_range' => $ctx->isRange,
+        ];
     }
 }

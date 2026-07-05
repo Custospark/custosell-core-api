@@ -85,6 +85,33 @@ class LedgerService
         return (float) $query->sum(\Illuminate\Support\Facades\DB::raw('total_credits - total_debits'));
     }
 
+    /**
+     * @param  int[]  $periodIds
+     */
+    public function calculateAccountBalanceForPeriods(int $accountId, int $businessId, array $periodIds): float
+    {
+        if ($periodIds === []) {
+            return 0.0;
+        }
+
+        if (count($periodIds) === 1) {
+            return $this->calculateAccountBalance($accountId, $businessId, $periodIds[0]);
+        }
+
+        $account = \App\Models\ChartOfAccount::find($accountId);
+        $isDebit = $account && $account->normal_balance === 'debit';
+
+        $query = GeneralLedger::where('business_id', $businessId)
+            ->where('account_id', $accountId)
+            ->whereIn('period_id', $periodIds);
+
+        if ($isDebit) {
+            return (float) $query->sum(DB::raw('total_debits - total_credits'));
+        }
+
+        return (float) $query->sum(DB::raw('total_credits - total_debits'));
+    }
+
     public function generateTrialBalance(int $businessId, int $periodId): array
     {
         $trialBalance = $this->generalLedgerRepository->getTrialBalance($businessId, $periodId);

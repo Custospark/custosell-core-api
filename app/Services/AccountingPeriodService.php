@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Repositories\Contracts\AccountingPeriodRepositoryInterface;
 use App\Repositories\Contracts\GeneralLedgerRepositoryInterface;
 use App\Repositories\Contracts\JournalEntryRepositoryInterface;
@@ -17,7 +18,30 @@ class AccountingPeriodService
 
     public function getAll(int $businessId): Collection
     {
+        $this->ensurePeriodsForBusiness($businessId);
+
         return $this->accountingPeriodRepository->all($businessId);
+    }
+
+    /**
+     * Ensure monthly periods exist from business registration year through next calendar year.
+     */
+    public function ensurePeriodsForBusiness(int $businessId): void
+    {
+        $business = Business::query()->find($businessId);
+        if (!$business) {
+            return;
+        }
+
+        $startYear = (int) $business->created_at->format('Y');
+        $endYear = (int) now()->addYear()->format('Y');
+
+        for ($year = $startYear; $year <= $endYear; $year++) {
+            for ($month = 1; $month <= 12; $month++) {
+                $date = sprintf('%d-%02d-15', $year, $month);
+                $this->accountingPeriodRepository->findOrCreatePeriod($businessId, $date);
+            }
+        }
     }
 
     public function getById(int $id)

@@ -57,7 +57,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->where('shift_id', $shiftId)
-            ->with(['user', 'customer', 'saleItems', 'business'])
+            ->with(['user', 'customer', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])
             ->orderBy('sale_date', 'desc')
             ->get();
     }

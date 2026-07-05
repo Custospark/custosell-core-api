@@ -165,6 +165,7 @@ class InvoiceService implements InvoiceServiceInterface
         ?float $amountTendered = null,
         ?float $changeGiven = null,
         ?string $attachmentPath = null,
+        ?int $shiftId = null,
     ): array {
         $invoice = $this->invoiceRepository->find($id);
         if (!$invoice) {
@@ -180,6 +181,7 @@ class InvoiceService implements InvoiceServiceInterface
             $amountTendered,
             $changeGiven,
             $attachmentPath,
+            $shiftId,
         );
 
         return [
