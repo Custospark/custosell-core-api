@@ -143,7 +143,7 @@ class SaleService implements SaleServiceInterface
 
             event(new SaleCreatedForAccounting($sale));
 
-            if (!$isFullyPaid && $amountPaid > 0) {
+            if ($amountPaid > 0) {
                 $this->paymentService->createInitialSalePayment(
                     $sale,
                     $amountPaid,
@@ -151,6 +151,7 @@ class SaleService implements SaleServiceInterface
                     $userId,
                     $storedTendered !== null ? (float) $storedTendered : $amountPaid,
                     $storedChange !== null ? (float) $storedChange : null,
+                    dispatchAccounting: !$isFullyPaid,
                 );
             }
 

@@ -55,11 +55,10 @@ class CustomerContactService
         }
 
         $resolvedName = $name ?: ($email ? $this->nameFromEmail($email) : 'Customer');
-        $resolvedPhone = $phone ?: $this->phoneFromEmail($email);
 
         return $this->customerService->create($businessId, [
             'name' => $resolvedName,
-            'phone' => $resolvedPhone,
+            'phone' => $phone,
             'email' => $email,
         ]);
     }
@@ -77,8 +76,7 @@ class CustomerContactService
         }
 
         if ($phone && $phone !== $customer->phone) {
-            $currentIsSynthetic = str_starts_with((string) $customer->phone, 'em-')
-                || str_starts_with((string) $customer->phone, 'walkin-');
+            $currentIsSynthetic = Customer::isSyntheticPhone($customer->phone);
             if ($currentIsSynthetic || $phone !== $customer->phone) {
                 $updates['phone'] = $phone;
             }
@@ -117,14 +115,5 @@ class CustomerContactService
         $local = str_replace(['.', '_', '-'], ' ', $local);
 
         return Str::title(trim($local)) ?: 'Customer';
-    }
-
-    private function phoneFromEmail(?string $email): string
-    {
-        if ($email) {
-            return 'em-' . substr(hash('sha256', strtolower($email)), 0, 20);
-        }
-
-        return 'walkin-' . substr((string) Str::uuid(), 0, 12);
     }
 }

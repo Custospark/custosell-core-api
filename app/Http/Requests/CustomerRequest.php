@@ -19,7 +19,7 @@ class CustomerRequest extends BaseFormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => [
-                'required',
+                'nullable',
                 'string',
                 'max:50',
                 Rule::unique('customers')

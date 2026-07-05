@@ -53,7 +53,8 @@ class CustomerContactResolveTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.email', 'jane@example.com')
-            ->assertJsonPath('data.name', 'Jane Doe');
+            ->assertJsonPath('data.name', 'Jane Doe')
+            ->assertJsonPath('data.phone', null);
 
         $this->assertDatabaseHas('customers', [
             'business_id' => $this->business->id,

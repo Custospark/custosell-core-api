@@ -36,4 +36,18 @@ class Customer extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    public static function isSyntheticPhone(?string $phone): bool
+    {
+        if ($phone === null || $phone === '') {
+            return false;
+        }
+
+        return str_starts_with($phone, 'em-') || str_starts_with($phone, 'walkin-');
+    }
+
+    public function displayPhone(): ?string
+    {
+        return self::isSyntheticPhone($this->phone) ? null : $this->phone;
+    }
 }

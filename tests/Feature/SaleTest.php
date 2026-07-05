@@ -276,4 +276,36 @@ class SaleTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['payment_method']);
     }
+
+    public function test_fully_paid_sale_creates_payment_receipt_for_email(): void
+    {
+        $product = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 10,
+            'unit_price' => 10000,
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/sales', [
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 10000],
+                ],
+                'subtotal' => 10000,
+                'discount_amount' => 0,
+                'total_amount' => 10000,
+                'payment_method' => 'cash',
+                'amount_tendered' => 10000,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('payment_status', 'paid')
+            ->assertJsonCount(1, 'payments');
+
+        $saleId = $response->json('id');
+        $this->assertDatabaseHas('payments', [
+            'payable_type' => 'sale',
+            'payable_id' => $saleId,
+            'amount' => 10000,
+        ]);
+    }
 }

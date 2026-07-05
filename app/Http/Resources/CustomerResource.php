@@ -13,7 +13,7 @@ class CustomerResource extends JsonResource
             'id' => $this->id,
             'business_id' => $this->business_id,
             'name' => $this->name,
-            'phone' => $this->phone,
+            'phone' => $this->displayPhone(),
             'email' => $this->email,
             'total_purchases' => $this->total_purchases,
             'last_purchase_at' => $this->last_purchase_at?->toISOString(),

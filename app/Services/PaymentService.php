@@ -146,6 +146,7 @@ class PaymentService
         int $userId,
         ?float $amountTendered = null,
         ?float $changeGiven = null,
+        bool $dispatchAccounting = true,
     ): ?Payment {
         if ($amount <= 0) {
             return null;
@@ -169,7 +170,9 @@ class PaymentService
             dispatchAccounting: false,
         );
 
-        event(new PaymentRecordedForAccounting($payment));
+        if ($dispatchAccounting) {
+            event(new PaymentRecordedForAccounting($payment));
+        }
 
         return $payment;
     }
