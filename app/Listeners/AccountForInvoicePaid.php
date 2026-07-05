@@ -15,7 +15,7 @@ class AccountForInvoicePaid
     public function handle(InvoicePaidForAccounting $event): void
     {
         try {
-            $invoice = $event->invoice->loadMissing('items.product');
+            $invoice = $event->invoice;
             $businessId = $invoice->business_id;
             $amount = $event->amount;
 
@@ -31,38 +31,22 @@ class AccountForInvoicePaid
 
             $codes = config('accounting.default_account_codes');
             $date = now()->toDateString();
+            $paymentAccountCode = $this->resolvePaymentAccountCode($event->paymentMethod, $codes);
 
-            $lines = [];
-
-            $lines[] = [
-                'account_code' => $codes['cash'],
-                'debit' => $amount,
-                'credit' => 0,
-                'description' => "Payment received for Invoice {$invoice->invoice_number}",
-            ];
-
-            $lines[] = [
-                'account_code' => $codes['accounts_receivable'],
-                'debit' => 0,
-                'credit' => $amount,
-                'description' => "Payment received for Invoice {$invoice->invoice_number}",
-            ];
-
-            $cogsTotal = $this->calculateCOGS($invoice);
-            if ($cogsTotal > 0) {
-                $lines[] = [
-                    'account_code' => $codes['cogs'],
-                    'debit' => $cogsTotal,
+            $lines = [
+                [
+                    'account_code' => $paymentAccountCode,
+                    'debit' => $amount,
                     'credit' => 0,
-                    'description' => "Invoice {$invoice->invoice_number} - COGS",
-                ];
-                $lines[] = [
-                    'account_code' => $codes['inventory'],
+                    'description' => "Payment received for Invoice {$invoice->invoice_number}",
+                ],
+                [
+                    'account_code' => $codes['accounts_receivable'],
                     'debit' => 0,
-                    'credit' => $cogsTotal,
-                    'description' => "Invoice {$invoice->invoice_number} - inventory reduction",
-                ];
-            }
+                    'credit' => $amount,
+                    'description' => "Payment received for Invoice {$invoice->invoice_number}",
+                ],
+            ];
 
             $this->journalEntryService->createAndPostEntry(
                 $businessId,
@@ -78,7 +62,8 @@ class AccountForInvoicePaid
                 'invoice_id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'amount' => $amount,
-                'cogs' => $cogsTotal,
+                'payment_method' => $event->paymentMethod,
+                'payment_account' => $paymentAccountCode,
             ]);
         } catch (\Throwable $e) {
             Log::error("Accounting automation failed for invoice payment {$event->invoice->id}: {$e->getMessage()}", [
@@ -88,17 +73,14 @@ class AccountForInvoicePaid
         }
     }
 
-    protected function calculateCOGS($invoice): float
+    /**
+     * @param  array<string, string>  $codes
+     */
+    protected function resolvePaymentAccountCode(string $paymentMethod, array $codes): string
     {
-        $total = 0;
-
-        foreach ($invoice->items as $item) {
-            $product = $item->product;
-            if ($product && (float) $product->cost_price > 0) {
-                $total += (float) $product->cost_price * (int) $item->quantity;
-            }
-        }
-
-        return $total;
+        return match ($paymentMethod) {
+            'card', 'mobile_money', 'bank' => $codes['bank'] ?? $codes['cash'],
+            default => $codes['cash'],
+        };
     }
 }

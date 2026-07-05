@@ -7,15 +7,16 @@ use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Resources\InvoiceCollection;
 use App\Http\Resources\InvoiceResource;
 use App\Services\Contracts\InvoiceServiceInterface;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class InvoiceController extends Controller
 {
     public function __construct(
         protected InvoiceServiceInterface $invoiceService,
+        protected ReportExportService $export,
     ) {}
 
     public function index(Request $request): InvoiceCollection
@@ -65,34 +66,71 @@ class InvoiceController extends Controller
         return response()->json(new InvoiceResource($invoice));
     }
 
-    public function downloadPdf(int $id): BinaryFileResponse
+    public function downloadPdf(Request $request, int $id): Response
     {
         $invoice = $this->invoiceService->getById($id);
         if (!$invoice) {
             abort(404, 'Invoice not found');
         }
 
+        $invoice->load(['items.product', 'customer', 'createdBy', 'business']);
         $business = $invoice->business;
+        $currency = $business->currency ?? 'UGX';
+        $balanceDue = max(0, (float) $invoice->total_amount - (float) $invoice->amount_paid);
 
-        $pdf = Pdf::loadView('invoices.pdf', [
-            'invoice' => $invoice->load('items.product', 'customer', 'createdBy'),
+        $statusLabel = match ($invoice->status) {
+            'partially_paid' => 'Partially Paid',
+            'cancelled' => 'Cancelled',
+            default => ucfirst((string) $invoice->status),
+        };
+
+        $filename = $this->export->buildFilename($business, 'invoice-' . $invoice->invoice_number);
+
+        $pdfData = [
             'business' => $business,
-            'formatter' => app(\App\Services\ReportExportService::class),
-            'reportTitle' => 'INVOICE #' . $invoice->invoice_number,
+            'invoice' => $invoice,
+            'formatter' => $this->export,
+            'currency' => $currency,
+            'balanceDue' => $balanceDue,
+            'statusLabel' => $statusLabel,
+            'reportTitle' => 'Tax Invoice',
+            'reportSubtitle' => sprintf(
+                'Invoice #%s · Issued %s · Due %s',
+                $invoice->invoice_number,
+                $invoice->issue_date?->format('M d, Y'),
+                $invoice->due_date?->format('M d, Y'),
+            ),
+            'reportPurpose' => $balanceDue > 0
+                ? 'Please remit payment by the due date shown above.'
+                : 'This invoice has been fully paid. Thank you for your business.',
             'accent' => '#1e40af',
-        ]);
-        $pdf->setPaper('a4', 'portrait');
+            'summaryCards' => [
+                ['label' => 'Invoice #', 'value' => $invoice->invoice_number],
+                ['label' => 'Status', 'value' => $statusLabel],
+                ['label' => 'Total', 'value' => $this->export->formatMoney((float) $invoice->total_amount, $currency)],
+                [
+                    'label' => 'Balance Due',
+                    'value' => $this->export->formatMoney($balanceDue, $currency),
+                    'tone' => $balanceDue > 0 ? 'negative' : 'positive',
+                ],
+            ],
+        ];
 
-        return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
+        return $this->export->downloadPdf('invoices.pdf', $pdfData, $filename, 'portrait');
     }
 
     public function recordPayment(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'payment_method' => ['nullable', 'string', 'in:cash,mobile_money,card,other'],
         ]);
 
-        $invoice = $this->invoiceService->recordPayment($id, (float) $request->amount);
+        $invoice = $this->invoiceService->recordPayment(
+            $id,
+            (float) $request->amount,
+            $request->input('payment_method', 'cash'),
+        );
         return response()->json(new InvoiceResource($invoice));
     }
 }

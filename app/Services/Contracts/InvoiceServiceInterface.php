@@ -3,11 +3,11 @@
 namespace App\Services\Contracts;
 
 use App\Models\Invoice;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface InvoiceServiceInterface
 {
-    public function getAll(int $businessId, array $filters = []): LengthAwarePaginator;
+    public function getAll(int $businessId, array $filters = []): Collection;
 
     public function getById(int $id): ?Invoice;
 

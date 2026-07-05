@@ -6,6 +6,7 @@ use App\Providers\CategoryServiceProvider;
 use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
+use App\Providers\InvoiceServiceProvider;
 use App\Providers\PlanServiceProvider;
 use App\Providers\AccountingServiceProvider;
 use App\Providers\EventServiceProvider;
@@ -35,6 +36,7 @@ return [
     SubscriptionServiceProvider::class,
     ExpenseCategoryServiceProvider::class,
     ExpenseServiceProvider::class,
+    InvoiceServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
     EventServiceProvider::class,

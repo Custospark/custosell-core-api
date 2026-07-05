@@ -9,7 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService implements InvoiceServiceInterface
@@ -18,7 +18,7 @@ class InvoiceService implements InvoiceServiceInterface
         protected InvoiceRepositoryInterface $invoiceRepository,
     ) {}
 
-    public function getAll(int $businessId, array $filters = []): LengthAwarePaginator
+    public function getAll(int $businessId, array $filters = []): Collection
     {
         return $this->invoiceRepository->all($businessId, $filters);
     }
@@ -84,6 +84,10 @@ class InvoiceService implements InvoiceServiceInterface
             throw new \RuntimeException('Invoice not found');
         }
 
+        if ($invoice->status !== 'draft') {
+            throw new \RuntimeException('Only draft invoices can be updated');
+        }
+
         return DB::transaction(function () use ($invoice, $data) {
             if (isset($data['items'])) {
                 $invoice->items()->delete();
@@ -111,7 +115,8 @@ class InvoiceService implements InvoiceServiceInterface
                 $data['total_amount'] = $subtotal + $taxTotal;
             }
 
-            return $this->invoiceRepository->update($invoice, $data);
+            return $this->invoiceRepository->update($invoice, $data)
+                ->load(['customer', 'createdBy', 'items.product']);
         });
     }
 

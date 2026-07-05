@@ -36,6 +36,14 @@ class BusinessRequest extends BaseFormRequest
             'business_type' => ['nullable', 'string', 'max:50'],
             'currency' => ['nullable', 'string', 'max:10'],
             'receipt_footer' => ['nullable', 'string'],
+            'payment_bank_name' => ['nullable', 'string', 'max:150'],
+            'payment_bank_account_name' => ['nullable', 'string', 'max:150'],
+            'payment_bank_account_number' => ['nullable', 'string', 'max:80'],
+            'payment_bank_branch' => ['nullable', 'string', 'max:150'],
+            'payment_mobile_money_provider' => ['nullable', 'string', 'max:100'],
+            'payment_mobile_money_account_name' => ['nullable', 'string', 'max:150'],
+            'payment_mobile_money_number' => ['nullable', 'string', 'max:50'],
+            'payment_instructions' => ['nullable', 'string'],
             'logo_path' => ['nullable', 'string', 'max:255'],
         ];
     }

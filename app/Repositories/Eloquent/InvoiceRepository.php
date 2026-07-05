@@ -4,11 +4,11 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\Invoice;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceRepository implements InvoiceRepositoryInterface
 {
-    public function all(int $businessId, array $filters = []): LengthAwarePaginator
+    public function all(int $businessId, array $filters = []): Collection
     {
         $query = Invoice::where('business_id', $businessId)
             ->with(['customer', 'createdBy']);
@@ -26,8 +26,7 @@ class InvoiceRepository implements InvoiceRepositoryInterface
             $query->where('issue_date', '<=', $filters['date_to']);
         }
 
-        return $query->orderBy('created_at', 'desc')
-            ->paginate($filters['per_page'] ?? 15);
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     public function find(int $id): ?Invoice
