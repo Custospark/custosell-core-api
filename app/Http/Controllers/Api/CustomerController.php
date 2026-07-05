@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerRequest;
+use App\Http\Requests\ResolveCustomerContactRequest;
 use App\Http\Resources\CustomerCollection;
 use App\Http\Resources\CustomerResource;
 use App\Http\Resources\SaleCollection;
 use App\Services\Contracts\CustomerServiceInterface;
 use App\Services\Contracts\SaleServiceInterface;
+use App\Services\CustomerContactService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,6 +19,7 @@ class CustomerController extends Controller
     public function __construct(
         protected CustomerServiceInterface $customerService,
         protected SaleServiceInterface $saleService,
+        protected CustomerContactService $customerContactService,
     ) {}
 
     public function index(Request $request): CustomerCollection
@@ -39,6 +42,17 @@ class CustomerController extends Controller
         $businessId = $request->user()->business_id;
         $customer = $this->customerService->create($businessId, $request->validated());
         return new CustomerResource($customer);
+    }
+
+    public function resolve(ResolveCustomerContactRequest $request): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+        $customer = $this->customerContactService->resolve($businessId, $request->validated());
+        $isNew = $customer->wasRecentlyCreated;
+
+        return (new CustomerResource($customer))
+            ->response()
+            ->setStatusCode($isNew ? 201 : 200);
     }
 
     public function update(CustomerRequest $request, int $id): CustomerResource

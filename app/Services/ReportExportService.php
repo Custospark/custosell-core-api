@@ -307,6 +307,14 @@ class ReportExportService
         ]);
     }
 
+    public function renderPdfBytes(string $view, array $data, string $orientation = 'portrait'): string
+    {
+        $pdf = Pdf::loadView($view, $data);
+        $pdf->setPaper('a4', $orientation);
+
+        return (string) $pdf->output();
+    }
+
     public function downloadPdf(string $view, array $data, string $filename, string $orientation = 'portrait')
     {
         $pdf = Pdf::loadView($view, $data);

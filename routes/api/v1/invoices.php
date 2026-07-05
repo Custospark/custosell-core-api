@@ -12,5 +12,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:sales'])->group(fu
     Route::delete('/invoices/{id}', [InvoiceController::class, 'destroy'])->whereNumber('id');
     Route::post('/invoices/{id}/payment', [InvoiceController::class, 'recordPayment'])->whereNumber('id');
     Route::post('/invoices/{id}/send', [InvoiceController::class, 'send'])->whereNumber('id');
+    Route::post('/invoices/{id}/email', [InvoiceController::class, 'email'])->whereNumber('id');
     Route::get('/invoices/{id}/pdf', [InvoiceController::class, 'downloadPdf'])->whereNumber('id');
 });

@@ -23,6 +23,8 @@ class Payment extends Model
         'paid_at',
         'notes',
         'attachment_path',
+        'email_sent_count',
+        'last_emailed_at',
     ];
 
     protected function casts(): array
@@ -33,6 +35,8 @@ class Payment extends Model
             'change_given' => 'decimal:2',
             'balance_after' => 'decimal:2',
             'paid_at' => 'datetime',
+            'email_sent_count' => 'integer',
+            'last_emailed_at' => 'datetime',
         ];
     }
 

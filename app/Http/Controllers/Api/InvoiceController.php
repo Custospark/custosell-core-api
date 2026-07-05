@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SendDocumentEmailRequest;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Resources\InvoiceCollection;
 use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\PaymentResource;
 use App\Services\Contracts\InvoiceServiceInterface;
+use App\Services\CustomerDocumentEmailService;
+use App\Services\InvoicePdfBuilder;
 use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +21,8 @@ class InvoiceController extends Controller
     public function __construct(
         protected InvoiceServiceInterface $invoiceService,
         protected ReportExportService $export,
+        protected InvoicePdfBuilder $invoicePdfBuilder,
+        protected CustomerDocumentEmailService $documentEmailService,
     ) {}
 
     public function index(Request $request): InvoiceCollection
@@ -74,50 +79,58 @@ class InvoiceController extends Controller
             abort(404, 'Invoice not found');
         }
 
-        $invoice->load(['items.product', 'customer', 'createdBy', 'business']);
-        $business = $invoice->business;
-        $currency = $business->currency ?? 'UGX';
-        $balanceDue = max(0, (float) $invoice->total_amount - (float) $invoice->amount_paid);
+        if ((int) $invoice->business_id !== (int) $request->user()->business_id) {
+            abort(404, 'Invoice not found');
+        }
 
-        $statusLabel = match ($invoice->status) {
-            'partially_paid' => 'Partially Paid',
-            'cancelled' => 'Cancelled',
-            default => ucfirst((string) $invoice->status),
-        };
+        $business = $request->user()->business;
+        $pdfConfig = $this->invoicePdfBuilder->build($invoice, $business);
 
-        $filename = $this->export->buildFilename($business, 'invoice-' . $invoice->invoice_number);
+        return $this->export->downloadPdf(
+            $pdfConfig['view'],
+            $pdfConfig['data'],
+            $pdfConfig['filename'],
+            $pdfConfig['orientation'],
+        );
+    }
 
-        $pdfData = [
-            'business' => $business,
-            'invoice' => $invoice,
-            'formatter' => $this->export,
-            'currency' => $currency,
-            'balanceDue' => $balanceDue,
-            'statusLabel' => $statusLabel,
-            'reportTitle' => 'Tax Invoice',
-            'reportSubtitle' => sprintf(
-                'Invoice #%s · Issued %s · Due %s',
-                $invoice->invoice_number,
-                $invoice->issue_date?->format('M d, Y'),
-                $invoice->due_date?->format('M d, Y'),
-            ),
-            'reportPurpose' => $balanceDue > 0
-                ? 'Please remit payment by the due date shown above.'
-                : 'This invoice has been fully paid. Thank you for your business.',
-            'accent' => '#1e40af',
-            'summaryCards' => [
-                ['label' => 'Invoice #', 'value' => $invoice->invoice_number],
-                ['label' => 'Status', 'value' => $statusLabel],
-                ['label' => 'Total', 'value' => $this->export->formatMoney((float) $invoice->total_amount, $currency)],
-                [
-                    'label' => 'Balance Due',
-                    'value' => $this->export->formatMoney($balanceDue, $currency),
-                    'tone' => $balanceDue > 0 ? 'negative' : 'positive',
-                ],
-            ],
-        ];
+    public function email(SendDocumentEmailRequest $request, int $id): JsonResponse
+    {
+        $invoice = $this->invoiceService->getById($id);
+        if (!$invoice) {
+            abort(404, 'Invoice not found');
+        }
 
-        return $this->export->downloadPdf('invoices.pdf', $pdfData, $filename, 'portrait');
+        if ((int) $invoice->business_id !== (int) $request->user()->business_id) {
+            abort(404, 'Invoice not found');
+        }
+
+        $invoice->loadMissing(['customer']);
+        $to = trim((string) ($request->validated('to') ?? ''));
+        if ($to === '') {
+            $to = $this->documentEmailService->resolveCustomerEmail($invoice->customer) ?? '';
+        }
+
+        if ($to === '') {
+            return response()->json([
+                'message' => 'No recipient email. Add a customer email or enter one manually.',
+            ], 422);
+        }
+
+        try {
+            $result = $this->documentEmailService->sendInvoice(
+                $invoice,
+                $request->user()->business,
+                $to,
+                $request->validated('message'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        return response()->json($result);
     }
 
     public function recordPayment(Request $request, int $id): JsonResponse

@@ -28,6 +28,8 @@ class PaymentResource extends JsonResource
                 : null,
             'recorded_by' => $this->recorded_by,
             'shift_id' => $this->shift_id,
+            'email_sent_count' => (int) ($this->email_sent_count ?? 0),
+            'last_emailed_at' => $this->last_emailed_at?->toISOString(),
             'recorded_by_user' => new UserResource($this->whenLoaded('recordedBy')),
             'created_at' => $this->created_at?->toISOString(),
         ];

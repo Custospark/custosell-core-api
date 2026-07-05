@@ -25,6 +25,8 @@ class Invoice extends Model
         'total_amount',
         'amount_paid',
         'notes',
+        'email_sent_count',
+        'last_emailed_at',
         'created_by',
     ];
 
@@ -37,6 +39,8 @@ class Invoice extends Model
             'tax_total' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'amount_paid' => 'decimal:2',
+            'email_sent_count' => 'integer',
+            'last_emailed_at' => 'datetime',
         ];
     }
 

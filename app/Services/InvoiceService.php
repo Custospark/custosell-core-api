@@ -6,6 +6,7 @@ use App\Events\InvoiceSentForAccounting;
 use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Sale;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\PaymentService;
@@ -75,7 +76,11 @@ class InvoiceService implements InvoiceServiceInterface
                 ]);
             }
 
-            return $invoice->load(['customer', 'createdBy', 'items.product']);
+            if (!empty($data['sale_id'])) {
+                $invoice = $this->paymentService->syncInvoiceFromLinkedSale($invoice->fresh());
+            }
+
+            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments']);
         });
     }
 
@@ -147,13 +152,19 @@ class InvoiceService implements InvoiceServiceInterface
             throw new \RuntimeException('Only draft or cancelled invoices can be sent');
         }
 
+        if ($invoice->sale_id) {
+            $invoice = $this->paymentService->syncInvoiceFromLinkedSale($invoice->fresh());
+        }
+
+        $status = $this->resolveStatusAfterSend($invoice);
+
         $invoice = $this->invoiceRepository->update($invoice, [
-            'status' => 'sent',
+            'status' => $status,
         ]);
 
         event(new InvoiceSentForAccounting($invoice));
 
-        return $invoice;
+        return $invoice->load(['customer', 'createdBy', 'items.product', 'payments']);
     }
 
     public function recordPayment(
@@ -193,5 +204,22 @@ class InvoiceService implements InvoiceServiceInterface
     protected function generateInvoiceNumber(Business $business): string
     {
         return DocumentNumberGenerator::invoiceNumber($business, Invoice::class, 'invoice_number');
+    }
+
+    protected function resolveStatusAfterSend(Invoice $invoice): string
+    {
+        $total = (float) $invoice->total_amount;
+        $paid = (float) $invoice->amount_paid;
+        $balance = max(0, $total - $paid);
+
+        if ($balance < 0.01) {
+            return 'paid';
+        }
+
+        if ($paid > 0) {
+            return 'partially_paid';
+        }
+
+        return 'sent';
     }
 }

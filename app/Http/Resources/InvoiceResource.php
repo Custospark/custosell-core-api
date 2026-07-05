@@ -26,6 +26,8 @@ class InvoiceResource extends JsonResource
             'amount_paid' => $this->amount_paid,
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'notes' => $this->notes,
+            'email_sent_count' => (int) ($this->email_sent_count ?? 0),
+            'last_emailed_at' => $this->last_emailed_at?->toISOString(),
             'created_by' => $this->created_by,
             'created_by_user' => new UserResource($this->whenLoaded('createdBy')),
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),

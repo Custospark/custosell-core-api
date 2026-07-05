@@ -45,6 +45,22 @@ class SaleController extends Controller
         return new SaleResource($sale);
     }
 
+    public function assignCustomer(Request $request, int $id): SaleResource
+    {
+        $data = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+        ]);
+
+        $sale = $this->saleService->getById($id);
+        if (!$sale || (int) $sale->business_id !== (int) $request->user()->business_id) {
+            abort(404, 'Sale not found');
+        }
+
+        $updated = $this->saleService->update($id, ['customer_id' => (int) $data['customer_id']]);
+
+        return new SaleResource($updated->load(['customer', 'saleItems', 'payments']));
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $this->saleService->delete($id);

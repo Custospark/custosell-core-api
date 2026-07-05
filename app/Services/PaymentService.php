@@ -239,11 +239,96 @@ class PaymentService
         ]);
     }
 
+    /**
+     * Align invoice amount_paid (and status when not draft) with linked sale collections.
+     * Mirrors sale payment rows onto the invoice without duplicate GL entries.
+     */
+    public function syncInvoiceFromLinkedSale(Invoice $invoice): Invoice
+    {
+        if (!$invoice->sale_id) {
+            return $invoice;
+        }
+
+        $invoice->loadMissing('payments');
+        $sale = Sale::query()->with(['payments', 'saleItems'])->find($invoice->sale_id);
+        if (!$sale) {
+            return $invoice;
+        }
+
+        if (in_array($sale->payment_status, ['refunded', 'partially_refunded'], true)) {
+            return $invoice;
+        }
+
+        $invoiceTotal = $this->netBillAmount($invoice);
+        $syncedPaid = min((float) $sale->amount_paid, $invoiceTotal);
+
+        if ($invoice->payments->isEmpty() && $syncedPaid > 0) {
+            $remaining = $syncedPaid;
+            $salePayments = $sale->payments->sortBy('paid_at')->values();
+
+            if ($salePayments->isEmpty()) {
+                $this->createPayment(
+                    businessId: $invoice->business_id,
+                    payable: $invoice,
+                    amount: $syncedPaid,
+                    paymentMethod: (string) $sale->payment_method,
+                    balanceAfter: max(0, $invoiceTotal - $syncedPaid),
+                    userId: (int) ($sale->user_id ?? $invoice->created_by),
+                    notes: "From sale {$sale->receipt_number}",
+                    amountTendered: $sale->amount_tendered !== null ? (float) $sale->amount_tendered : $syncedPaid,
+                    changeGiven: $sale->change_given !== null ? (float) $sale->change_given : null,
+                    shiftId: $sale->shift_id ? (int) $sale->shift_id : null,
+                    dispatchAccounting: false,
+                );
+            } else {
+                foreach ($salePayments as $salePayment) {
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    $mirrorAmount = min((float) $salePayment->amount, $remaining);
+                    $remaining -= $mirrorAmount;
+
+                    $noteSuffix = $salePayment->notes
+                        ? ": {$salePayment->notes}"
+                        : " ({$salePayment->receipt_number})";
+
+                    $this->createPayment(
+                        businessId: $invoice->business_id,
+                        payable: $invoice,
+                        amount: $mirrorAmount,
+                        paymentMethod: (string) $salePayment->payment_method,
+                        balanceAfter: max(0, $invoiceTotal - ($syncedPaid - $remaining)),
+                        userId: (int) ($salePayment->recorded_by ?? $sale->user_id ?? $invoice->created_by),
+                        notes: "From sale {$sale->receipt_number}{$noteSuffix}",
+                        amountTendered: $salePayment->amount_tendered !== null ? (float) $salePayment->amount_tendered : $mirrorAmount,
+                        changeGiven: $salePayment->change_given !== null ? (float) $salePayment->change_given : null,
+                        shiftId: $salePayment->shift_id ? (int) $salePayment->shift_id : null,
+                        dispatchAccounting: false,
+                    );
+                }
+            }
+        }
+
+        $balance = max(0, $invoiceTotal - $syncedPaid);
+        $updates = ['amount_paid' => $syncedPaid];
+
+        if ($invoice->status !== 'draft') {
+            $updates['status'] = $balance < 0.01
+                ? 'paid'
+                : ($syncedPaid > 0 ? 'partially_paid' : $invoice->status);
+        }
+
+        $invoice->update($updates);
+
+        return $invoice->fresh(['payments']);
+    }
+
     protected function syncLinkedInvoiceAfterSalePayment(Sale $sale): void
     {
         $invoice = Invoice::query()
             ->where('sale_id', $sale->id)
-            ->whereIn('status', ['sent', 'partially_paid', 'paid'])
+            ->whereIn('status', ['draft', 'sent', 'partially_paid', 'paid'])
             ->orderByDesc('id')
             ->first();
 
@@ -251,15 +336,7 @@ class PaymentService
             return;
         }
 
-        $invoiceTotal = (float) $invoice->total_amount;
-        $syncedPaid = min((float) $sale->amount_paid, $invoiceTotal);
-        $balance = max(0, $invoiceTotal - $syncedPaid);
-        $status = $balance < 0.01 ? 'paid' : ($syncedPaid > 0 ? 'partially_paid' : $invoice->status);
-
-        $invoice->update([
-            'amount_paid' => $syncedPaid,
-            'status' => $status,
-        ]);
+        $this->syncInvoiceFromLinkedSale($invoice);
     }
 
     public function netBillAmount(Invoice|Sale $payable): float
