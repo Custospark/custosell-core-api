@@ -15,6 +15,11 @@ class StoreInvoiceRequest extends BaseFormRequest
     {
         return [
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'sale_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sales', 'id')->where(fn ($q) => $q->where('business_id', $this->user()->business_id)),
+            ],
             'issue_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:issue_date'],
             'items' => ['required', 'array', 'min:1'],

@@ -115,15 +115,22 @@ class SaleController extends Controller
         $data = $request->validate([
             'sales' => ['required', 'array', 'min:1', 'max:50'],
             'sales.*.subtotal' => ['required', 'numeric', 'min:0'],
+            'sales.*.tax_total' => ['nullable', 'numeric', 'min:0'],
+            'sales.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
             'sales.*.total_amount' => ['required', 'numeric', 'min:0'],
-            'sales.*.payment_method' => ['required', 'string', 'in:cash,mobile_money,card,other'],
+            'sales.*.amount_paid' => ['nullable', 'numeric', 'min:0'],
+            'sales.*.amount_tendered' => ['nullable', 'numeric', 'min:0'],
+            'sales.*.change_given' => ['nullable', 'numeric', 'min:0'],
+            'sales.*.payment_method' => ['required', 'string', 'in:cash,mobile_money,card,bank,other'],
             'sales.*.shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'sales.*.customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'sales.*.sale_date' => ['nullable', 'date'],
+            'sales.*.notes' => ['nullable', 'string'],
             'sales.*.items' => ['required', 'array', 'min:1'],
             'sales.*.items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'sales.*.items.*.quantity' => ['required', 'integer', 'min:1'],
             'sales.*.items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'sales.*.items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $results = [];

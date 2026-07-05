@@ -48,6 +48,7 @@ class InvoiceService implements InvoiceServiceInterface
                 'business_id' => $businessId,
                 'invoice_number' => $invoiceNumber,
                 'customer_id' => $data['customer_id'] ?? null,
+                'sale_id' => $data['sale_id'] ?? null,
                 'issue_date' => $data['issue_date'],
                 'due_date' => $data['due_date'],
                 'status' => 'draft',

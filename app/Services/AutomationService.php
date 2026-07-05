@@ -126,6 +126,70 @@ class AutomationService
         };
     }
 
+    /**
+     * @param  array<string, string>  $codes
+     * @return array<int, array{account_code: string, amount: float, label: string}>
+     */
+    protected function resolveRefundSettlementLines(Sale $sale, float $refundTotal, array $codes): array
+    {
+        $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
+        $arCode = $codes['accounts_receivable'];
+
+        if (!$this->saleWasCreditAccounted($sale, $codes)) {
+            return [[
+                'account_code' => $paymentAccount,
+                'amount' => $refundTotal,
+                'label' => 'cash settlement',
+            ]];
+        }
+
+        $cashCollected = (float) ($sale->amount_paid ?? 0);
+        $cashAlreadyRefunded = $this->journalEntryService->sumSaleRefundCreditsForAccount(
+            $sale->business_id,
+            $sale->id,
+            $paymentAccount,
+        );
+        $cashAvailable = max(0, round($cashCollected - $cashAlreadyRefunded, 2));
+        $cashPortion = min($refundTotal, $cashAvailable);
+        $arPortion = round($refundTotal - $cashPortion, 2);
+
+        $settlements = [];
+        if ($cashPortion > 0) {
+            $settlements[] = [
+                'account_code' => $paymentAccount,
+                'amount' => $cashPortion,
+                'label' => 'cash settlement',
+            ];
+        }
+        if ($arPortion > 0) {
+            $settlements[] = [
+                'account_code' => $arCode,
+                'amount' => $arPortion,
+                'label' => 'AR reduction',
+            ];
+        }
+
+        return $settlements;
+    }
+
+    /**
+     * @param  array<string, string>  $codes
+     */
+    protected function saleWasCreditAccounted(Sale $sale, array $codes): bool
+    {
+        $entry = $this->journalEntryService->getEntryByReference('sale', $sale->id, $sale->business_id);
+        if (!$entry) {
+            return (float) ($sale->amount_paid ?? 0) < (float) $sale->total_amount - 0.001;
+        }
+
+        $arCode = $codes['accounts_receivable'];
+
+        return $entry->lines()
+            ->whereHas('chartOfAccount', fn ($q) => $q->where('code', $arCode))
+            ->where('debit_amount', '>', 0)
+            ->exists();
+    }
+
     public function handleSaleRefunded(Sale $sale, array $refundBatch = []): void
     {
         try {
@@ -148,7 +212,6 @@ class AutomationService
             }
 
             $lines = [];
-            $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
             $returnsCode = $codes['sales_returns'] ?? '4400';
 
             if ($refundTotal > 0) {
@@ -158,12 +221,15 @@ class AutomationService
                     'credit' => 0,
                     'description' => "Refund {$sale->receipt_number} - sales return",
                 ];
-                $lines[] = [
-                    'account_code' => $paymentAccount,
-                    'debit' => 0,
-                    'credit' => $refundTotal,
-                    'description' => "Refund {$sale->receipt_number} - settlement",
-                ];
+
+                foreach ($this->resolveRefundSettlementLines($sale, $refundTotal, $codes) as $settlement) {
+                    $lines[] = [
+                        'account_code' => $settlement['account_code'],
+                        'debit' => 0,
+                        'credit' => $settlement['amount'],
+                        'description' => "Refund {$sale->receipt_number} - {$settlement['label']}",
+                    ];
+                }
             }
 
             if ($cogsRestore > 0) {
@@ -181,13 +247,15 @@ class AutomationService
                 ];
             }
 
+            $refundReferenceId = $this->journalEntryService->nextSaleRefundReferenceId($businessId, $sale->id);
+
             $this->journalEntryService->createAndPostEntry(
                 $businessId,
                 $date,
                 "Refund for sale {$sale->receipt_number}",
                 $lines,
                 'sale_refund',
-                $sale->id,
+                $refundReferenceId,
                 $sale->user_id,
             );
 

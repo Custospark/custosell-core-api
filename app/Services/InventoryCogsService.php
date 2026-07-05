@@ -40,6 +40,9 @@ class InventoryCogsService
         $total = 0.0;
 
         foreach ($refundBatch as $row) {
+            if (!isset($row['saleItem']) || !$row['saleItem'] instanceof SaleItem) {
+                continue;
+            }
             /** @var SaleItem $saleItem */
             $saleItem = $row['saleItem'];
             $refundQty = (int) ($row['refundQty'] ?? 0);

@@ -23,6 +23,18 @@ class AccountForInvoiceSent
                 return;
             }
 
+            if ($invoice->sale_id) {
+                $saleEntry = $this->journalEntryService->getEntryByReference('sale', $invoice->sale_id, $businessId);
+                if ($saleEntry) {
+                    Log::info('Accounting automation: Invoice send skipped — revenue already posted on linked sale', [
+                        'invoice_id' => $invoice->id,
+                        'sale_id' => $invoice->sale_id,
+                    ]);
+
+                    return;
+                }
+            }
+
             $codes = config('accounting.default_account_codes');
             $date = $invoice->issue_date instanceof \Carbon\Carbon
                 ? $invoice->issue_date->toDateString()

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\JournalEntry;
+use App\Models\JournalEntryLine;
 use App\Repositories\Contracts\AccountingPeriodRepositoryInterface;
 use App\Repositories\Contracts\ChartOfAccountRepositoryInterface;
 use App\Repositories\Contracts\GeneralLedgerRepositoryInterface;
@@ -208,6 +209,46 @@ class JournalEntryService
             ->where('business_id', $businessId)
             ->sortByDesc('id')
             ->first();
+    }
+
+    /**
+     * Unique reference_id for sale_refund entries (multiple refunds per sale).
+     * Encodes sale id in the high digits: sale 42 → 420001, 420002, …
+     */
+    public function nextSaleRefundReferenceId(int $businessId, int $saleId): int
+    {
+        $base = $saleId * 10000;
+        $count = JournalEntry::query()
+            ->where('business_id', $businessId)
+            ->where('reference_type', 'sale_refund')
+            ->where('reference_id', '>', $base)
+            ->where('reference_id', '<', $base + 10000)
+            ->count();
+
+        return $base + $count + 1;
+    }
+
+    /**
+     * Sum cash/bank credits already posted on prior sale_refund entries for a sale.
+     */
+    public function sumSaleRefundCreditsForAccount(int $businessId, int $saleId, string $accountCode): float
+    {
+        $base = $saleId * 10000;
+        $account = $this->chartOfAccountRepository->findByCode($businessId, $accountCode);
+        if (!$account) {
+            return 0.0;
+        }
+
+        return (float) JournalEntryLine::query()
+            ->where('account_id', $account->id)
+            ->where('credit_amount', '>', 0)
+            ->whereHas('journalEntry', function ($q) use ($businessId, $base) {
+                $q->where('business_id', $businessId)
+                    ->where('reference_type', 'sale_refund')
+                    ->where('reference_id', '>', $base)
+                    ->where('reference_id', '<', $base + 10000);
+            })
+            ->sum('credit_amount');
     }
 
     // ── Adapter methods for controller compatibility ──
