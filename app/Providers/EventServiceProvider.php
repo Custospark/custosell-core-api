@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use App\Events\ExpenseCreatedForAccounting;
+use App\Events\InvoicePaidForAccounting;
+use App\Events\InvoiceSentForAccounting;
 use App\Events\SaleCreatedForAccounting;
 use App\Events\SaleRefundedForAccounting;
+use App\Listeners\AccountForInvoicePaid;
+use App\Listeners\AccountForInvoiceSent;
 use App\Listeners\CreateJournalEntryForExpense;
 use App\Listeners\CreateJournalEntryForSale;
 use App\Listeners\CreateReversingEntryForRefund;
@@ -21,6 +25,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         ExpenseCreatedForAccounting::class => [
             CreateJournalEntryForExpense::class,
+        ],
+        InvoiceSentForAccounting::class => [
+            AccountForInvoiceSent::class,
+        ],
+        InvoicePaidForAccounting::class => [
+            AccountForInvoicePaid::class,
         ],
     ];
 

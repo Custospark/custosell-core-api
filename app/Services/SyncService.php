@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\Sale;
@@ -30,6 +31,7 @@ class SyncService implements SyncServiceInterface
             'customers' => $query(new Customer)->get(),
             'expense_categories' => $query(new ExpenseCategory)->get(),
             'expenses' => $query(new Expense)->get(),
+            'invoices' => $query(new Invoice)->with('items')->get(),
             'roles' => $query(new Role)->get(),
             'shifts' => $query(new Shift)->get(),
             'sales' => $query(new Sale)->get(),
@@ -46,7 +48,7 @@ class SyncService implements SyncServiceInterface
 
     public function push(int $businessId, array $payload): array
     {
-        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0];
+        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0];
 
         DB::transaction(function () use ($businessId, $payload, &$imported) {
             foreach (['categories', 'products', 'customers', 'expenses'] as $type) {
@@ -90,6 +92,17 @@ class SyncService implements SyncServiceInterface
                 }
             }
 
+            if (isset($payload['invoices'])) {
+                foreach ($payload['invoices'] as $invoice) {
+                    $invoice['business_id'] = $businessId;
+                    Invoice::updateOrCreate(
+                        ['id' => $invoice['id'] ?? null, 'business_id' => $businessId],
+                        $invoice,
+                    );
+                    $imported['invoices']++;
+                }
+            }
+
             if (isset($payload['stock_movements'])) {
                 foreach ($payload['stock_movements'] as $movement) {
                     $movement['business_id'] = $businessId;
@@ -114,6 +127,7 @@ class SyncService implements SyncServiceInterface
 
         $sales = Sale::with('items')->where('business_id', $businessId)->get();
         $stockMovements = StockMovement::where('business_id', $businessId)->get();
+        $invoices = Invoice::with('items')->where('business_id', $businessId)->get();
 
         return [
             'business' => $business,
@@ -122,6 +136,7 @@ class SyncService implements SyncServiceInterface
             'customers' => $business->customers,
             'expense_categories' => $business->expenseCategories,
             'expenses' => $business->expenses,
+            'invoices' => $invoices,
             'roles' => $business->roles,
             'users' => $business->users,
             'shifts' => $business->shifts,
