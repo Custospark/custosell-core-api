@@ -11,7 +11,7 @@ class InvoiceRepository implements InvoiceRepositoryInterface
     public function all(int $businessId, array $filters = []): Collection
     {
         $query = Invoice::where('business_id', $businessId)
-            ->with(['customer', 'createdBy']);
+            ->with(['customer', 'createdBy', 'payments' => fn ($q) => $q->orderBy('paid_at')]);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
