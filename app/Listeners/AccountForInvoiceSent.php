@@ -58,21 +58,7 @@ class AccountForInvoiceSent
                 ];
             }
 
-            $cogsTotal = $this->calculateCOGS($invoice);
-            if ($cogsTotal > 0) {
-                $lines[] = [
-                    'account_code' => $codes['cogs'],
-                    'debit' => $cogsTotal,
-                    'credit' => 0,
-                    'description' => "Invoice {$invoice->invoice_number} - COGS",
-                ];
-                $lines[] = [
-                    'account_code' => $codes['inventory'],
-                    'debit' => 0,
-                    'credit' => $cogsTotal,
-                    'description' => "Invoice {$invoice->invoice_number} - inventory reduction",
-                ];
-            }
+            $cogsTotal = 0;
 
             $this->journalEntryService->createAndPostEntry(
                 $businessId,
@@ -88,7 +74,7 @@ class AccountForInvoiceSent
                 'invoice_id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'total_amount' => $totalAmount,
-                'cogs' => $cogsTotal ?? 0,
+                'cogs' => $cogsTotal,
             ]);
         } catch (\Throwable $e) {
             Log::error("Accounting automation failed for invoice sent {$event->invoice->id}: {$e->getMessage()}", [
@@ -96,20 +82,5 @@ class AccountForInvoiceSent
                 'exception' => $e,
             ]);
         }
-    }
-
-    protected function calculateCOGS(Invoice $invoice): float
-    {
-        $invoice->loadMissing('items.product');
-        $total = 0.0;
-
-        foreach ($invoice->items as $item) {
-            $product = $item->product;
-            if ($product && (float) $product->cost_price > 0) {
-                $total += (float) $product->cost_price * (float) $item->quantity;
-            }
-        }
-
-        return $total;
     }
 }

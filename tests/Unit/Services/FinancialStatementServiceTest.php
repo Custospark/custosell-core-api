@@ -83,7 +83,6 @@ class FinancialStatementServiceTest extends TestCase
                 ['account_code' => '4100', 'debit' => 0, 'credit' => 10000, 'description' => 'Revenue'],
             ],
         );
-        $ledgerService->postEntryToLedger($entry->id);
 
         $entry2 = $journalService->createAndPostEntry(
             $this->business->id, now()->toDateString(), 'Expense',
@@ -92,7 +91,6 @@ class FinancialStatementServiceTest extends TestCase
                 ['account_code' => '1101', 'debit' => 0, 'credit' => 4000, 'description' => 'Cash out'],
             ],
         );
-        $ledgerService->postEntryToLedger($entry2->id);
 
         $this->service = app(FinancialStatementService::class);
     }
@@ -112,5 +110,6 @@ class FinancialStatementServiceTest extends TestCase
 
         $this->assertEquals(6000, $sheet['total_assets']);
         $this->assertEquals($sheet['total_liabilities'] + $sheet['total_equity'], $sheet['total_liabilities_and_equity']);
+        $this->assertTrue($sheet['is_balanced']);
     }
 }

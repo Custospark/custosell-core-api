@@ -11,5 +11,7 @@ class SaleRefundedForAccounting
 
     public function __construct(
         public Sale $sale,
+        /** @var array<int, array{saleItem: \App\Models\SaleItem, refundQty: int, proportionalAmount: float}> */
+        public array $refundBatch = [],
     ) {}
 }

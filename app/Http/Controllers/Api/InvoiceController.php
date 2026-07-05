@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Resources\InvoiceCollection;
 use App\Http\Resources\InvoiceResource;
+use App\Http\Resources\PaymentResource;
 use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
@@ -121,16 +122,37 @@ class InvoiceController extends Controller
 
     public function recordPayment(Request $request, int $id): JsonResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'payment_method' => ['nullable', 'string', 'in:cash,mobile_money,card,other'],
+            'payment_method' => ['nullable', 'string', 'in:cash,mobile_money,card,bank,other'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'amount_tendered' => ['nullable', 'numeric', 'min:0'],
+            'change_given' => ['nullable', 'numeric', 'min:0'],
+            'attachment' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf,doc,docx,xlsx'],
         ]);
 
-        $invoice = $this->invoiceService->recordPayment(
-            $id,
-            (float) $request->amount,
-            $request->input('payment_method', 'cash'),
-        );
-        return response()->json(new InvoiceResource($invoice));
+        $attachmentPath = $request->hasFile('attachment')
+            ? $request->file('attachment')->store('payment-attachments', 'public')
+            : null;
+
+        try {
+            $invoice = $this->invoiceService->recordPayment(
+                $id,
+                (float) $data['amount'],
+                $request->input('payment_method', 'cash'),
+                $request->user()->id,
+                $data['notes'] ?? null,
+                isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null,
+                isset($data['change_given']) ? (float) $data['change_given'] : null,
+                $attachmentPath,
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'invoice' => new InvoiceResource($invoice['invoice']),
+            'payment' => new PaymentResource($invoice['payment']),
+        ]);
     }
 }

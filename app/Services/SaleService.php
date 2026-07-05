@@ -15,12 +15,14 @@ use Illuminate\Support\Facades\DB;
 
 use App\Events\SaleCreatedForAccounting;
 use App\Events\SaleRefundedForAccounting;
+use App\Services\PaymentService;
 
 class SaleService implements SaleServiceInterface
 {
     public function __construct(
         protected SaleRepositoryInterface $saleRepository,
         protected TaxEngine $taxEngine,
+        protected PaymentService $paymentService,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -58,6 +60,14 @@ class SaleService implements SaleServiceInterface
                 (float) ($data['discount_amount'] ?? 0),
             );
 
+            $totalAmount = $computed['total_amount'];
+            $amountPaid = $this->resolveInitialAmountPaid($data, $totalAmount);
+            $isFullyPaid = abs($amountPaid - $totalAmount) < 0.01;
+            $paymentStatus = $isFullyPaid ? 'paid' : 'partially_paid';
+
+            $storedTendered = $this->resolveStoredAmountTendered($data, $amountPaid, $isFullyPaid);
+            $storedChange = $this->resolveStoredChangeGiven($data, $amountPaid, $isFullyPaid);
+
             $sale = Sale::create([
                 'business_id' => $businessId,
                 'user_id' => $userId,
@@ -67,11 +77,12 @@ class SaleService implements SaleServiceInterface
                 'subtotal' => $computed['subtotal'],
                 'tax_total' => $computed['tax_total'],
                 'discount_amount' => $computed['discount_amount'],
-                'total_amount' => $computed['total_amount'],
-                'amount_tendered' => $data['amount_tendered'] ?? null,
-                'change_given' => $data['change_given'] ?? null,
+                'total_amount' => $totalAmount,
+                'amount_paid' => $amountPaid,
+                'amount_tendered' => $storedTendered,
+                'change_given' => $storedChange,
                 'payment_method' => $data['payment_method'],
-                'payment_status' => 'paid',
+                'payment_status' => $paymentStatus,
                 'notes' => $data['notes'] ?? null,
                 'sale_date' => $data['sale_date'] ?? now(),
             ]);
@@ -87,6 +98,7 @@ class SaleService implements SaleServiceInterface
                     'product_price' => $product->unit_price,
                     'quantity' => $qty,
                     'unit_price' => $line['unit_price'],
+                    'unit_cost' => (float) $product->cost_price,
                     'subtotal' => $line['subtotal'],
                     'tax_amount' => $line['tax_amount'],
                     'discount_amount' => (float) ($line['discount_amount'] ?? 0),
@@ -131,8 +143,90 @@ class SaleService implements SaleServiceInterface
 
             event(new SaleCreatedForAccounting($sale));
 
-            return $sale->load(['saleItems', 'business', 'user']);
+            if (!$isFullyPaid && $amountPaid > 0) {
+                $this->paymentService->createInitialSalePayment(
+                    $sale,
+                    $amountPaid,
+                    $data['payment_method'],
+                    $userId,
+                    $storedTendered !== null ? (float) $storedTendered : $amountPaid,
+                    $storedChange !== null ? (float) $storedChange : null,
+                );
+            }
+
+            return $sale->load(['saleItems', 'business', 'user', 'payments']);
         });
+    }
+
+    public function recordPayment(
+        int $id,
+        float $amount,
+        string $paymentMethod,
+        int $userId,
+        ?string $notes = null,
+        ?float $amountTendered = null,
+        ?float $changeGiven = null,
+        ?string $attachmentPath = null,
+    ): \App\Models\Payment {
+        $sale = $this->saleRepository->find($id);
+        if (!$sale) {
+            throw new \RuntimeException('Sale not found');
+        }
+
+        if ($sale->payment_status === 'paid') {
+            throw new \RuntimeException('This sale is already fully paid');
+        }
+
+        return $this->paymentService->recordForSale(
+            $sale,
+            $amount,
+            $paymentMethod,
+            $userId,
+            $notes,
+            $amountTendered,
+            $changeGiven,
+            $attachmentPath,
+        );
+    }
+
+    protected function resolveStoredAmountTendered(array $data, float $amountPaid, bool $isFullyPaid): ?float
+    {
+        if (!isset($data['amount_tendered']) && !isset($data['amount_paid'])) {
+            return null;
+        }
+
+        if (!$isFullyPaid) {
+            return $amountPaid;
+        }
+
+        return isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null;
+    }
+
+    protected function resolveStoredChangeGiven(array $data, float $amountPaid, bool $isFullyPaid): ?float
+    {
+        if (isset($data['change_given'])) {
+            return (float) $data['change_given'];
+        }
+
+        if (!$isFullyPaid && isset($data['amount_tendered'])) {
+            $tendered = (float) $data['amount_tendered'];
+            $change = $tendered - $amountPaid;
+
+            return $change > 0.009 ? round($change, 2) : null;
+        }
+
+        return null;
+    }
+
+    protected function resolveInitialAmountPaid(array $data, float $totalAmount): float
+    {
+        if (isset($data['amount_paid'])) {
+            return min((float) $data['amount_paid'], $totalAmount);
+        }
+
+        $tendered = isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : $totalAmount;
+
+        return min(max(0, $tendered), $totalAmount);
     }
 
     public function update(int $id, array $data): Sale
@@ -257,7 +351,7 @@ class SaleService implements SaleServiceInterface
             $sale->payment_status = abs($totalRefunded - $saleTotal) < 0.01 ? 'refunded' : ($totalRefunded > 0 ? 'partially_refunded' : 'paid');
             $sale->save();
 
-            event(new SaleRefundedForAccounting($sale));
+            event(new SaleRefundedForAccounting($sale, $processedItems));
 
             return $sale->load(['saleItems', 'business', 'user']);
         });
@@ -290,10 +384,6 @@ class SaleService implements SaleServiceInterface
 
     protected function generateReceiptNumber(\App\Models\Business $business): string
     {
-        // First 4 chars of slug uppercased — always short, always readable
-        $prefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $business->slug ?? 'POS'), 0, 4));
-        $date = now()->format('ymd');
-        $rand = strtoupper(substr(bin2hex(random_bytes(4)), 0, 7));
-        return $prefix . '-' . $date . '-' . $rand;
+        return DocumentNumberGenerator::saleReceiptNumber($business);
     }
 }

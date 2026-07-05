@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\ChartOfAccount;
 use App\Models\Expense;
 use App\Models\Sale;
-use App\Models\SaleItem;
 use Illuminate\Support\Facades\Log;
 
 class AutomationService
@@ -13,6 +11,7 @@ class AutomationService
     public function __construct(
         protected JournalEntryService $journalEntryService,
         protected LedgerService $ledgerService,
+        protected InventoryCogsService $inventoryCogsService,
     ) {}
 
     public function handleSaleCreated(Sale $sale): void
@@ -20,49 +19,20 @@ class AutomationService
         try {
             $businessId = $sale->business_id;
 
-            // Guard: skip if already accounted for
             if ($this->journalEntryService->getEntryByReference('sale', $sale->id, $businessId)) {
                 return;
             }
 
-            $codes = config('accounting.default_account_codes');
-            $date = $sale->sale_date instanceof \Carbon\Carbon
-                ? $sale->sale_date->toDateString()
-                : now()->toDateString();
-
             $totalAmount = (float) $sale->total_amount;
-            $subtotal = (float) $sale->subtotal;
-            $taxTotal = (float) $sale->tax_total;
+            $amountPaid = (float) ($sale->amount_paid ?? 0);
+            $isCreditSale = $amountPaid < $totalAmount - 0.001;
 
-            $lines = [];
-
-            $cashCode = $codes['cash'];
-            $revenueCode = $codes['sales_revenue'];
-
-            if ($taxTotal > 0) {
-                $lines[] = ['account_code' => $cashCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - cash received"];
-                $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $subtotal, 'description' => "Sale {$sale->receipt_number} - revenue"];
-                $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Sale {$sale->receipt_number} - VAT"];
-            } else {
-                $lines[] = ['account_code' => $cashCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - cash received"];
-                $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $totalAmount, 'description' => "Sale {$sale->receipt_number} - revenue"];
+            if ($isCreditSale) {
+                $this->postCreditSaleEntry($sale);
+                return;
             }
 
-            $cogsTotal = $this->calculateCOGS($sale);
-            if ($cogsTotal > 0) {
-                $lines[] = ['account_code' => $codes['cogs'], 'debit' => $cogsTotal, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - COGS"];
-                $lines[] = ['account_code' => $codes['inventory'], 'debit' => 0, 'credit' => $cogsTotal, 'description' => "Sale {$sale->receipt_number} - inventory reduction"];
-            }
-
-            $this->journalEntryService->createAndPostEntry(
-                $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
-                $lines, 'sale', $sale->id, $sale->user_id,
-            );
-
-            Log::info("Accounting automation: Sale created entry posted", [
-                'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number,
-                'total_amount' => $totalAmount, 'cogs' => $cogsTotal,
-            ]);
+            $this->postCashSaleEntry($sale);
         } catch (\Throwable $e) {
             Log::error("Accounting automation failed for sale {$sale->id}: {$e->getMessage()}", [
                 'sale_id' => $sale->id, 'exception' => $e,
@@ -70,29 +40,162 @@ class AutomationService
         }
     }
 
-    public function handleSaleRefunded(Sale $sale): void
+    protected function postCashSaleEntry(Sale $sale): void
+    {
+        $businessId = $sale->business_id;
+        $codes = config('accounting.default_account_codes');
+        $date = $sale->sale_date instanceof \Carbon\Carbon
+            ? $sale->sale_date->toDateString()
+            : now()->toDateString();
+
+        $totalAmount = (float) $sale->total_amount;
+        $subtotal = (float) $sale->subtotal;
+        $taxTotal = (float) $sale->tax_total;
+        $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
+
+        $lines = [];
+
+        if ($taxTotal > 0) {
+            $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
+            $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $subtotal, 'description' => "Sale {$sale->receipt_number} - revenue"];
+            $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Sale {$sale->receipt_number} - VAT"];
+        } else {
+            $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
+            $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $totalAmount, 'description' => "Sale {$sale->receipt_number} - revenue"];
+        }
+
+        $cogsTotal = $this->inventoryCogsService->calculateSaleCogs($sale);
+        $this->appendCogsLines($lines, $businessId, $cogsTotal, "Sale {$sale->receipt_number}");
+
+        $this->journalEntryService->createAndPostEntry(
+            $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
+            $lines, 'sale', $sale->id, $sale->user_id,
+        );
+
+        Log::info("Accounting automation: Cash sale entry posted", [
+            'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number, 'total_amount' => $totalAmount,
+        ]);
+    }
+
+    protected function postCreditSaleEntry(Sale $sale): void
+    {
+        $businessId = $sale->business_id;
+        $codes = config('accounting.default_account_codes');
+        $date = $sale->sale_date instanceof \Carbon\Carbon
+            ? $sale->sale_date->toDateString()
+            : now()->toDateString();
+
+        $totalAmount = (float) $sale->total_amount;
+        $subtotal = (float) $sale->subtotal;
+        $taxTotal = (float) $sale->tax_total;
+        $arCode = $codes['accounts_receivable'];
+        $revenueCode = $codes['sales_revenue'];
+
+        $lines = [];
+
+        if ($taxTotal > 0) {
+            $lines[] = ['account_code' => $arCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Credit sale {$sale->receipt_number} - receivable"];
+            $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $subtotal, 'description' => "Credit sale {$sale->receipt_number} - revenue"];
+            $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Credit sale {$sale->receipt_number} - VAT"];
+        } else {
+            $lines[] = ['account_code' => $arCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Credit sale {$sale->receipt_number} - receivable"];
+            $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $totalAmount, 'description' => "Credit sale {$sale->receipt_number} - revenue"];
+        }
+
+        $cogsTotal = $this->inventoryCogsService->calculateSaleCogs($sale);
+        $this->appendCogsLines($lines, $businessId, $cogsTotal, "Credit sale {$sale->receipt_number}");
+
+        $this->journalEntryService->createAndPostEntry(
+            $businessId, $date, "Credit sale {$sale->receipt_number}",
+            $lines, 'sale', $sale->id, $sale->user_id,
+        );
+
+        Log::info("Accounting automation: Credit sale entry posted", [
+            'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number, 'total_amount' => $totalAmount,
+        ]);
+    }
+
+    /**
+     * @param  array<string, string>  $codes
+     */
+    protected function resolvePaymentAccountCode(string $paymentMethod, array $codes): string
+    {
+        return match ($paymentMethod) {
+            'card', 'mobile_money', 'bank' => $codes['bank'] ?? $codes['cash'],
+            default => $codes['cash'],
+        };
+    }
+
+    public function handleSaleRefunded(Sale $sale, array $refundBatch = []): void
     {
         try {
-            $businessId = $sale->business_id;
-
-            $originalEntry = $this->journalEntryService->getEntryByReference('sale', $sale->id, $businessId);
-
-            if (!$originalEntry) {
-                Log::warning("No original journal entry found for refunded sale", [
-                    'sale_id' => $sale->id,
-                    'receipt_number' => $sale->receipt_number,
-                ]);
+            if ($refundBatch === []) {
+                Log::warning('Sale refund accounting skipped: empty refund batch', ['sale_id' => $sale->id]);
                 return;
             }
 
-            $reversing = $this->journalEntryService->createReversingEntry($originalEntry->id, $sale->user_id);
-            $this->ledgerService->postEntryToLedger($reversing->id);
+            $businessId = $sale->business_id;
+            $codes = config('accounting.default_account_codes');
+            $date = $sale->sale_date instanceof \Carbon\Carbon
+                ? $sale->sale_date->toDateString()
+                : now()->toDateString();
 
-            Log::info("Accounting automation: Sale refund reversing entry posted", [
+            $refundTotal = round(collect($refundBatch)->sum(fn (array $row) => (float) ($row['proportionalAmount'] ?? 0)), 2);
+            $cogsRestore = $this->inventoryCogsService->calculateRefundCogs($refundBatch);
+
+            if ($refundTotal <= 0 && $cogsRestore <= 0) {
+                return;
+            }
+
+            $lines = [];
+            $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
+            $returnsCode = $codes['sales_returns'] ?? '4400';
+
+            if ($refundTotal > 0) {
+                $lines[] = [
+                    'account_code' => $returnsCode,
+                    'debit' => $refundTotal,
+                    'credit' => 0,
+                    'description' => "Refund {$sale->receipt_number} - sales return",
+                ];
+                $lines[] = [
+                    'account_code' => $paymentAccount,
+                    'debit' => 0,
+                    'credit' => $refundTotal,
+                    'description' => "Refund {$sale->receipt_number} - settlement",
+                ];
+            }
+
+            if ($cogsRestore > 0) {
+                $lines[] = [
+                    'account_code' => $codes['inventory'],
+                    'debit' => $cogsRestore,
+                    'credit' => 0,
+                    'description' => "Refund {$sale->receipt_number} - inventory restored",
+                ];
+                $lines[] = [
+                    'account_code' => $codes['cogs'],
+                    'debit' => 0,
+                    'credit' => $cogsRestore,
+                    'description' => "Refund {$sale->receipt_number} - COGS reversal",
+                ];
+            }
+
+            $this->journalEntryService->createAndPostEntry(
+                $businessId,
+                $date,
+                "Refund for sale {$sale->receipt_number}",
+                $lines,
+                'sale_refund',
+                $sale->id,
+                $sale->user_id,
+            );
+
+            Log::info('Accounting automation: Sale refund entry posted', [
                 'sale_id' => $sale->id,
                 'receipt_number' => $sale->receipt_number,
-                'original_entry_id' => $originalEntry->id,
-                'reversing_entry_id' => $reversing->id,
+                'refund_total' => $refundTotal,
+                'cogs_restore' => $cogsRestore,
             ]);
         } catch (\Throwable $e) {
             Log::error("Accounting automation failed for sale refund {$sale->id}: {$e->getMessage()}", [
@@ -155,18 +258,30 @@ class AutomationService
         }
     }
 
-    protected function calculateCOGS(Sale $sale): float
+    /**
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    protected function appendCogsLines(array &$lines, int $businessId, float $requestedCogs, string $label): void
     {
-        $sale->loadMissing('saleItems.product');
-        $total = 0;
-
-        foreach ($sale->saleItems as $item) {
-            $product = $item->product;
-            if ($product && (float) $product->cost_price > 0) {
-                $total += (float) $product->cost_price * (int) $item->quantity;
-            }
+        if ($requestedCogs <= 0) {
+            return;
         }
 
-        return $total;
+        $codes = config('accounting.default_account_codes');
+        $periodId = app(AccountingPeriodService::class)->getCurrentPeriod($businessId)->id;
+        $capped = $this->inventoryCogsService->capCogsToAvailableInventory($businessId, $requestedCogs, $periodId);
+        $cogsTotal = $capped['cogs'];
+
+        if ($cogsTotal <= 0) {
+            return;
+        }
+
+        $lines[] = ['account_code' => $codes['cogs'], 'debit' => $cogsTotal, 'credit' => 0, 'description' => "{$label} - COGS"];
+        $lines[] = ['account_code' => $codes['inventory'], 'debit' => 0, 'credit' => $cogsTotal, 'description' => "{$label} - inventory reduction"];
+    }
+
+    protected function calculateCOGS(Sale $sale): float
+    {
+        return $this->inventoryCogsService->calculateSaleCogs($sale);
     }
 }

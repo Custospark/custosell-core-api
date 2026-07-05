@@ -15,6 +15,7 @@ class SaleItem extends Model
         'product_price',
         'quantity',
         'unit_price',
+        'unit_cost',
         'subtotal',
         'tax_amount',
         'tax_refunded_amount',
@@ -28,6 +29,7 @@ class SaleItem extends Model
         return [
             'product_price' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'unit_cost' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'tax_refunded_amount' => 'decimal:2',

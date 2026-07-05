@@ -9,5 +9,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:sales'])->group(fu
     Route::post('/sales/batch', [SaleController::class, 'batch']);
     Route::post('/sales/bulk-delete', [SaleController::class, 'bulkDelete']);
     Route::post('/sales/{sale}/refund', [SaleController::class, 'refund']);
+    Route::post('/sales/{id}/payment', [SaleController::class, 'recordPayment'])->whereNumber('id');
     Route::apiResource('sales', SaleController::class);
 });

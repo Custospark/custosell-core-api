@@ -11,14 +11,14 @@ class SaleRepository implements SaleRepositoryInterface
     public function all(int $businessId): Collection
     {
         return Sale::where('business_id', $businessId)
-            ->with(['user', 'customer', 'shift', 'saleItems', 'business'])
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
 
     public function find(int $id): ?Sale
     {
-        return Sale::with(['user', 'customer', 'shift', 'saleItems', 'business'])->find($id);
+        return Sale::with(['user', 'customer', 'shift', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])->find($id);
     }
 
     public function findByReceipt(int $businessId, string $receiptNumber): ?Sale

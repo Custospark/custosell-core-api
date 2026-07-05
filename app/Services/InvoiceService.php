@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Events\InvoicePaidForAccounting;
 use App\Events\InvoiceSentForAccounting;
 use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
+use App\Services\PaymentService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +16,7 @@ class InvoiceService implements InvoiceServiceInterface
 {
     public function __construct(
         protected InvoiceRepositoryInterface $invoiceRepository,
+        protected PaymentService $paymentService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -154,51 +155,40 @@ class InvoiceService implements InvoiceServiceInterface
         return $invoice;
     }
 
-    public function recordPayment(int $id, float $amount, string $paymentMethod = 'cash'): Invoice
-    {
-        return DB::transaction(function () use ($id, $amount, $paymentMethod) {
-            $invoice = $this->invoiceRepository->find($id);
-            if (!$invoice) {
-                throw new \RuntimeException('Invoice not found');
-            }
+    public function recordPayment(
+        int $id,
+        float $amount,
+        string $paymentMethod,
+        int $userId,
+        ?string $notes = null,
+        ?float $amountTendered = null,
+        ?float $changeGiven = null,
+        ?string $attachmentPath = null,
+    ): array {
+        $invoice = $this->invoiceRepository->find($id);
+        if (!$invoice) {
+            throw new \RuntimeException('Invoice not found');
+        }
 
-            $newAmountPaid = (float) $invoice->amount_paid + $amount;
-            $total = (float) $invoice->total_amount;
+        $payment = $this->paymentService->recordForInvoice(
+            $invoice,
+            $amount,
+            $paymentMethod,
+            $userId,
+            $notes,
+            $amountTendered,
+            $changeGiven,
+            $attachmentPath,
+        );
 
-            if ($newAmountPaid > $total) {
-                throw new \RuntimeException('Payment amount exceeds invoice total');
-            }
-
-            $status = abs($newAmountPaid - $total) < 0.01 ? 'paid' : 'partially_paid';
-
-            $invoice = $this->invoiceRepository->update($invoice, [
-                'amount_paid' => $newAmountPaid,
-                'status' => $status,
-            ]);
-
-            event(new InvoicePaidForAccounting($invoice, $amount, $paymentMethod));
-
-            return $invoice;
-        });
+        return [
+            'invoice' => $invoice->fresh(['customer', 'createdBy', 'items.product', 'payments']),
+            'payment' => $payment,
+        ];
     }
 
     protected function generateInvoiceNumber(Business $business): string
     {
-        $prefix = 'INV';
-        $ym = now()->format('Ym');
-
-        $lastInvoice = Invoice::where('business_id', $business->id)
-            ->where('invoice_number', 'like', "{$prefix}-{$ym}-%")
-            ->orderBy('id', 'desc')
-            ->first();
-
-        if ($lastInvoice) {
-            $parts = explode('-', $lastInvoice->invoice_number);
-            $seq = ((int) end($parts)) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        return sprintf('%s-%s-%05d', $prefix, $ym, $seq);
+        return DocumentNumberGenerator::invoiceNumber($business, Invoice::class, 'invoice_number');
     }
 }

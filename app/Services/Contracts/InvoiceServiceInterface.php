@@ -19,5 +19,5 @@ interface InvoiceServiceInterface
 
     public function send(int $id): Invoice;
 
-    public function recordPayment(int $id, float $amount, string $paymentMethod): Invoice;
+    public function recordPayment(int $id, float $amount, string $paymentMethod, int $userId): array;
 }

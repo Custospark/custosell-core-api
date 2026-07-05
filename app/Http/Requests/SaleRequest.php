@@ -24,6 +24,7 @@ class SaleRequest extends BaseFormRequest
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'amount_tendered' => ['nullable', 'numeric', 'min:0'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
             'change_given' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['required', 'string', 'in:cash,mobile_money,card,other'],
             'notes' => ['nullable', 'string'],

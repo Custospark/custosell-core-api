@@ -31,7 +31,7 @@ class InvoiceRepository implements InvoiceRepositoryInterface
 
     public function find(int $id): ?Invoice
     {
-        return Invoice::with(['customer', 'createdBy', 'items.product'])->find($id);
+        return Invoice::with(['customer', 'createdBy', 'items.product', 'payments' => fn ($q) => $q->orderBy('paid_at')])->find($id);
     }
 
     public function findByNumber(int $businessId, string $number): ?Invoice

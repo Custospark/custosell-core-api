@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountingPeriodController;
 use App\Http\Controllers\Api\ChartOfAccountController;
 use App\Http\Controllers\Api\FixedAssetController;
 use App\Http\Controllers\Api\GeneralLedgerController;
+use App\Http\Controllers\Api\InventoryLedgerController;
 use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\RatioController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,9 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:accounting'])->gro
 
     Route::get('/ratios', [RatioController::class, 'index']);
     Route::get('/ratios/trends', [RatioController::class, 'trends']);
+
+    Route::get('/inventory/reconciliation', [InventoryLedgerController::class, 'reconciliation']);
+    Route::post('/inventory/opening-balance', [InventoryLedgerController::class, 'postOpeningBalance']);
 
     Route::get('/accounting/export/{type}', [\App\Http\Controllers\Api\AccountingExportController::class, 'export']);
 });

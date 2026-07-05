@@ -28,4 +28,6 @@ interface SaleServiceInterface
     public function getDaily(int $businessId, ?string $date = null): Collection;
 
     public function getByCustomer(int $businessId, int $customerId): Collection;
+
+    public function recordPayment(int $id, float $amount, string $paymentMethod, int $userId): \App\Models\Payment;
 }

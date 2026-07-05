@@ -27,6 +27,8 @@ class SaleResource extends JsonResource
             'tax_total' => $this->tax_total,
             'discount_amount' => $this->discount_amount,
             'total_amount' => $this->total_amount,
+            'amount_paid' => $this->amount_paid,
+            'balance_due' => max(0, (float) $this->total_amount - (float) ($this->amount_paid ?? 0)),
             'refunds' => $refunds,
             'net_amount' => $gross - $refunds,
             'amount_tendered' => $this->amount_tendered,
@@ -36,6 +38,7 @@ class SaleResource extends JsonResource
             'notes' => $this->notes,
             'sale_date' => $this->sale_date?->toISOString(),
             'sale_items' => SaleItemResource::collection($this->whenLoaded('saleItems')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

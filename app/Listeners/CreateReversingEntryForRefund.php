@@ -13,6 +13,6 @@ class CreateReversingEntryForRefund
 
     public function handle(SaleRefundedForAccounting $event): void
     {
-        $this->automationService->handleSaleRefunded($event->sale);
+        $this->automationService->handleSaleRefunded($event->sale, $event->refundBatch);
     }
 }

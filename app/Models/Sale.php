@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sale extends Model
@@ -21,6 +22,7 @@ class Sale extends Model
         'tax_total',
         'discount_amount',
         'total_amount',
+        'amount_paid',
         'amount_tendered',
         'change_given',
         'payment_method',
@@ -36,6 +38,7 @@ class Sale extends Model
             'tax_total' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'amount_tendered' => 'decimal:2',
             'change_given' => 'decimal:2',
             'sale_date' => 'datetime',
@@ -65,5 +68,10 @@ class Sale extends Model
     public function saleItems(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function payments(): MorphMany
+    {
+        return $this->morphMany(Payment::class, 'payable');
     }
 }
