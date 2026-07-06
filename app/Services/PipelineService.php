@@ -256,6 +256,8 @@ class PipelineService
             'description' => array_key_exists('description', $data) ? $data['description'] : $board->description,
             'visibility' => $data['visibility'] ?? null,
             'cover_color' => array_key_exists('cover_color', $data) ? $data['cover_color'] : $board->cover_color,
+            'background_type' => array_key_exists('background_type', $data) ? $data['background_type'] : $board->background_type,
+            'background_value' => array_key_exists('background_value', $data) ? $data['background_value'] : $board->background_value,
             'is_archived' => array_key_exists('is_archived', $data) ? $data['is_archived'] : null,
         ], fn ($v) => $v !== null));
 
@@ -696,7 +698,8 @@ class PipelineService
         foreach ([
             'title', 'card_type', 'description', 'assigned_to', 'customer_id', 'source_id',
             'contact_name', 'contact_email', 'contact_phone', 'estimated_value',
-            'currency', 'expected_close_date', 'due_date', 'start_date', 'priority', 'lost_reason',
+            'currency', 'expected_close_date', 'due_date', 'start_date', 'priority',
+            'background_color', 'lost_reason',
         ] as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[$field] = $data[$field];
