@@ -39,5 +39,6 @@ return [
     InvoiceServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
+    PipelineServiceProvider::class,
     EventServiceProvider::class,
 ];

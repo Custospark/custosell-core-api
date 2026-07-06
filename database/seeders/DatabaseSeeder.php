@@ -8,6 +8,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->command?->info('Running pending migrations…');
+        $this->call(MigrateSeeder::class);
+
+        $this->command?->info('Running application seeders…');
         $this->call([
             PlanSeeder::class,
             SystemRoleSeeder::class,

@@ -33,4 +33,5 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/invoices.php';
     require __DIR__ . '/api/v1/payments.php';
     require __DIR__ . '/api/v1/accounting.php';
+    require __DIR__ . '/api/v1/pipeline.php';
 });

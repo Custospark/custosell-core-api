@@ -17,6 +17,7 @@ class ModuleAccessService
         'customers',
         'expenses',
         'accounting',
+        'pipeline',
         'settings',
     ];
 
@@ -148,6 +149,7 @@ class ModuleAccessService
             'settings' => 'settings',
             'reports' => 'dashboard',
             'accounting' => 'accounting',
+            'pipeline' => 'pipeline',
             default => null,
         };
     }
