@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PipelineAttachmentResource;
 use App\Http\Resources\PipelineBoardResource;
+use App\Http\Resources\PipelineChecklistItemResource;
+use App\Http\Resources\PipelineChecklistResource;
+use App\Http\Resources\PipelineLabelResource;
 use App\Http\Resources\PipelineLeadActivityResource;
 use App\Http\Resources\PipelineLeadResource;
 use App\Http\Resources\PipelineSourceResource;
@@ -37,6 +41,9 @@ class PipelineController extends Controller
             'cover_color' => ['nullable', 'string', 'max:32'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer'],
+            'members' => ['nullable', 'array'],
+            'members.*.user_id' => ['required_with:members', 'integer'],
+            'members.*.role' => ['nullable', 'in:viewer,editor'],
         ]);
 
         $board = $this->pipelineService->createBoard(
@@ -71,6 +78,9 @@ class PipelineController extends Controller
             'is_archived' => ['sometimes', 'boolean'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer'],
+            'members' => ['nullable', 'array'],
+            'members.*.user_id' => ['required_with:members', 'integer'],
+            'members.*.role' => ['nullable', 'in:viewer,editor'],
         ]);
 
         $board = $this->pipelineService->updateBoard(
@@ -217,6 +227,7 @@ class PipelineController extends Controller
             'board_id' => ['required', 'integer'],
             'stage_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:255'],
+            'card_type' => ['nullable', 'in:lead,card'],
             'description' => ['nullable', 'string', 'max:5000'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
@@ -227,6 +238,11 @@ class PipelineController extends Controller
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'max:8'],
             'expected_close_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'priority' => ['nullable', 'in:low,medium,high,urgent'],
+            'label_ids' => ['nullable', 'array'],
+            'label_ids.*' => ['integer'],
         ]);
 
         $lead = $this->pipelineService->createLead(
@@ -255,6 +271,7 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
+            'card_type' => ['sometimes', 'in:lead,card'],
             'description' => ['nullable', 'string', 'max:5000'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
@@ -265,7 +282,12 @@ class PipelineController extends Controller
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'max:8'],
             'expected_close_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'priority' => ['nullable', 'in:low,medium,high,urgent'],
             'lost_reason' => ['nullable', 'string', 'max:255'],
+            'label_ids' => ['nullable', 'array'],
+            'label_ids.*' => ['integer'],
         ]);
 
         $lead = $this->pipelineService->updateLead(
@@ -406,5 +428,168 @@ class PipelineController extends Controller
         );
 
         return response()->json(['data' => $summary]);
+    }
+
+    public function labels(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['board_id' => ['nullable', 'integer']]);
+
+        $labels = $this->pipelineService->listLabels(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $validated['board_id'] ?? null,
+        );
+
+        return response()->json(['data' => PipelineLabelResource::collection($labels)]);
+    }
+
+    public function storeLabel(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'board_id' => ['nullable', 'integer'],
+            'name' => ['required', 'string', 'max:80'],
+            'color' => ['nullable', 'string', 'max:32'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $label = $this->pipelineService->createLabel(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $validated,
+        );
+
+        return (new PipelineLabelResource($label))->response()->setStatusCode(201);
+    }
+
+    public function updateLabel(Request $request, int $id): PipelineLabelResource
+    {
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:80'],
+            'color' => ['nullable', 'string', 'max:32'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $label = $this->pipelineService->updateLabel(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated,
+        );
+
+        return new PipelineLabelResource($label);
+    }
+
+    public function destroyLabel(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteLabel((int) $request->user()->business_id, $request->user(), $id);
+
+        return response()->json(['message' => 'Label deleted']);
+    }
+
+    public function storeChecklist(Request $request, int $leadId): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $checklist = $this->pipelineService->createChecklist(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $leadId,
+            $validated,
+        );
+
+        return (new PipelineChecklistResource($checklist))->response()->setStatusCode(201);
+    }
+
+    public function updateChecklist(Request $request, int $id): PipelineChecklistResource
+    {
+        $validated = $request->validate([
+            'title' => ['sometimes', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $checklist = $this->pipelineService->updateChecklist(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated,
+        );
+
+        return new PipelineChecklistResource($checklist);
+    }
+
+    public function destroyChecklist(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteChecklist((int) $request->user()->business_id, $request->user(), $id);
+
+        return response()->json(['message' => 'Checklist deleted']);
+    }
+
+    public function storeChecklistItem(Request $request, int $checklistId): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:500'],
+            'is_done' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $item = $this->pipelineService->createChecklistItem(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $checklistId,
+            $validated,
+        );
+
+        return (new PipelineChecklistItemResource($item))->response()->setStatusCode(201);
+    }
+
+    public function updateChecklistItem(Request $request, int $id): PipelineChecklistItemResource
+    {
+        $validated = $request->validate([
+            'title' => ['sometimes', 'string', 'max:500'],
+            'is_done' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $item = $this->pipelineService->updateChecklistItem(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated,
+        );
+
+        return new PipelineChecklistItemResource($item);
+    }
+
+    public function destroyChecklistItem(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteChecklistItem((int) $request->user()->business_id, $request->user(), $id);
+
+        return response()->json(['message' => 'Checklist item deleted']);
+    }
+
+    public function storeAttachment(Request $request, int $leadId): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,xlsx,txt,csv'],
+        ]);
+
+        $attachment = $this->pipelineService->addAttachment(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $leadId,
+            $request->file('file'),
+        );
+
+        return (new PipelineAttachmentResource($attachment))->response()->setStatusCode(201);
+    }
+
+    public function destroyAttachment(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteAttachment((int) $request->user()->business_id, $request->user(), $id);
+
+        return response()->json(['message' => 'Attachment deleted']);
     }
 }

@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Customer;
+use App\Models\PipelineAttachment;
 use App\Models\PipelineBoard;
 use App\Models\PipelineBoardMember;
+use App\Models\PipelineChecklist;
+use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
 use App\Models\PipelineLeadActivity;
+use App\Models\PipelineLabel;
 use App\Models\PipelineSource;
 use App\Models\PipelineStage;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class PipelineService
@@ -22,6 +27,16 @@ class PipelineService
         protected ModuleAccessService $moduleAccess,
         protected CustomerContactService $customerContactService,
     ) {}
+
+    /** @return list<array{name: string, color: string}> */
+    public const DEFAULT_LABELS = [
+        ['name' => 'Urgent', 'color' => '#ef4444'],
+        ['name' => 'Feature', 'color' => '#3b82f6'],
+        ['name' => 'Bug', 'color' => '#f59e0b'],
+        ['name' => 'Design', 'color' => '#8b5cf6'],
+        ['name' => 'Marketing', 'color' => '#10b981'],
+        ['name' => 'Research', 'color' => '#64748b'],
+    ];
 
     /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
     public const DEFAULT_STAGES = [
@@ -96,6 +111,9 @@ class PipelineService
             if (!empty($data['member_ids']) && $board->visibility === 'shared') {
                 $this->syncBoardMembers($board, $data['member_ids']);
             }
+            if (!empty($data['members']) && $board->visibility === 'shared') {
+                $this->syncBoardMembers($board, $data['members']);
+            }
 
             foreach (self::DEFAULT_STAGES as $index => $stage) {
                 PipelineStage::create([
@@ -110,23 +128,43 @@ class PipelineService
                 ]);
             }
 
+            $this->seedDefaultLabels($businessId, $board->id);
+
             return $board->load(['stages', 'members.user', 'creator']);
         });
     }
 
-    /** @param  list<int>  $memberIds */
-    public function syncBoardMembers(PipelineBoard $board, array $memberIds): void
+    /** @param  list<int>|list<array{user_id: int, role?: string}>  $members */
+    public function syncBoardMembers(PipelineBoard $board, array $members): void
     {
         PipelineBoardMember::query()->where('board_id', $board->id)->delete();
 
-        foreach (array_unique($memberIds) as $memberId) {
-            if ((int) $memberId === (int) $board->created_by) {
+        foreach ($members as $entry) {
+            $userId = is_array($entry) ? (int) ($entry['user_id'] ?? 0) : (int) $entry;
+            $role = is_array($entry) ? ($entry['role'] ?? 'editor') : 'editor';
+            if ($userId === 0 || $userId === (int) $board->created_by) {
                 continue;
+            }
+            if (!in_array($role, ['viewer', 'editor'], true)) {
+                $role = 'editor';
             }
             PipelineBoardMember::create([
                 'board_id' => $board->id,
-                'user_id' => (int) $memberId,
-                'role' => 'editor',
+                'user_id' => $userId,
+                'role' => $role,
+            ]);
+        }
+    }
+
+    protected function seedDefaultLabels(int $businessId, int $boardId): void
+    {
+        foreach (self::DEFAULT_LABELS as $index => $label) {
+            PipelineLabel::create([
+                'business_id' => $businessId,
+                'board_id' => $boardId,
+                'name' => $label['name'],
+                'color' => $label['color'],
+                'sort_order' => $index,
             ]);
         }
     }
@@ -170,8 +208,9 @@ class PipelineService
             'is_archived' => array_key_exists('is_archived', $data) ? $data['is_archived'] : null,
         ], fn ($v) => $v !== null));
 
-        if ($board->visibility === 'shared' && array_key_exists('member_ids', $data)) {
-            $this->syncBoardMembers($board, $data['member_ids'] ?? []);
+        if ($board->visibility === 'shared' && (array_key_exists('member_ids', $data) || array_key_exists('members', $data))) {
+            $members = $data['members'] ?? $data['member_ids'] ?? [];
+            $this->syncBoardMembers($board, $members);
         }
 
         return $board->fresh(['stages', 'members.user', 'creator']);
@@ -185,8 +224,16 @@ class PipelineService
         return $board->load([
             'stages.leads' => fn ($q) => $q
                 ->whereIn('status', ['open', 'won', 'lost'])
-                ->with(['assignee:id,name', 'source:id,name', 'customer:id,name,email,phone'])
+                ->with([
+                    'assignee:id,name',
+                    'source:id,name',
+                    'customer:id,name,email,phone',
+                    'labels:id,name,color',
+                    'checklists.items',
+                ])
+                ->withCount('attachments')
                 ->orderBy('position'),
+            'members.user:id,name',
             'creator:id,name',
         ]);
     }
@@ -297,14 +344,15 @@ class PipelineService
         $leads = PipelineLead::query()
             ->where('business_id', $businessId)
             ->where('board_id', $boardId)
-            ->whereNotNull('expected_close_date')
-            ->whereBetween('expected_close_date', [$start, $end])
             ->whereIn('status', ['open', 'won', 'lost'])
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('due_date', [$start, $end])
+                    ->orWhereBetween('expected_close_date', [$start, $end]);
+            })
             ->with(['stage:id,name,color', 'assignee:id,name'])
-            ->orderBy('expected_close_date')
             ->get();
 
-        return $leads->groupBy(fn ($lead) => $lead->expected_close_date->toDateString())
+        return $leads->groupBy(fn ($lead) => ($lead->due_date ?? $lead->expected_close_date)->toDateString())
             ->map(fn ($group, $date) => [
                 'date' => $date,
                 'leads' => $group->map(fn ($lead) => [
@@ -439,6 +487,7 @@ class PipelineService
             'customer_id' => $data['customer_id'] ?? null,
             'source_id' => $data['source_id'] ?? null,
             'title' => $data['title'],
+            'card_type' => $data['card_type'] ?? 'lead',
             'description' => $data['description'] ?? null,
             'contact_name' => $data['contact_name'] ?? null,
             'contact_email' => $data['contact_email'] ?? null,
@@ -448,11 +497,18 @@ class PipelineService
             'status' => 'open',
             'position' => ($maxPosition ?? 0) + 1,
             'expected_close_date' => $data['expected_close_date'] ?? null,
+            'due_date' => $data['due_date'] ?? $data['expected_close_date'] ?? null,
+            'start_date' => $data['start_date'] ?? null,
+            'priority' => $data['priority'] ?? null,
         ]);
 
-        $this->recordActivity($lead, $user->id, 'system', 'Lead created');
+        if (!empty($data['label_ids'])) {
+            $lead->labels()->sync($data['label_ids']);
+        }
 
-        return $lead->load(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone']);
+        $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
+
+        return $lead->load($this->leadDetailRelations());
     }
 
     public function getLead(int $businessId, User $user, int $leadId): PipelineLead
@@ -460,7 +516,7 @@ class PipelineService
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanViewBoard($user, $lead->board);
 
-        return $lead->load(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone', 'activities.user:id,name']);
+        return $lead->load(array_merge($this->leadDetailRelations(), ['activities.user:id,name']));
     }
 
     /** @param  array<string, mixed>  $data */
@@ -471,9 +527,9 @@ class PipelineService
 
         $updates = [];
         foreach ([
-            'title', 'description', 'assigned_to', 'customer_id', 'source_id',
+            'title', 'card_type', 'description', 'assigned_to', 'customer_id', 'source_id',
             'contact_name', 'contact_email', 'contact_phone', 'estimated_value',
-            'currency', 'expected_close_date', 'lost_reason',
+            'currency', 'expected_close_date', 'due_date', 'start_date', 'priority', 'lost_reason',
         ] as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[$field] = $data[$field];
@@ -484,7 +540,11 @@ class PipelineService
             $lead->update($updates);
         }
 
-        return $lead->fresh(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone']);
+        if (array_key_exists('label_ids', $data)) {
+            $lead->labels()->sync($data['label_ids'] ?? []);
+        }
+
+        return $lead->fresh($this->leadDetailRelations());
     }
 
     public function moveLead(int $businessId, User $user, int $leadId, int $stageId, float $position): PipelineLead
@@ -626,6 +686,222 @@ class PipelineService
             'lost_leads' => $lostLeads->count(),
             'win_rate_percent' => $winRate,
             'by_stage' => $byStage,
+        ];
+    }
+
+    public function listLabels(int $businessId, User $user, ?int $boardId = null): Collection
+    {
+        if ($boardId) {
+            $board = $this->findBoardForBusiness($businessId, $boardId);
+            $this->assertCanViewBoard($user, $board);
+        }
+
+        $labels = PipelineLabel::query()
+            ->where('business_id', $businessId)
+            ->when($boardId, fn ($q) => $q->where('board_id', $boardId))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        if ($boardId && $labels->isEmpty()) {
+            $this->seedDefaultLabels($businessId, $boardId);
+
+            return PipelineLabel::query()
+                ->where('business_id', $businessId)
+                ->where('board_id', $boardId)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+        }
+
+        return $labels;
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function createLabel(int $businessId, User $user, array $data): PipelineLabel
+    {
+        if (!empty($data['board_id'])) {
+            $board = $this->findBoardForBusiness($businessId, (int) $data['board_id']);
+            $this->assertCanEditBoard($user, $board);
+        }
+
+        $maxOrder = PipelineLabel::query()
+            ->where('business_id', $businessId)
+            ->where('board_id', $data['board_id'] ?? null)
+            ->max('sort_order');
+
+        return PipelineLabel::create([
+            'business_id' => $businessId,
+            'board_id' => $data['board_id'] ?? null,
+            'name' => $data['name'],
+            'color' => $data['color'] ?? '#6366f1',
+            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
+        ]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function updateLabel(int $businessId, User $user, int $labelId, array $data): PipelineLabel
+    {
+        $label = PipelineLabel::query()
+            ->where('business_id', $businessId)
+            ->where('id', $labelId)
+            ->firstOrFail();
+
+        if ($label->board_id) {
+            $board = $this->findBoardForBusiness($businessId, $label->board_id);
+            $this->assertCanEditBoard($user, $board);
+        }
+
+        $label->update(array_filter([
+            'name' => $data['name'] ?? null,
+            'color' => $data['color'] ?? null,
+            'sort_order' => $data['sort_order'] ?? null,
+        ], fn ($v) => $v !== null));
+
+        return $label->fresh();
+    }
+
+    public function deleteLabel(int $businessId, User $user, int $labelId): void
+    {
+        $label = PipelineLabel::query()
+            ->where('business_id', $businessId)
+            ->where('id', $labelId)
+            ->firstOrFail();
+
+        if ($label->board_id) {
+            $board = $this->findBoardForBusiness($businessId, $label->board_id);
+            $this->assertCanEditBoard($user, $board);
+        }
+
+        $label->delete();
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function createChecklist(int $businessId, User $user, int $leadId, array $data): PipelineChecklist
+    {
+        $lead = $this->findLeadForBusiness($businessId, $leadId);
+        $this->assertCanEditBoard($user, $lead->board);
+
+        $maxOrder = PipelineChecklist::query()->where('lead_id', $leadId)->max('sort_order');
+
+        return PipelineChecklist::create([
+            'lead_id' => $leadId,
+            'title' => $data['title'] ?? 'Checklist',
+            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
+        ]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function updateChecklist(int $businessId, User $user, int $checklistId, array $data): PipelineChecklist
+    {
+        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
+        $this->assertCanEditBoard($user, $checklist->lead->board);
+
+        $checklist->update(array_filter([
+            'title' => $data['title'] ?? null,
+            'sort_order' => $data['sort_order'] ?? null,
+        ], fn ($v) => $v !== null));
+
+        return $checklist->fresh('items');
+    }
+
+    public function deleteChecklist(int $businessId, User $user, int $checklistId): void
+    {
+        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
+        $this->assertCanEditBoard($user, $checklist->lead->board);
+        $checklist->delete();
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function createChecklistItem(int $businessId, User $user, int $checklistId, array $data): PipelineChecklistItem
+    {
+        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
+        $this->assertCanEditBoard($user, $checklist->lead->board);
+
+        $maxOrder = PipelineChecklistItem::query()->where('checklist_id', $checklistId)->max('sort_order');
+
+        return PipelineChecklistItem::create([
+            'checklist_id' => $checklistId,
+            'title' => $data['title'],
+            'is_done' => (bool) ($data['is_done'] ?? false),
+            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
+        ]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function updateChecklistItem(int $businessId, User $user, int $itemId, array $data): PipelineChecklistItem
+    {
+        $item = PipelineChecklistItem::query()
+            ->with('checklist.lead.board')
+            ->findOrFail($itemId);
+        $this->assertCanEditBoard($user, $item->checklist->lead->board);
+
+        $item->update(array_filter([
+            'title' => $data['title'] ?? null,
+            'is_done' => array_key_exists('is_done', $data) ? (bool) $data['is_done'] : null,
+            'sort_order' => $data['sort_order'] ?? null,
+        ], fn ($v) => $v !== null));
+
+        return $item->fresh();
+    }
+
+    public function deleteChecklistItem(int $businessId, User $user, int $itemId): void
+    {
+        $item = PipelineChecklistItem::query()
+            ->with('checklist.lead.board')
+            ->findOrFail($itemId);
+        $this->assertCanEditBoard($user, $item->checklist->lead->board);
+        $item->delete();
+    }
+
+    public function addAttachment(int $businessId, User $user, int $leadId, UploadedFile $file): PipelineAttachment
+    {
+        $lead = $this->findLeadForBusiness($businessId, $leadId);
+        $this->assertCanEditBoard($user, $lead->board);
+
+        $path = $file->store('pipeline-attachments', 'public');
+
+        return PipelineAttachment::create([
+            'lead_id' => $leadId,
+            'user_id' => $user->id,
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'file_size' => $file->getSize(),
+        ]);
+    }
+
+    public function deleteAttachment(int $businessId, User $user, int $attachmentId): void
+    {
+        $attachment = PipelineAttachment::query()
+            ->with('lead.board')
+            ->findOrFail($attachmentId);
+
+        if ((int) $attachment->lead->business_id !== $businessId) {
+            abort(404);
+        }
+
+        $this->assertCanEditBoard($user, $attachment->lead->board);
+
+        if ($attachment->file_path) {
+            Storage::disk('public')->delete($attachment->file_path);
+        }
+
+        $attachment->delete();
+    }
+
+    /** @return list<string> */
+    protected function leadDetailRelations(): array
+    {
+        return [
+            'board',
+            'stage',
+            'assignee:id,name',
+            'source:id,name',
+            'customer:id,name,email,phone',
+            'labels:id,name,color',
+            'checklists.items',
+            'attachments.user:id,name',
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -21,6 +22,7 @@ class PipelineLead extends Model
         'converted_customer_id',
         'source_id',
         'title',
+        'card_type',
         'description',
         'contact_name',
         'contact_email',
@@ -30,6 +32,9 @@ class PipelineLead extends Model
         'status',
         'position',
         'expected_close_date',
+        'due_date',
+        'start_date',
+        'priority',
         'won_at',
         'lost_at',
         'converted_at',
@@ -42,6 +47,8 @@ class PipelineLead extends Model
             'estimated_value' => 'decimal:2',
             'position' => 'decimal:4',
             'expected_close_date' => 'date',
+            'due_date' => 'date',
+            'start_date' => 'date',
             'won_at' => 'datetime',
             'lost_at' => 'datetime',
             'converted_at' => 'datetime',
@@ -86,5 +93,20 @@ class PipelineLead extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(PipelineLeadActivity::class, 'lead_id')->orderByDesc('created_at');
+    }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(PipelineLabel::class, 'pipeline_lead_labels', 'lead_id', 'label_id');
+    }
+
+    public function checklists(): HasMany
+    {
+        return $this->hasMany(PipelineChecklist::class, 'lead_id')->orderBy('sort_order');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(PipelineAttachment::class, 'lead_id')->orderByDesc('created_at');
     }
 }

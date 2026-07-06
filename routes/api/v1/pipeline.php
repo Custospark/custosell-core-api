@@ -30,4 +30,19 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:pipeline'])->group
     Route::patch('/pipeline/sources/{id}', [PipelineController::class, 'updateSource'])->whereNumber('id');
     Route::delete('/pipeline/sources/{id}', [PipelineController::class, 'destroySource'])->whereNumber('id');
     Route::get('/pipeline/insights', [PipelineController::class, 'insights']);
+
+    Route::get('/pipeline/labels', [PipelineController::class, 'labels']);
+    Route::post('/pipeline/labels', [PipelineController::class, 'storeLabel']);
+    Route::patch('/pipeline/labels/{id}', [PipelineController::class, 'updateLabel'])->whereNumber('id');
+    Route::delete('/pipeline/labels/{id}', [PipelineController::class, 'destroyLabel'])->whereNumber('id');
+
+    Route::post('/pipeline/leads/{leadId}/checklists', [PipelineController::class, 'storeChecklist'])->whereNumber('leadId');
+    Route::patch('/pipeline/checklists/{id}', [PipelineController::class, 'updateChecklist'])->whereNumber('id');
+    Route::delete('/pipeline/checklists/{id}', [PipelineController::class, 'destroyChecklist'])->whereNumber('id');
+    Route::post('/pipeline/checklists/{checklistId}/items', [PipelineController::class, 'storeChecklistItem'])->whereNumber('checklistId');
+    Route::patch('/pipeline/checklist-items/{id}', [PipelineController::class, 'updateChecklistItem'])->whereNumber('id');
+    Route::delete('/pipeline/checklist-items/{id}', [PipelineController::class, 'destroyChecklistItem'])->whereNumber('id');
+
+    Route::post('/pipeline/leads/{leadId}/attachments', [PipelineController::class, 'storeAttachment'])->whereNumber('leadId');
+    Route::delete('/pipeline/attachments/{id}', [PipelineController::class, 'destroyAttachment'])->whereNumber('id');
 });
