@@ -188,6 +188,7 @@ class PipelineController extends Controller
         $validated = $request->validate([
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
+            'date_field' => ['nullable', 'in:due,start,close,all'],
         ]);
 
         $days = $this->pipelineService->boardCalendar(
@@ -196,6 +197,7 @@ class PipelineController extends Controller
             $id,
             (int) $validated['year'],
             (int) $validated['month'],
+            $validated['date_field'] ?? 'due',
         );
 
         return response()->json(['data' => $days]);
@@ -208,6 +210,8 @@ class PipelineController extends Controller
             'assigned_to' => ['nullable'],
             'status' => ['nullable', 'in:open,won,lost,converted,archived'],
             'search' => ['nullable', 'string', 'max:255'],
+            'source_id' => ['nullable', 'integer'],
+            'card_type' => ['nullable', 'in:lead,card'],
         ]);
 
         $leads = $this->pipelineService->listLeads(

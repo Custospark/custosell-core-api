@@ -333,40 +333,142 @@ class PipelineService
     }
 
     /** @return list<array{date: string, leads: list<array<string, mixed>>}> */
-    public function boardCalendar(int $businessId, User $user, int $boardId, int $year, int $month): array
-    {
+    public function boardCalendar(
+        int $businessId,
+        User $user,
+        int $boardId,
+        int $year,
+        int $month,
+        string $dateField = 'due',
+    ): array {
         $board = $this->findBoardForBusiness($businessId, $boardId);
         $this->assertCanViewBoard($user, $board);
 
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end = date('Y-m-t', strtotime($start));
 
-        $leads = PipelineLead::query()
+        $query = PipelineLead::query()
             ->where('business_id', $businessId)
             ->where('board_id', $boardId)
             ->whereIn('status', ['open', 'won', 'lost'])
-            ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('due_date', [$start, $end])
-                    ->orWhereBetween('expected_close_date', [$start, $end]);
-            })
-            ->with(['stage:id,name,color', 'assignee:id,name'])
-            ->get();
+            ->with(['stage:id,name,color', 'assignee:id,name']);
 
-        return $leads->groupBy(fn ($lead) => ($lead->due_date ?? $lead->expected_close_date)->toDateString())
+        if ($dateField === 'start') {
+            $query->whereBetween('start_date', [$start, $end]);
+        } elseif ($dateField === 'close') {
+            $query->whereBetween('expected_close_date', [$start, $end]);
+        } elseif ($dateField === 'all') {
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                    ->orWhereBetween('due_date', [$start, $end])
+                    ->orWhereBetween('expected_close_date', [$start, $end]);
+            });
+        } else {
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('due_date', [$start, $end])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
+                    });
+            });
+        }
+
+        $leads = $query->get();
+        $byDate = [];
+
+        foreach ($leads as $lead) {
+            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
+            foreach ($entries as $entry) {
+                $byDate[$entry['date']][] = $this->formatCalendarLead($lead, $entry['kind']);
+            }
+        }
+
+        ksort($byDate);
+
+        return collect($byDate)
             ->map(fn ($group, $date) => [
                 'date' => $date,
-                'leads' => $group->map(fn ($lead) => [
-                    'id' => $lead->id,
-                    'title' => $lead->title,
-                    'estimated_value' => $lead->estimated_value !== null ? (float) $lead->estimated_value : null,
-                    'currency' => $lead->currency,
-                    'status' => $lead->status,
-                    'stage' => $lead->stage ? ['id' => $lead->stage->id, 'name' => $lead->stage->name, 'color' => $lead->stage->color] : null,
-                    'assignee' => $lead->assignee ? ['id' => $lead->assignee->id, 'name' => $lead->assignee->name] : null,
-                ])->values()->all(),
+                'leads' => array_values($group),
             ])
             ->values()
             ->all();
+    }
+
+    /** @return list<array{date: string, kind: string}> */
+    protected function calendarDateEntriesForLead(
+        PipelineLead $lead,
+        string $dateField,
+        string $rangeStart,
+        string $rangeEnd,
+    ): array {
+        $entries = [];
+        $normalizeDate = static function (mixed $date): ?string {
+            if ($date === null) {
+                return null;
+            }
+            if ($date instanceof \Carbon\CarbonInterface) {
+                return $date->toDateString();
+            }
+
+            return substr((string) $date, 0, 10);
+        };
+
+        $inRange = static function (?string $date) use ($rangeStart, $rangeEnd): bool {
+            if (!$date) {
+                return false;
+            }
+
+            return $date >= $rangeStart && $date <= $rangeEnd;
+        };
+
+        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($normalizeDate, $inRange): void {
+            $date = $normalizeDate($rawDate);
+            if (!$inRange($date)) {
+                return;
+            }
+            $entries[] = ['date' => $date, 'kind' => $kind];
+        };
+
+        if ($dateField === 'start') {
+            $push($entries, $lead->start_date, 'start');
+        } elseif ($dateField === 'close') {
+            $push($entries, $lead->expected_close_date, 'close');
+        } elseif ($dateField === 'all') {
+            $push($entries, $lead->start_date, 'start');
+            $push($entries, $lead->due_date, 'due');
+            $push($entries, $lead->expected_close_date, 'close');
+        } else {
+            if ($lead->due_date) {
+                $push($entries, $lead->due_date, 'due');
+            } else {
+                $push($entries, $lead->expected_close_date, 'close');
+            }
+        }
+
+        return $entries;
+    }
+
+    /** @return array<string, mixed> */
+    protected function formatCalendarLead(PipelineLead $lead, string $dateKind): array
+    {
+        return [
+            'id' => $lead->id,
+            'title' => $lead->title,
+            'card_type' => $lead->card_type ?? 'lead',
+            'estimated_value' => $lead->estimated_value !== null ? (float) $lead->estimated_value : null,
+            'currency' => $lead->currency,
+            'status' => $lead->status,
+            'priority' => $lead->priority,
+            'date_kind' => $dateKind,
+            'stage' => $lead->stage ? [
+                'id' => $lead->stage->id,
+                'name' => $lead->stage->name,
+                'color' => $lead->stage->color,
+            ] : null,
+            'assignee' => $lead->assignee ? [
+                'id' => $lead->assignee->id,
+                'name' => $lead->assignee->name,
+            ] : null,
+        ];
     }
 
     /** @param  array<string, mixed>  $data */
@@ -438,9 +540,19 @@ class PipelineService
         if (!empty($filters['assigned_to'])) {
             if ($filters['assigned_to'] === 'me') {
                 $query->where('assigned_to', $user->id);
+            } elseif ($filters['assigned_to'] === 'unassigned') {
+                $query->whereNull('assigned_to');
             } else {
                 $query->where('assigned_to', (int) $filters['assigned_to']);
             }
+        }
+
+        if (!empty($filters['source_id'])) {
+            $query->where('source_id', (int) $filters['source_id']);
+        }
+
+        if (!empty($filters['card_type'])) {
+            $query->where('card_type', $filters['card_type']);
         }
 
         if (!empty($filters['status'])) {
@@ -655,13 +767,14 @@ class PipelineService
         $leads = PipelineLead::query()
             ->where('business_id', $businessId)
             ->whereIn('board_id', $boardIds)
-            ->whereIn('status', ['open', 'won', 'lost'])
-            ->with('stage:id,name,is_won,is_lost,color')
+            ->whereIn('status', ['open', 'won', 'lost', 'converted'])
+            ->with(['stage:id,name,is_won,is_lost,color,sort_order', 'source:id,name'])
             ->get();
 
         $openLeads = $leads->where('status', 'open');
         $wonLeads = $leads->where('status', 'won');
         $lostLeads = $leads->where('status', 'lost');
+        $convertedLeads = $leads->where('status', 'converted');
 
         $byStage = $openLeads->groupBy('stage_id')->map(function ($group, $stageId) {
             $stage = $group->first()->stage;
@@ -670,10 +783,22 @@ class PipelineService
                 'stage_id' => (int) $stageId,
                 'stage_name' => $stage?->name ?? 'Unknown',
                 'color' => $stage?->color,
+                'sort_order' => $stage?->sort_order ?? 0,
                 'count' => $group->count(),
                 'value' => round((float) $group->sum('estimated_value'), 2),
             ];
-        })->values();
+        })->sortBy('sort_order')->values();
+
+        $bySource = $openLeads->groupBy('source_id')->map(function ($group, $sourceId) {
+            $source = $group->first()->source;
+
+            return [
+                'source_id' => $sourceId ? (int) $sourceId : null,
+                'source_name' => $source?->name ?? 'No source',
+                'count' => $group->count(),
+                'value' => round((float) $group->sum('estimated_value'), 2),
+            ];
+        })->sortByDesc('count')->values();
 
         $totalOpen = $openLeads->count();
         $closed = $wonLeads->count() + $lostLeads->count();
@@ -684,8 +809,10 @@ class PipelineService
             'open_pipeline_value' => round((float) $openLeads->sum('estimated_value'), 2),
             'won_leads' => $wonLeads->count(),
             'lost_leads' => $lostLeads->count(),
+            'converted_leads' => $convertedLeads->count(),
             'win_rate_percent' => $winRate,
             'by_stage' => $byStage,
+            'by_source' => $bySource,
         ];
     }
 
