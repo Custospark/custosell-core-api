@@ -5,6 +5,7 @@ namespace App\Repositories\Eloquent;
 use App\Models\Estimate;
 use App\Models\EstimateTemplate;
 use App\Repositories\Contracts\EstimateRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -40,7 +41,7 @@ class EstimateRepository implements EstimateRepositoryInterface
             'lineItems.product',
             'versions.createdBy',
             'project',
-            'invoice',
+            'invoice.payments',
         ])->find($id);
     }
 
@@ -101,44 +102,99 @@ class EstimateRepository implements EstimateRepositoryInterface
 
     public function analyticsSummary(int $businessId): array
     {
-        $rows = Estimate::query()
+        $estimates = Estimate::query()
             ->where('business_id', $businessId)
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total_value'))
-            ->groupBy('status')
             ->get();
 
-        $byStatus = [];
-        $totalCount = 0;
-        $totalValue = 0;
+        $statusCounts = [
+            'draft' => 0,
+            'sent' => 0,
+            'approved' => 0,
+            'rejected' => 0,
+            'expired' => 0,
+            'converted' => 0,
+        ];
 
-        foreach ($rows as $row) {
-            $byStatus[$row->status] = [
-                'count' => (int) $row->count,
-                'total_value' => round((float) $row->total_value, 2),
-            ];
-            $totalCount += (int) $row->count;
-            $totalValue += (float) $row->total_value;
+        $byStatus = [];
+        $totalPipelineValue = 0;
+        $totalApprovedValue = 0;
+        $totalCost = 0;
+        $totalGrossProfit = 0;
+        $marginSum = 0;
+        $today = Carbon::today();
+
+        foreach ($estimates as $estimate) {
+            $status = (string) $estimate->status;
+            if ($estimate->valid_until
+                && $estimate->valid_until->lt($today)
+                && !in_array($status, ['approved', 'rejected', 'converted'], true)) {
+                $status = 'expired';
+            }
+
+            $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
+
+            if (!isset($byStatus[$status])) {
+                $byStatus[$status] = ['status' => $status, 'count' => 0, 'total' => 0];
+            }
+            $byStatus[$status]['count']++;
+            $byStatus[$status]['total'] = round($byStatus[$status]['total'] + (float) $estimate->total, 2);
+
+            if (in_array($status, ['draft', 'sent'], true)) {
+                $totalPipelineValue += (float) $estimate->total;
+            }
+            if ($status === 'approved' || $estimate->status === 'approved') {
+                $totalApprovedValue += (float) $estimate->total;
+            }
+
+            $totalCost += (float) $estimate->cost_subtotal;
+            $totalGrossProfit += (float) $estimate->gross_profit;
+            $marginSum += (float) $estimate->margin_percent;
         }
 
-        $approved = Estimate::query()
-            ->where('business_id', $businessId)
-            ->where('status', 'approved')
-            ->count();
+        $approvedCount = $statusCounts['approved'] + $statusCounts['converted'];
+        $rejectedCount = $statusCounts['rejected'];
+        $decided = $approvedCount + $rejectedCount;
+        $winRate = $decided > 0 ? round(($approvedCount / $decided) * 100, 2) : 0;
 
-        $converted = Estimate::query()
+        $monthRows = Estimate::query()
             ->where('business_id', $businessId)
-            ->whereNotNull('invoice_id')
-            ->count();
+            ->whereNotNull('sent_at')
+            ->selectRaw("DATE_FORMAT(sent_at, '%Y-%m') as month")
+            ->selectRaw("SUM(CASE WHEN status IN ('sent','approved','converted','rejected') THEN 1 ELSE 0 END) as sent")
+            ->selectRaw("SUM(CASE WHEN status IN ('approved','converted') THEN 1 ELSE 0 END) as approved")
+            ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
+            ->selectRaw('SUM(total) as value')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->limit(12)
+            ->get();
+
+        $byMonth = $monthRows->map(fn ($row) => [
+            'month' => $row->month,
+            'sent' => (int) $row->sent,
+            'approved' => (int) $row->approved,
+            'rejected' => (int) $row->rejected,
+            'value' => round((float) $row->value, 2),
+        ])->values()->all();
 
         return [
-            'total_count' => $totalCount,
-            'total_value' => round($totalValue, 2),
-            'by_status' => $byStatus,
-            'approved_count' => $approved,
-            'converted_to_invoice_count' => $converted,
-            'conversion_rate' => $totalCount > 0
-                ? round(($converted / $totalCount) * 100, 2)
+            'total_estimates' => $estimates->count(),
+            'draft_count' => $statusCounts['draft'],
+            'sent_count' => $statusCounts['sent'],
+            'approved_count' => $statusCounts['approved'],
+            'rejected_count' => $rejectedCount,
+            'expired_count' => $statusCounts['expired'],
+            'converted_count' => $statusCounts['converted'],
+            'win_rate' => $winRate,
+            'avg_margin_percent' => $estimates->count() > 0
+                ? round($marginSum / $estimates->count(), 2)
                 : 0,
+            'total_pipeline_value' => round($totalPipelineValue, 2),
+            'total_approved_value' => round($totalApprovedValue, 2),
+            'total_cost' => round($totalCost, 2),
+            'total_gross_profit' => round($totalGrossProfit, 2),
+            'by_status' => array_values($byStatus),
+            'by_month' => $byMonth,
         ];
     }
 }

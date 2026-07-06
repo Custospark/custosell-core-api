@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Events\PaymentRecordedForAccounting;
 use App\Models\Business;
+use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\Shift;
+use App\Services\Contracts\ProjectServiceInterface;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -72,6 +74,8 @@ class PaymentService
             if ($invoice->sale_id) {
                 $this->syncLinkedSaleAfterInvoicePayment($invoice, $payment);
             }
+
+            $this->syncProjectRevenueFromInvoice($invoice);
 
             event(new PaymentRecordedForAccounting($payment));
 
@@ -204,6 +208,25 @@ class PaymentService
             shiftId: $shiftId,
             dispatchAccounting: false,
         );
+    }
+
+    protected function syncProjectRevenueFromInvoice(Invoice $invoice): void
+    {
+        if (!$invoice->estimate_id) {
+            return;
+        }
+
+        $estimate = Estimate::query()->find($invoice->estimate_id);
+        if (!$estimate || !$estimate->project_id) {
+            return;
+        }
+
+        try {
+            $projectService = app(ProjectServiceInterface::class);
+            $projectService->recalculateActuals($estimate->project_id);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     protected function syncLinkedSaleAfterInvoicePayment(Invoice $invoice, Payment $invoicePayment): void

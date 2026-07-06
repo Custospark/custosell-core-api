@@ -17,6 +17,8 @@ class ExpenseResource extends JsonResource
             'recorded_by' => $this->recorded_by,
             'recorded_by_user' => new UserResource($this->whenLoaded('recordedBy')),
             'shift_id' => $this->shift_id,
+            'project_id' => $this->project_id,
+            'project' => new ProjectResource($this->whenLoaded('project')),
             'amount' => $this->amount,
             'description' => $this->description,
             'reference' => $this->reference,

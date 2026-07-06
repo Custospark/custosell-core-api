@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\ProjectCostAllocation;
 use App\Models\ProjectTask;
@@ -249,10 +250,16 @@ class ProjectService implements ProjectServiceInterface
             'actual_cost' => $actualCost,
             'revenue_variance' => round($actualRevenue - $budgetRevenue, 2),
             'cost_variance' => round($actualCost - $budgetCost, 2),
-            'budget_margin' => $budgetRevenue > 0
+            'margin_budget' => $budgetRevenue > 0
                 ? round((($budgetRevenue - $budgetCost) / $budgetRevenue) * 100, 2)
                 : 0,
-            'actual_margin' => $actualRevenue > 0
+            'margin_actual' => $actualRevenue > 0
+                ? round((($actualRevenue - $actualCost) / $actualRevenue) * 100, 2)
+                : 0,
+            'margin_percent_budget' => $budgetRevenue > 0
+                ? round((($budgetRevenue - $budgetCost) / $budgetRevenue) * 100, 2)
+                : 0,
+            'margin_percent_actual' => $actualRevenue > 0
                 ? round((($actualRevenue - $actualCost) / $actualRevenue) * 100, 2)
                 : 0,
         ];
@@ -276,6 +283,7 @@ class ProjectService implements ProjectServiceInterface
             ->sum('amount');
 
         return array_merge($summary, [
+            'margin_percent' => $summary['margin_percent_actual'],
             'gross_profit' => $grossProfit,
             'budget_profit' => $budgetProfit,
             'profit_variance' => round($grossProfit - $budgetProfit, 2),
@@ -308,9 +316,13 @@ class ProjectService implements ProjectServiceInterface
             ->selectRaw('SUM(hours * hourly_rate) as revenue')
             ->value('revenue');
 
+        $invoiceRevenue = (float) Invoice::query()
+            ->whereHas('estimate', fn($q) => $q->where('project_id', $projectId))
+            ->sum('amount_paid');
+
         return $this->projectRepository->update($project, [
             'actual_cost' => round($timesheetCost + $allocationCost, 2),
-            'actual_revenue' => round($billableRevenue, 2),
+            'actual_revenue' => round($billableRevenue + $invoiceRevenue, 2),
         ]);
     }
 }

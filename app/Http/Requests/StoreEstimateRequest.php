@@ -48,7 +48,7 @@ class StoreEstimateRequest extends BaseFormRequest
             'line_items' => ['required', 'array', 'min:1'],
             'line_items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
             'line_items.*.sort_order' => ['nullable', 'integer', 'min:0'],
-            'line_items.*.type' => ['nullable', 'string', 'in:labor,material,equipment,other'],
+            'line_items.*.type' => ['nullable', 'string', 'in:labor,material,equipment,service,travel,permit,subcontractor,discount,other'],
             'line_items.*.description' => ['required', 'string', 'max:1000'],
             'line_items.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'line_items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],

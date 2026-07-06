@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'business.active', 'module:estimates'])->group(function () {
     Route::get('/estimates/analytics', [EstimateController::class, 'analytics']);
 
-    Route::get('/estimate-templates', [EstimateController::class, 'templates']);
-    Route::post('/estimate-templates', [EstimateController::class, 'storeTemplate']);
-    Route::get('/estimate-templates/{id}', [EstimateController::class, 'showTemplate'])->whereNumber('id');
-    Route::put('/estimate-templates/{id}', [EstimateController::class, 'updateTemplate'])->whereNumber('id');
-    Route::patch('/estimate-templates/{id}', [EstimateController::class, 'updateTemplate'])->whereNumber('id');
-    Route::delete('/estimate-templates/{id}', [EstimateController::class, 'destroyTemplate'])->whereNumber('id');
+    Route::get('/estimates/templates', [EstimateController::class, 'templates']);
+    Route::post('/estimates/templates', [EstimateController::class, 'storeTemplate']);
+    Route::get('/estimates/templates/{id}', [EstimateController::class, 'showTemplate'])->whereNumber('id');
+    Route::put('/estimates/templates/{id}', [EstimateController::class, 'updateTemplate'])->whereNumber('id');
+    Route::patch('/estimates/templates/{id}', [EstimateController::class, 'updateTemplate'])->whereNumber('id');
+    Route::delete('/estimates/templates/{id}', [EstimateController::class, 'destroyTemplate'])->whereNumber('id');
 
     Route::get('/estimates', [EstimateController::class, 'index']);
     Route::post('/estimates', [EstimateController::class, 'store']);

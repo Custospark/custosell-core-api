@@ -15,6 +15,7 @@ use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\Contracts\ProjectServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 
 class EstimateService implements EstimateServiceInterface
 {
@@ -35,6 +36,23 @@ class EstimateService implements EstimateServiceInterface
     }
 
     public function create(int $businessId, int $userId, array $data): Estimate
+    {
+        $maxAttempts = 3;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                return $this->attemptCreate($businessId, $userId, $data);
+            } catch (QueryException $e) {
+                if ($attempt === $maxAttempts || !str_contains($e->getMessage(), 'Duplicate entry')) {
+                    throw $e;
+                }
+            }
+        }
+
+        throw new \RuntimeException('Failed to create estimate after ' . $maxAttempts . ' attempts');
+    }
+
+    protected function attemptCreate(int $businessId, int $userId, array $data): Estimate
     {
         return DB::transaction(function () use ($businessId, $userId, $data) {
             $business = Business::findOrFail($businessId);
@@ -152,8 +170,8 @@ class EstimateService implements EstimateServiceInterface
             throw new \RuntimeException('Estimate not found');
         }
 
-        if ($estimate->status !== 'sent') {
-            throw new \RuntimeException('Only sent estimates can be approved');
+        if (!in_array($estimate->status, ['draft', 'sent'], true)) {
+            throw new \RuntimeException('Only draft or sent estimates can be approved');
         }
 
         return $this->estimateRepository->update($estimate, [

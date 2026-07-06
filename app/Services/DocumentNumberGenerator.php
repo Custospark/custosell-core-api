@@ -42,16 +42,24 @@ class DocumentNumberGenerator
         return self::nextMonthlySequence($business, 'RCP', $modelClass, $column);
     }
 
-    /** {BIZ4}-EST-{YYYYMM}-{00001} */
+    /** {BIZ4}-EST-{YYMMDD}-{RANDOM7} */
     public static function estimateNumber(Business $business, string $modelClass, string $column): string
     {
-        return self::nextMonthlySequence($business, 'EST', $modelClass, $column);
+        $code = self::businessCode($business);
+        $date = now()->format('ymd');
+        $rand = strtoupper(substr(bin2hex(random_bytes(4)), 0, 7));
+
+        return sprintf('%s-EST-%s-%s', $code, $date, $rand);
     }
 
-    /** {BIZ4}-PRJ-{YYYYMM}-{00001} */
+    /** {BIZ4}-PRJ-{YYMMDD}-{RANDOM7} */
     public static function projectNumber(Business $business, string $modelClass, string $column): string
     {
-        return self::nextMonthlySequence($business, 'PRJ', $modelClass, $column);
+        $code = self::businessCode($business);
+        $date = now()->format('ymd');
+        $rand = strtoupper(substr(bin2hex(random_bytes(4)), 0, 7));
+
+        return sprintf('%s-PRJ-%s-%s', $code, $date, $rand);
     }
 
     protected static function nextMonthlySequence(
@@ -68,7 +76,8 @@ class DocumentNumberGenerator
         $last = $modelClass::query()
             ->where('business_id', $business->id)
             ->where($column, 'like', $prefix . '-%')
-            ->orderByDesc('id')
+            ->orderByDesc($column)
+            ->lockForUpdate()
             ->first();
 
         $seq = 1;

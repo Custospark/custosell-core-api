@@ -11,12 +11,15 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 use App\Events\ExpenseCreatedForAccounting;
+use App\Models\ProjectCostAllocation;
+use App\Services\Contracts\ProjectServiceInterface;
 
 class ExpenseService implements ExpenseServiceInterface
 {
     public function __construct(
         protected ExpenseRepositoryInterface $expenseRepository,
         protected ExpenseCategoryRepositoryInterface $expenseCategoryRepository,
+        protected ProjectServiceInterface $projectService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): LengthAwarePaginator
@@ -35,6 +38,10 @@ class ExpenseService implements ExpenseServiceInterface
         $this->assertCategoryAvailable($businessId, $data['expense_category_id'] ?? null);
 
         $expense = $this->expenseRepository->create($data);
+
+        if (!empty($data['project_id'])) {
+            $this->createProjectAllocationFromExpense($expense);
+        }
 
         event(new ExpenseCreatedForAccounting($expense));
 
@@ -96,5 +103,31 @@ class ExpenseService implements ExpenseServiceInterface
                 'expense_category_id' => 'Invalid expense category.',
             ]);
         }
+    }
+
+    protected function createProjectAllocationFromExpense(Expense $expense): void
+    {
+        $typeMap = [
+            'labor' => 'labor',
+            'material' => 'material',
+        ];
+
+        $categorySlug = $expense->expenseCategory?->slug;
+        $allocationType = $typeMap[$categorySlug] ?? 'expense';
+
+        ProjectCostAllocation::create([
+            'business_id' => $expense->business_id,
+            'project_id' => $expense->project_id,
+            'allocation_type' => $allocationType,
+            'description' => $expense->description ?: 'Allocated from expense',
+            'amount' => (float) $expense->amount,
+            'basis' => 'fixed',
+            'basis_value' => 0,
+            'allocation_date' => $expense->expense_date?->toDateString() ?? now()->toDateString(),
+            'expense_id' => $expense->id,
+            'created_by' => $expense->recorded_by ?? 1,
+        ]);
+
+        $this->projectService->recalculateActuals($expense->project_id);
     }
 }
