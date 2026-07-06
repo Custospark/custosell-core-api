@@ -328,6 +328,7 @@ class PipelineController extends Controller
             'due_date' => ['nullable', 'date'],
             'start_date' => ['nullable', 'date'],
             'priority' => ['nullable', 'in:low,medium,high,urgent'],
+            'background_color' => ['nullable', 'string', 'max:20'],
             'lost_reason' => ['nullable', 'string', 'max:255'],
             'label_ids' => ['nullable', 'array'],
             'label_ids.*' => ['integer'],
