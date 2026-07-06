@@ -75,6 +75,8 @@ class PipelineController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['sometimes', 'in:team,private,shared'],
             'cover_color' => ['nullable', 'string', 'max:32'],
+            'background_type' => ['nullable', 'string', 'in:color,gallery,upload'],
+            'background_value' => ['nullable', 'string', 'max:500'],
             'is_archived' => ['sometimes', 'boolean'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer'],
