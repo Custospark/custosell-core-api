@@ -115,6 +115,32 @@ class PipelineController extends Controller
         return new PipelineBoardResource($board);
     }
 
+    public function uploadBoardBackground(Request $request, int $boardId): \Illuminate\Http\JsonResponse
+    {
+        $board = $this->pipelineService->getBoard(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        $request->validate([
+            'background' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $path = $request->file('background')->store('pipeline-board-bg', 'public');
+
+        $board->update([
+            'background_type' => 'upload',
+            'background_value' => $path,
+        ]);
+
+        return response()->json([
+            'background_type' => 'upload',
+            'background_value' => $path,
+            'url' => url('storage/' . $path),
+        ]);
+    }
+
     public function storeStage(Request $request, int $boardId): JsonResponse
     {
         $validated = $request->validate([

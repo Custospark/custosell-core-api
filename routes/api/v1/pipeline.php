@@ -10,6 +10,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:pipeline'])->group
     Route::patch('/pipeline/boards/{id}', [PipelineController::class, 'updateBoard'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/kanban', [PipelineController::class, 'kanban'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/calendar', [PipelineController::class, 'calendar'])->whereNumber('id');
+    Route::post('/pipeline/boards/{id}/background', [PipelineController::class, 'uploadBoardBackground'])->whereNumber('id');
 
     Route::post('/pipeline/boards/{boardId}/stages', [PipelineController::class, 'storeStage'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/stages/reorder', [PipelineController::class, 'reorderStages'])->whereNumber('boardId');

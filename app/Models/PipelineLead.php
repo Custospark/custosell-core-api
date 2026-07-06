@@ -37,6 +37,7 @@ class PipelineLead extends Model
         'due_date',
         'start_date',
         'priority',
+        'background_color',
         'won_at',
         'lost_at',
         'converted_at',

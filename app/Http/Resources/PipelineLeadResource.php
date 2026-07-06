@@ -48,6 +48,7 @@ class PipelineLeadResource extends JsonResource
             'due_date' => $this->due_date?->toDateString(),
             'start_date' => $this->start_date?->toDateString(),
             'priority' => $this->priority,
+            'background_color' => $this->background_color,
             'won_at' => $this->won_at?->toISOString(),
             'lost_at' => $this->lost_at?->toISOString(),
             'converted_at' => $this->converted_at?->toISOString(),
