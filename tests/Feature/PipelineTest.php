@@ -143,4 +143,83 @@ class PipelineTest extends TestCase
             ->getJson('/api/v1/pipeline/boards')
             ->assertForbidden();
     }
+
+    public function test_archive_lead_and_delete_stage_with_migration(): void
+    {
+        $boards = $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->getJson('/api/v1/pipeline/boards')
+            ->json('data');
+
+        $boardId = $boards[0]['id'];
+        $kanban = $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->getJson("/api/v1/pipeline/boards/{$boardId}/kanban")
+            ->json('data');
+
+        $firstStageId = $kanban['stages'][0]['id'];
+        $secondStageId = $kanban['stages'][1]['id'];
+
+        $create = $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->postJson('/api/v1/pipeline/leads', [
+                'board_id' => $boardId,
+                'stage_id' => $firstStageId,
+                'title' => 'To archive',
+                'expected_close_date' => '2026-07-15',
+            ]);
+
+        $leadId = $create->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->deleteJson("/api/v1/pipeline/leads/{$leadId}")
+            ->assertOk();
+
+        $this->assertSoftDeleted('pipeline_leads', ['id' => $leadId]);
+
+        $create2 = $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->postJson('/api/v1/pipeline/leads', [
+                'board_id' => $boardId,
+                'stage_id' => $firstStageId,
+                'title' => 'Migrate me',
+            ]);
+
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->deleteJson("/api/v1/pipeline/stages/{$firstStageId}", [
+                'migrate_to_stage_id' => $secondStageId,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('pipeline_stages', ['id' => $firstStageId]);
+        $this->assertDatabaseHas('pipeline_leads', [
+            'id' => $create2->json('data.id'),
+            'stage_id' => $secondStageId,
+        ]);
+    }
+
+    public function test_board_calendar_returns_leads_by_close_date(): void
+    {
+        $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->getJson('/api/v1/pipeline/boards')
+            ->assertOk();
+
+        $board = PipelineBoard::query()->where('business_id', $this->business->id)->firstOrFail();
+        $stage = PipelineStage::query()->where('board_id', $board->id)->orderBy('sort_order')->firstOrFail();
+
+        PipelineLead::query()->create([
+            'business_id' => $this->business->id,
+            'board_id' => $board->id,
+            'stage_id' => $stage->id,
+            'created_by' => $this->owner->id,
+            'title' => 'July deal',
+            'status' => 'open',
+            'position' => 1,
+            'currency' => 'UGX',
+            'expected_close_date' => '2026-07-20',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer {$this->token}")
+            ->getJson("/api/v1/pipeline/boards/{$board->id}/calendar?year=2026&month=7");
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.date', '2026-07-20')
+            ->assertJsonPath('data.0.leads.0.title', 'July deal');
+    }
 }

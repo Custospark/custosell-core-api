@@ -157,6 +157,40 @@ class PipelineController extends Controller
         ]);
     }
 
+    public function destroyStage(Request $request, int $stageId): JsonResponse
+    {
+        $validated = $request->validate([
+            'migrate_to_stage_id' => ['nullable', 'integer'],
+        ]);
+
+        $this->pipelineService->deleteStage(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $stageId,
+            $validated['migrate_to_stage_id'] ?? null,
+        );
+
+        return response()->json(['message' => 'Stage deleted']);
+    }
+
+    public function calendar(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        $days = $this->pipelineService->boardCalendar(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            (int) $validated['year'],
+            (int) $validated['month'],
+        );
+
+        return response()->json(['data' => $days]);
+    }
+
     public function leads(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -244,6 +278,17 @@ class PipelineController extends Controller
         return new PipelineLeadResource($lead);
     }
 
+    public function destroyLead(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->archiveLead(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['message' => 'Lead archived']);
+    }
+
     public function moveLead(Request $request, int $id): PipelineLeadResource
     {
         $validated = $request->validate([
@@ -305,6 +350,47 @@ class PipelineController extends Controller
         return response()->json([
             'data' => PipelineSourceResource::collection($sources),
         ]);
+    }
+
+    public function storeSource(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $source = $this->pipelineService->createSource(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $validated,
+        );
+
+        return (new PipelineSourceResource($source))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function updateSource(Request $request, int $id): PipelineSourceResource
+    {
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:120'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $source = $this->pipelineService->updateSource(
+            (int) $request->user()->business_id,
+            $id,
+            $validated,
+        );
+
+        return new PipelineSourceResource($source);
+    }
+
+    public function destroySource(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteSource((int) $request->user()->business_id, $id);
+
+        return response()->json(['message' => 'Source deleted']);
     }
 
     public function insights(Request $request): JsonResponse

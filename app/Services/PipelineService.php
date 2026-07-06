@@ -195,7 +195,7 @@ class PipelineService
     public function createStage(int $businessId, User $user, int $boardId, array $data): PipelineStage
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
+        $this->assertCanEditBoard($user, $board);
 
         $maxOrder = PipelineStage::query()->where('board_id', $boardId)->max('sort_order');
 
@@ -215,7 +215,7 @@ class PipelineService
     public function updateStage(int $businessId, User $user, int $stageId, array $data): PipelineStage
     {
         $stage = $this->findStageForBusiness($businessId, $stageId);
-        $this->assertCanManageBoard($user, $stage->board);
+        $this->assertCanEditBoard($user, $stage->board);
 
         $stage->update(array_filter([
             'name' => $data['name'] ?? null,
@@ -233,7 +233,7 @@ class PipelineService
     public function reorderStages(int $businessId, User $user, int $boardId, array $stageIdsInOrder): Collection
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
+        $this->assertCanEditBoard($user, $board);
 
         foreach ($stageIdsInOrder as $order => $stageId) {
             PipelineStage::query()
@@ -244,6 +244,129 @@ class PipelineService
         }
 
         return $board->stages()->orderBy('sort_order')->get();
+    }
+
+    public function deleteStage(int $businessId, User $user, int $stageId, ?int $migrateToStageId = null): void
+    {
+        $stage = $this->findStageForBusiness($businessId, $stageId);
+        $this->assertCanEditBoard($user, $stage->board);
+
+        $stageCount = PipelineStage::query()->where('board_id', $stage->board_id)->count();
+        if ($stageCount <= 1) {
+            throw ValidationException::withMessages(['stage' => 'A board must have at least one stage.']);
+        }
+
+        $leadCount = PipelineLead::query()->where('stage_id', $stageId)->whereNull('deleted_at')->count();
+        if ($leadCount > 0) {
+            if (!$migrateToStageId) {
+                throw ValidationException::withMessages(['migrate_to_stage_id' => 'Move leads to another stage before deleting.']);
+            }
+            $target = PipelineStage::query()
+                ->where('board_id', $stage->board_id)
+                ->where('business_id', $businessId)
+                ->where('id', $migrateToStageId)
+                ->where('id', '!=', $stageId)
+                ->firstOrFail();
+
+            PipelineLead::query()
+                ->where('stage_id', $stageId)
+                ->update(['stage_id' => $target->id]);
+        }
+
+        $stage->delete();
+    }
+
+    public function archiveLead(int $businessId, User $user, int $leadId): void
+    {
+        $lead = $this->findLeadForBusiness($businessId, $leadId);
+        $this->assertCanEditBoard($user, $lead->board);
+
+        $lead->update(['status' => 'archived']);
+        $lead->delete();
+    }
+
+    /** @return list<array{date: string, leads: list<array<string, mixed>>}> */
+    public function boardCalendar(int $businessId, User $user, int $boardId, int $year, int $month): array
+    {
+        $board = $this->findBoardForBusiness($businessId, $boardId);
+        $this->assertCanViewBoard($user, $board);
+
+        $start = sprintf('%04d-%02d-01', $year, $month);
+        $end = date('Y-m-t', strtotime($start));
+
+        $leads = PipelineLead::query()
+            ->where('business_id', $businessId)
+            ->where('board_id', $boardId)
+            ->whereNotNull('expected_close_date')
+            ->whereBetween('expected_close_date', [$start, $end])
+            ->whereIn('status', ['open', 'won', 'lost'])
+            ->with(['stage:id,name,color', 'assignee:id,name'])
+            ->orderBy('expected_close_date')
+            ->get();
+
+        return $leads->groupBy(fn ($lead) => $lead->expected_close_date->toDateString())
+            ->map(fn ($group, $date) => [
+                'date' => $date,
+                'leads' => $group->map(fn ($lead) => [
+                    'id' => $lead->id,
+                    'title' => $lead->title,
+                    'estimated_value' => $lead->estimated_value !== null ? (float) $lead->estimated_value : null,
+                    'currency' => $lead->currency,
+                    'status' => $lead->status,
+                    'stage' => $lead->stage ? ['id' => $lead->stage->id, 'name' => $lead->stage->name, 'color' => $lead->stage->color] : null,
+                    'assignee' => $lead->assignee ? ['id' => $lead->assignee->id, 'name' => $lead->assignee->name] : null,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function createSource(int $businessId, User $user, array $data): PipelineSource
+    {
+        $maxOrder = PipelineSource::query()->where('business_id', $businessId)->max('sort_order');
+
+        return PipelineSource::create([
+            'business_id' => $businessId,
+            'name' => $data['name'],
+            'is_system' => false,
+            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
+        ]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function updateSource(int $businessId, int $sourceId, array $data): PipelineSource
+    {
+        $source = PipelineSource::query()
+            ->where('business_id', $businessId)
+            ->where('id', $sourceId)
+            ->firstOrFail();
+
+        if ($source->is_system && array_key_exists('name', $data)) {
+            throw ValidationException::withMessages(['name' => 'System sources cannot be renamed.']);
+        }
+
+        $source->update(array_filter([
+            'name' => $data['name'] ?? null,
+            'sort_order' => $data['sort_order'] ?? null,
+        ], fn ($v) => $v !== null));
+
+        return $source->fresh();
+    }
+
+    public function deleteSource(int $businessId, int $sourceId): void
+    {
+        $source = PipelineSource::query()
+            ->where('business_id', $businessId)
+            ->where('id', $sourceId)
+            ->firstOrFail();
+
+        if ($source->is_system) {
+            throw ValidationException::withMessages(['source' => 'System sources cannot be deleted.']);
+        }
+
+        PipelineLead::query()->where('source_id', $sourceId)->update(['source_id' => null]);
+        $source->delete();
     }
 
     /** @param  array<string, mixed>  $filters */
