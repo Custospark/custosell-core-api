@@ -17,6 +17,7 @@ class PipelineBoard extends Model
         'cover_color',
         'is_default',
         'is_archived',
+        'project_id',
         'sort_order',
     ];
 
@@ -52,5 +53,10 @@ class PipelineBoard extends Model
     public function leads(): HasMany
     {
         return $this->hasMany(PipelineLead::class, 'board_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 }

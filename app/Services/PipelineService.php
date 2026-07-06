@@ -14,6 +14,8 @@ use App\Models\PipelineLeadActivity;
 use App\Models\PipelineLabel;
 use App\Models\PipelineSource;
 use App\Models\PipelineStage;
+use App\Models\Project;
+use App\Models\ProjectTask;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -28,7 +30,14 @@ class PipelineService
         protected CustomerContactService $customerContactService,
     ) {}
 
-    /** @return list<array{name: string, color: string}> */
+    /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
+    public const PROJECT_STAGES = [
+        ['name' => 'To Do', 'color' => '#64748b', 'is_won' => false, 'is_lost' => false, 'rotting_days' => null],
+        ['name' => 'In Progress', 'color' => '#3b82f6', 'is_won' => false, 'is_lost' => false, 'rotting_days' => null],
+        ['name' => 'Review', 'color' => '#f59e0b', 'is_won' => false, 'is_lost' => false, 'rotting_days' => null],
+        ['name' => 'Done', 'color' => '#10b981', 'is_won' => true, 'is_lost' => false, 'rotting_days' => null],
+    ];
+
     public const DEFAULT_LABELS = [
         ['name' => 'Urgent', 'color' => '#ef4444'],
         ['name' => 'Feature', 'color' => '#3b82f6'],
@@ -91,6 +100,48 @@ class PipelineService
                 'sort_order' => $row['sort_order'],
             ]);
         }
+    }
+
+    public function getOrCreateProjectBoard(int $businessId, int $userId, int $projectId): PipelineBoard
+    {
+        $existing = PipelineBoard::query()
+            ->where('business_id', $businessId)
+            ->where('project_id', $projectId)
+            ->first();
+
+        if ($existing) {
+            return $existing->load(['stages', 'creator']);
+        }
+
+        $project = Project::query()->findOrFail($projectId);
+
+        return DB::transaction(function () use ($businessId, $userId, $project) {
+            $board = PipelineBoard::create([
+                'business_id' => $businessId,
+                'created_by' => $userId,
+                'name' => $project->name,
+                'description' => 'Project board for ' . $project->name,
+                'visibility' => 'team',
+                'project_id' => $project->id,
+            ]);
+
+            foreach (self::PROJECT_STAGES as $index => $stage) {
+                PipelineStage::create([
+                    'business_id' => $businessId,
+                    'board_id' => $board->id,
+                    'name' => $stage['name'],
+                    'sort_order' => $index,
+                    'color' => $stage['color'],
+                    'is_won' => $stage['is_won'],
+                    'is_lost' => $stage['is_lost'],
+                    'rotting_days' => $stage['rotting_days'],
+                ]);
+            }
+
+            $this->seedDefaultLabels($businessId, $board->id);
+
+            return $board->load(['stages', 'creator']);
+        });
     }
 
     /** @param  array<string, mixed>  $data */
@@ -614,6 +665,10 @@ class PipelineService
             'priority' => $data['priority'] ?? null,
         ]);
 
+        if ($board->project_id && ($data['card_type'] ?? 'lead') === 'card') {
+            $this->createTaskFromLead($lead, $businessId);
+        }
+
         if (!empty($data['label_ids'])) {
             $lead->labels()->sync($data['label_ids']);
         }
@@ -691,6 +746,10 @@ class PipelineService
             'lost_at' => $lostAt,
         ]);
 
+        if ($lead->project_task_id) {
+            $this->syncTaskStatusFromStage($lead, $stage);
+        }
+
         if ($fromStageId !== $stage->id) {
             $this->recordActivity($lead, $user->id, 'stage_change', "Moved to {$stage->name}", [
                 'from_stage_id' => $fromStageId,
@@ -699,6 +758,47 @@ class PipelineService
         }
 
         return $lead->fresh(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone']);
+    }
+
+    protected function syncTaskStatusFromStage(PipelineLead $lead, PipelineStage $stage): void
+    {
+        $statusMap = [
+            'To Do' => 'todo',
+            'In Progress' => 'in_progress',
+            'Review' => 'in_progress',
+            'Done' => 'done',
+        ];
+
+        $taskStatus = $statusMap[$stage->name] ?? 'todo';
+
+        ProjectTask::query()
+            ->where('id', $lead->project_task_id)
+            ->update(['status' => $taskStatus]);
+    }
+
+    protected function createTaskFromLead(PipelineLead $lead, int $businessId): void
+    {
+        $stageName = $lead->stage?->name;
+        $statusMap = [
+            'To Do' => 'todo',
+            'In Progress' => 'in_progress',
+            'Review' => 'in_progress',
+            'Done' => 'done',
+        ];
+        $taskStatus = $statusMap[$stageName] ?? 'todo';
+
+        $task = ProjectTask::create([
+            'project_id' => $lead->board->project_id,
+            'name' => $lead->title,
+            'description' => $lead->description,
+            'status' => $taskStatus,
+            'estimated_hours' => 0,
+            'actual_hours' => 0,
+            'budget_cost' => 0,
+            'assigned_to' => $lead->assigned_to,
+        ]);
+
+        $lead->update(['project_task_id' => $task->id]);
     }
 
     /** @param  array<string, mixed>  $data */

@@ -21,6 +21,7 @@ class PipelineLead extends Model
         'customer_id',
         'converted_customer_id',
         'estimate_id',
+        'project_task_id',
         'source_id',
         'title',
         'card_type',
@@ -89,6 +90,11 @@ class PipelineLead extends Model
     public function estimate(): BelongsTo
     {
         return $this->belongsTo(Estimate::class);
+    }
+
+    public function projectTask(): BelongsTo
+    {
+        return $this->belongsTo(ProjectTask::class);
     }
 
     public function source(): BelongsTo

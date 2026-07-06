@@ -104,6 +104,17 @@ class PipelineController extends Controller
         return new PipelineBoardResource($board);
     }
 
+    public function projectBoard(Request $request, int $projectId): PipelineBoardResource
+    {
+        $board = $this->pipelineService->getOrCreateProjectBoard(
+            (int) $request->user()->business_id,
+            (int) $request->user()->id,
+            $projectId,
+        );
+
+        return new PipelineBoardResource($board);
+    }
+
     public function storeStage(Request $request, int $boardId): JsonResponse
     {
         $validated = $request->validate([

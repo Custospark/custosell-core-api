@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\ProjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:estimates'])->grou
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])->whereNumber('id');
     Route::get('/projects/{id}/budget-summary', [ProjectController::class, 'budgetSummary'])->whereNumber('id');
     Route::get('/projects/{id}/profitability', [ProjectController::class, 'profitability'])->whereNumber('id');
+    Route::get('/projects/{id}/board', [PipelineController::class, 'projectBoard'])->whereNumber('id');
 
     Route::post('/projects/{projectId}/tasks', [ProjectController::class, 'storeTask'])->whereNumber('projectId');
     Route::patch('/project-tasks/{taskId}', [ProjectController::class, 'updateTask'])->whereNumber('taskId');
