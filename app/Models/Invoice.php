@@ -17,6 +17,7 @@ class Invoice extends Model
         'invoice_number',
         'customer_id',
         'sale_id',
+        'estimate_id',
         'issue_date',
         'due_date',
         'status',
@@ -57,6 +58,11 @@ class Invoice extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function estimate(): BelongsTo
+    {
+        return $this->belongsTo(Estimate::class);
     }
 
     public function createdBy(): BelongsTo

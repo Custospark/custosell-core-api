@@ -18,6 +18,7 @@ class ModuleAccessService
         'expenses',
         'accounting',
         'pipeline',
+        'estimates',
         'settings',
     ];
 
@@ -150,6 +151,7 @@ class ModuleAccessService
             'reports' => 'dashboard',
             'accounting' => 'accounting',
             'pipeline' => 'pipeline',
+            'estimates', 'projects' => 'estimates',
             default => null,
         };
     }

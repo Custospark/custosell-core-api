@@ -9,6 +9,7 @@ use App\Providers\ExpenseServiceProvider;
 use App\Providers\InvoiceServiceProvider;
 use App\Providers\PlanServiceProvider;
 use App\Providers\AccountingServiceProvider;
+use App\Providers\EstimateServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
@@ -17,6 +18,7 @@ use App\Providers\SaleServiceProvider;
 use App\Providers\ShiftServiceProvider;
 use App\Providers\StockMovementServiceProvider;
 use App\Providers\SubscriptionServiceProvider;
+use App\Providers\PipelineServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
 
@@ -40,5 +42,6 @@ return [
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
     PipelineServiceProvider::class,
+    EstimateServiceProvider::class,
     EventServiceProvider::class,
 ];

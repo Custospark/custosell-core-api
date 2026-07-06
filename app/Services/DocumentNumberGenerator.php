@@ -42,6 +42,18 @@ class DocumentNumberGenerator
         return self::nextMonthlySequence($business, 'RCP', $modelClass, $column);
     }
 
+    /** {BIZ4}-EST-{YYYYMM}-{00001} */
+    public static function estimateNumber(Business $business, string $modelClass, string $column): string
+    {
+        return self::nextMonthlySequence($business, 'EST', $modelClass, $column);
+    }
+
+    /** {BIZ4}-PRJ-{YYYYMM}-{00001} */
+    public static function projectNumber(Business $business, string $modelClass, string $column): string
+    {
+        return self::nextMonthlySequence($business, 'PRJ', $modelClass, $column);
+    }
+
     protected static function nextMonthlySequence(
         Business $business,
         string $docType,

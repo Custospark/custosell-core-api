@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Mail\CustomerDocumentEmail;
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ class CustomerDocumentEmailService
     public function __construct(
         protected ReportExportService $export,
         protected InvoicePdfBuilder $invoicePdfBuilder,
+        protected EstimatePdfBuilder $estimatePdfBuilder,
         protected PaymentReceiptPdfBuilder $paymentReceiptPdfBuilder,
     ) {}
 
@@ -55,6 +57,42 @@ class CustomerDocumentEmailService
         $this->recordInvoiceEmailSent($invoice);
 
         return $this->buildSendResult($to, 'invoice', $invoice->invoice_number, $invoice);
+    }
+
+    /**
+     * @return array{sent_to: string, sent_at: string, document_type: string, document_ref: string}
+     */
+    public function sendEstimate(Estimate $estimate, Business $business, string $to, ?string $customMessage = null): array
+    {
+        $estimate->loadMissing(['customer']);
+        $this->assertValidRecipient($to);
+
+        $customerName = $estimate->customer?->name ?? 'Customer';
+        $businessName = $business->name ?: 'Your business';
+        $pdfConfig = $this->estimatePdfBuilder->build($estimate, $business);
+        $pdfBytes = $this->export->renderPdfBytes(
+            $pdfConfig['view'],
+            $pdfConfig['data'],
+            $pdfConfig['orientation'],
+        );
+
+        $subject = sprintf('Estimate %s from %s', $estimate->estimate_number, $businessName);
+        $title = sprintf('Estimate %s', $estimate->estimate_number);
+        $body = $this->buildEstimateBody($customerName, $businessName, $estimate->estimate_number, $customMessage);
+
+        $this->dispatch(
+            to: $to,
+            subject: $subject,
+            title: $title,
+            body: $body,
+            business: $business,
+            attachmentName: $pdfConfig['filename'] . '.pdf',
+            attachmentBytes: $pdfBytes,
+        );
+
+        $this->recordEstimateEmailSent($estimate);
+
+        return $this->buildSendResult($to, 'estimate', $estimate->estimate_number, $estimate);
     }
 
     /**
@@ -122,6 +160,27 @@ class CustomerDocumentEmailService
         }
 
         $parts[] = '<p>If you have any questions about this invoice, please reply to this email and ' . e($businessName) . ' will get back to you.</p>';
+        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
+
+        return implode("\n", $parts);
+    }
+
+    private function buildEstimateBody(
+        string $customerName,
+        string $businessName,
+        string $estimateNumber,
+        ?string $customMessage,
+    ): string {
+        $parts = [
+            '<p>Dear ' . e($customerName) . ',</p>',
+            '<p>Please find attached estimate <strong>' . e($estimateNumber) . '</strong> from <strong>' . e($businessName) . '</strong>.</p>',
+        ];
+
+        if ($customMessage !== null && trim($customMessage) !== '') {
+            $parts[] = '<p>' . nl2br(e(trim($customMessage))) . '</p>';
+        }
+
+        $parts[] = '<p>If you have any questions about this estimate, please reply to this email and ' . e($businessName) . ' will get back to you.</p>';
         $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
 
         return implode("\n", $parts);
@@ -225,6 +284,15 @@ class CustomerDocumentEmailService
         $invoice->refresh();
     }
 
+    private function recordEstimateEmailSent(Estimate $estimate): void
+    {
+        $estimate->update([
+            'email_sent_count' => (int) $estimate->email_sent_count + 1,
+            'last_emailed_at' => now(),
+        ]);
+        $estimate->refresh();
+    }
+
     private function recordPaymentEmailSent(Payment $payment): void
     {
         $payment->update([
@@ -244,7 +312,7 @@ class CustomerDocumentEmailService
      *   last_emailed_at: string|null
      * }
      */
-    private function buildSendResult(string $to, string $documentType, string $documentRef, Invoice|Payment $document): array
+    private function buildSendResult(string $to, string $documentType, string $documentRef, Invoice|Payment|Estimate $document): array
     {
         return [
             'sent_to' => $to,

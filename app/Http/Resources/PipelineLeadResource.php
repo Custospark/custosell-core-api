@@ -37,6 +37,7 @@ class PipelineLeadResource extends JsonResource
             'contact_phone' => $this->contact_phone,
             'customer_id' => $this->customer_id,
             'converted_customer_id' => $this->converted_customer_id,
+            'estimate_id' => $this->estimate_id,
             'assigned_to' => $this->assigned_to,
             'source_id' => $this->source_id,
             'estimated_value' => $this->estimated_value !== null ? (float) $this->estimated_value : null,

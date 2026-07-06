@@ -20,6 +20,7 @@ class PipelineLead extends Model
         'assigned_to',
         'customer_id',
         'converted_customer_id',
+        'estimate_id',
         'source_id',
         'title',
         'card_type',
@@ -83,6 +84,11 @@ class PipelineLead extends Model
     public function convertedCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'converted_customer_id');
+    }
+
+    public function estimate(): BelongsTo
+    {
+        return $this->belongsTo(Estimate::class);
     }
 
     public function source(): BelongsTo
