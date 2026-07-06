@@ -18,6 +18,7 @@ class PipelineBoardResource extends JsonResource
             'cover_color' => $this->cover_color,
             'is_default' => $this->is_default,
             'is_archived' => $this->is_archived,
+            'project_id' => $this->project_id,
             'sort_order' => $this->sort_order,
             'open_leads_count' => $this->when(isset($this->open_leads_count), (int) $this->open_leads_count),
             'created_by' => $this->created_by,
