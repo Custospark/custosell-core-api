@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\PipelineBoard;
+use App\Models\PipelineBoardAnnouncement;
 use App\Models\PipelineBoardMember;
 use App\Models\PipelineChecklist;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
+use App\Models\PipelineLeadActivity;
+use App\Models\PipelinePoll;
+use App\Models\PipelineReminder;
 use App\Models\PipelineStage;
 use App\Models\Project;
 use App\Models\User;
@@ -170,7 +174,12 @@ class ProjectAccessService
                 || str_contains($path, 'pipeline/leads')
                 || str_contains($path, 'pipeline/checklists')
                 || str_contains($path, 'pipeline/checklist-items')
-                || str_contains($path, 'pipeline/labels')) {
+                || str_contains($path, 'pipeline/labels')
+                || str_contains($path, 'pipeline/announcements')
+                || str_contains($path, 'pipeline/polls')
+                || str_contains($path, 'pipeline/activities')
+                || str_contains($path, 'pipeline/reminders')
+                || str_contains($path, 'collaboration-summary')) {
                 $board = $this->resolveBoardFromRequest($request, $businessId);
                 if ($board) {
                     return $board->project_id
@@ -198,18 +207,21 @@ class ProjectAccessService
             return false;
         }
 
-        if ((int) $board->created_by === (int) $user->id) {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
             return true;
         }
 
-        if ($board->visibility === 'shared') {
-            return PipelineBoardMember::query()
-                ->where('board_id', $board->id)
-                ->where('user_id', $user->id)
-                ->exists();
-        }
-
-        return false;
+        return match ($board->visibility) {
+            'team' => $this->moduleAccess->canAccess($user, 'pipeline')
+                || $this->moduleAccess->canAccess($user, 'estimates'),
+            'private' => (int) $board->created_by === (int) $user->id,
+            'shared' => (int) $board->created_by === (int) $user->id
+                || PipelineBoardMember::query()
+                    ->where('board_id', $board->id)
+                    ->where('user_id', $user->id)
+                    ->exists(),
+            default => false,
+        };
     }
 
     protected function resolveBoardFromRequest(Request $request, int $businessId): ?PipelineBoard
@@ -278,6 +290,50 @@ class ProjectAccessService
                 ->first();
 
             return $checklist?->lead?->board;
+        }
+
+        $announcementId = $request->route('id');
+        if ($announcementId && is_numeric($announcementId) && str_contains($request->path(), 'pipeline/announcements')) {
+            $announcement = PipelineBoardAnnouncement::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $announcementId)
+                ->with('board')
+                ->first();
+
+            return $announcement?->board;
+        }
+
+        $pollId = $request->route('pollId');
+        if ($pollId && is_numeric($pollId) && str_contains($request->path(), 'pipeline/polls')) {
+            $poll = PipelinePoll::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $pollId)
+                ->with('board')
+                ->first();
+
+            return $poll?->board;
+        }
+
+        $activityId = $request->route('id');
+        if ($activityId && is_numeric($activityId) && str_contains($request->path(), 'pipeline/activities')) {
+            $activity = PipelineLeadActivity::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $activityId)
+                ->with('lead.board')
+                ->first();
+
+            return $activity?->lead?->board;
+        }
+
+        $reminderId = $request->route('id');
+        if ($reminderId && is_numeric($reminderId) && str_contains($request->path(), 'pipeline/reminders')) {
+            $reminder = PipelineReminder::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $reminderId)
+                ->with('lead.board')
+                ->first();
+
+            return $reminder?->lead?->board;
         }
 
         return null;

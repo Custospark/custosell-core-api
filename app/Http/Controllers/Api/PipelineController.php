@@ -825,6 +825,33 @@ class PipelineController extends Controller
         return response()->json(['data' => $poll]);
     }
 
+    public function removePollVote(Request $request, int $pollId): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => ['nullable', 'integer'],
+        ]);
+
+        $poll = $this->collaboration->removePollVote(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $pollId,
+            isset($validated['user_id']) ? (int) $validated['user_id'] : null,
+        );
+
+        return response()->json(['data' => $poll]);
+    }
+
+    public function destroyPoll(Request $request, int $pollId): JsonResponse
+    {
+        $this->collaboration->deletePoll(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $pollId,
+        );
+
+        return response()->json(['message' => 'Poll removed']);
+    }
+
     public function leadReminders(Request $request, int $leadId): JsonResponse
     {
         $items = $this->collaboration->listReminders(

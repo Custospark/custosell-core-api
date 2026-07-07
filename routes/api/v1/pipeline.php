@@ -57,6 +57,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::get('/pipeline/boards/{boardId}/polls', [PipelineController::class, 'boardPolls'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/polls', [PipelineController::class, 'storeBoardPoll'])->whereNumber('boardId');
     Route::post('/pipeline/polls/{pollId}/vote', [PipelineController::class, 'votePoll'])->whereNumber('pollId');
+    Route::delete('/pipeline/polls/{pollId}/vote', [PipelineController::class, 'removePollVote'])->whereNumber('pollId');
+    Route::delete('/pipeline/polls/{pollId}', [PipelineController::class, 'destroyPoll'])->whereNumber('pollId');
     Route::get('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'leadReminders'])->whereNumber('leadId');
     Route::post('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'storeLeadReminder'])->whereNumber('leadId');
     Route::delete('/pipeline/reminders/{id}', [PipelineController::class, 'destroyReminder'])->whereNumber('id');

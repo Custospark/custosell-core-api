@@ -232,6 +232,8 @@ class PipelineCollaborationService
             'unread_announcements_count' => max(0, $unreadAnnouncementsCount),
             'active_polls_count' => $activePollsCount,
             'polls_pending_vote_count' => $pollsPendingVoteCount,
+            'attention_count' => max(0, $unreadAnnouncementsCount) + $pollsPendingVoteCount,
+            'has_attention' => $unreadAnnouncementsCount > 0 || $pollsPendingVoteCount > 0,
         ];
     }
 
@@ -243,7 +245,12 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $announcement->board_id);
-        $this->assertCanManageBoard($user, $board);
+
+        $isCreator = (int) $announcement->created_by === (int) $user->id;
+        if (! $isCreator && ! $this->pipeline->userCanManageBoard($user, $board)) {
+            abort(403, 'You do not have permission to remove this notice.');
+        }
+
         $announcement->delete();
     }
 
@@ -354,6 +361,57 @@ class PipelineCollaborationService
         return $this->serializePoll($poll->fresh(['options', 'creator:id,name,avatar', 'votes']), $user, $board);
     }
 
+    /** @return array<string, mixed> */
+    public function removePollVote(
+        int $businessId,
+        User $user,
+        int $pollId,
+        ?int $targetUserId = null,
+    ): array {
+        $poll = PipelinePoll::query()
+            ->where('business_id', $businessId)
+            ->whereKey($pollId)
+            ->with(['options', 'creator:id,name,avatar', 'votes'])
+            ->firstOrFail();
+
+        $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+        $targetUserId = $targetUserId ?? $user->id;
+        $canManagePoll = $this->canManagePoll($poll, $user, $board);
+
+        if ((int) $targetUserId !== (int) $user->id && ! $canManagePoll) {
+            abort(403, 'You can only remove your own vote.');
+        }
+
+        PipelinePollVote::query()
+            ->where('poll_id', $poll->id)
+            ->where('user_id', $targetUserId)
+            ->delete();
+
+        return $this->serializePoll($poll->fresh(['options', 'creator:id,name,avatar', 'votes']), $user, $board);
+    }
+
+    public function deletePoll(int $businessId, User $user, int $pollId): void
+    {
+        $poll = PipelinePoll::query()
+            ->where('business_id', $businessId)
+            ->whereKey($pollId)
+            ->firstOrFail();
+
+        $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+
+        if (! $this->canManagePoll($poll, $user, $board)) {
+            abort(403, 'You do not have permission to delete this poll.');
+        }
+
+        $poll->delete();
+    }
+
+    protected function canManagePoll(PipelinePoll $poll, User $user, PipelineBoard $board): bool
+    {
+        return (int) $poll->created_by === (int) $user->id
+            || $this->pipeline->userCanManageBoard($user, $board);
+    }
+
     /** @param  Collection<int, PipelineBoardAnnouncement>  $items
      * @return list<array<string, mixed>>
      */
@@ -407,6 +465,7 @@ class PipelineCollaborationService
             'is_read' => (bool) ($readStates[(int) $item->id] ?? false),
             'read_count' => $readCount,
             'team_member_count' => $teamMemberCount,
+            'can_delete' => $canManage,
         ];
     }
 
@@ -422,8 +481,9 @@ class PipelineCollaborationService
     protected function serializePoll(PipelinePoll $poll, User $viewer, PipelineBoard $board): array
     {
         $isCreator = (int) $poll->created_by === (int) $viewer->id;
+        $canManagePoll = $this->canManagePoll($poll, $viewer, $board);
         $visibility = $poll->results_visibility ?? 'team';
-        $canSeeResults = $visibility === 'team' || $isCreator;
+        $canSeeResults = $visibility === 'team' || $isCreator || $canManagePoll;
         $userVotes = $poll->votes->where('user_id', $viewer->id)->values();
         $userHasVoted = $userVotes->isNotEmpty();
         $totalVotes = $poll->votes->count();
@@ -438,7 +498,13 @@ class PipelineCollaborationService
                 'sort_order' => $option->sort_order,
                 'votes_count' => $canSeeResults ? $count : null,
             ];
-        })->values()->all();
+        })->values();
+
+        if ($canSeeResults) {
+            $options = $options->sortByDesc('votes_count')->values();
+        }
+
+        $options = $options->all();
 
         $votes = $canSeeResults
             ? $poll->votes->map(fn ($vote) => [
@@ -471,9 +537,11 @@ class PipelineCollaborationService
             'user_has_voted' => $userHasVoted,
             'can_see_results' => $canSeeResults,
             'results_hidden' => ! $canSeeResults,
+            'can_manage_poll' => $canManagePoll,
+            'can_remove_own_vote' => $userHasVoted,
         ];
 
-        if ($isCreator) {
+        if ($canManagePoll) {
             $payload['participants'] = $this->pollParticipantStatus($poll, $board, $viewer);
         }
 

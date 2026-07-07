@@ -57,6 +57,7 @@ class PipelineLeadResource extends JsonResource
             'checklist_done' => $checklistTotal > 0 ? $checklistDone : ($this->checklist_done ?? null),
             'attachments_count' => $this->attachments_count ?? ($this->relationLoaded('attachments') ? $this->attachments->count() : null),
             'comments_count' => $this->comments_count ?? null,
+            'history_count' => $this->history_count ?? null,
             'created_by' => $this->created_by,
             'board' => $this->whenLoaded('board', fn () => [
                 'id' => $this->board->id,

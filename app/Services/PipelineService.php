@@ -334,6 +334,9 @@ class PipelineService
                 ->withCount([
                     'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
                 ])
+                ->withCount([
+                    'activities as history_count' => fn ($q) => $q->whereIn('type', ['system', 'stage_change']),
+                ])
                 ->orderBy('position'),
             'members.user:id,name',
             'creator:id,name',
@@ -428,7 +431,7 @@ class PipelineService
     public function archiveLead(int $businessId, User $user, int $leadId): void
     {
         $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
+        $this->assertCanManageBoard($user, $lead->board);
 
         $lead->update(['status' => 'archived']);
         $lead->delete();
@@ -767,6 +770,11 @@ class PipelineService
     {
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanEditBoard($user, $lead->board);
+        $lead->load(['labels:id,name', 'assignees:id,name']);
+
+        $before = $lead->replicate();
+        $before->setRelation('labels', $lead->labels);
+        $before->setRelation('assignees', $lead->assignees);
 
         $updates = [];
         foreach ([
@@ -802,6 +810,9 @@ class PipelineService
                 );
             }
         }
+
+        $lead->refresh();
+        $this->recordLeadUpdateActivities($lead, $user, $before, $data);
 
         return $lead->fresh($this->leadDetailRelations());
     }
@@ -843,9 +854,16 @@ class PipelineService
         }
 
         if ($fromStageId !== $stage->id) {
-            $this->recordActivity($lead, $user->id, 'stage_change', "Moved to {$stage->name}", [
+            $fromStage = $fromStageId
+                ? PipelineStage::query()->whereKey($fromStageId)->first()
+                : null;
+
+            $fromName = $fromStage?->name ?? 'Previous stage';
+            $this->recordActivity($lead, $user->id, 'stage_change', "Moved from {$fromName} to {$stage->name}", [
                 'from_stage_id' => $fromStageId,
                 'to_stage_id' => $stage->id,
+                'from_stage_name' => $fromName,
+                'to_stage_name' => $stage->name,
             ]);
         }
 
@@ -1360,6 +1378,88 @@ class PipelineService
             'body' => $body,
             'metadata' => $metadata,
         ]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    protected function recordLeadUpdateActivities(
+        PipelineLead $lead,
+        User $user,
+        PipelineLead $before,
+        array $data,
+    ): void {
+        $userId = $user->id;
+
+        $scalarFields = [
+            'title' => 'Title',
+            'due_date' => 'Due date',
+            'expected_close_date' => 'Expected close',
+            'start_date' => 'Start date',
+            'priority' => 'Priority',
+            'estimated_value' => 'Estimated value',
+            'background_color' => 'Card color',
+            'lost_reason' => 'Lost reason',
+        ];
+
+        foreach ($scalarFields as $field => $label) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $from = $before->{$field};
+            $to = $lead->{$field};
+            if ($this->normalizeActivityValue($from) === $this->normalizeActivityValue($to)) {
+                continue;
+            }
+
+            $this->recordActivity($lead, $userId, 'system', "{$label} updated", [
+                'action' => 'field_change',
+                'field' => $field,
+                'field_label' => $label,
+                'from' => $from,
+                'to' => $to,
+            ]);
+        }
+
+        if (array_key_exists('label_ids', $data)) {
+            $beforeNames = $before->labels->pluck('name')->values()->all();
+            $lead->load('labels:id,name');
+            $afterNames = $lead->labels->pluck('name')->values()->all();
+
+            if ($beforeNames !== $afterNames) {
+                $this->recordActivity($lead, $userId, 'system', 'Labels updated', [
+                    'action' => 'labels_change',
+                    'from' => $beforeNames,
+                    'to' => $afterNames,
+                ]);
+            }
+        }
+
+        if (array_key_exists('assignee_ids', $data) || array_key_exists('assigned_to', $data)) {
+            $beforeNames = $before->assignees->pluck('name')->values()->all();
+            $lead->load('assignees:id,name');
+            $afterNames = $lead->assignees->pluck('name')->values()->all();
+
+            if ($beforeNames !== $afterNames) {
+                $this->recordActivity($lead, $userId, 'system', 'Assignees updated', [
+                    'action' => 'assignees_change',
+                    'from' => $beforeNames,
+                    'to' => $afterNames,
+                ]);
+            }
+        }
+    }
+
+    protected function normalizeActivityValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return (string) $value;
     }
 
     protected function findBoardForBusiness(int $businessId, int $boardId): PipelineBoard
