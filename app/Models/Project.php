@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
@@ -30,6 +31,7 @@ class Project extends Model
         'description',
         'manager_id',
         'created_by',
+        'is_personal',
     ];
 
     protected function casts(): array
@@ -42,6 +44,7 @@ class Project extends Model
             'start_date' => 'date',
             'due_date' => 'date',
             'completed_at' => 'date',
+            'is_personal' => 'boolean',
         ];
     }
 
@@ -93,5 +96,10 @@ class Project extends Model
     public function members(): HasMany
     {
         return $this->hasMany(ProjectMember::class);
+    }
+
+    public function board(): HasOne
+    {
+        return $this->hasOne(PipelineBoard::class, 'project_id');
     }
 }

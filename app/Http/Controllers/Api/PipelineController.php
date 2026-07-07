@@ -25,13 +25,15 @@ class PipelineController extends Controller
     public function boards(Request $request): JsonResponse
     {
         $businessId = (int) $request->user()->business_id;
-        $salesOnly = $request->boolean('sales_only', !$request->boolean('project_only', false));
+        $salesOnly = $request->boolean('sales_only', !$request->boolean('project_only', false) && !$request->boolean('estimates_workspace', false));
         $projectOnly = $request->boolean('project_only', false);
+        $estimatesWorkspace = $request->boolean('estimates_workspace', false);
         $boards = $this->pipelineService->listBoards(
             $businessId,
             $request->user(),
             $salesOnly,
             $projectOnly,
+            $estimatesWorkspace,
         );
 
         return response()->json([
@@ -46,11 +48,14 @@ class PipelineController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['required', 'in:team,private,shared'],
             'cover_color' => ['nullable', 'string', 'max:32'],
+            'background_type' => ['nullable', 'string', 'in:color,gallery,upload'],
+            'background_value' => ['nullable', 'string', 'max:500'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer'],
             'members' => ['nullable', 'array'],
             'members.*.user_id' => ['required_with:members', 'integer'],
             'members.*.role' => ['nullable', 'in:viewer,editor'],
+            'workspace' => ['nullable', 'in:pipeline,estimates'],
         ]);
 
         $board = $this->pipelineService->createBoard(
@@ -416,7 +421,7 @@ class PipelineController extends Controller
     public function storeActivity(Request $request, int $leadId): JsonResponse
     {
         $validated = $request->validate([
-            'type' => ['required', 'in:note,call,email,meeting'],
+            'type' => ['required', 'in:note,comment,call,email,meeting'],
             'body' => ['required', 'string', 'max:5000'],
         ]);
 
@@ -428,7 +433,7 @@ class PipelineController extends Controller
             $validated['body'],
         );
 
-        return (new PipelineLeadActivityResource($activity->load('user:id,name')))
+        return (new PipelineLeadActivityResource($activity->load('user:id,name,avatar')))
             ->response()
             ->setStatusCode(201);
     }

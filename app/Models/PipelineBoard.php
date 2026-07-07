@@ -18,6 +18,7 @@ class PipelineBoard extends Model
         'is_default',
         'is_archived',
         'project_id',
+        'workspace',
         'background_type',
         'background_value',
         'sort_order',

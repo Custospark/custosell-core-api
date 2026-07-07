@@ -53,7 +53,13 @@ class ProjectService implements ProjectServiceInterface
                 'description' => $data['description'] ?? null,
                 'manager_id' => $data['manager_id'] ?? null,
                 'created_by' => $userId,
+                'is_personal' => (bool) ($data['is_personal'] ?? false),
             ]);
+
+            \App\Models\ProjectMember::query()->updateOrCreate(
+                ['project_id' => $project->id, 'user_id' => $userId],
+                ['role' => 'manager'],
+            );
 
             return $project->load(['customer', 'manager', 'createdBy']);
         });
@@ -326,9 +332,9 @@ class ProjectService implements ProjectServiceInterface
         ]);
     }
 
-    public function getMemberProjects(int $businessId, int $userId): Collection
+    public function getMemberProjects(int $businessId, int $userId, array $filters = []): Collection
     {
-        return $this->projectRepository->forMember($businessId, $userId);
+        return $this->projectRepository->forMember($businessId, $userId, $filters);
     }
 
     public function listMembers(int $projectId): Collection
@@ -371,6 +377,10 @@ class ProjectService implements ProjectServiceInterface
             throw new \RuntimeException('Project not found');
         }
 
+        if ((int) $userId === (int) $project->created_by) {
+            throw new \RuntimeException('Project owner role cannot be changed.');
+        }
+
         $member = \App\Models\ProjectMember::query()
             ->where('project_id', $projectId)
             ->where('user_id', $userId)
@@ -387,6 +397,10 @@ class ProjectService implements ProjectServiceInterface
         $project = $this->projectRepository->find($projectId);
         if (!$project) {
             throw new \RuntimeException('Project not found');
+        }
+
+        if ((int) $userId === (int) $project->created_by) {
+            throw new \RuntimeException('Project owner cannot be removed.');
         }
 
         \App\Models\ProjectMember::query()

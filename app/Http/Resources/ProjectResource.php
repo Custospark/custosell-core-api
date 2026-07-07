@@ -34,6 +34,11 @@ class ProjectResource extends JsonResource
             'manager' => new UserResource($this->whenLoaded('manager')),
             'created_by' => $this->created_by,
             'created_by_user' => new UserResource($this->whenLoaded('createdBy')),
+            'is_personal' => (bool) ($this->is_personal ?? false),
+            'board_id' => $this->when(
+                $this->relationLoaded('board'),
+                fn () => $this->board?->id,
+            ),
             'tasks' => ProjectTaskResource::collection($this->whenLoaded('tasks')),
             'members' => ProjectMemberResource::collection($this->whenLoaded('members')),
             'created_at' => $this->created_at?->toISOString(),

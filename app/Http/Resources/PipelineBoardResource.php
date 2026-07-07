@@ -19,6 +19,7 @@ class PipelineBoardResource extends JsonResource
             'is_default' => $this->is_default,
             'is_archived' => $this->is_archived,
             'project_id' => $this->project_id,
+            'workspace' => $this->project_id ? 'estimates' : ($this->workspace ?? 'pipeline'),
             'background_type' => $this->background_type,
             'background_value' => $this->background_value,
             'sort_order' => $this->sort_order,

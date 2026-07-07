@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'business.active' => \App\Http\Middleware\EnsureBusinessActive::class,
             'module' => \App\Http\Middleware\EnsureModuleAccess::class,
             'pipeline.access' => \App\Http\Middleware\EnsurePipelineModuleAccess::class,
+            'business.owner' => \App\Http\Middleware\EnsureBusinessOwner::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

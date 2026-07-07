@@ -70,6 +70,7 @@ class PipelineLeadResource extends JsonResource
             'assignee' => $this->whenLoaded('assignee', fn () => $this->assignee ? [
                 'id' => $this->assignee->id,
                 'name' => $this->assignee->name,
+                'avatar' => $this->assignee->avatar,
             ] : null),
             'source' => $this->whenLoaded('source', fn () => $this->source ? [
                 'id' => $this->source->id,

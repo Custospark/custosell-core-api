@@ -9,10 +9,12 @@ use App\Models\EstimateTemplate;
 use App\Models\EstimateVersion;
 use App\Models\Invoice;
 use App\Models\Project;
+use App\Models\User;
 use App\Repositories\Contracts\EstimateRepositoryInterface;
 use App\Services\Contracts\EstimateServiceInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\Contracts\ProjectServiceInterface;
+use App\Services\PipelineService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
@@ -23,6 +25,7 @@ class EstimateService implements EstimateServiceInterface
         protected EstimateRepositoryInterface $estimateRepository,
         protected InvoiceServiceInterface $invoiceService,
         protected ProjectServiceInterface $projectService,
+        protected PipelineService $pipelineService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -389,6 +392,12 @@ class EstimateService implements EstimateServiceInterface
                 'project_id' => $project->id,
                 'status' => 'converted',
             ]);
+
+            $actor = User::query()->find($userId);
+            if ($actor) {
+                // Ensure the converter becomes project-board owner immediately.
+                $this->pipelineService->getOrCreateProjectBoard($estimate->business_id, $actor, $project->id);
+            }
 
             return $project->fresh(['customer', 'estimate', 'tasks']);
         });

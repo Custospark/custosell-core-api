@@ -44,6 +44,7 @@ class StoreProjectRequest extends BaseFormRequest
                 'integer',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('business_id', $businessId)),
             ],
+            'is_personal' => ['sometimes', 'boolean'],
         ];
     }
 }

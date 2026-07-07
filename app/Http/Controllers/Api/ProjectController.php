@@ -36,11 +36,11 @@ class ProjectController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = $request->user();
-        $filters = $request->only(['status', 'customer_id']);
+        $filters = $request->only(['status', 'customer_id', 'billable_only']);
 
         $projects = $this->projectAccess->canViewAllProjects($user)
             ? $this->projectService->getAll((int) $user->business_id, $filters)
-            : $this->projectService->getMemberProjects((int) $user->business_id, (int) $user->id);
+            : $this->projectService->getMemberProjects((int) $user->business_id, (int) $user->id, $filters);
 
         return ProjectResource::collection($projects);
     }

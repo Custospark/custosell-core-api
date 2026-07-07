@@ -14,7 +14,7 @@ class ProjectRepository implements ProjectRepositoryInterface
     public function all(int $businessId, array $filters = []): Collection
     {
         $query = Project::where('business_id', $businessId)
-            ->with(['customer', 'manager', 'createdBy', 'tasks']);
+            ->with(['customer', 'manager', 'createdBy', 'tasks', 'board:id,project_id,name']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -22,16 +22,20 @@ class ProjectRepository implements ProjectRepositoryInterface
         if (!empty($filters['customer_id'])) {
             $query->where('customer_id', $filters['customer_id']);
         }
+        if (!empty($filters['billable_only'])) {
+            $query->where('is_personal', false);
+        }
 
         return $query->orderByDesc('created_at')->get();
     }
 
-    public function forMember(int $businessId, int $userId): Collection
+    public function forMember(int $businessId, int $userId, array $filters = []): Collection
     {
         return Project::query()
             ->where('business_id', $businessId)
             ->whereHas('members', fn ($q) => $q->where('user_id', $userId))
-            ->with(['customer', 'manager', 'createdBy', 'tasks'])
+            ->when(!empty($filters['billable_only']), fn ($q) => $q->where('is_personal', false))
+            ->with(['customer', 'manager', 'createdBy', 'tasks', 'board:id,project_id,name'])
             ->orderByDesc('created_at')
             ->get();
     }

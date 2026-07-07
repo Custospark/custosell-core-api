@@ -18,6 +18,7 @@ class PipelineLeadActivityResource extends JsonResource
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
+                'avatar' => $this->user->avatar,
             ] : null),
             'created_at' => $this->created_at?->toISOString(),
         ];

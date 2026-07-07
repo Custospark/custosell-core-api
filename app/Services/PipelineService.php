@@ -75,6 +75,7 @@ class PipelineService
                 'visibility' => 'team',
                 'is_default' => true,
                 'cover_color' => '#6366f1',
+                'workspace' => 'pipeline',
             ]);
         }
     }
@@ -153,8 +154,12 @@ class PipelineService
     /** @param  array<string, mixed>  $data */
     public function createBoard(int $businessId, int $userId, array $data): PipelineBoard
     {
-        return DB::transaction(function () use ($businessId, $userId, $data) {
-            $board = PipelineBoard::create([
+        $stageTemplate = ($data['workspace'] ?? 'pipeline') === 'estimates'
+            ? self::PROJECT_STAGES
+            : self::DEFAULT_STAGES;
+
+        return DB::transaction(function () use ($businessId, $userId, $data, $stageTemplate) {
+            $boardAttributes = [
                 'business_id' => $businessId,
                 'created_by' => $userId,
                 'name' => $data['name'],
@@ -163,7 +168,15 @@ class PipelineService
                 'cover_color' => $data['cover_color'] ?? null,
                 'is_default' => (bool) ($data['is_default'] ?? false),
                 'sort_order' => (int) ($data['sort_order'] ?? 0),
-            ]);
+                'workspace' => ($data['workspace'] ?? 'pipeline') === 'estimates' ? 'estimates' : 'pipeline',
+            ];
+
+            if (!empty($data['background_type'])) {
+                $boardAttributes['background_type'] = $data['background_type'];
+                $boardAttributes['background_value'] = $data['background_value'] ?? null;
+            }
+
+            $board = PipelineBoard::create($boardAttributes);
 
             if (!empty($data['member_ids']) && $board->visibility === 'shared') {
                 $this->syncBoardMembers($board, $data['member_ids']);
@@ -172,7 +185,7 @@ class PipelineService
                 $this->syncBoardMembers($board, $data['members']);
             }
 
-            foreach (self::DEFAULT_STAGES as $index => $stage) {
+            foreach ($stageTemplate as $index => $stage) {
                 PipelineStage::create([
                     'business_id' => $businessId,
                     'board_id' => $board->id,
@@ -226,15 +239,25 @@ class PipelineService
         }
     }
 
-    public function listBoards(int $businessId, User $user, bool $salesOnly = false, bool $projectOnly = false): Collection
-    {
+    public function listBoards(
+        int $businessId,
+        User $user,
+        bool $salesOnly = false,
+        bool $projectOnly = false,
+        bool $estimatesWorkspace = false,
+    ): Collection {
         $this->ensureBusinessSetup($businessId, $user->id);
 
         $query = PipelineBoard::query()
             ->where('business_id', $businessId)
             ->where('is_archived', false)
-            ->when($salesOnly, fn ($q) => $q->whereNull('project_id'))
+            ->when($salesOnly, fn ($q) => $q->whereNull('project_id')->where(function ($inner) {
+                $inner->where('workspace', 'pipeline')->orWhereNull('workspace');
+            }))
             ->when($projectOnly, fn ($q) => $q->whereNotNull('project_id'))
+            ->when($estimatesWorkspace, fn ($q) => $q->where(function ($inner) {
+                $inner->whereNotNull('project_id')->orWhere('workspace', 'estimates');
+            }))
             ->withCount(['leads as open_leads_count' => fn ($q) => $q
                 ->where('status', 'open')
                 ->when($salesOnly, fn ($inner) => $inner->where('card_type', 'lead'))])
@@ -260,7 +283,12 @@ class PipelineService
     public function updateBoard(int $businessId, User $user, int $boardId, array $data): PipelineBoard
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
+
+        if (array_key_exists('is_archived', $data) && $data['is_archived']) {
+            $this->assertCanArchiveBoard($user, $board);
+        } else {
+            $this->assertCanEditBoard($user, $board);
+        }
 
         $board->update(array_filter([
             'name' => $data['name'] ?? null,
@@ -273,6 +301,7 @@ class PipelineService
         ], fn ($v) => $v !== null));
 
         if ($board->visibility === 'shared' && (array_key_exists('member_ids', $data) || array_key_exists('members', $data))) {
+            $this->assertCanManageBoard($user, $board);
             $members = $data['members'] ?? $data['member_ids'] ?? [];
             $this->syncBoardMembers($board, $members);
         }
@@ -289,7 +318,7 @@ class PipelineService
             'stages.leads' => fn ($q) => $q
                 ->whereIn('status', ['open', 'won', 'lost'])
                 ->with([
-                    'assignee:id,name',
+                    'assignee:id,name,avatar',
                     'source:id,name',
                     'customer:id,name,email,phone',
                     'labels:id,name,color',
@@ -415,7 +444,7 @@ class PipelineService
             ->where('business_id', $businessId)
             ->where('board_id', $boardId)
             ->whereIn('status', ['open', 'won', 'lost'])
-            ->with(['stage:id,name,color', 'assignee:id,name']);
+            ->with(['stage:id,name,color', 'assignee:id,name,avatar']);
 
         if ($dateField === 'start') {
             $query->whereBetween('start_date', [$start, $end]);
@@ -590,7 +619,7 @@ class PipelineService
 
         $query = PipelineLead::query()
             ->where('business_id', $businessId)
-            ->with(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone']);
+            ->with(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone']);
 
         if (!empty($filters['board_id'])) {
             $board = $this->findBoardForBusiness($businessId, (int) $filters['board_id']);
@@ -663,7 +692,7 @@ class PipelineService
             'customer_id' => $data['customer_id'] ?? null,
             'source_id' => $data['source_id'] ?? null,
             'title' => $data['title'],
-            'card_type' => $data['card_type'] ?? 'lead',
+            'card_type' => $data['card_type'] ?? ($board->project_id || $board->workspace === 'estimates' ? 'card' : 'lead'),
             'description' => $data['description'] ?? null,
             'contact_name' => $data['contact_name'] ?? null,
             'contact_email' => $data['contact_email'] ?? null,
@@ -696,7 +725,7 @@ class PipelineService
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanViewBoard($user, $lead->board);
 
-        return $lead->load(array_merge($this->leadDetailRelations(), ['activities.user:id,name']));
+        return $lead->load(array_merge($this->leadDetailRelations(), ['activities.user:id,name,avatar']));
     }
 
     /** @param  array<string, mixed>  $data */
@@ -771,7 +800,7 @@ class PipelineService
             ]);
         }
 
-        return $lead->fresh(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone']);
+        return $lead->fresh(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone']);
     }
 
     protected function syncTaskStatusFromStage(PipelineLead $lead, PipelineStage $stage): void
@@ -847,7 +876,7 @@ class PipelineService
             'customer_id' => $customerId,
         ]);
 
-        return $lead->fresh(['board', 'stage', 'assignee:id,name', 'source:id,name', 'customer:id,name,email,phone', 'convertedCustomer:id,name,email,phone']);
+        return $lead->fresh(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone', 'convertedCustomer:id,name,email,phone']);
     }
 
     public function addActivity(int $businessId, User $user, int $leadId, string $type, ?string $body, ?array $metadata = null): PipelineLeadActivity
@@ -1152,7 +1181,7 @@ class PipelineService
         return [
             'board',
             'stage',
-            'assignee:id,name',
+            'assignee:id,name,avatar',
             'source:id,name',
             'customer:id,name,email,phone',
             'labels:id,name,color',
@@ -1210,7 +1239,8 @@ class PipelineService
         }
 
         return match ($board->visibility) {
-            'team' => $this->moduleAccess->canAccess($user, 'pipeline'),
+            'team' => $this->moduleAccess->canAccess($user, 'pipeline')
+                || $this->moduleAccess->canAccess($user, 'estimates'),
             'private' => (int) $board->created_by === (int) $user->id,
             'shared' => (int) $board->created_by === (int) $user->id
                 || PipelineBoardMember::query()
@@ -1273,8 +1303,44 @@ class PipelineService
             if ($project && $this->projectAccess->canManageProjectMembers($user, $project)) {
                 return;
             }
+            abort(403, 'Only project managers can change these board settings.');
+        }
+
+        if ($board->visibility === 'shared') {
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($member && $member->role === 'editor') {
+                return;
+            }
         }
 
         abort(403, 'Only the board owner can change pipeline settings.');
+    }
+
+    protected function assertCanArchiveBoard(User $user, PipelineBoard $board): void
+    {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return;
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+            if ($project && (int) $project->created_by === (int) $user->id) {
+                return;
+            }
+            if ((int) $board->created_by === (int) $user->id) {
+                return;
+            }
+            abort(403, 'Only the project owner can archive this board.');
+        }
+
+        if ((int) $board->created_by === (int) $user->id) {
+            return;
+        }
+
+        abort(403, 'Only the board owner can archive this board.');
     }
 }

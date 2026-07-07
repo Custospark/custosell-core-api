@@ -22,13 +22,12 @@ class ProjectAccessService
 
     public function canViewAllProjects(User $user): bool
     {
-        return $this->moduleAccess->isBusinessOwner($user)
-            || $this->moduleAccess->canAccess($user, 'estimates');
+        return $this->moduleAccess->isBusinessOwner($user);
     }
 
     public function canViewProjectCosting(User $user): bool
     {
-        return $this->canViewAllProjects($user);
+        return $this->moduleAccess->isBusinessOwner($user);
     }
 
     /** @return list<int> */
@@ -90,6 +89,10 @@ class ProjectAccessService
             return true;
         }
 
+        if ((int) $project->created_by === (int) $user->id) {
+            return true;
+        }
+
         return $this->isProjectMember($user, (int) $project->id, 'manager');
     }
 
@@ -134,7 +137,38 @@ class ProjectAccessService
             return true;
         }
 
-        $board = $this->resolveBoardFromRequest($request, (int) $user->business_id);
+        $businessId = (int) $user->business_id;
+        $path = $request->path();
+
+        if ($this->moduleAccess->canAccess($user, 'estimates')) {
+            $board = $this->resolveBoardFromRequest($request, $businessId);
+            if ($board) {
+                if ($board->project_id) {
+                    return $this->canAccessProjectBoard($user, $board);
+                }
+
+                return $this->canAccessNonProjectBoard($user, $board);
+            }
+
+            if (str_contains($path, 'pipeline/boards')) {
+                return true;
+            }
+
+            if (str_contains($path, 'pipeline/stages')
+                || str_contains($path, 'pipeline/leads')
+                || str_contains($path, 'pipeline/checklists')
+                || str_contains($path, 'pipeline/checklist-items')
+                || str_contains($path, 'pipeline/labels')) {
+                $board = $this->resolveBoardFromRequest($request, $businessId);
+                if ($board) {
+                    return $board->project_id
+                        ? $this->canAccessProjectBoard($user, $board)
+                        : $this->canAccessNonProjectBoard($user, $board);
+                }
+            }
+        }
+
+        $board = $this->resolveBoardFromRequest($request, $businessId);
         if (!$board) {
             return false;
         }
