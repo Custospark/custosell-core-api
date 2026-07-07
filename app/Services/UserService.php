@@ -58,7 +58,7 @@ class UserService implements UserServiceInterface
         $data['created_by'] = Auth::id();
 
         if (array_key_exists('modules', $data)) {
-            $data['modules'] = $this->moduleAccess->validateBusinessModules($data['modules'], allowEmpty: true);
+            $data['modules'] = $this->moduleAccess->normalizeStaffModules($data['modules'], allowEmpty: true);
         } else {
             $data['modules'] = [];
         }
@@ -184,7 +184,7 @@ class UserService implements UserServiceInterface
             return;
         }
 
-        $data['modules'] = $this->moduleAccess->validateBusinessModules($data['modules'], allowEmpty: true);
+        $data['modules'] = $this->moduleAccess->normalizeStaffModules($data['modules'], allowEmpty: true);
     }
 
     protected function validateDelete(User $user, int $businessId, int $actorId): void

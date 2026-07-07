@@ -56,6 +56,8 @@ class PipelineLeadResource extends JsonResource
             'checklist_total' => $checklistTotal > 0 ? $checklistTotal : ($this->checklist_total ?? null),
             'checklist_done' => $checklistTotal > 0 ? $checklistDone : ($this->checklist_done ?? null),
             'attachments_count' => $this->attachments_count ?? ($this->relationLoaded('attachments') ? $this->attachments->count() : null),
+            'comments_count' => $this->comments_count ?? null,
+            'created_by' => $this->created_by,
             'board' => $this->whenLoaded('board', fn () => [
                 'id' => $this->board->id,
                 'name' => $this->board->name,
@@ -71,6 +73,11 @@ class PipelineLeadResource extends JsonResource
                 'id' => $this->assignee->id,
                 'name' => $this->assignee->name,
                 'avatar' => $this->assignee->avatar,
+            ] : null),
+            'creator' => $this->whenLoaded('creator', fn () => $this->creator ? [
+                'id' => $this->creator->id,
+                'name' => $this->creator->name,
+                'avatar' => $this->creator->avatar,
             ] : null),
             'source' => $this->whenLoaded('source', fn () => $this->source ? [
                 'id' => $this->source->id,

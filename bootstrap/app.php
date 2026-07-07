@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => \App\Http\Middleware\EnsureModuleAccess::class,
             'pipeline.access' => \App\Http\Middleware\EnsurePipelineModuleAccess::class,
             'business.owner' => \App\Http\Middleware\EnsureBusinessOwner::class,
+            'estimates.workspace' => \App\Http\Middleware\EnsureEstimatesWorkspaceAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

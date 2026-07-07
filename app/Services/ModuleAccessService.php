@@ -10,6 +10,8 @@ use Illuminate\Validation\ValidationException;
 
 class ModuleAccessService
 {
+    public const ESTIMATES_FULL_SLUG = 'estimates_full';
+
     public const BUSINESS_MODULES = [
         'dashboard',
         'sales',
@@ -52,6 +54,21 @@ class ModuleAccessService
             ->whereKey($user->business_id)
             ->where('owner_id', $user->id)
             ->exists();
+    }
+
+    /** @return list<string> */
+    public function storedStaffModules(User $user): array
+    {
+        return is_array($user->modules) ? array_values($user->modules) : [];
+    }
+
+    public function hasFullEstimatesWorkspace(User $user): bool
+    {
+        if ($this->isBusinessOwner($user)) {
+            return true;
+        }
+
+        return in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true);
     }
 
     /** @return list<string> */
@@ -99,6 +116,30 @@ class ModuleAccessService
         }
 
         return in_array($module, $this->storedBusinessModules($user), true);
+    }
+
+    /** @param  list<string>|null  $modules */
+    public function normalizeStaffModules(?array $modules, bool $allowEmpty = true): array
+    {
+        if ($modules === null) {
+            return [];
+        }
+
+        $wantsFullEstimates = in_array(self::ESTIMATES_FULL_SLUG, $modules, true);
+        $businessOnly = array_values(array_filter(
+            $modules,
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG,
+        ));
+        $validated = $this->validateBusinessModules($businessOnly, $allowEmpty);
+
+        if ($wantsFullEstimates) {
+            if (! in_array('estimates', $validated, true)) {
+                $validated[] = 'estimates';
+            }
+            $validated[] = self::ESTIMATES_FULL_SLUG;
+        }
+
+        return array_values(array_unique($validated));
     }
 
     /** @param  list<string>|null  $modules */

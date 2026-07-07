@@ -318,6 +318,7 @@ class PipelineService
             'stages.leads' => fn ($q) => $q
                 ->whereIn('status', ['open', 'won', 'lost'])
                 ->with([
+            'creator:id,name,avatar',
                     'assignee:id,name,avatar',
                     'source:id,name',
                     'customer:id,name,email,phone',
@@ -325,6 +326,9 @@ class PipelineService
                     'checklists.items',
                 ])
                 ->withCount('attachments')
+                ->withCount([
+                    'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
+                ])
                 ->orderBy('position'),
             'members.user:id,name',
             'creator:id,name',

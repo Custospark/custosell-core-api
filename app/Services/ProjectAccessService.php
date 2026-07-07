@@ -22,12 +22,12 @@ class ProjectAccessService
 
     public function canViewAllProjects(User $user): bool
     {
-        return $this->moduleAccess->isBusinessOwner($user);
+        return $this->moduleAccess->hasFullEstimatesWorkspace($user);
     }
 
     public function canViewProjectCosting(User $user): bool
     {
-        return $this->moduleAccess->isBusinessOwner($user);
+        return $this->moduleAccess->hasFullEstimatesWorkspace($user);
     }
 
     /** @return list<int> */

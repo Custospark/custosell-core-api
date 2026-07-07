@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\EstimateController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'business.owner'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'estimates.workspace'])->group(function () {
     Route::get('/estimates/analytics', [EstimateController::class, 'analytics']);
 
     Route::get('/estimates/templates', [EstimateController::class, 'templates']);
