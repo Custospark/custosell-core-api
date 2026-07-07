@@ -40,6 +40,12 @@ class ModuleAccessService
         return self::BUSINESS_MODULES;
     }
 
+    /** @return list<string> */
+    public static function assignableModuleSlugs(): array
+    {
+        return [...self::BUSINESS_MODULES, self::ESTIMATES_FULL_SLUG];
+    }
+
     public function isBusinessOwner(User $user): bool
     {
         if (! $user->business_id) {
@@ -64,11 +70,29 @@ class ModuleAccessService
 
     public function hasFullEstimatesWorkspace(User $user): bool
     {
-        if ($this->isBusinessOwner($user)) {
+        $stored = $this->storedStaffModules($user);
+
+        if (in_array(self::ESTIMATES_FULL_SLUG, $stored, true)) {
             return true;
         }
 
-        return in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true);
+        if ($this->isBusinessOwner($user) && $this->ownerHasLegacyFullEstimatesAccess($user)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function ownerHasLegacyFullEstimatesAccess(User $user): bool
+    {
+        if (! $this->isBusinessOwner($user)) {
+            return false;
+        }
+
+        $businessModules = $this->storedBusinessModules($user);
+
+        return in_array('estimates', $businessModules, true)
+            && count($businessModules) === count(self::BUSINESS_MODULES);
     }
 
     /** @return list<string> */
@@ -89,7 +113,7 @@ class ModuleAccessService
         }
 
         if ($this->isBusinessOwner($user)) {
-            $modules = array_merge($modules, self::BUSINESS_MODULES);
+            $modules = array_merge($modules, $this->resolvedOwnerBusinessModules($user));
         } else {
             $modules = array_merge($modules, $this->storedBusinessModules($user));
         }
@@ -112,7 +136,11 @@ class ModuleAccessService
         }
 
         if ($this->isBusinessOwner($user)) {
-            return true;
+            if ($module === 'settings') {
+                return true;
+            }
+
+            return in_array($module, $this->resolvedOwnerBusinessModules($user), true);
         }
 
         return in_array($module, $this->storedBusinessModules($user), true);
@@ -140,6 +168,50 @@ class ModuleAccessService
         }
 
         return array_values(array_unique($validated));
+    }
+
+    /** @param  list<string>|null  $modules */
+    public function normalizeOwnerModules(?array $modules): array
+    {
+        if ($modules === null) {
+            return self::BUSINESS_MODULES;
+        }
+
+        $wantsFullEstimates = in_array(self::ESTIMATES_FULL_SLUG, $modules, true);
+        $businessOnly = array_values(array_filter(
+            $modules,
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG,
+        ));
+        $validated = $this->validateBusinessModules($businessOnly, allowEmpty: false);
+
+        if (! in_array('settings', $validated, true)) {
+            $validated[] = 'settings';
+        }
+
+        if ($wantsFullEstimates) {
+            if (! in_array('estimates', $validated, true)) {
+                $validated[] = 'estimates';
+            }
+            $validated[] = self::ESTIMATES_FULL_SLUG;
+        }
+
+        return array_values(array_unique($validated));
+    }
+
+    /** @return list<string> */
+    public function resolvedOwnerBusinessModules(User $user): array
+    {
+        $modules = $this->storedBusinessModules($user);
+
+        if ($modules === []) {
+            return self::BUSINESS_MODULES;
+        }
+
+        if (! in_array('settings', $modules, true)) {
+            $modules[] = 'settings';
+        }
+
+        return array_values(array_unique($modules));
     }
 
     /** @param  list<string>|null  $modules */
@@ -206,10 +278,6 @@ class ModuleAccessService
     /** Whether a staff member may perform an action based on assigned modules (owners: always). */
     public function canPerform(User $user, string $permission): bool
     {
-        if ($this->isBusinessOwner($user)) {
-            return true;
-        }
-
         if (str_starts_with($permission, 'expenses.')) {
             return $this->canAccessExpenseWorkflow($user);
         }

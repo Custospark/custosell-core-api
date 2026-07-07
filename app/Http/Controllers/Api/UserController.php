@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,7 @@ class UserController extends Controller
 {
     public function __construct(
         protected UserServiceInterface $userService,
+        protected ModuleAccessService $moduleAccess,
     ) {}
 
     public function index(Request $request): UserCollection
@@ -76,6 +78,14 @@ class UserController extends Controller
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->input('password'));
+        }
+
+        if ($request->has('modules')) {
+            if (! $this->moduleAccess->isBusinessOwner($user)) {
+                abort(403, 'Only the business owner can update module access from profile settings.');
+            }
+
+            $data['modules'] = $this->moduleAccess->normalizeOwnerModules($request->input('modules'));
         }
 
         $user->update($data);

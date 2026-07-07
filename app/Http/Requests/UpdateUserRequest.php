@@ -24,7 +24,7 @@ class UpdateUserRequest extends BaseFormRequest
             'role_id' => ['nullable', 'integer'],
             'is_active' => ['boolean'],
             'modules' => ['sometimes', 'array'],
-            'modules.*' => ['string', Rule::in(ModuleAccessService::BUSINESS_MODULES)],
+            'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];
     }
 

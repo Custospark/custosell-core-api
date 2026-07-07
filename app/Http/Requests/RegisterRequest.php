@@ -22,7 +22,7 @@ class RegisterRequest extends BaseFormRequest
             'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'modules' => ['sometimes', 'array'],
-            'modules.*' => ['string', Rule::in(ModuleAccessService::BUSINESS_MODULES)],
+            'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];
     }
 

@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ModuleAccessService;
+use Illuminate\Validation\Rule;
+
 class ProfileRequest extends BaseFormRequest
 {
     public function authorize(): bool
@@ -17,6 +20,8 @@ class ProfileRequest extends BaseFormRequest
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'modules' => ['sometimes', 'array'],
+            'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];
     }
 
