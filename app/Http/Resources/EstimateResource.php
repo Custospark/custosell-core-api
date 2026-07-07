@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\ProjectAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,7 +10,12 @@ class EstimateResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return [
+        $user = $request->user();
+        $canCosting = $user
+            ? app(ProjectAccessService::class)->canViewProjectCosting($user)
+            : true;
+
+        $data = [
             'id' => $this->id,
             'business_id' => $this->business_id,
             'estimate_number' => $this->estimate_number,
@@ -30,13 +36,10 @@ class EstimateResource extends JsonResource
             'tax_rate' => $this->tax_rate,
             'tax_total' => $this->tax_total,
             'total' => $this->total,
-            'cost_subtotal' => $this->cost_subtotal,
-            'gross_profit' => $this->gross_profit,
-            'margin_percent' => $this->margin_percent,
             'valid_until' => $this->valid_until?->toISOString(),
             'notes' => $this->notes,
             'terms' => $this->terms,
-            'internal_notes' => $this->internal_notes,
+            'internal_notes' => $canCosting ? $this->internal_notes : null,
             'sent_at' => $this->sent_at?->toISOString(),
             'approved_at' => $this->approved_at?->toISOString(),
             'approved_by_name' => $this->approved_by_name,
@@ -54,5 +57,13 @@ class EstimateResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+
+        if ($canCosting) {
+            $data['cost_subtotal'] = $this->cost_subtotal;
+            $data['gross_profit'] = $this->gross_profit;
+            $data['margin_percent'] = $this->margin_percent;
+        }
+
+        return $data;
     }
 }

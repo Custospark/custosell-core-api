@@ -28,6 +28,7 @@ class PipelineService
     public function __construct(
         protected ModuleAccessService $moduleAccess,
         protected CustomerContactService $customerContactService,
+        protected ProjectAccessService $projectAccess,
     ) {}
 
     /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
@@ -102,8 +103,15 @@ class PipelineService
         }
     }
 
-    public function getOrCreateProjectBoard(int $businessId, int $userId, int $projectId): PipelineBoard
+    public function getOrCreateProjectBoard(int $businessId, User $user, int $projectId): PipelineBoard
     {
+        $project = Project::query()
+            ->where('business_id', $businessId)
+            ->whereKey($projectId)
+            ->firstOrFail();
+
+        $this->projectAccess->assertCanAccessProject($user, $project);
+
         $existing = PipelineBoard::query()
             ->where('business_id', $businessId)
             ->where('project_id', $projectId)
@@ -113,12 +121,10 @@ class PipelineService
             return $existing->load(['stages', 'creator']);
         }
 
-        $project = Project::query()->findOrFail($projectId);
-
-        return DB::transaction(function () use ($businessId, $userId, $project) {
+        return DB::transaction(function () use ($businessId, $user, $project) {
             $board = PipelineBoard::create([
                 'business_id' => $businessId,
-                'created_by' => $userId,
+                'created_by' => $user->id,
                 'name' => $project->name,
                 'description' => 'Project board for ' . $project->name,
                 'visibility' => 'team',
@@ -220,19 +226,23 @@ class PipelineService
         }
     }
 
-    public function listBoards(int $businessId, User $user): Collection
+    public function listBoards(int $businessId, User $user, bool $salesOnly = false): Collection
     {
         $this->ensureBusinessSetup($businessId, $user->id);
 
-        return PipelineBoard::query()
+        $query = PipelineBoard::query()
             ->where('business_id', $businessId)
             ->where('is_archived', false)
-            ->withCount(['leads as open_leads_count' => fn ($q) => $q->where('status', 'open')])
+            ->when($salesOnly, fn ($q) => $q->whereNull('project_id'))
+            ->withCount(['leads as open_leads_count' => fn ($q) => $q
+                ->where('status', 'open')
+                ->when($salesOnly, fn ($inner) => $inner->where('card_type', 'lead'))])
             ->with(['creator:id,name'])
             ->orderByDesc('is_default')
             ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get()
+            ->orderBy('name');
+
+        return $query->get()
             ->filter(fn (PipelineBoard $board) => $this->canViewBoard($user, $board))
             ->values();
     }
@@ -863,13 +873,28 @@ class PipelineService
     {
         $boards = $boardId
             ? collect([$this->getBoard($businessId, $user, $boardId)])
-            : $this->listBoards($businessId, $user);
+            : $this->listBoards($businessId, $user, salesOnly: true);
 
+        $boards = $boards->filter(fn (PipelineBoard $board) => $board->project_id === null)->values();
         $boardIds = $boards->pluck('id');
+
+        if ($boardIds->isEmpty()) {
+            return [
+                'open_leads' => 0,
+                'open_pipeline_value' => 0,
+                'won_leads' => 0,
+                'lost_leads' => 0,
+                'converted_leads' => 0,
+                'win_rate_percent' => 0,
+                'by_stage' => [],
+                'by_source' => [],
+            ];
+        }
 
         $leads = PipelineLead::query()
             ->where('business_id', $businessId)
             ->whereIn('board_id', $boardIds)
+            ->where('card_type', 'lead')
             ->whereIn('status', ['open', 'won', 'lost', 'converted'])
             ->with(['stage:id,name,is_won,is_lost,color,sort_order', 'source:id,name'])
             ->get();
@@ -1179,6 +1204,10 @@ class PipelineService
             return true;
         }
 
+        if ($board->project_id) {
+            return $this->projectAccess->canAccessProjectBoard($user, $board);
+        }
+
         return match ($board->visibility) {
             'team' => $this->moduleAccess->canAccess($user, 'pipeline'),
             'private' => (int) $board->created_by === (int) $user->id,
@@ -1204,6 +1233,14 @@ class PipelineService
 
         if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
             return;
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+            if ($project && $this->projectAccess->canEditProjectBoard($user, $project)) {
+                return;
+            }
+            abort(403, 'You cannot edit this project board.');
         }
 
         if ($board->visibility === 'team') {

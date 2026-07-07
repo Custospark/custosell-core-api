@@ -25,7 +25,8 @@ class PipelineController extends Controller
     public function boards(Request $request): JsonResponse
     {
         $businessId = (int) $request->user()->business_id;
-        $boards = $this->pipelineService->listBoards($businessId, $request->user());
+        $salesOnly = $request->boolean('sales_only', true);
+        $boards = $this->pipelineService->listBoards($businessId, $request->user(), $salesOnly);
 
         return response()->json([
             'data' => PipelineBoardResource::collection($boards),
@@ -110,11 +111,28 @@ class PipelineController extends Controller
     {
         $board = $this->pipelineService->getOrCreateProjectBoard(
             (int) $request->user()->business_id,
-            (int) $request->user()->id,
+            $request->user(),
             $projectId,
         );
 
         return new PipelineBoardResource($board);
+    }
+
+    public function projectKanban(Request $request, int $projectId): PipelineBoardResource
+    {
+        $board = $this->pipelineService->getOrCreateProjectBoard(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $projectId,
+        );
+
+        $kanban = $this->pipelineService->getKanban(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $board->id,
+        );
+
+        return new PipelineBoardResource($kanban);
     }
 
     public function uploadBoardBackground(Request $request, int $boardId): \Illuminate\Http\JsonResponse

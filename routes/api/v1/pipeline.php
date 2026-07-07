@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\PipelineController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:pipeline'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group(function () {
     Route::get('/pipeline/boards', [PipelineController::class, 'boards']);
     Route::post('/pipeline/boards', [PipelineController::class, 'storeBoard']);
     Route::get('/pipeline/boards/{id}', [PipelineController::class, 'showBoard'])->whereNumber('id');

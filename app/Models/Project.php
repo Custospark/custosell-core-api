@@ -89,4 +89,9 @@ class Project extends Model
     {
         return $this->hasMany(ProjectCostAllocation::class);
     }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
 }

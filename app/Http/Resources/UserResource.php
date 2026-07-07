@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\ProjectAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,11 +15,16 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'avatar' => $this->avatar,
             'business_id' => $this->business_id,
             'role_id' => $this->role_id,
             'is_active' => (bool) ($this->is_active ?? true),
             'is_business_owner' => $this->is_business_owner ?? $this->business?->owner_id === $this->id,
             'modules' => $this->modules ?? [],
+            'project_member_ids' => $this->when(
+                $request->user()?->id === $this->id,
+                fn () => app(ProjectAccessService::class)->memberProjectIds($this->resource),
+            ),
             'role' => $this->whenLoaded('role', fn () => $this->role ? [
                 'id' => $this->role->id,
                 'name' => $this->role->name,

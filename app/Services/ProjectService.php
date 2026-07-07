@@ -325,4 +325,102 @@ class ProjectService implements ProjectServiceInterface
             'actual_revenue' => round($billableRevenue + $invoiceRevenue, 2),
         ]);
     }
+
+    public function getMemberProjects(int $businessId, int $userId): Collection
+    {
+        return $this->projectRepository->forMember($businessId, $userId);
+    }
+
+    public function listMembers(int $projectId): Collection
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \RuntimeException('Project not found');
+        }
+
+        return $project->members()->with('user')->orderBy('created_at')->get();
+    }
+
+    /** @param  array{user_id: int, role?: string}  $data */
+    public function addMember(int $projectId, array $data): \App\Models\ProjectMember
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \RuntimeException('Project not found');
+        }
+
+        $role = $data['role'] ?? 'contributor';
+        if (!in_array($role, ['viewer', 'contributor', 'manager'], true)) {
+            $role = 'contributor';
+        }
+
+        $member = \App\Models\ProjectMember::query()->updateOrCreate(
+            ['project_id' => $projectId, 'user_id' => $data['user_id']],
+            ['role' => $role],
+        );
+
+        $this->syncProjectBoardMember($project, (int) $data['user_id'], $role);
+
+        return $member->load('user');
+    }
+
+    public function updateMemberRole(int $projectId, int $userId, string $role): \App\Models\ProjectMember
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \RuntimeException('Project not found');
+        }
+
+        $member = \App\Models\ProjectMember::query()
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $member->update(['role' => $role]);
+        $this->syncProjectBoardMember($project, $userId, $role);
+
+        return $member->fresh()->load('user');
+    }
+
+    public function removeMember(int $projectId, int $userId): void
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \RuntimeException('Project not found');
+        }
+
+        \App\Models\ProjectMember::query()
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->delete();
+
+        $board = \App\Models\PipelineBoard::query()
+            ->where('project_id', $projectId)
+            ->first();
+
+        if ($board) {
+            \App\Models\PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $userId)
+                ->delete();
+        }
+    }
+
+    protected function syncProjectBoardMember(Project $project, int $userId, string $role): void
+    {
+        $board = \App\Models\PipelineBoard::query()
+            ->where('project_id', $project->id)
+            ->first();
+
+        if (!$board) {
+            return;
+        }
+
+        $boardRole = in_array($role, ['contributor', 'manager'], true) ? 'editor' : 'viewer';
+
+        \App\Models\PipelineBoardMember::query()->updateOrCreate(
+            ['board_id' => $board->id, 'user_id' => $userId],
+            ['role' => $boardRole],
+        );
+    }
 }

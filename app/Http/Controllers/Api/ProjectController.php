@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\StoreTimesheetEntryRequest;
 use App\Http\Resources\ProjectCostAllocationResource;
+use App\Http\Resources\ProjectMemberResource;
 use App\Http\Resources\ProjectResource;
 use App\Http\Resources\ProjectTaskResource;
 use App\Http\Resources\TimesheetEntryResource;
 use App\Services\Contracts\ProjectServiceInterface;
+use App\Services\ProjectAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,29 +20,49 @@ class ProjectController extends Controller
 {
     public function __construct(
         protected ProjectServiceInterface $projectService,
+        protected ProjectAccessService $projectAccess,
     ) {}
+
+    public function myProjects(Request $request): AnonymousResourceCollection
+    {
+        $user = $request->user();
+        $projects = $this->projectAccess->canViewAllProjects($user)
+            ? $this->projectService->getAll((int) $user->business_id)
+            : $this->projectService->getMemberProjects((int) $user->business_id, (int) $user->id);
+
+        return ProjectResource::collection($projects);
+    }
 
     public function index(Request $request): AnonymousResourceCollection
     {
+        $user = $request->user();
         $filters = $request->only(['status', 'customer_id']);
 
-        return ProjectResource::collection(
-            $this->projectService->getAll($request->user()->business_id, $filters)
-        );
+        $projects = $this->projectAccess->canViewAllProjects($user)
+            ? $this->projectService->getAll((int) $user->business_id, $filters)
+            : $this->projectService->getMemberProjects((int) $user->business_id, (int) $user->id);
+
+        return ProjectResource::collection($projects);
     }
 
-    public function show(int $id): ProjectResource
+    public function show(Request $request, int $id): ProjectResource
     {
         $project = $this->projectService->getById($id);
         if (!$project) {
             abort(404, 'Project not found');
         }
 
-        return new ProjectResource($project);
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+
+        return new ProjectResource($project->load(['members.user']));
     }
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
+        if (!$this->projectAccess->canViewAllProjects($request->user())) {
+            abort(403, 'You do not have permission to create projects.');
+        }
+
         $project = $this->projectService->create(
             $request->user()->business_id,
             $request->user()->id,
@@ -52,13 +74,26 @@ class ProjectController extends Controller
 
     public function update(StoreProjectRequest $request, int $id): ProjectResource
     {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        if (!$this->projectAccess->canViewAllProjects($request->user())) {
+            abort(403, 'You do not have permission to update projects.');
+        }
+
         $project = $this->projectService->update($id, $request->validated());
 
         return new ProjectResource($project);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        if (!$this->projectAccess->canViewAllProjects($request->user())) {
+            abort(403, 'You do not have permission to delete projects.');
+        }
+
         $this->projectService->delete($id);
 
         return response()->json(null, 204);
@@ -66,6 +101,17 @@ class ProjectController extends Controller
 
     public function storeTask(Request $request, int $projectId): JsonResponse
     {
+        $project = $this->projectService->getById($projectId);
+        if (!$project) {
+            return response()->json(['message' => 'Project not found'], 404);
+        }
+
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+        if (!$this->projectAccess->canViewAllProjects($request->user())
+            && !$this->projectAccess->isProjectMember($request->user(), $projectId, 'contributor')) {
+            abort(403, 'You cannot add tasks to this project.');
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -160,6 +206,14 @@ class ProjectController extends Controller
 
     public function storeAllocation(Request $request, int $projectId): JsonResponse
     {
+        $project = $this->projectService->getById($projectId);
+        if (!$project) {
+            return response()->json(['message' => 'Project not found'], 404);
+        }
+
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+        $this->projectAccess->assertCanViewProjectCosting($request->user());
+
         $data = $request->validate([
             'allocation_type' => ['required', 'string', 'in:labor,material,overhead,expense,other'],
             'description' => ['required', 'string', 'max:500'],
@@ -216,8 +270,16 @@ class ProjectController extends Controller
         return response()->json(null, 204);
     }
 
-    public function budgetSummary(int $id): JsonResponse
+    public function budgetSummary(Request $request, int $id): JsonResponse
     {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+        $this->projectAccess->assertCanViewProjectCosting($request->user());
+
         try {
             $summary = $this->projectService->budgetSummary($id);
         } catch (\RuntimeException $e) {
@@ -227,8 +289,16 @@ class ProjectController extends Controller
         return response()->json(['data' => $summary]);
     }
 
-    public function profitability(int $id): JsonResponse
+    public function profitability(Request $request, int $id): JsonResponse
     {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+        $this->projectAccess->assertCanViewProjectCosting($request->user());
+
         try {
             $data = $this->projectService->profitability($id);
         } catch (\RuntimeException $e) {
@@ -236,5 +306,72 @@ class ProjectController extends Controller
         }
 
         return response()->json(['data' => $data]);
+    }
+
+    public function members(Request $request, int $id): JsonResponse
+    {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanAccessProject($request->user(), $project);
+
+        $members = $this->projectService->listMembers($id);
+
+        return response()->json([
+            'data' => ProjectMemberResource::collection($members),
+        ]);
+    }
+
+    public function storeMember(Request $request, int $id): JsonResponse
+    {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanManageProjectMembers($request->user(), $project);
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'role' => ['nullable', 'string', 'in:viewer,contributor,manager'],
+        ]);
+
+        $member = $this->projectService->addMember($id, $validated);
+
+        return response()->json(new ProjectMemberResource($member), 201);
+    }
+
+    public function updateMember(Request $request, int $id, int $userId): ProjectMemberResource
+    {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanManageProjectMembers($request->user(), $project);
+
+        $validated = $request->validate([
+            'role' => ['required', 'string', 'in:viewer,contributor,manager'],
+        ]);
+
+        $member = $this->projectService->updateMemberRole($id, $userId, $validated['role']);
+
+        return new ProjectMemberResource($member);
+    }
+
+    public function destroyMember(Request $request, int $id, int $userId): JsonResponse
+    {
+        $project = $this->projectService->getById($id);
+        if (!$project) {
+            abort(404, 'Project not found');
+        }
+
+        $this->projectAccess->assertCanManageProjectMembers($request->user(), $project);
+
+        $this->projectService->removeMember($id, $userId);
+
+        return response()->json(null, 204);
     }
 }

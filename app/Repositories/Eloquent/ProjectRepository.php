@@ -26,6 +26,16 @@ class ProjectRepository implements ProjectRepositoryInterface
         return $query->orderByDesc('created_at')->get();
     }
 
+    public function forMember(int $businessId, int $userId): Collection
+    {
+        return Project::query()
+            ->where('business_id', $businessId)
+            ->whereHas('members', fn ($q) => $q->where('user_id', $userId))
+            ->with(['customer', 'manager', 'createdBy', 'tasks'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function find(int $id): ?Project
     {
         return Project::with([
