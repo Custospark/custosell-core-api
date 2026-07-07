@@ -52,11 +52,6 @@ class EstimatePdfBuilder
                     ['label' => 'Estimate #', 'value' => $estimate->estimate_number],
                     ['label' => 'Status', 'value' => $statusLabel],
                     ['label' => 'Total', 'value' => $this->export->formatMoney((float) $estimate->total, $currency)],
-                    [
-                        'label' => 'Margin',
-                        'value' => number_format((float) $estimate->margin_percent, 1) . '%',
-                        'tone' => (float) $estimate->margin_percent >= 20 ? 'positive' : null,
-                    ],
                 ],
             ],
             'filename' => $filename,
