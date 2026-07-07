@@ -423,6 +423,7 @@ class PipelineController extends Controller
         $validated = $request->validate([
             'type' => ['required', 'in:note,comment,call,email,meeting'],
             'body' => ['required', 'string', 'max:5000'],
+            'parent_id' => ['nullable', 'integer'],
         ]);
 
         $activity = $this->pipelineService->addActivity(
@@ -431,6 +432,8 @@ class PipelineController extends Controller
             $leadId,
             $validated['type'],
             $validated['body'],
+            null,
+            $validated['parent_id'] ?? null,
         );
 
         return (new PipelineLeadActivityResource($activity->load('user:id,name,avatar')))

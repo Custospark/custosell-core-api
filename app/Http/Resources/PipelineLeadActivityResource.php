@@ -12,6 +12,7 @@ class PipelineLeadActivityResource extends JsonResource
         return [
             'id' => $this->id,
             'lead_id' => $this->lead_id,
+            'parent_id' => $this->parent_id,
             'user_id' => $this->user_id,
             'type' => $this->type,
             'body' => $this->body,

@@ -730,7 +730,9 @@ class PipelineService
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanViewBoard($user, $lead->board);
 
-        return $lead->load(array_merge($this->leadDetailRelations(), ['activities.user:id,name,avatar']));
+        return $lead->load(array_merge($this->leadDetailRelations(), [
+            'activities' => fn ($q) => $q->with('user:id,name,avatar')->orderBy('created_at'),
+        ]));
     }
 
     /** @param  array<string, mixed>  $data */
@@ -884,12 +886,35 @@ class PipelineService
         return $lead->fresh(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone', 'convertedCustomer:id,name,email,phone']);
     }
 
-    public function addActivity(int $businessId, User $user, int $leadId, string $type, ?string $body, ?array $metadata = null): PipelineLeadActivity
-    {
+    public function addActivity(
+        int $businessId,
+        User $user,
+        int $leadId,
+        string $type,
+        ?string $body,
+        ?array $metadata = null,
+        ?int $parentId = null,
+    ): PipelineLeadActivity {
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanEditBoard($user, $lead->board);
 
-        return $this->recordActivity($lead, $user->id, $type, $body, $metadata);
+        if ($parentId !== null) {
+            $parent = PipelineLeadActivity::query()
+                ->where('business_id', $businessId)
+                ->where('lead_id', $leadId)
+                ->whereKey($parentId)
+                ->firstOrFail();
+
+            if (! in_array($parent->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
+                abort(422, 'You can only reply to user comments.');
+            }
+
+            if ($parent->parent_id !== null) {
+                abort(422, 'Replies cannot be nested further — reply to the main comment instead.');
+            }
+        }
+
+        return $this->recordActivity($lead, $user->id, $type, $body, $metadata, $parentId);
     }
 
     public function deleteActivity(int $businessId, User $user, int $activityId): void
@@ -1247,11 +1272,18 @@ class PipelineService
         ];
     }
 
-    protected function recordActivity(PipelineLead $lead, ?int $userId, string $type, ?string $body, ?array $metadata = null): PipelineLeadActivity
-    {
+    protected function recordActivity(
+        PipelineLead $lead,
+        ?int $userId,
+        string $type,
+        ?string $body,
+        ?array $metadata = null,
+        ?int $parentId = null,
+    ): PipelineLeadActivity {
         return PipelineLeadActivity::create([
             'business_id' => $lead->business_id,
             'lead_id' => $lead->id,
+            'parent_id' => $parentId,
             'user_id' => $userId,
             'type' => $type,
             'body' => $body,

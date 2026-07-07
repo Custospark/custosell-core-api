@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'role_id' => $this->role_id,
             'is_active' => (bool) ($this->is_active ?? true),
             'is_business_owner' => $this->is_business_owner ?? $this->business?->owner_id === $this->id,
+            'business_name' => $this->whenLoaded('business', fn () => $this->business?->name),
             'modules' => $this->modules ?? [],
             'project_member_ids' => $this->when(
                 $request->user()?->id === $this->id,
