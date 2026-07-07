@@ -226,7 +226,7 @@ class PipelineService
         }
     }
 
-    public function listBoards(int $businessId, User $user, bool $salesOnly = false): Collection
+    public function listBoards(int $businessId, User $user, bool $salesOnly = false, bool $projectOnly = false): Collection
     {
         $this->ensureBusinessSetup($businessId, $user->id);
 
@@ -234,6 +234,7 @@ class PipelineService
             ->where('business_id', $businessId)
             ->where('is_archived', false)
             ->when($salesOnly, fn ($q) => $q->whereNull('project_id'))
+            ->when($projectOnly, fn ($q) => $q->whereNotNull('project_id'))
             ->withCount(['leads as open_leads_count' => fn ($q) => $q
                 ->where('status', 'open')
                 ->when($salesOnly, fn ($inner) => $inner->where('card_type', 'lead'))])
@@ -1265,6 +1266,13 @@ class PipelineService
     {
         if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
             return;
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+            if ($project && $this->projectAccess->canManageProjectMembers($user, $project)) {
+                return;
+            }
         }
 
         abort(403, 'Only the board owner can change pipeline settings.');

@@ -43,23 +43,23 @@ class AutomationService
     protected function postCashSaleEntry(Sale $sale): void
     {
         $businessId = $sale->business_id;
-        $codes = config('accounting.default_account_codes');
-        $date = $sale->sale_date instanceof \Carbon\Carbon
-            ? $sale->sale_date->toDateString()
-            : now()->toDateString();
+            $codes = config('accounting.default_account_codes');
+            $date = $sale->sale_date instanceof \Carbon\Carbon
+                ? $sale->sale_date->toDateString()
+                : now()->toDateString();
 
-        $totalAmount = (float) $sale->total_amount;
-        $subtotal = (float) $sale->subtotal;
-        $taxTotal = (float) $sale->tax_total;
+            $totalAmount = (float) $sale->total_amount;
+            $subtotal = (float) $sale->subtotal;
+            $taxTotal = (float) $sale->tax_total;
         $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
 
-        $lines = [];
+            $lines = [];
 
-        if ($taxTotal > 0) {
+            if ($taxTotal > 0) {
             $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
             $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $subtotal, 'description' => "Sale {$sale->receipt_number} - revenue"];
-            $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Sale {$sale->receipt_number} - VAT"];
-        } else {
+                $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Sale {$sale->receipt_number} - VAT"];
+            } else {
             $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
             $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $totalAmount, 'description' => "Sale {$sale->receipt_number} - revenue"];
         }
@@ -67,10 +67,10 @@ class AutomationService
         $cogsTotal = $this->inventoryCogsService->calculateSaleCogs($sale);
         $this->appendCogsLines($lines, $businessId, $cogsTotal, "Sale {$sale->receipt_number}");
 
-        $this->journalEntryService->createAndPostEntry(
-            $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
-            $lines, 'sale', $sale->id, $sale->user_id,
-        );
+            $this->journalEntryService->createAndPostEntry(
+                $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
+                $lines, 'sale', $sale->id, $sale->user_id,
+            );
 
         Log::info("Accounting automation: Cash sale entry posted", [
             'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number, 'total_amount' => $totalAmount,

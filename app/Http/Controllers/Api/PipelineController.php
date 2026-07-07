@@ -25,8 +25,14 @@ class PipelineController extends Controller
     public function boards(Request $request): JsonResponse
     {
         $businessId = (int) $request->user()->business_id;
-        $salesOnly = $request->boolean('sales_only', true);
-        $boards = $this->pipelineService->listBoards($businessId, $request->user(), $salesOnly);
+        $salesOnly = $request->boolean('sales_only', !$request->boolean('project_only', false));
+        $projectOnly = $request->boolean('project_only', false);
+        $boards = $this->pipelineService->listBoards(
+            $businessId,
+            $request->user(),
+            $salesOnly,
+            $projectOnly,
+        );
 
         return response()->json([
             'data' => PipelineBoardResource::collection($boards),

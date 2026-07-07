@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\PipelineBoard;
+use App\Models\PipelineChecklist;
+use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
 use App\Models\PipelineStage;
 use App\Models\Project;
-use App\Models\ProjectMember;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -36,7 +37,7 @@ class ProjectAccessService
             return [];
         }
 
-        return ProjectMember::query()
+        return \App\Models\ProjectMember::query()
             ->whereHas('project', fn ($q) => $q->where('business_id', $user->business_id))
             ->where('user_id', $user->id)
             ->pluck('project_id')
@@ -47,7 +48,7 @@ class ProjectAccessService
 
     public function isProjectMember(User $user, int $projectId, ?string $minRole = null): bool
     {
-        $query = ProjectMember::query()
+        $query = \App\Models\ProjectMember::query()
             ->where('project_id', $projectId)
             ->where('user_id', $user->id);
 
@@ -144,21 +145,25 @@ class ProjectAccessService
     {
         $boardId = $request->route('id') ?? $request->route('boardId');
         if ($boardId && is_numeric($boardId)) {
-            return PipelineBoard::query()
-                ->where('business_id', $businessId)
-                ->whereKey((int) $boardId)
-                ->first();
+            $path = $request->path();
+            if (str_contains($path, 'pipeline/boards') || str_contains($path, 'pipeline/stages')) {
+                return $this->findBoard($businessId, (int) $boardId);
+            }
         }
 
-        $leadId = $request->route('leadId') ?? $request->route('id');
-        if ($leadId && is_numeric($leadId) && str_contains($request->path(), 'pipeline/leads')) {
-            $lead = PipelineLead::query()
-                ->where('business_id', $businessId)
-                ->whereKey((int) $leadId)
-                ->with('board')
-                ->first();
+        $bodyBoardId = $request->input('board_id');
+        if ($bodyBoardId && is_numeric($bodyBoardId)) {
+            return $this->findBoard($businessId, (int) $bodyBoardId);
+        }
 
-            return $lead?->board;
+        $routeLeadId = $request->route('leadId');
+        if ($routeLeadId && is_numeric($routeLeadId)) {
+            return $this->boardFromLeadId($businessId, (int) $routeLeadId);
+        }
+
+        $leadId = $request->route('id');
+        if ($leadId && is_numeric($leadId) && str_contains($request->path(), 'pipeline/leads')) {
+            return $this->boardFromLeadId($businessId, (int) $leadId);
         }
 
         $stageId = $request->route('stageId');
@@ -172,6 +177,57 @@ class ProjectAccessService
             return $stage?->board;
         }
 
+        $checklistId = $request->route('checklistId');
+        if ($checklistId && is_numeric($checklistId)) {
+            $checklist = PipelineChecklist::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $checklistId)
+                ->with('lead.board')
+                ->first();
+
+            return $checklist?->lead?->board;
+        }
+
+        $checklistItemId = $request->route('id');
+        if ($checklistItemId && is_numeric($checklistItemId) && str_contains($request->path(), 'pipeline/checklist-items')) {
+            $item = PipelineChecklistItem::query()
+                ->whereKey((int) $checklistItemId)
+                ->with(['checklist.lead.board'])
+                ->first();
+
+            return $item?->checklist?->lead?->board;
+        }
+
+        $checklistRouteId = $request->route('id');
+        if ($checklistRouteId && is_numeric($checklistRouteId) && str_contains($request->path(), 'pipeline/checklists')) {
+            $checklist = PipelineChecklist::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $checklistRouteId)
+                ->with('lead.board')
+                ->first();
+
+            return $checklist?->lead?->board;
+        }
+
         return null;
+    }
+
+    protected function findBoard(int $businessId, int $boardId): ?PipelineBoard
+    {
+        return PipelineBoard::query()
+            ->where('business_id', $businessId)
+            ->whereKey($boardId)
+            ->first();
+    }
+
+    protected function boardFromLeadId(int $businessId, int $leadId): ?PipelineBoard
+    {
+        $lead = PipelineLead::query()
+            ->where('business_id', $businessId)
+            ->whereKey($leadId)
+            ->with('board')
+            ->first();
+
+        return $lead?->board;
     }
 }
