@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\PipelineBoard;
+use App\Models\PipelineBoardMember;
 use App\Models\PipelineChecklist;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
@@ -134,11 +135,35 @@ class ProjectAccessService
         }
 
         $board = $this->resolveBoardFromRequest($request, (int) $user->business_id);
-        if (!$board || !$board->project_id) {
+        if (!$board) {
             return false;
         }
 
+        if (!$board->project_id) {
+            return $this->canAccessNonProjectBoard($user, $board);
+        }
+
         return $this->canAccessProjectBoard($user, $board);
+    }
+
+    protected function canAccessNonProjectBoard(User $user, PipelineBoard $board): bool
+    {
+        if ((int) $board->business_id !== (int) $user->business_id) {
+            return false;
+        }
+
+        if ((int) $board->created_by === (int) $user->id) {
+            return true;
+        }
+
+        if ($board->visibility === 'shared') {
+            return PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->exists();
+        }
+
+        return false;
     }
 
     protected function resolveBoardFromRequest(Request $request, int $businessId): ?PipelineBoard
