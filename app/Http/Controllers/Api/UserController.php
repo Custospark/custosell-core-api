@@ -91,6 +91,10 @@ class UserController extends Controller
         $user->update($data);
         $user->load('business');
 
+        if ($request->has('modules') && $this->moduleAccess->isBusinessOwner($user)) {
+            $this->userService->clampStaffModulesAfterOwnerUpdate($user);
+        }
+
         return new UserResource($user);
     }
 

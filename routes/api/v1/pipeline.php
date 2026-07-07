@@ -47,4 +47,17 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
 
     Route::post('/pipeline/leads/{leadId}/attachments', [PipelineController::class, 'storeAttachment'])->whereNumber('leadId');
     Route::delete('/pipeline/attachments/{id}', [PipelineController::class, 'destroyAttachment'])->whereNumber('id');
+
+    Route::post('/pipeline/activities/{id}/reaction', [PipelineController::class, 'toggleActivityReaction'])->whereNumber('id');
+    Route::get('/pipeline/boards/{boardId}/collaboration-summary', [PipelineController::class, 'boardCollaborationSummary'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/announcements', [PipelineController::class, 'boardAnnouncements'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/announcements', [PipelineController::class, 'storeBoardAnnouncement'])->whereNumber('boardId');
+    Route::patch('/pipeline/announcements/{id}/read', [PipelineController::class, 'setAnnouncementRead'])->whereNumber('id');
+    Route::delete('/pipeline/announcements/{id}', [PipelineController::class, 'destroyBoardAnnouncement'])->whereNumber('id');
+    Route::get('/pipeline/boards/{boardId}/polls', [PipelineController::class, 'boardPolls'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/polls', [PipelineController::class, 'storeBoardPoll'])->whereNumber('boardId');
+    Route::post('/pipeline/polls/{pollId}/vote', [PipelineController::class, 'votePoll'])->whereNumber('pollId');
+    Route::get('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'leadReminders'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'storeLeadReminder'])->whereNumber('leadId');
+    Route::delete('/pipeline/reminders/{id}', [PipelineController::class, 'destroyReminder'])->whereNumber('id');
 });

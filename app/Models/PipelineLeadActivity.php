@@ -44,4 +44,9 @@ class PipelineLeadActivity extends Model
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('created_at');
     }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(PipelineActivityReaction::class, 'activity_id');
+    }
 }

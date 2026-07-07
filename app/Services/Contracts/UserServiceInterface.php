@@ -23,5 +23,7 @@ interface UserServiceInterface
 
     public function delete(int $id, int $businessId, int $actorId): bool;
 
+    public function clampStaffModulesAfterOwnerUpdate(User $owner): void;
+
     public function countByBusiness(int $businessId): int;
 }

@@ -16,7 +16,10 @@ use App\Models\PipelineSource;
 use App\Models\PipelineStage;
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Models\PipelineLeadAssignee;
 use App\Models\User;
+use App\Services\Pipeline\PipelineCollaborationService;
+use App\Services\Pipeline\PipelineNotificationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +32,7 @@ class PipelineService
         protected ModuleAccessService $moduleAccess,
         protected CustomerContactService $customerContactService,
         protected ProjectAccessService $projectAccess,
+        protected PipelineNotificationService $pipelineNotifier,
     ) {}
 
     /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
@@ -320,6 +324,7 @@ class PipelineService
                 ->with([
             'creator:id,name,avatar',
                     'assignee:id,name,avatar',
+                    'assignees:id,name,avatar',
                     'source:id,name',
                     'customer:id,name,email,phone',
                     'labels:id,name,color',
@@ -637,11 +642,19 @@ class PipelineService
 
         if (!empty($filters['assigned_to'])) {
             if ($filters['assigned_to'] === 'me') {
-                $query->where('assigned_to', $user->id);
+                $query->where(function ($q) use ($user) {
+                    $q->where('assigned_to', $user->id)
+                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id));
+                });
             } elseif ($filters['assigned_to'] === 'unassigned') {
-                $query->whereNull('assigned_to');
+                $query->whereNull('assigned_to')
+                    ->whereDoesntHave('assignees');
             } else {
-                $query->where('assigned_to', (int) $filters['assigned_to']);
+                $assigneeId = (int) $filters['assigned_to'];
+                $query->where(function ($q) use ($assigneeId) {
+                    $q->where('assigned_to', $assigneeId)
+                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $assigneeId));
+                });
             }
         }
 
@@ -688,12 +701,14 @@ class PipelineService
             ->where('stage_id', $stage->id)
             ->max('position');
 
+        $assigneeIds = $this->resolveAssigneeIds($data, $user);
+
         $lead = PipelineLead::create([
             'business_id' => $businessId,
             'board_id' => $board->id,
             'stage_id' => $stage->id,
             'created_by' => $user->id,
-            'assigned_to' => $data['assigned_to'] ?? $user->id,
+            'assigned_to' => $assigneeIds[0] ?? $user->id,
             'customer_id' => $data['customer_id'] ?? null,
             'source_id' => $data['source_id'] ?? null,
             'title' => $data['title'],
@@ -720,6 +735,18 @@ class PipelineService
             $lead->labels()->sync($data['label_ids']);
         }
 
+        $newAssignees = $this->syncLeadAssignees($lead, $assigneeIds, $user->id);
+        if ($newAssignees !== []) {
+            $lead->load('board');
+            $this->pipelineNotifier->notifyAssignees(
+                $lead,
+                $lead->board,
+                $user,
+                User::query()->whereIn('id', $newAssignees)->get()->all(),
+                true,
+            );
+        }
+
         $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
 
         return $lead->load($this->leadDetailRelations());
@@ -731,7 +758,7 @@ class PipelineService
         $this->assertCanViewBoard($user, $lead->board);
 
         return $lead->load(array_merge($this->leadDetailRelations(), [
-            'activities' => fn ($q) => $q->with('user:id,name,avatar')->orderBy('created_at'),
+            'activities' => fn ($q) => $q->with(['user:id,name,avatar', 'reactions'])->orderBy('created_at'),
         ]));
     }
 
@@ -759,6 +786,21 @@ class PipelineService
 
         if (array_key_exists('label_ids', $data)) {
             $lead->labels()->sync($data['label_ids'] ?? []);
+        }
+
+        if (array_key_exists('assignee_ids', $data) || array_key_exists('assigned_to', $data)) {
+            $assigneeIds = $this->resolveAssigneeIds($data, $user, $lead);
+            $newAssignees = $this->syncLeadAssignees($lead, $assigneeIds, $user->id);
+            if ($newAssignees !== []) {
+                $lead->load('board');
+                $this->pipelineNotifier->notifyAssignees(
+                    $lead,
+                    $lead->board,
+                    $user,
+                    User::query()->whereIn('id', $newAssignees)->get()->all(),
+                    false,
+                );
+            }
         }
 
         return $lead->fresh($this->leadDetailRelations());
@@ -915,6 +957,34 @@ class PipelineService
         }
 
         return $this->recordActivity($lead, $user->id, $type, $body, $metadata, $parentId);
+    }
+
+    public function addActivityAndNotify(
+        int $businessId,
+        User $user,
+        int $leadId,
+        string $type,
+        ?string $body,
+        ?array $metadata = null,
+        ?int $parentId = null,
+    ): PipelineLeadActivity {
+        $activity = $this->addActivity($businessId, $user, $leadId, $type, $body, $metadata, $parentId);
+
+        if (in_array($type, ['note', 'comment', 'call', 'email', 'meeting'], true) && $body) {
+            $lead = $this->findLeadForBusiness($businessId, $leadId);
+            $lead->load('board');
+            $recipients = app(PipelineCollaborationService::class)->leadNotificationRecipients($lead, $user);
+            $this->pipelineNotifier->notifyComment(
+                $lead,
+                $lead->board,
+                $user,
+                $body,
+                $recipients,
+                $parentId !== null,
+            );
+        }
+
+        return $activity;
     }
 
     public function deleteActivity(int $businessId, User $user, int $activityId): void
@@ -1264,6 +1334,7 @@ class PipelineService
             'board',
             'stage',
             'assignee:id,name,avatar',
+            'assignees:id,name,avatar',
             'source:id,name',
             'customer:id,name,email,phone',
             'labels:id,name,color',
@@ -1414,5 +1485,71 @@ class PipelineService
         }
 
         abort(403, 'Only the board owner can archive this board.');
+    }
+
+    /** @param  array<string, mixed>  $data */
+  protected function resolveAssigneeIds(array $data, User $actor, ?PipelineLead $existing = null): array
+    {
+        if (array_key_exists('assignee_ids', $data) && is_array($data['assignee_ids'])) {
+            $ids = array_values(array_unique(array_filter(array_map('intval', $data['assignee_ids']))));
+
+            return $ids !== [] ? $ids : [(int) $actor->id];
+        }
+
+        if (array_key_exists('assigned_to', $data)) {
+            return $data['assigned_to'] ? [(int) $data['assigned_to']] : [];
+        }
+
+        if ($existing) {
+            $pivotIds = PipelineLeadAssignee::query()
+                ->where('lead_id', $existing->id)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            if ($pivotIds !== []) {
+                return $pivotIds;
+            }
+
+            return $existing->assigned_to ? [(int) $existing->assigned_to] : [];
+        }
+
+        return [(int) $actor->id];
+    }
+
+    /** @param  list<int>  $userIds  @return list<int> newly added assignee user ids */
+    protected function syncLeadAssignees(PipelineLead $lead, array $userIds, int $assignedBy): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+        $existing = PipelineLeadAssignee::query()
+            ->where('lead_id', $lead->id)
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $toAdd = array_values(array_diff($userIds, $existing));
+        $toRemove = array_values(array_diff($existing, $userIds));
+
+        if ($toRemove !== []) {
+            PipelineLeadAssignee::query()
+                ->where('lead_id', $lead->id)
+                ->whereIn('user_id', $toRemove)
+                ->delete();
+        }
+
+        foreach ($toAdd as $userId) {
+            PipelineLeadAssignee::create([
+                'lead_id' => $lead->id,
+                'user_id' => $userId,
+                'assigned_by' => $assignedBy,
+            ]);
+        }
+
+        $primary = $userIds[0] ?? null;
+        if ($lead->assigned_to !== $primary) {
+            $lead->update(['assigned_to' => $primary]);
+        }
+
+        return $toAdd;
     }
 }

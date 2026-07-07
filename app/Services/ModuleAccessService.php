@@ -181,6 +181,27 @@ class ModuleAccessService
         return array_values(array_unique($validated));
     }
 
+    /** @param  list<string>  $staffModules */
+    public function clampStaffModulesToOwnerCatalog(array $staffModules, User $owner): array
+    {
+        $ownerCatalog = array_flip($this->resolvedOwnerBusinessModules($owner));
+        $wantsFull = in_array(self::ESTIMATES_FULL_SLUG, $staffModules, true);
+        $ownerHasFull = $this->hasFullEstimatesWorkspace($owner);
+
+        $business = array_values(array_filter(
+            $staffModules,
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG && isset($ownerCatalog[$module]),
+        ));
+
+        $normalized = $this->normalizeStaffModules($business, allowEmpty: true);
+
+        if ($wantsFull && $ownerHasFull && in_array('estimates', $normalized, true)) {
+            $normalized[] = self::ESTIMATES_FULL_SLUG;
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
     /** @return list<string> */
     public function resolvedOwnerBusinessModules(User $user): array
     {

@@ -73,6 +73,13 @@ class PipelineLead extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'pipeline_lead_assignees', 'lead_id', 'user_id')
+            ->withTimestamps()
+            ->withPivot('assigned_by');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

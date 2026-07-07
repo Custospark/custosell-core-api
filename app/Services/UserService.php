@@ -100,6 +100,28 @@ class UserService implements UserServiceInterface
         return $this->userRepository->delete($user);
     }
 
+    public function clampStaffModulesAfterOwnerUpdate(User $owner): void
+    {
+        if (! $this->moduleAccess->isBusinessOwner($owner) || ! $owner->business_id) {
+            return;
+        }
+
+        $staff = User::query()
+            ->where('business_id', $owner->business_id)
+            ->whereKeyNot($owner->id)
+            ->get();
+
+        foreach ($staff as $member) {
+            $clamped = $this->moduleAccess->clampStaffModulesToOwnerCatalog(
+                $this->moduleAccess->storedStaffModules($member),
+                $owner,
+            );
+            if ($clamped !== $this->moduleAccess->storedStaffModules($member)) {
+                $member->update(['modules' => $clamped]);
+            }
+        }
+    }
+
     public function countByBusiness(int $businessId): int
     {
         return $this->userRepository->countByBusiness($businessId);

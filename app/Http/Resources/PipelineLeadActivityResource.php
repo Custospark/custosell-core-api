@@ -9,6 +9,16 @@ class PipelineLeadActivityResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $reactions = ['likes' => 0, 'dislikes' => 0, 'user_reaction' => null];
+        if ($this->relationLoaded('reactions')) {
+            $reactions['likes'] = $this->reactions->where('reaction', 'like')->count();
+            $reactions['dislikes'] = $this->reactions->where('reaction', 'dislike')->count();
+            $viewerId = $request->user()?->id;
+            if ($viewerId) {
+                $reactions['user_reaction'] = $this->reactions->firstWhere('user_id', $viewerId)?->reaction;
+            }
+        }
+
         return [
             'id' => $this->id,
             'lead_id' => $this->lead_id,
@@ -17,6 +27,7 @@ class PipelineLeadActivityResource extends JsonResource
             'type' => $this->type,
             'body' => $this->body,
             'metadata' => $this->metadata,
+            'reactions' => $reactions,
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
