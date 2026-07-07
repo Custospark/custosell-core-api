@@ -71,6 +71,8 @@ class PipelineCollaborationService
             ->where('user_id', $user->id)
             ->first();
 
+        $previousReaction = $existing?->reaction;
+
         if ($reaction === null || $reaction === '') {
             $existing?->delete();
         } elseif (! in_array($reaction, ['like', 'dislike'], true)) {
@@ -84,6 +86,30 @@ class PipelineCollaborationService
                 'activity_id' => $activity->id,
                 'user_id' => $user->id,
                 'reaction' => $reaction,
+            ]);
+        }
+
+        $currentReaction = PipelineActivityReaction::query()
+            ->where('activity_id', $activity->id)
+            ->where('user_id', $user->id)
+            ->value('reaction');
+
+        $preview = $activity->body ? mb_substr($activity->body, 0, 120) : null;
+
+        if ($currentReaction && $currentReaction !== $previousReaction) {
+            $label = $currentReaction === 'like' ? 'Liked a comment' : 'Disliked a comment';
+            $this->pipeline->logLeadHistoryEvent($lead, $user, $label, [
+                'action' => 'reaction',
+                'reaction' => $currentReaction,
+                'target_activity_id' => $activity->id,
+                'preview' => $preview,
+            ]);
+        } elseif (! $currentReaction && $previousReaction) {
+            $this->pipeline->logLeadHistoryEvent($lead, $user, 'Removed reaction', [
+                'action' => 'reaction_removed',
+                'reaction' => $previousReaction,
+                'target_activity_id' => $activity->id,
+                'preview' => $preview,
             ]);
         }
 

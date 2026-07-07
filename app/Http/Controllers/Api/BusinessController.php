@@ -9,6 +9,7 @@ use App\Http\Resources\BusinessResource;
 use App\Services\Contracts\BusinessServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BusinessController extends Controller
 {
@@ -59,7 +60,18 @@ class BusinessController extends Controller
         if (! $business) {
             abort(404, 'Business not found');
         }
-        $business = $this->businessService->update($business->id, $request->validated());
+
+        $data = $request->validated();
+
+        if ($request->hasFile('logo')) {
+            if ($business->logo_path) {
+                $oldPath = str_replace('/storage/', '', $business->logo_path);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $data['logo_path'] = '/storage/' . $request->file('logo')->store('business-logos', 'public');
+        }
+
+        $business = $this->businessService->update($business->id, $data);
 
         return new BusinessResource($business);
     }

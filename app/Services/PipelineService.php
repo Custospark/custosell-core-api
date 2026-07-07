@@ -335,7 +335,7 @@ class PipelineService
                     'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
                 ])
                 ->withCount([
-                    'activities as history_count' => fn ($q) => $q->whereIn('type', ['system', 'stage_change']),
+                    'activities as history_count',
                 ])
                 ->orderBy('position'),
             'members.user:id,name',
@@ -432,6 +432,10 @@ class PipelineService
     {
         $lead = $this->findLeadForBusiness($businessId, $leadId);
         $this->assertCanManageBoard($user, $lead->board);
+
+        $this->recordActivity($lead, $user->id, 'system', 'Card archived', [
+            'action' => 'archived',
+        ]);
 
         $lead->update(['status' => 'archived']);
         $lead->delete();
@@ -752,7 +756,7 @@ class PipelineService
 
         $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
 
-        return $lead->load($this->leadDetailRelations());
+        return $this->loadLeadWithHistory($lead);
     }
 
     public function getLead(int $businessId, User $user, int $leadId): PipelineLead
@@ -814,7 +818,7 @@ class PipelineService
         $lead->refresh();
         $this->recordLeadUpdateActivities($lead, $user, $before, $data);
 
-        return $lead->fresh($this->leadDetailRelations());
+        return $this->loadLeadWithHistory($lead);
     }
 
     public function moveLead(int $businessId, User $user, int $leadId, int $stageId, float $position): PipelineLead
@@ -867,7 +871,7 @@ class PipelineService
             ]);
         }
 
-        return $lead->fresh(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone']);
+        return $this->loadLeadWithHistory($lead);
     }
 
     protected function syncTaskStatusFromStage(PipelineLead $lead, PipelineStage $stage): void
@@ -943,7 +947,7 @@ class PipelineService
             'customer_id' => $customerId,
         ]);
 
-        return $lead->fresh(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone', 'convertedCustomer:id,name,email,phone']);
+        return $this->loadLeadWithHistory($lead);
     }
 
     public function addActivity(
@@ -975,6 +979,15 @@ class PipelineService
         }
 
         return $this->recordActivity($lead, $user->id, $type, $body, $metadata, $parentId);
+    }
+
+    public function logLeadHistoryEvent(
+        PipelineLead $lead,
+        User $user,
+        string $body,
+        ?array $metadata = null,
+    ): PipelineLeadActivity {
+        return $this->recordActivity($lead, $user->id, 'system', $body, $metadata);
     }
 
     public function addActivityAndNotify(
@@ -1025,6 +1038,20 @@ class PipelineService
         if (! $isAuthor && ! $canModerate) {
             abort(403, 'You can only delete your own comments or moderate as a board manager.');
         }
+
+        if (in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
+            $preview = $activity->body ? mb_substr($activity->body, 0, 120) : null;
+            $this->logLeadHistoryEvent($lead, $user, 'Comment removed', [
+                'action' => 'comment_removed',
+                'comment_type' => $activity->type,
+                'preview' => $preview,
+            ]);
+        }
+
+        PipelineLeadActivity::query()
+            ->where('lead_id', $lead->id)
+            ->where('parent_id', $activity->id)
+            ->delete();
 
         $activity->delete();
     }
@@ -1238,12 +1265,20 @@ class PipelineService
         $this->assertCanEditBoard($user, $lead->board);
 
         $maxOrder = PipelineChecklist::query()->where('lead_id', $leadId)->max('sort_order');
+        $title = $data['title'] ?? 'Checklist';
 
-        return PipelineChecklist::create([
+        $checklist = PipelineChecklist::create([
             'lead_id' => $leadId,
-            'title' => $data['title'] ?? 'Checklist',
+            'title' => $title,
             'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
         ]);
+
+        $this->recordActivity($lead, $user->id, 'system', "Checklist added: {$title}", [
+            'action' => 'checklist_added',
+            'title' => $title,
+        ]);
+
+        return $checklist;
     }
 
     /** @param  array<string, mixed>  $data */
@@ -1264,7 +1299,14 @@ class PipelineService
     {
         $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
         $this->assertCanEditBoard($user, $checklist->lead->board);
+        $title = $checklist->title;
+
         $checklist->delete();
+
+        $this->recordActivity($checklist->lead, $user->id, 'system', "Checklist removed: {$title}", [
+            'action' => 'checklist_removed',
+            'title' => $title,
+        ]);
     }
 
     /** @param  array<string, mixed>  $data */
@@ -1274,13 +1316,21 @@ class PipelineService
         $this->assertCanEditBoard($user, $checklist->lead->board);
 
         $maxOrder = PipelineChecklistItem::query()->where('checklist_id', $checklistId)->max('sort_order');
+        $title = $data['title'];
 
-        return PipelineChecklistItem::create([
+        $item = PipelineChecklistItem::create([
             'checklist_id' => $checklistId,
-            'title' => $data['title'],
+            'title' => $title,
             'is_done' => (bool) ($data['is_done'] ?? false),
             'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
         ]);
+
+        $this->recordActivity($checklist->lead, $user->id, 'system', "Checklist item added: {$title}", [
+            'action' => 'checklist_item_added',
+            'title' => $title,
+        ]);
+
+        return $item;
     }
 
     /** @param  array<string, mixed>  $data */
@@ -1291,11 +1341,23 @@ class PipelineService
             ->findOrFail($itemId);
         $this->assertCanEditBoard($user, $item->checklist->lead->board);
 
+        $wasDone = (bool) $item->is_done;
+
         $item->update(array_filter([
             'title' => $data['title'] ?? null,
             'is_done' => array_key_exists('is_done', $data) ? (bool) $data['is_done'] : null,
             'sort_order' => $data['sort_order'] ?? null,
         ], fn ($v) => $v !== null));
+
+        if (array_key_exists('is_done', $data) && (bool) $data['is_done'] !== $wasDone) {
+            $message = (bool) $data['is_done']
+                ? "Checklist item completed: {$item->title}"
+                : "Checklist item reopened: {$item->title}";
+            $this->recordActivity($item->checklist->lead, $user->id, 'system', $message, [
+                'action' => (bool) $data['is_done'] ? 'checklist_item_done' : 'checklist_item_reopened',
+                'title' => $item->title,
+            ]);
+        }
 
         return $item->fresh();
     }
@@ -1306,7 +1368,15 @@ class PipelineService
             ->with('checklist.lead.board')
             ->findOrFail($itemId);
         $this->assertCanEditBoard($user, $item->checklist->lead->board);
+        $title = $item->title;
+        $lead = $item->checklist->lead;
+
         $item->delete();
+
+        $this->recordActivity($lead, $user->id, 'system', "Checklist item removed: {$title}", [
+            'action' => 'checklist_item_removed',
+            'title' => $title,
+        ]);
     }
 
     public function addAttachment(int $businessId, User $user, int $leadId, UploadedFile $file): PipelineAttachment
@@ -1315,15 +1385,23 @@ class PipelineService
         $this->assertCanEditBoard($user, $lead->board);
 
         $path = $file->store('pipeline-attachments', 'public');
+        $fileName = $file->getClientOriginalName();
 
-        return PipelineAttachment::create([
+        $attachment = PipelineAttachment::create([
             'lead_id' => $leadId,
             'user_id' => $user->id,
-            'file_name' => $file->getClientOriginalName(),
+            'file_name' => $fileName,
             'file_path' => $path,
             'mime_type' => $file->getClientMimeType(),
             'file_size' => $file->getSize(),
         ]);
+
+        $this->recordActivity($lead, $user->id, 'system', "Attachment added: {$fileName}", [
+            'action' => 'attachment_added',
+            'file_name' => $fileName,
+        ]);
+
+        return $attachment;
     }
 
     public function deleteAttachment(int $businessId, User $user, int $attachmentId): void
@@ -1342,7 +1420,15 @@ class PipelineService
             Storage::disk('public')->delete($attachment->file_path);
         }
 
+        $fileName = $attachment->file_name;
+        $lead = $attachment->lead;
+
         $attachment->delete();
+
+        $this->recordActivity($lead, $user->id, 'system', "Attachment removed: {$fileName}", [
+            'action' => 'attachment_removed',
+            'file_name' => $fileName,
+        ]);
     }
 
     /** @return list<string> */
@@ -1355,10 +1441,25 @@ class PipelineService
             'assignees:id,name,avatar',
             'source:id,name',
             'customer:id,name,email,phone',
+            'convertedCustomer:id,name,email,phone',
             'labels:id,name,color',
             'checklists.items',
             'attachments.user:id,name',
         ];
+    }
+
+    protected function loadLeadWithHistory(PipelineLead $lead): PipelineLead
+    {
+        $lead->load(array_merge($this->leadDetailRelations(), [
+            'activities' => fn ($q) => $q->with(['user:id,name,avatar', 'reactions'])->orderBy('created_at'),
+        ]));
+
+        $lead->loadCount([
+            'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
+            'activities as history_count',
+        ]);
+
+        return $lead;
     }
 
     protected function recordActivity(
@@ -1391,6 +1492,7 @@ class PipelineService
 
         $scalarFields = [
             'title' => 'Title',
+            'description' => 'Description',
             'due_date' => 'Due date',
             'expected_close_date' => 'Expected close',
             'start_date' => 'Start date',
@@ -1398,6 +1500,9 @@ class PipelineService
             'estimated_value' => 'Estimated value',
             'background_color' => 'Card color',
             'lost_reason' => 'Lost reason',
+            'contact_name' => 'Contact name',
+            'contact_email' => 'Contact email',
+            'contact_phone' => 'Contact phone',
         ];
 
         foreach ($scalarFields as $field => $label) {
@@ -1444,6 +1549,24 @@ class PipelineService
                     'action' => 'assignees_change',
                     'from' => $beforeNames,
                     'to' => $afterNames,
+                ]);
+            }
+        }
+
+        if (array_key_exists('source_id', $data)) {
+            $beforeSource = $before->source_id
+                ? PipelineSource::query()->whereKey($before->source_id)->value('name')
+                : null;
+            $afterSource = $lead->source_id
+                ? PipelineSource::query()->whereKey($lead->source_id)->value('name')
+                : null;
+            if ($this->normalizeActivityValue($beforeSource) !== $this->normalizeActivityValue($afterSource)) {
+                $this->recordActivity($lead, $userId, 'system', 'Source updated', [
+                    'action' => 'field_change',
+                    'field' => 'source_id',
+                    'field_label' => 'Source',
+                    'from' => $beforeSource,
+                    'to' => $afterSource,
                 ]);
             }
         }

@@ -45,6 +45,7 @@ class BusinessRequest extends BaseFormRequest
             'payment_mobile_money_number' => ['nullable', 'string', 'max:50'],
             'payment_instructions' => ['nullable', 'string'],
             'logo_path' => ['nullable', 'string', 'max:255'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ];
     }
 
@@ -54,6 +55,9 @@ class BusinessRequest extends BaseFormRequest
             'slug.unique' => 'This business URL slug is already taken.',
             'website.url' => 'Please enter a valid website URL (e.g. https://example.com).',
             'tax_regime.in' => 'Tax regime must be either none or vat_registered.',
+            'logo.image' => 'The business logo must be an image file.',
+            'logo.mimes' => 'The business logo must be a JPG, JPEG, PNG, GIF, or WebP file.',
+            'logo.max' => 'The business logo must not exceed 2 MB.',
         ]);
     }
 }
