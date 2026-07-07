@@ -560,6 +560,7 @@ class PipelineService
             'assignee' => $lead->assignee ? [
                 'id' => $lead->assignee->id,
                 'name' => $lead->assignee->name,
+                'avatar' => $lead->assignee->avatar,
             ] : null,
         ];
     }
