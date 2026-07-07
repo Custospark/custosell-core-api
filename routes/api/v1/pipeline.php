@@ -25,6 +25,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::patch('/pipeline/leads/{id}/stage', [PipelineController::class, 'moveLead'])->whereNumber('id');
     Route::post('/pipeline/leads/{id}/convert', [PipelineController::class, 'convertLead'])->whereNumber('id');
     Route::post('/pipeline/leads/{leadId}/activities', [PipelineController::class, 'storeActivity'])->whereNumber('leadId');
+    Route::delete('/pipeline/activities/{id}', [PipelineController::class, 'destroyActivity'])->whereNumber('id');
 
     Route::get('/pipeline/sources', [PipelineController::class, 'sources']);
     Route::post('/pipeline/sources', [PipelineController::class, 'storeSource']);

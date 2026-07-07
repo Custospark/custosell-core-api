@@ -438,6 +438,17 @@ class PipelineController extends Controller
             ->setStatusCode(201);
     }
 
+    public function destroyActivity(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteActivity(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(null, 204);
+    }
+
     public function sources(Request $request): JsonResponse
     {
         $sources = $this->pipelineService->listSources((int) $request->user()->business_id);

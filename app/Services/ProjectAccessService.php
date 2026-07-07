@@ -22,11 +22,19 @@ class ProjectAccessService
 
     public function canViewAllProjects(User $user): bool
     {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return true;
+        }
+
         return $this->moduleAccess->hasFullEstimatesWorkspace($user);
     }
 
     public function canViewProjectCosting(User $user): bool
     {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return true;
+        }
+
         return $this->moduleAccess->hasFullEstimatesWorkspace($user);
     }
 
@@ -85,6 +93,10 @@ class ProjectAccessService
 
     public function canManageProjectMembers(User $user, Project $project): bool
     {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return true;
+        }
+
         if ($this->canViewAllProjects($user)) {
             return true;
         }

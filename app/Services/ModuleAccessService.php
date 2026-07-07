@@ -70,29 +70,12 @@ class ModuleAccessService
 
     public function hasFullEstimatesWorkspace(User $user): bool
     {
-        $stored = $this->storedStaffModules($user);
-
-        if (in_array(self::ESTIMATES_FULL_SLUG, $stored, true)) {
-            return true;
-        }
-
-        if ($this->isBusinessOwner($user) && $this->ownerHasLegacyFullEstimatesAccess($user)) {
-            return true;
-        }
-
-        return false;
+        return in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true);
     }
 
     public function ownerHasLegacyFullEstimatesAccess(User $user): bool
     {
-        if (! $this->isBusinessOwner($user)) {
-            return false;
-        }
-
-        $businessModules = $this->storedBusinessModules($user);
-
-        return in_array('estimates', $businessModules, true)
-            && count($businessModules) === count(self::BUSINESS_MODULES);
+        return $this->hasFullEstimatesWorkspace($user);
     }
 
     /** @return list<string> */

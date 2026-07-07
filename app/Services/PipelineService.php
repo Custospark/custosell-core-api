@@ -287,7 +287,7 @@ class PipelineService
         if (array_key_exists('is_archived', $data) && $data['is_archived']) {
             $this->assertCanArchiveBoard($user, $board);
         } else {
-            $this->assertCanEditBoard($user, $board);
+            $this->assertCanManageBoard($user, $board);
         }
 
         $board->update(array_filter([
@@ -892,6 +892,58 @@ class PipelineService
         return $this->recordActivity($lead, $user->id, $type, $body, $metadata);
     }
 
+    public function deleteActivity(int $businessId, User $user, int $activityId): void
+    {
+        $activity = PipelineLeadActivity::query()
+            ->where('business_id', $businessId)
+            ->whereKey($activityId)
+            ->firstOrFail();
+
+        if (! in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
+            abort(403, 'This activity cannot be deleted.');
+        }
+
+        $lead = $this->findLeadForBusiness($businessId, (int) $activity->lead_id);
+        $board = $lead->board ?? $this->findBoardForBusiness($businessId, (int) $lead->board_id);
+
+        $isAuthor = (int) $activity->user_id === (int) $user->id;
+        $canModerate = $this->userCanManageBoard($user, $board);
+
+        if (! $isAuthor && ! $canModerate) {
+            abort(403, 'You can only delete your own comments or moderate as a board manager.');
+        }
+
+        $activity->delete();
+    }
+
+    public function userCanManageBoard(User $user, PipelineBoard $board): bool
+    {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return true;
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+
+            return $project && $this->projectAccess->canManageProjectMembers($user, $project);
+        }
+
+        if ((int) $board->created_by === (int) $user->id) {
+            return true;
+        }
+
+        if ($board->visibility === 'shared') {
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            return $member && $member->role === 'editor';
+        }
+
+        return false;
+    }
+
     public function listSources(int $businessId): Collection
     {
         $this->seedSourcesIfMissing($businessId);
@@ -1299,30 +1351,13 @@ class PipelineService
 
     protected function assertCanManageBoard(User $user, PipelineBoard $board): void
     {
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+        if ($this->userCanManageBoard($user, $board)) {
             return;
         }
 
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-            if ($project && $this->projectAccess->canManageProjectMembers($user, $project)) {
-                return;
-            }
-            abort(403, 'Only project managers can change these board settings.');
-        }
-
-        if ($board->visibility === 'shared') {
-            $member = PipelineBoardMember::query()
-                ->where('board_id', $board->id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            if ($member && $member->role === 'editor') {
-                return;
-            }
-        }
-
-        abort(403, 'Only the board owner can change pipeline settings.');
+        abort(403, $board->project_id
+            ? 'Only project managers can change these board settings.'
+            : 'Only the board owner can change pipeline settings.');
     }
 
     protected function assertCanArchiveBoard(User $user, PipelineBoard $board): void
