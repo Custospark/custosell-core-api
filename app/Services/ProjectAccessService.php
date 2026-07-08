@@ -6,7 +6,11 @@ namespace App\Services;
 
 use App\Models\PipelineBoard;
 use App\Models\PipelineBoardAnnouncement;
+use App\Models\PipelineBoardAutomation;
 use App\Models\PipelineBoardMember;
+use App\Models\PipelineBoardMessage;
+use App\Models\PipelineBoardMessageAttachment;
+use App\Models\PipelineBoardResource;
 use App\Models\PipelineChecklist;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
@@ -215,15 +219,16 @@ class ProjectAccessService
             return false;
         }
 
-        if ($this->moduleAccess->isBusinessOwner($user)) {
-            return true;
+        if ($board->visibility === 'private') {
+            return (int) $board->created_by === (int) $user->id;
         }
 
         return match ($board->visibility) {
-            'team' => $this->moduleAccess->canAccess($user, 'pipeline')
+            'team' => $this->moduleAccess->isBusinessOwner($user)
+                || $this->moduleAccess->canAccess($user, 'pipeline')
                 || $this->moduleAccess->canAccess($user, 'estimates'),
-            'private' => (int) $board->created_by === (int) $user->id,
-            'shared' => (int) $board->created_by === (int) $user->id
+            'shared' => $this->moduleAccess->isBusinessOwner($user)
+                || (int) $board->created_by === (int) $user->id
                 || PipelineBoardMember::query()
                     ->where('board_id', $board->id)
                     ->where('user_id', $user->id)
@@ -332,6 +337,50 @@ class ProjectAccessService
                 ->first();
 
             return $activity?->lead?->board;
+        }
+
+        $resourceId = $request->route('id');
+        if ($resourceId && is_numeric($resourceId) && str_contains($request->path(), 'pipeline/resources')) {
+            $resource = PipelineBoardResource::query()
+                ->whereKey((int) $resourceId)
+                ->whereHas('board', fn ($query) => $query->where('business_id', $businessId))
+                ->with('board')
+                ->first();
+
+            return $resource?->board;
+        }
+
+        $messageId = $request->route('id');
+        if ($messageId && is_numeric($messageId) && str_contains($request->path(), 'pipeline/conversation/messages')) {
+            $message = PipelineBoardMessage::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $messageId)
+                ->with('board')
+                ->first();
+
+            return $message?->board;
+        }
+
+        $attachmentId = $request->route('id');
+        if ($attachmentId && is_numeric($attachmentId) && str_contains($request->path(), 'pipeline/conversation/attachments')) {
+            $attachment = PipelineBoardMessageAttachment::query()
+                ->whereKey((int) $attachmentId)
+                ->whereHas('message', fn ($query) => $query->where('business_id', $businessId))
+                ->with('message.board')
+                ->first();
+
+            return $attachment?->message?->board;
+        }
+
+        $automationId = $request->route('id');
+        if ($automationId && is_numeric($automationId) && str_contains($request->path(), 'pipeline/automations')) {
+            $automation = PipelineBoardAutomation::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $automationId)
+                ->with('board')
+                ->first();
+
+            return $automation?->board;
         }
 
         $reminderId = $request->route('id');

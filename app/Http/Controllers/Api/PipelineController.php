@@ -471,7 +471,13 @@ class PipelineController extends Controller
             $validated['parent_id'] ?? null,
         );
 
-        return (new PipelineLeadActivityResource($activity->load('user:id,name,avatar')))
+        $activity->load(['user:id,name,avatar', 'lead.board']);
+        $canModerate = $activity->lead?->board
+            ? $this->pipelineService->userCanManageBoard($request->user(), $activity->lead->board)
+            : false;
+        $request->attributes->set('pipeline_can_moderate_board', $canModerate);
+
+        return (new PipelineLeadActivityResource($activity))
             ->response()
             ->setStatusCode(201);
     }
@@ -499,6 +505,12 @@ class PipelineController extends Controller
             $id,
             $validated['body'],
         );
+
+        $activity->loadMissing('lead.board');
+        $canModerate = $activity->lead?->board
+            ? $this->pipelineService->userCanManageBoard($request->user(), $activity->lead->board)
+            : false;
+        $request->attributes->set('pipeline_can_moderate_board', $canModerate);
 
         return (new PipelineLeadActivityResource($activity))
             ->response();

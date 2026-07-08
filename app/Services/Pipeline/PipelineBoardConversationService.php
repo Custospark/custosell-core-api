@@ -397,13 +397,13 @@ class PipelineBoardConversationService
 
   protected function assertCanDeleteMessage(User $user, PipelineBoardMessage $message, PipelineBoard $board): void
   {
-    if ($this->moduleAccess->isBusinessOwner($user)
-      || (int) $message->user_id === (int) $user->id
-      || $this->pipeline->userCanManageBoard($user, $board)) {
+    $isAuthor = (int) $message->user_id === (int) $user->id;
+    // Author or board manager/owner only — contributors cannot delete others' messages.
+    if ($isAuthor || $this->pipeline->userCanManageBoard($user, $board)) {
       return;
     }
 
-    abort(403, 'You cannot delete this message.');
+    abort(403, 'You can only delete your own messages or moderate as a board manager.');
   }
 
   /** @param  Collection<int, PipelineBoardMessage>  $messages */
@@ -545,9 +545,8 @@ class PipelineBoardConversationService
   /** @return array<string, mixed> */
   protected function serializeMessage(PipelineBoardMessage $message, User $viewer, PipelineBoard $board): array
   {
-    $canManage = $this->moduleAccess->isBusinessOwner($viewer)
-      || (int) $message->user_id === (int) $viewer->id
-      || $this->pipeline->userCanManageBoard($viewer, $board);
+    $isAuthor = (int) $message->user_id === (int) $viewer->id;
+    $canModerate = $this->pipeline->userCanManageBoard($viewer, $board);
 
     return [
       'id' => $message->id,
@@ -582,10 +581,10 @@ class PipelineBoardConversationService
         ->values()
         ->all() ?? [],
       'reactions' => $this->reactionSummary($message, $viewer),
-      'can_edit' => (int) $message->user_id === (int) $viewer->id,
-      'can_delete' => $canManage,
-      'can_pin' => $this->pipeline->userCanManageBoard($viewer, $board)
-        || $this->moduleAccess->isBusinessOwner($viewer),
+      'can_edit' => $isAuthor,
+      // Author or board manager/owner only — collaborators cannot delete others.
+      'can_delete' => $isAuthor || $canModerate,
+      'can_pin' => $canModerate,
     ];
   }
 

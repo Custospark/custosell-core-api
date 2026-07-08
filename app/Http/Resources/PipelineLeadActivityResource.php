@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\PipelineService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,6 +20,23 @@ class PipelineLeadActivityResource extends JsonResource
             }
         }
 
+        $user = $request->user();
+        $isComment = in_array($this->type, ['note', 'comment', 'call', 'email', 'meeting'], true);
+        $isAuthor = $user && (int) $this->user_id === (int) $user->id;
+
+        $canModerate = (bool) $request->attributes->get('pipeline_can_moderate_board', false);
+        if (! $canModerate && $user && $isComment) {
+            $board = null;
+            if ($this->relationLoaded('lead') && $this->lead) {
+                $board = $this->lead->relationLoaded('board')
+                    ? $this->lead->board
+                    : $this->lead->board()->first();
+            }
+            if ($board) {
+                $canModerate = app(PipelineService::class)->userCanManageBoard($user, $board);
+            }
+        }
+
         return [
             'id' => $this->id,
             'lead_id' => $this->lead_id,
@@ -33,6 +51,8 @@ class PipelineLeadActivityResource extends JsonResource
                 'name' => $this->user->name,
                 'avatar' => $this->user->avatar,
             ] : null),
+            'can_edit' => $isComment && $isAuthor,
+            'can_delete' => $isComment && ($isAuthor || $canModerate),
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

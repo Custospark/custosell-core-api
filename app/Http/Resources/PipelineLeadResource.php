@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\PipelineService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,16 @@ class PipelineLeadResource extends JsonResource
                     }
                 }
             }
+        }
+
+        $user = $request->user();
+        $board = $this->relationLoaded('board') ? $this->board : null;
+        $canModerateBoard = $user && $board
+            ? app(PipelineService::class)->userCanManageBoard($user, $board)
+            : false;
+
+        if ($user) {
+            $request->attributes->set('pipeline_can_moderate_board', $canModerateBoard);
         }
 
         return [

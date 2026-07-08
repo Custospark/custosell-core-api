@@ -1181,9 +1181,8 @@ class PipelineService
         $board = $lead->board ?? $this->findBoardForBusiness($businessId, (int) $lead->board_id);
 
         $isAuthor = (int) $activity->user_id === (int) $user->id;
-        $canModerate = $this->userCanManageBoard($user, $board);
 
-        if (! $isAuthor && ! $canModerate) {
+        if (! $isAuthor) {
             abort(403, 'You can only edit your own comments.');
         }
 
@@ -1203,6 +1202,10 @@ class PipelineService
 
     public function userCanManageBoard(User $user, PipelineBoard $board): bool
     {
+        if ($board->visibility === 'private' && ! $board->project_id) {
+            return (int) $board->created_by === (int) $user->id;
+        }
+
         if ($this->moduleAccess->isBusinessOwner($user)) {
             return true;
         }
@@ -1815,6 +1818,10 @@ class PipelineService
 
     public function canViewBoard(User $user, PipelineBoard $board): bool
     {
+        if ($board->visibility === 'private' && ! $board->project_id) {
+            return (int) $board->created_by === (int) $user->id;
+        }
+
         if ($this->moduleAccess->isBusinessOwner($user)) {
             return true;
         }
@@ -1890,6 +1897,10 @@ class PipelineService
     {
         if (! $this->canViewBoard($user, $board)) {
             return false;
+        }
+
+        if ($board->visibility === 'private' && ! $board->project_id) {
+            return (int) $board->created_by === (int) $user->id;
         }
 
         if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
