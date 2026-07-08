@@ -301,7 +301,8 @@ class PipelineBoardConversationService
   public function toggleReaction(int $businessId, User $user, int $messageId, ?string $reaction): array
   {
     $message = $this->findMessageForBusiness($businessId, $messageId);
-    $this->pipeline->getBoard($businessId, $user, (int) $message->board_id);
+    $board = $this->pipeline->getBoard($businessId, $user, (int) $message->board_id);
+    $this->pipeline->ensureCanContributeToBoard($user, $board);
 
     $existing = PipelineBoardMessageReaction::query()
       ->where('message_id', $message->id)

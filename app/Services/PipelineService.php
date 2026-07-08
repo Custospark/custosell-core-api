@@ -1850,6 +1850,13 @@ class PipelineService
         }
     }
 
+    public function ensureCanContributeToBoard(User $user, PipelineBoard $board): void
+    {
+        if (! $this->userCanContributeToBoard($user, $board)) {
+            abort(403, 'You have read-only access to this board.');
+        }
+    }
+
     protected function assertCanEditBoard(User $user, PipelineBoard $board): void
     {
         $this->assertCanViewBoard($user, $board);
@@ -1867,6 +1874,10 @@ class PipelineService
         }
 
         if ($board->visibility === 'team') {
+            if (! $this->userCanContributeToBoard($user, $board)) {
+                abort(403, 'You have read-only access to this board.');
+            }
+
             return;
         }
 

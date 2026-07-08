@@ -66,6 +66,7 @@ class PipelineCollaborationService
         }
 
         $lead = $this->pipeline->getLead($businessId, $user, (int) $activity->lead_id);
+        $this->pipeline->ensureCanContributeToBoard($user, $lead->board);
 
         $existing = PipelineActivityReaction::query()
             ->where('activity_id', $activity->id)
@@ -214,6 +215,7 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $announcement->board_id);
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         PipelineBoardAnnouncementRead::updateOrCreate(
             ['announcement_id' => $announcement->id, 'user_id' => $user->id],
@@ -275,6 +277,7 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $announcement->board_id);
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         $canDeleteForAll = (int) $announcement->created_by === (int) $user->id
             || $this->pipeline->userCanManageBoard($user, $board);
@@ -423,7 +426,8 @@ class PipelineCollaborationService
             ->with('options')
             ->firstOrFail();
 
-        $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+        $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         if ($poll->closes_at && $poll->closes_at->isPast()) {
             abort(422, 'This poll is closed.');
@@ -447,8 +451,6 @@ class PipelineCollaborationService
             'user_id' => $user->id,
         ]);
 
-        $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
-
         return $this->serializePoll($poll->fresh(['options', 'creator:id,name,avatar', 'votes']), $user, $board);
     }
 
@@ -466,6 +468,7 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
         $targetUserId = $targetUserId ?? $user->id;
         $canManagePoll = $this->canManagePoll($poll, $user, $board);
 
@@ -496,6 +499,7 @@ class PipelineCollaborationService
             return;
         }
 
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
         $this->dismissPollForUser($poll, $user);
     }
 
