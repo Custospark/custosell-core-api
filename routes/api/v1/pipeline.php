@@ -94,4 +94,11 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::get('/pipeline/board-templates', [PipelineController::class, 'boardTemplates']);
     Route::post('/pipeline/board-templates', [PipelineController::class, 'storeBoardTemplate']);
     Route::post('/pipeline/boards/{boardId}/apply-template', [PipelineController::class, 'applyBoardTemplate'])->whereNumber('boardId');
+
+    Route::get('/pipeline/boards/{boardId}/progress/summary', [PipelineController::class, 'boardProgressSummary'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/progress/export', [PipelineController::class, 'exportBoardProgress'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/targets', [PipelineController::class, 'boardTargets'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/targets', [PipelineController::class, 'storeBoardTarget'])->whereNumber('boardId');
+    Route::patch('/pipeline/targets/{targetId}', [PipelineController::class, 'updateBoardTarget'])->whereNumber('targetId');
+    Route::delete('/pipeline/targets/{targetId}', [PipelineController::class, 'destroyBoardTarget'])->whereNumber('targetId');
 });

@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('pipeline:dispatch-reminders')->everyMinute();
+Schedule::command('pipeline:record-progress-snapshots')->dailyAt('23:55');

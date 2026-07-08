@@ -84,6 +84,7 @@ class UserService implements UserServiceInterface
 
         $this->validateRoleUpdate($user, $businessId, $actorId, $data);
         $this->validateActivationUpdate($user, $businessId, $actorId, $data);
+        $this->validateEmailUpdate($user, $businessId, $data);
         $this->validateModulesUpdate($user, $businessId, $data);
 
         if (isset($data['password']) && trim((string) $data['password']) === '') {
@@ -92,7 +93,17 @@ class UserService implements UserServiceInterface
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         }
-        return $this->userRepository->update($user, $data);
+
+        $updated = $this->userRepository->update($user, $data);
+
+        if (
+            array_key_exists('modules', $data)
+            && $this->isBusinessOwner($updated, $businessId)
+        ) {
+            $this->clampStaffModulesAfterOwnerUpdate($updated);
+        }
+
+        return $updated;
     }
 
     public function delete(int $id, int $businessId, int $actorId): bool
@@ -205,13 +216,33 @@ class UserService implements UserServiceInterface
             return;
         }
 
+        // Owner module changes from Staff drawer use the same rules as Module Access profile.
         if ($this->isBusinessOwner($user, $businessId)) {
-            unset($data['modules']);
+            $data['modules'] = $this->moduleAccess->normalizeOwnerModules($data['modules']);
 
             return;
         }
 
         $data['modules'] = $this->moduleAccess->normalizeStaffModules($data['modules'], allowEmpty: true);
+    }
+
+    protected function validateEmailUpdate(User $user, int $businessId, array &$data): void
+    {
+        if (! array_key_exists('email', $data)) {
+            return;
+        }
+
+        $nextEmail = strtolower(trim((string) $data['email']));
+        $currentEmail = strtolower(trim((string) $user->email));
+        if ($nextEmail === $currentEmail) {
+            return;
+        }
+
+        if ($this->isBusinessOwner($user, $businessId)) {
+            throw ValidationException::withMessages([
+                'email' => 'The business owner email cannot be changed from staff settings.',
+            ]);
+        }
     }
 
     protected function validateDelete(User $user, int $businessId, int $actorId): void

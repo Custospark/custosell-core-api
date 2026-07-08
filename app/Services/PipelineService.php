@@ -1994,6 +1994,14 @@ class PipelineService
 
     protected function assertCanArchiveBoard(User $user, PipelineBoard $board): void
     {
+        if ($board->visibility === 'private' && ! $board->project_id) {
+            if ((int) $board->created_by === (int) $user->id) {
+                return;
+            }
+
+            abort(403, 'Only the board owner can archive this board.');
+        }
+
         if ($this->moduleAccess->isBusinessOwner($user)) {
             return;
         }

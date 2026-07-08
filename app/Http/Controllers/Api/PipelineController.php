@@ -15,6 +15,7 @@ use App\Http\Resources\PipelineStageResource;
 use App\Services\Pipeline\PipelineBoardActivityService;
 use App\Services\Pipeline\PipelineBoardAutomationService;
 use App\Services\Pipeline\PipelineBoardConversationService;
+use App\Services\Pipeline\PipelineBoardProgressService;
 use App\Services\Pipeline\PipelineBoardResourceService;
 use App\Services\Pipeline\PipelineBoardTemplateService;
 use App\Services\Pipeline\PipelineCollaborationService;
@@ -32,6 +33,7 @@ class PipelineController extends Controller
         protected PipelineBoardActivityService $boardActivity,
         protected PipelineBoardAutomationService $boardAutomations,
         protected PipelineBoardTemplateService $boardTemplates,
+        protected PipelineBoardProgressService $boardProgress,
     ) {}
 
     public function boards(Request $request): JsonResponse
@@ -1397,5 +1399,133 @@ class PipelineController extends Controller
         );
 
         return response()->json(['message' => 'Template applied']);
+    }
+
+    public function boardProgressSummary(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'period' => ['nullable', 'in:day,week,month,quarter,year,custom'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        $summary = $this->boardProgress->progressSummary(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['period'] ?? 'month',
+            $validated['from'] ?? null,
+            $validated['to'] ?? null,
+        );
+
+        return response()->json(['data' => $summary]);
+    }
+
+    public function boardTargets(Request $request, int $boardId): JsonResponse
+    {
+        $targets = $this->boardProgress->listTargets(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        return response()->json(['data' => $targets]);
+    }
+
+    public function storeBoardTarget(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'type' => ['required', 'in:kpi,goal,objective,key_result'],
+            'parent_id' => ['nullable', 'integer'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'metric_key' => ['required', 'string'],
+            'target_value' => ['required', 'numeric', 'min:0'],
+            'unit' => ['required', 'in:count,currency,percent,days'],
+            'period_type' => ['required', 'in:day,week,month,quarter,year,custom'],
+            'period_start' => ['nullable', 'date'],
+            'period_end' => ['nullable', 'date', 'after_or_equal:period_start'],
+            'scope' => ['required', 'in:board,member'],
+            'member_user_id' => ['nullable', 'integer'],
+            'weight' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'status' => ['nullable', 'in:draft,active,paused,completed,archived'],
+            'key_results' => ['nullable', 'array'],
+            'key_results.*.title' => ['required_with:key_results', 'string', 'max:255'],
+            'key_results.*.metric_key' => ['required_with:key_results', 'string'],
+            'key_results.*.target_value' => ['required_with:key_results', 'numeric', 'min:0'],
+            'key_results.*.unit' => ['required_with:key_results', 'in:count,currency,percent,days'],
+            'key_results.*.scope' => ['nullable', 'in:board,member'],
+            'key_results.*.member_user_id' => ['nullable', 'integer'],
+        ]);
+
+        $target = $this->boardProgress->storeTarget(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated,
+        );
+
+        return response()->json(['data' => $target], 201);
+    }
+
+    public function updateBoardTarget(Request $request, int $targetId): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'metric_key' => ['sometimes', 'string'],
+            'target_value' => ['sometimes', 'numeric', 'min:0'],
+            'unit' => ['sometimes', 'in:count,currency,percent,days'],
+            'period_type' => ['sometimes', 'in:day,week,month,quarter,year,custom'],
+            'period_start' => ['nullable', 'date'],
+            'period_end' => ['nullable', 'date', 'after_or_equal:period_start'],
+            'scope' => ['sometimes', 'in:board,member'],
+            'member_user_id' => ['nullable', 'integer'],
+            'weight' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'status' => ['nullable', 'in:draft,active,paused,completed,archived'],
+        ]);
+
+        $target = $this->boardProgress->updateTarget(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $targetId,
+            $validated,
+        );
+
+        return response()->json(['data' => $target]);
+    }
+
+    public function destroyBoardTarget(Request $request, int $targetId): JsonResponse
+    {
+        $this->boardProgress->archiveTarget(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $targetId,
+        );
+
+        return response()->json(null, 204);
+    }
+
+    public function exportBoardProgress(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'period' => ['nullable', 'in:day,week,month,quarter,year,custom'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        $summary = $this->boardProgress->progressSummary(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['period'] ?? 'month',
+            $validated['from'] ?? null,
+            $validated['to'] ?? null,
+        );
+
+        return response()->json([
+            'data' => $summary,
+            'exported_at' => now()->toIso8601String(),
+        ]);
     }
 }
