@@ -403,10 +403,7 @@ class PipelineBoardConversationService
   protected function assertCanDeleteMessage(User $user, PipelineBoardMessage $message, PipelineBoard $board): void
   {
     if ($message->is_system) {
-      if ($this->pipeline->userCanManageBoard($user, $board)) {
-        return;
-      }
-      abort(403, 'Only board managers can delete automated messages.');
+      abort(403, 'Automated messages cannot be deleted.');
     }
 
     $isAuthor = (int) $message->user_id === (int) $user->id;
@@ -575,8 +572,8 @@ class PipelineBoardConversationService
       'updated_at' => $message->updated_at?->toISOString(),
       'user' => $message->user ? [
         'id' => $message->user->id,
-        'name' => $isSystem ? 'Automation' : $message->user->name,
-        'avatar' => $isSystem ? null : $message->user->avatar,
+        'name' => $message->user->name,
+        'avatar' => $message->user->avatar,
       ] : ($isSystem ? [
         'id' => 0,
         'name' => 'Automation',
@@ -600,8 +597,8 @@ class PipelineBoardConversationService
       'reactions' => $this->reactionSummary($message, $viewer),
       // Automated posts are never editable.
       'can_edit' => ! $isSystem && $isAuthor,
-      // Author/manager for normal messages; managers only for automation posts.
-      'can_delete' => $isSystem ? $canModerate : ($isAuthor || $canModerate),
+      // Automated messages are never deletable.
+      'can_delete' => ! $isSystem && ($isAuthor || $canModerate),
       'can_pin' => $canModerate,
     ];
   }
