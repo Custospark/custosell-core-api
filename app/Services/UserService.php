@@ -39,6 +39,11 @@ class UserService implements UserServiceInterface
     public function register(array $data): User
     {
         $data['password'] = Hash::make($data['password']);
+
+        if (! array_key_exists('modules', $data) || $data['modules'] === null) {
+            $data['modules'] = ModuleAccessService::BUSINESS_MODULES;
+        }
+
         return $this->userRepository->create($data);
     }
 
