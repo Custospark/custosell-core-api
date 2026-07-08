@@ -215,7 +215,6 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $announcement->board_id);
-        $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         PipelineBoardAnnouncementRead::updateOrCreate(
             ['announcement_id' => $announcement->id, 'user_id' => $user->id],
@@ -255,9 +254,12 @@ class PipelineCollaborationService
             ->get(['id']);
 
         $activePollsCount = $activePolls->count();
-        $pollsPendingVoteCount = $activePolls->filter(function (PipelinePoll $poll) use ($user) {
-            return ! $poll->votes->contains(fn ($vote) => (int) $vote->user_id === (int) $user->id);
-        })->count();
+        $canContribute = $this->pipeline->userCanContributeToBoard($user, $board);
+        $pollsPendingVoteCount = $canContribute
+            ? $activePolls->filter(function (PipelinePoll $poll) use ($user) {
+                return ! $poll->votes->contains(fn ($vote) => (int) $vote->user_id === (int) $user->id);
+            })->count()
+            : 0;
 
         return [
             'announcements_count' => $announcementsCount,
@@ -427,6 +429,7 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+
         $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         if ($poll->closes_at && $poll->closes_at->isPast()) {
@@ -468,13 +471,13 @@ class PipelineCollaborationService
             ->firstOrFail();
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
-        $this->pipeline->ensureCanContributeToBoard($user, $board);
         $targetUserId = $targetUserId ?? $user->id;
-        $canManagePoll = $this->canManagePoll($poll, $user, $board);
 
-        if ((int) $targetUserId !== (int) $user->id && ! $canManagePoll) {
+        if ((int) $targetUserId !== (int) $user->id) {
             abort(403, 'You can only remove your own vote.');
         }
+
+        $this->pipeline->ensureCanContributeToBoard($user, $board);
 
         PipelinePollVote::query()
             ->where('poll_id', $poll->id)
@@ -580,6 +583,7 @@ class PipelineCollaborationService
     {
         $isCreator = (int) $poll->created_by === (int) $viewer->id;
         $canManagePoll = $this->canManagePoll($poll, $viewer, $board);
+        $canContribute = $this->pipeline->userCanContributeToBoard($viewer, $board);
         $visibility = $poll->results_visibility ?? 'team';
         $canSeeResults = $visibility === 'team' || $isCreator || $canManagePoll;
         $userVotes = $poll->votes->where('user_id', $viewer->id)->values();
@@ -636,7 +640,8 @@ class PipelineCollaborationService
             'can_see_results' => $canSeeResults,
             'results_hidden' => ! $canSeeResults,
             'can_manage_poll' => $canManagePoll,
-            'can_remove_own_vote' => $userHasVoted,
+            'can_remove_own_vote' => $userHasVoted && $canContribute,
+            'can_vote' => $canContribute,
             'can_delete' => $canManagePoll,
             'can_dismiss' => ! $canManagePoll,
         ];
