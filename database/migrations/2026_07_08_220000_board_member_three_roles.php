@@ -7,6 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Expand enum first — 'contributor' is invalid while column is still viewer|editor.
+        DB::statement(
+            "ALTER TABLE pipeline_board_members MODIFY COLUMN role ENUM('viewer', 'editor', 'contributor', 'manager') NOT NULL DEFAULT 'editor'"
+        );
+
         DB::table('pipeline_board_members')
             ->where('role', 'editor')
             ->update(['role' => 'contributor']);
@@ -18,6 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::statement(
+            "ALTER TABLE pipeline_board_members MODIFY COLUMN role ENUM('viewer', 'editor', 'contributor', 'manager') NOT NULL DEFAULT 'contributor'"
+        );
+
         DB::table('pipeline_board_members')
             ->whereIn('role', ['contributor', 'manager'])
             ->update(['role' => 'editor']);

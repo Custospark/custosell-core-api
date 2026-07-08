@@ -117,7 +117,7 @@ Mike → (Sage BE+FE + Iris + Blue BE+FE + Atlas + Gauge + Nora) → Mike reconc
 For small, low-risk backend changes touching ≤2 files, Mike may use:
 
 ```
-Mike → Sage → Rex → Vera → Quill if docs changed → Mike → Oscar
+Mike → Sage → Rex → Vera → Quill → Mike → Oscar
 ```
 
 Blue, Atlas, Iris, Gauge, and Nora are mandatory when the change touches entities, migrations, validation, auth, payments, inventory correctness, queues, sync contracts, frontend UX, API contracts, or user-facing failure states.
