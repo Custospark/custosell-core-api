@@ -102,6 +102,7 @@ class PipelineBoardConversationService
       'user_id' => $user->id,
       'parent_id' => $parentId,
       'body' => $trimmed,
+      'is_system' => $isSystem,
     ]);
 
     $mentionedUsers = $this->syncMentions($message, $board, $user);
@@ -388,6 +389,10 @@ class PipelineBoardConversationService
 
   protected function assertCanEditMessage(User $user, PipelineBoardMessage $message, PipelineBoard $board): void
   {
+    if ($message->is_system) {
+      abort(403, 'Automated messages cannot be edited.');
+    }
+
     if ((int) $message->user_id !== (int) $user->id) {
       abort(403, 'You can only edit your own messages.');
     }
@@ -397,8 +402,14 @@ class PipelineBoardConversationService
 
   protected function assertCanDeleteMessage(User $user, PipelineBoardMessage $message, PipelineBoard $board): void
   {
+    if ($message->is_system) {
+      if ($this->pipeline->userCanManageBoard($user, $board)) {
+        return;
+      }
+      abort(403, 'Only board managers can delete automated messages.');
+    }
+
     $isAuthor = (int) $message->user_id === (int) $user->id;
-    // Author or board manager/owner only — contributors cannot delete others' messages.
     if ($isAuthor || $this->pipeline->userCanManageBoard($user, $board)) {
       return;
     }
@@ -545,6 +556,7 @@ class PipelineBoardConversationService
   /** @return array<string, mixed> */
   protected function serializeMessage(PipelineBoardMessage $message, User $viewer, PipelineBoard $board): array
   {
+    $isSystem = (bool) $message->is_system;
     $isAuthor = (int) $message->user_id === (int) $viewer->id;
     $canModerate = $this->pipeline->userCanManageBoard($viewer, $board);
 
@@ -554,6 +566,7 @@ class PipelineBoardConversationService
       'parent_id' => $message->parent_id,
       'user_id' => $message->user_id,
       'body' => $message->body,
+      'is_system' => $isSystem,
       'is_pinned' => (bool) $message->is_pinned,
       'pinned_at' => $message->pinned_at?->toISOString(),
       'pinned_by' => $message->pinned_by,
@@ -562,9 +575,13 @@ class PipelineBoardConversationService
       'updated_at' => $message->updated_at?->toISOString(),
       'user' => $message->user ? [
         'id' => $message->user->id,
-        'name' => $message->user->name,
-        'avatar' => $message->user->avatar,
-      ] : null,
+        'name' => $isSystem ? 'Automation' : $message->user->name,
+        'avatar' => $isSystem ? null : $message->user->avatar,
+      ] : ($isSystem ? [
+        'id' => 0,
+        'name' => 'Automation',
+        'avatar' => null,
+      ] : null),
       'mentions' => $message->mentions
         ?->map(fn (PipelineBoardMessageMention $mention) => [
           'user_id' => $mention->user_id,
@@ -581,9 +598,10 @@ class PipelineBoardConversationService
         ->values()
         ->all() ?? [],
       'reactions' => $this->reactionSummary($message, $viewer),
-      'can_edit' => $isAuthor,
-      // Author or board manager/owner only — collaborators cannot delete others.
-      'can_delete' => $isAuthor || $canModerate,
+      // Automated posts are never editable.
+      'can_edit' => ! $isSystem && $isAuthor,
+      // Author/manager for normal messages; managers only for automation posts.
+      'can_delete' => $isSystem ? $canModerate : ($isAuthor || $canModerate),
       'can_pin' => $canModerate,
     ];
   }

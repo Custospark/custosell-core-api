@@ -14,6 +14,7 @@ class PipelineBoardMessage extends Model
         'user_id',
         'parent_id',
         'body',
+        'is_system',
         'edited_at',
         'is_pinned',
         'pinned_at',
@@ -26,6 +27,7 @@ class PipelineBoardMessage extends Model
             'edited_at' => 'datetime',
             'pinned_at' => 'datetime',
             'is_pinned' => 'boolean',
+            'is_system' => 'boolean',
         ];
     }
 
