@@ -1832,6 +1832,11 @@ class PipelineService
         abort(403, 'You cannot edit this pipeline board.');
     }
 
+    public function ensureCanEditBoard(User $user, PipelineBoard $board): void
+    {
+        $this->assertCanEditBoard($user, $board);
+    }
+
     protected function assertCanManageBoard(User $user, PipelineBoard $board): void
     {
         if ($this->userCanManageBoard($user, $board)) {

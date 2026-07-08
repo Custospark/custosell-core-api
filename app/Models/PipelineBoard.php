@@ -62,4 +62,9 @@ class PipelineBoard extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    public function resources(): HasMany
+    {
+        return $this->hasMany(PipelineBoardResource::class, 'board_id')->orderByDesc('created_at');
+    }
 }

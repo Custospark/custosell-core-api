@@ -64,4 +64,14 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::get('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'leadReminders'])->whereNumber('leadId');
     Route::post('/pipeline/leads/{leadId}/reminders', [PipelineController::class, 'storeLeadReminder'])->whereNumber('leadId');
     Route::delete('/pipeline/reminders/{id}', [PipelineController::class, 'destroyReminder'])->whereNumber('id');
+
+    Route::get('/pipeline/boards/{boardId}/resources/summary', [PipelineController::class, 'boardResourcesSummary'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/resources/members', [PipelineController::class, 'boardResourceMembers'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/resources', [PipelineController::class, 'boardResources'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/resources/link', [PipelineController::class, 'storeBoardLinkResource'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/resources/upload', [PipelineController::class, 'uploadBoardResource'])->whereNumber('boardId');
+    Route::patch('/pipeline/resources/{id}', [PipelineController::class, 'updateBoardResource'])->whereNumber('id');
+    Route::delete('/pipeline/resources/{id}', [PipelineController::class, 'destroyBoardResource'])->whereNumber('id');
+    Route::post('/pipeline/resources/{id}/view', [PipelineController::class, 'recordBoardResourceView'])->whereNumber('id');
+    Route::post('/pipeline/resources/{id}/download', [PipelineController::class, 'recordBoardResourceDownload'])->whereNumber('id');
 });
