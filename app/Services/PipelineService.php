@@ -234,16 +234,21 @@ class PipelineService
     }
 
     /** @return list<array{id: int, name: string, email: string|null, avatar: string|null, modules: list<string>}> */
-    public function listBoardTeamMembers(int $businessId, string $workspace = 'pipeline'): array
-    {
+    public function listBoardTeamMembers(
+        int $businessId,
+        string $workspace = 'pipeline',
+        string $scope = 'workspace',
+    ): array {
         $workspace = $workspace === 'estimates' ? 'estimates' : 'pipeline';
+        $scope = $scope === 'business' ? 'business' : 'workspace';
 
         return User::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->filter(fn (User $user) => $this->userEligibleForBoardWorkspace($user, $workspace))
+            ->filter(fn (User $user) => $scope === 'business'
+                || $this->userEligibleForBoardWorkspace($user, $workspace))
             ->map(fn (User $user) => [
                 'id' => (int) $user->id,
                 'name' => $user->name,

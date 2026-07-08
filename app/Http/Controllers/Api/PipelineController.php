@@ -57,11 +57,13 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'workspace' => ['nullable', 'in:pipeline,estimates'],
+            'scope' => ['nullable', 'in:workspace,business'],
         ]);
 
         $members = $this->pipelineService->listBoardTeamMembers(
             (int) $request->user()->business_id,
             $validated['workspace'] ?? 'pipeline',
+            $validated['scope'] ?? 'workspace',
         );
 
         return response()->json(['data' => $members]);
