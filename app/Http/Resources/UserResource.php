@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Platform\PlatformAdminService;
 use App\Services\ProjectAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -63,6 +64,7 @@ class UserResource extends JsonResource
                 ];
             }),
             'modules' => $this->modules ?? [],
+            'is_platform_admin' => app(PlatformAdminService::class)->isPlatformAdmin($this->resource),
             'project_member_ids' => $this->when(
                 $request->user()?->id === $this->id,
                 fn () => app(ProjectAccessService::class)->memberProjectIds($this->resource),
