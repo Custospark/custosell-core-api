@@ -230,6 +230,44 @@ class PipelineService
         }
     }
 
+    /** @return list<array{id: int, name: string, email: string|null, avatar: string|null, modules: list<string>}> */
+    public function listBoardTeamMembers(int $businessId, string $workspace = 'pipeline'): array
+    {
+        $workspace = $workspace === 'estimates' ? 'estimates' : 'pipeline';
+
+        return User::query()
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $user) => $this->userEligibleForBoardWorkspace($user, $workspace))
+            ->map(fn (User $user) => [
+                'id' => (int) $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'modules' => $this->moduleAccess->accessibleModules($user),
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function userEligibleForBoardWorkspace(User $user, string $workspace): bool
+    {
+        if ($this->moduleAccess->isBusinessOwner($user)) {
+            return true;
+        }
+
+        $modules = $this->moduleAccess->storedStaffModules($user);
+
+        if ($workspace === 'estimates') {
+            return in_array('estimates', $modules, true)
+                || in_array(ModuleAccessService::ESTIMATES_FULL_SLUG, $modules, true);
+        }
+
+        return in_array('pipeline', $modules, true);
+    }
+
     protected function seedDefaultLabels(int $businessId, int $boardId): void
     {
         foreach (self::DEFAULT_LABELS as $index => $label) {
@@ -785,10 +823,24 @@ class PipelineService
             'title', 'card_type', 'description', 'assigned_to', 'customer_id', 'source_id',
             'contact_name', 'contact_email', 'contact_phone', 'estimated_value',
             'currency', 'expected_close_date', 'due_date', 'start_date', 'priority',
-            'background_color', 'lost_reason',
+            'background_color', 'lost_reason', 'status',
         ] as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[$field] = $data[$field];
+            }
+        }
+
+        if (array_key_exists('status', $data)) {
+            $status = $data['status'];
+            if ($status === 'won') {
+                $updates['won_at'] = now();
+                $updates['lost_at'] = null;
+            } elseif ($status === 'lost') {
+                $updates['lost_at'] = now();
+                $updates['won_at'] = null;
+            } elseif ($status === 'open') {
+                $updates['won_at'] = null;
+                $updates['lost_at'] = null;
             }
         }
 
@@ -833,6 +885,7 @@ class PipelineService
             ->firstOrFail();
 
         $fromStageId = $lead->stage_id;
+        $fromStatus = $lead->status;
         $status = 'open';
         $wonAt = null;
         $lostAt = null;
@@ -868,6 +921,19 @@ class PipelineService
                 'to_stage_id' => $stage->id,
                 'from_stage_name' => $fromName,
                 'to_stage_name' => $stage->name,
+            ]);
+        }
+
+        if ($fromStatus !== $status) {
+            $this->recordActivity($lead, $user->id, 'system', $this->statusChangeMessage(
+                (string) $fromStatus,
+                (string) $status,
+                (string) ($lead->card_type ?? 'lead'),
+            ), [
+                'action' => 'status_change',
+                'from' => $fromStatus,
+                'to' => $status,
+                'card_type' => $lead->card_type ?? 'lead',
             ]);
         }
 
@@ -1623,6 +1689,45 @@ class PipelineService
                 ]);
             }
         }
+
+        if (array_key_exists('status', $data) && $before->status !== $lead->status) {
+            $this->recordActivity($lead, $userId, 'system', $this->statusChangeMessage(
+                (string) $before->status,
+                (string) $lead->status,
+                (string) ($lead->card_type ?? 'lead'),
+            ), [
+                'action' => 'status_change',
+                'from' => $before->status,
+                'to' => $lead->status,
+                'card_type' => $lead->card_type ?? 'lead',
+            ]);
+        }
+    }
+
+    protected function statusChangeMessage(string $from, string $to, string $cardType): string
+    {
+        $isTask = $cardType === 'card';
+
+        if ($to === 'won') {
+            return $isTask ? 'Task marked complete' : 'Lead marked won';
+        }
+        if ($to === 'lost') {
+            return $isTask ? 'Task marked lost' : 'Lead marked lost';
+        }
+        if ($from === 'won' && $to === 'open') {
+            return $isTask ? 'Task marked incomplete' : 'Lead reopened';
+        }
+        if ($from === 'lost' && $to === 'open') {
+            return $isTask ? 'Task reopened' : 'Lead reopened';
+        }
+
+        $toLabel = match ($to) {
+            'converted' => 'Converted',
+            'archived' => 'Archived',
+            default => ucfirst($to),
+        };
+
+        return $isTask ? "Task status changed to {$toLabel}" : "Lead status changed to {$toLabel}";
     }
 
     protected function normalizeActivityValue(mixed $value): ?string

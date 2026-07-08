@@ -43,6 +43,20 @@ class PipelineController extends Controller
         ]);
     }
 
+    public function teamMembers(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'workspace' => ['nullable', 'in:pipeline,estimates'],
+        ]);
+
+        $members = $this->pipelineService->listBoardTeamMembers(
+            (int) $request->user()->business_id,
+            $validated['workspace'] ?? 'pipeline',
+        );
+
+        return response()->json(['data' => $members]);
+    }
+
     public function storeBoard(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -365,6 +379,7 @@ class PipelineController extends Controller
             'priority' => ['nullable', 'in:low,medium,high,urgent'],
             'background_color' => ['nullable', 'string', 'max:20'],
             'lost_reason' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'in:open,won,lost'],
             'label_ids' => ['nullable', 'array'],
             'label_ids.*' => ['integer'],
         ]);

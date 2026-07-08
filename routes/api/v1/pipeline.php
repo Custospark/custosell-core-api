@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group(function () {
     Route::get('/pipeline/boards', [PipelineController::class, 'boards']);
+    Route::get('/pipeline/team-members', [PipelineController::class, 'teamMembers']);
     Route::post('/pipeline/boards', [PipelineController::class, 'storeBoard']);
     Route::get('/pipeline/boards/{id}', [PipelineController::class, 'showBoard'])->whereNumber('id');
     Route::patch('/pipeline/boards/{id}', [PipelineController::class, 'updateBoard'])->whereNumber('id');
