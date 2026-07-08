@@ -202,6 +202,18 @@ class PipelineBoardConversationService
     $this->pipeline->userCanManageBoard($user, $board) || abort(403, 'Only board managers can pin messages.');
 
     $nextPinned = ! $message->is_pinned;
+    if ($nextPinned) {
+      PipelineBoardMessage::query()
+        ->where('board_id', $board->id)
+        ->whereKeyNot($message->id)
+        ->where('is_pinned', true)
+        ->update([
+          'is_pinned' => false,
+          'pinned_at' => null,
+          'pinned_by' => null,
+        ]);
+    }
+
     $message->update([
       'is_pinned' => $nextPinned,
       'pinned_at' => $nextPinned ? now() : null,
