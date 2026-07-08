@@ -26,11 +26,72 @@ class PipelineBoardAutomationService
 
         return PipelineBoardAutomation::query()
             ->where('board_id', $board->id)
-            ->with(['triggerStage:id,name', 'creator:id,name,avatar'])
-            ->orderBy('name')
+            ->with(['triggerStage:id,name,sort_order,is_won,is_lost,color', 'creator:id,name,avatar'])
             ->get()
+            ->sortBy(fn (PipelineBoardAutomation $item) => $item->triggerStage?->sort_order ?? 999)
+            ->values()
             ->map(fn (PipelineBoardAutomation $item) => $this->serializeAutomation($item))
             ->all();
+    }
+
+    /**
+     * Replace board automations with stage-scoped rules from board setup.
+     *
+     * @param  list<array{trigger_type: string, trigger_stage_id?: int|null, action_body: string, is_active?: bool}>  $rules
+     * @return list<array<string, mixed>>
+     */
+    public function syncBoardAutomations(int $businessId, User $user, int $boardId, array $rules): array
+    {
+        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $this->pipeline->userCanManageBoard($user, $board) || abort(403);
+
+        $board->load('stages');
+        $validStageIds = $board->stages->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        PipelineBoardAutomation::query()->where('board_id', $board->id)->delete();
+
+        $created = [];
+        foreach ($rules as $rule) {
+            if (! ($rule['is_active'] ?? true)) {
+                continue;
+            }
+
+            $body = trim((string) ($rule['action_body'] ?? ''));
+            if ($body === '') {
+                continue;
+            }
+
+            $triggerType = (string) ($rule['trigger_type'] ?? 'stage_entered');
+            $stageId = isset($rule['trigger_stage_id']) ? (int) $rule['trigger_stage_id'] : null;
+            $stageName = null;
+
+            if ($triggerType === 'stage_entered') {
+                if (! $stageId || ! in_array($stageId, $validStageIds, true)) {
+                    continue;
+                }
+                $stageName = $board->stages->firstWhere('id', $stageId)?->name;
+            } elseif (! in_array($triggerType, ['status_won', 'status_lost'], true)) {
+                continue;
+            }
+
+            $automation = PipelineBoardAutomation::create([
+                'business_id' => $businessId,
+                'board_id' => $board->id,
+                'created_by' => $user->id,
+                'name' => $this->automationName($triggerType, $stageName),
+                'trigger_type' => $triggerType,
+                'trigger_stage_id' => $triggerType === 'stage_entered' ? $stageId : null,
+                'action_type' => 'conversation_post',
+                'action_body' => $body,
+                'is_active' => true,
+            ]);
+
+            $created[] = $this->serializeAutomation(
+                $automation->load(['triggerStage:id,name,sort_order,is_won,is_lost,color', 'creator:id,name,avatar']),
+            );
+        }
+
+        return $created;
     }
 
     /** @return array<string, mixed> */
@@ -165,6 +226,10 @@ class PipelineBoardAutomationService
             'trigger_stage' => $automation->triggerStage ? [
                 'id' => $automation->triggerStage->id,
                 'name' => $automation->triggerStage->name,
+                'sort_order' => $automation->triggerStage->sort_order,
+                'is_won' => (bool) $automation->triggerStage->is_won,
+                'is_lost' => (bool) $automation->triggerStage->is_lost,
+                'color' => $automation->triggerStage->color,
             ] : null,
             'action_type' => $automation->action_type,
             'action_body' => $automation->action_body,
@@ -175,5 +240,14 @@ class PipelineBoardAutomationService
                 'avatar' => $automation->creator->avatar,
             ] : null,
         ];
+    }
+
+    protected function automationName(string $triggerType, ?string $stageName): string
+    {
+        return match ($triggerType) {
+            'status_won' => 'Notify when a card is won',
+            'status_lost' => 'Notify when a card is lost',
+            default => $stageName ? "Notify when entering {$stageName}" : 'Notify on column change',
+        };
     }
 }

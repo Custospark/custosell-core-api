@@ -130,20 +130,51 @@ class PipelineBoardTemplateService
         }
 
         foreach ($template->automations ?? [] as $seed) {
-            if (! is_array($seed) || empty($seed['name']) || empty($seed['action_body'])) {
+            if (! is_array($seed) || empty($seed['action_body'])) {
                 continue;
             }
+
+            $triggerType = $seed['trigger_type'] ?? 'stage_entered';
+            $stageId = null;
+            if (! empty($seed['trigger_stage_name'])) {
+                $stageId = PipelineStage::query()
+                    ->where('board_id', $board->id)
+                    ->where('name', $seed['trigger_stage_name'])
+                    ->value('id');
+            } elseif (! empty($seed['trigger_stage_id'])) {
+                $stageId = PipelineStage::query()
+                    ->where('board_id', $board->id)
+                    ->whereKey((int) $seed['trigger_stage_id'])
+                    ->value('id');
+            }
+
+            $stageName = null;
+            if ($stageId) {
+                $stageName = PipelineStage::query()->whereKey($stageId)->value('name');
+            }
+
+            $name = $seed['name'] ?? $this->defaultAutomationName($triggerType, $stageName);
+
             $this->automations->createAutomation(
                 $businessId,
                 $user,
                 $boardId,
-                $seed['name'],
-                $seed['trigger_type'] ?? 'stage_entered',
+                $name,
+                $triggerType,
                 $seed['action_type'] ?? 'conversation_post',
                 $seed['action_body'],
-                isset($seed['trigger_stage_id']) ? (int) $seed['trigger_stage_id'] : null,
+                $stageId ? (int) $stageId : null,
             );
         }
+    }
+
+    protected function defaultAutomationName(string $triggerType, ?string $stageName): string
+    {
+        return match ($triggerType) {
+            'status_won' => 'Notify when a card is won',
+            'status_lost' => 'Notify when a card is lost',
+            default => $stageName ? "Notify when entering {$stageName}" : 'Notify on column change',
+        };
     }
 
     /** @return array<string, mixed> */

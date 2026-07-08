@@ -1273,6 +1273,26 @@ class PipelineController extends Controller
         return response()->json(['data' => $automation], 201);
     }
 
+    public function syncBoardAutomations(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'rules' => ['required', 'array'],
+            'rules.*.trigger_type' => ['required', 'in:stage_entered,status_won,status_lost'],
+            'rules.*.trigger_stage_id' => ['nullable', 'integer'],
+            'rules.*.action_body' => ['required', 'string', 'max:2000'],
+            'rules.*.is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $automations = $this->boardAutomations->syncBoardAutomations(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['rules'],
+        );
+
+        return response()->json(['data' => $automations]);
+    }
+
     public function destroyBoardAutomation(Request $request, int $id): JsonResponse
     {
         $this->boardAutomations->deleteAutomation(

@@ -87,6 +87,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::delete('/pipeline/conversation/attachments/{id}', [PipelineController::class, 'destroyBoardConversationAttachment'])->whereNumber('id');
     Route::get('/pipeline/boards/{boardId}/conversation/activity', [PipelineController::class, 'boardConversationActivity'])->whereNumber('boardId');
     Route::get('/pipeline/boards/{boardId}/automations', [PipelineController::class, 'boardAutomations'])->whereNumber('boardId');
+    Route::put('/pipeline/boards/{boardId}/automations', [PipelineController::class, 'syncBoardAutomations'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/automations', [PipelineController::class, 'storeBoardAutomation'])->whereNumber('boardId');
     Route::delete('/pipeline/automations/{id}', [PipelineController::class, 'destroyBoardAutomation'])->whereNumber('id');
     Route::get('/pipeline/board-templates', [PipelineController::class, 'boardTemplates']);
