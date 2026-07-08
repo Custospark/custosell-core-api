@@ -217,12 +217,13 @@ class PipelineService
 
         foreach ($members as $entry) {
             $userId = is_array($entry) ? (int) ($entry['user_id'] ?? 0) : (int) $entry;
-            $role = is_array($entry) ? ($entry['role'] ?? 'editor') : 'editor';
+            $role = is_array($entry) ? ($entry['role'] ?? 'contributor') : 'contributor';
             if ($userId === 0 || $userId === (int) $board->created_by) {
                 continue;
             }
-            if (!in_array($role, ['viewer', 'editor'], true)) {
-                $role = 'editor';
+            $role = $this->normalizeBoardMemberRole($role);
+            if (! in_array($role, ['viewer', 'contributor', 'manager'], true)) {
+                $role = 'contributor';
             }
             PipelineBoardMember::create([
                 'board_id' => $board->id,
@@ -424,7 +425,7 @@ class PipelineService
     public function reorderStages(int $businessId, User $user, int $boardId, array $stageIdsInOrder): Collection
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
+        $this->assertCanEditBoard($user, $board);
 
         foreach ($stageIdsInOrder as $order => $stageId) {
             PipelineStage::query()
@@ -1217,7 +1218,7 @@ class PipelineService
                 ->where('user_id', $user->id)
                 ->first();
 
-            return $member && $member->role === 'editor';
+            return $member && $this->boardMemberRoleAllowsManage($member->role);
         }
 
         return false;
@@ -1863,12 +1864,33 @@ class PipelineService
                 ->where('user_id', $user->id)
                 ->first();
 
-            if ($member && $member->role === 'editor') {
+            if ($member && $this->boardMemberRoleAllowsEdit($member->role)) {
                 return;
             }
         }
 
         abort(403, 'You cannot edit this pipeline board.');
+    }
+
+    public function normalizeBoardMemberRole(string $role): string
+    {
+        return match ($role) {
+            'editor' => 'contributor',
+            'viewer', 'contributor', 'manager' => $role,
+            default => 'contributor',
+        };
+    }
+
+    public function boardMemberRoleAllowsEdit(?string $role): bool
+    {
+        $normalized = $this->normalizeBoardMemberRole((string) $role);
+
+        return in_array($normalized, ['contributor', 'manager'], true);
+    }
+
+    public function boardMemberRoleAllowsManage(?string $role): bool
+    {
+        return $this->normalizeBoardMemberRole((string) $role) === 'manager';
     }
 
     public function ensureCanEditBoard(User $user, PipelineBoard $board): void
