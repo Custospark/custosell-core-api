@@ -118,6 +118,13 @@ class ModuleAccessService
             return false;
         }
 
+        // Sales and Customers are base modules — every business user needs them
+        // regardless of stored module permissions. The Staff modules UI controls
+        // navigation visibility, but the backend never blocks these.
+        if ($user->business_id && in_array($module, ['sales', 'customers'], true)) {
+            return true;
+        }
+
         if ($this->isBusinessOwner($user)) {
             if ($module === 'settings') {
                 return true;
