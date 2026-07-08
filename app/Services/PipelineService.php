@@ -347,7 +347,7 @@ class PipelineService
     public function createStage(int $businessId, User $user, int $boardId, array $data): PipelineStage
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanEditBoard($user, $board);
+        $this->assertCanManageBoard($user, $board);
 
         $maxOrder = PipelineStage::query()->where('board_id', $boardId)->max('sort_order');
 
@@ -367,7 +367,7 @@ class PipelineService
     public function updateStage(int $businessId, User $user, int $stageId, array $data): PipelineStage
     {
         $stage = $this->findStageForBusiness($businessId, $stageId);
-        $this->assertCanEditBoard($user, $stage->board);
+        $this->assertCanManageBoard($user, $stage->board);
 
         $stage->update(array_filter([
             'name' => $data['name'] ?? null,
@@ -385,7 +385,7 @@ class PipelineService
     public function reorderStages(int $businessId, User $user, int $boardId, array $stageIdsInOrder): Collection
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanEditBoard($user, $board);
+        $this->assertCanManageBoard($user, $board);
 
         foreach ($stageIdsInOrder as $order => $stageId) {
             PipelineStage::query()
@@ -401,7 +401,7 @@ class PipelineService
     public function deleteStage(int $businessId, User $user, int $stageId, ?int $migrateToStageId = null): void
     {
         $stage = $this->findStageForBusiness($businessId, $stageId);
-        $this->assertCanEditBoard($user, $stage->board);
+        $this->assertCanManageBoard($user, $stage->board);
 
         $stageCount = PipelineStage::query()->where('board_id', $stage->board_id)->count();
         if ($stageCount <= 1) {
@@ -1056,6 +1056,41 @@ class PipelineService
         $activity->delete();
     }
 
+    public function updateActivity(int $businessId, User $user, int $activityId, string $body): PipelineLeadActivity
+    {
+        $activity = PipelineLeadActivity::query()
+            ->where('business_id', $businessId)
+            ->whereKey($activityId)
+            ->firstOrFail();
+
+        if (! in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
+            abort(403, 'This activity cannot be edited.');
+        }
+
+        $lead = $this->findLeadForBusiness($businessId, (int) $activity->lead_id);
+        $board = $lead->board ?? $this->findBoardForBusiness($businessId, (int) $lead->board_id);
+
+        $isAuthor = (int) $activity->user_id === (int) $user->id;
+        $canModerate = $this->userCanManageBoard($user, $board);
+
+        if (! $isAuthor && ! $canModerate) {
+            abort(403, 'You can only edit your own comments.');
+        }
+
+        $beforeBody = $activity->body;
+        $activity->update(['body' => $body]);
+
+        if ($beforeBody !== $body) {
+            $this->logLeadHistoryEvent($lead, $user, 'Comment edited', [
+                'action' => 'comment_edited',
+                'comment_type' => $activity->type,
+                'preview' => mb_substr($body, 0, 120),
+            ]);
+        }
+
+        return $activity->fresh(['user:id,name,avatar', 'reactions']);
+    }
+
     public function userCanManageBoard(User $user, PipelineBoard $board): bool
     {
         if ($this->moduleAccess->isBusinessOwner($user)) {
@@ -1270,6 +1305,7 @@ class PipelineService
         $checklist = PipelineChecklist::create([
             'lead_id' => $leadId,
             'title' => $title,
+            'description' => $data['description'] ?? null,
             'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
         ]);
 
@@ -1287,10 +1323,17 @@ class PipelineService
         $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
         $this->assertCanEditBoard($user, $checklist->lead->board);
 
-        $checklist->update(array_filter([
-            'title' => $data['title'] ?? null,
-            'sort_order' => $data['sort_order'] ?? null,
-        ], fn ($v) => $v !== null));
+        $payload = [];
+        if (array_key_exists('title', $data)) {
+            $payload['title'] = $data['title'];
+        }
+        if (array_key_exists('description', $data)) {
+            $payload['description'] = $data['description'];
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $payload['sort_order'] = $data['sort_order'];
+        }
+        $checklist->update($payload);
 
         return $checklist->fresh('items');
     }
@@ -1321,6 +1364,7 @@ class PipelineService
         $item = PipelineChecklistItem::create([
             'checklist_id' => $checklistId,
             'title' => $title,
+            'description' => $data['description'] ?? null,
             'is_done' => (bool) ($data['is_done'] ?? false),
             'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
         ]);
@@ -1343,11 +1387,20 @@ class PipelineService
 
         $wasDone = (bool) $item->is_done;
 
-        $item->update(array_filter([
-            'title' => $data['title'] ?? null,
-            'is_done' => array_key_exists('is_done', $data) ? (bool) $data['is_done'] : null,
-            'sort_order' => $data['sort_order'] ?? null,
-        ], fn ($v) => $v !== null));
+        $payload = [];
+        if (array_key_exists('title', $data)) {
+            $payload['title'] = $data['title'];
+        }
+        if (array_key_exists('description', $data)) {
+            $payload['description'] = $data['description'];
+        }
+        if (array_key_exists('is_done', $data)) {
+            $payload['is_done'] = (bool) $data['is_done'];
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $payload['sort_order'] = $data['sort_order'];
+        }
+        $item->update($payload);
 
         if (array_key_exists('is_done', $data) && (bool) $data['is_done'] !== $wasDone) {
             $message = (bool) $data['is_done']

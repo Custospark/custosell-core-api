@@ -458,6 +458,23 @@ class PipelineController extends Controller
         return response()->json(null, 204);
     }
 
+    public function updateActivity(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $activity = $this->pipelineService->updateActivity(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated['body'],
+        );
+
+        return (new PipelineLeadActivityResource($activity))
+            ->response();
+    }
+
     public function sources(Request $request): JsonResponse
     {
         $sources = $this->pipelineService->listSources((int) $request->user()->business_id);
@@ -583,6 +600,7 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -600,6 +618,7 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -624,6 +643,7 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:500'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'is_done' => ['sometimes', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
@@ -642,6 +662,7 @@ class PipelineController extends Controller
     {
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:500'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'is_done' => ['sometimes', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);

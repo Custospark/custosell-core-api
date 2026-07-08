@@ -263,8 +263,8 @@ class ProjectAccessService
         $checklistId = $request->route('checklistId');
         if ($checklistId && is_numeric($checklistId)) {
             $checklist = PipelineChecklist::query()
-                ->where('business_id', $businessId)
                 ->whereKey((int) $checklistId)
+                ->whereHas('lead', fn ($query) => $query->where('business_id', $businessId))
                 ->with('lead.board')
                 ->first();
 
@@ -275,6 +275,7 @@ class ProjectAccessService
         if ($checklistItemId && is_numeric($checklistItemId) && str_contains($request->path(), 'pipeline/checklist-items')) {
             $item = PipelineChecklistItem::query()
                 ->whereKey((int) $checklistItemId)
+                ->whereHas('checklist.lead', fn ($query) => $query->where('business_id', $businessId))
                 ->with(['checklist.lead.board'])
                 ->first();
 
@@ -284,8 +285,8 @@ class ProjectAccessService
         $checklistRouteId = $request->route('id');
         if ($checklistRouteId && is_numeric($checklistRouteId) && str_contains($request->path(), 'pipeline/checklists')) {
             $checklist = PipelineChecklist::query()
-                ->where('business_id', $businessId)
                 ->whereKey((int) $checklistRouteId)
+                ->whereHas('lead', fn ($query) => $query->where('business_id', $businessId))
                 ->with('lead.board')
                 ->first();
 

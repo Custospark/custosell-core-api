@@ -12,6 +12,7 @@ use App\Models\PipelineLead;
 use App\Models\PipelineLeadActivity;
 use App\Models\PipelineLeadAssignee;
 use App\Models\PipelinePoll;
+use App\Models\PipelinePollDismissal;
 use App\Models\PipelinePollOption;
 use App\Models\PipelinePollVote;
 use App\Models\PipelineReminder;
@@ -157,6 +158,7 @@ class PipelineCollaborationService
 
         $items = PipelineBoardAnnouncement::query()
             ->where('board_id', $board->id)
+            ->whereNotIn('id', $this->dismissedAnnouncementIdsForUser($user->id, $board->id))
             ->with('creator:id,name,avatar')
             ->orderByDesc('is_pinned')
             ->orderByDesc('created_at')
@@ -228,6 +230,7 @@ class PipelineCollaborationService
 
         $announcementIds = PipelineBoardAnnouncement::query()
             ->where('board_id', $board->id)
+            ->whereNotIn('id', $this->dismissedAnnouncementIdsForUser($user->id, $board->id))
             ->pluck('id');
 
         $announcementsCount = $announcementIds->count();
@@ -242,6 +245,7 @@ class PipelineCollaborationService
         $activePolls = PipelinePoll::query()
             ->where('board_id', $board->id)
             ->whereNull('lead_id')
+            ->whereNotIn('id', $this->dismissedPollIdsForUser($user->id, $board->id))
             ->where(function ($q) {
                 $q->whereNull('closes_at')->orWhere('closes_at', '>', now());
             })
@@ -272,12 +276,68 @@ class PipelineCollaborationService
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $announcement->board_id);
 
-        $isCreator = (int) $announcement->created_by === (int) $user->id;
-        if (! $isCreator && ! $this->pipeline->userCanManageBoard($user, $board)) {
-            abort(403, 'You do not have permission to remove this notice.');
+        $canDeleteForAll = (int) $announcement->created_by === (int) $user->id
+            || $this->pipeline->userCanManageBoard($user, $board);
+
+        if ($canDeleteForAll) {
+            $announcement->delete();
+
+            return;
         }
 
-        $announcement->delete();
+        $this->dismissAnnouncementForUser($announcement, $user);
+    }
+
+    protected function dismissAnnouncementForUser(PipelineBoardAnnouncement $announcement, User $user): void
+    {
+        PipelineBoardAnnouncementRead::updateOrCreate(
+            ['announcement_id' => $announcement->id, 'user_id' => $user->id],
+            [
+                'is_read' => true,
+                'read_at' => now(),
+                'is_dismissed' => true,
+                'dismissed_at' => now(),
+            ],
+        );
+    }
+
+    /** @return list<int> */
+    protected function dismissedAnnouncementIdsForUser(int $userId, int $boardId): array
+    {
+        return PipelineBoardAnnouncementRead::query()
+            ->where('user_id', $userId)
+            ->where('is_dismissed', true)
+            ->whereIn('announcement_id', function ($q) use ($boardId) {
+                $q->select('id')
+                    ->from('pipeline_board_announcements')
+                    ->where('board_id', $boardId);
+            })
+            ->pluck('announcement_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /** @return list<int> */
+    protected function dismissedPollIdsForUser(int $userId, int $boardId): array
+    {
+        return PipelinePollDismissal::query()
+            ->where('user_id', $userId)
+            ->whereIn('poll_id', function ($q) use ($boardId) {
+                $q->select('id')
+                    ->from('pipeline_polls')
+                    ->where('board_id', $boardId);
+            })
+            ->pluck('poll_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    protected function dismissPollForUser(PipelinePoll $poll, User $user): void
+    {
+        PipelinePollDismissal::updateOrCreate(
+            ['poll_id' => $poll->id, 'user_id' => $user->id],
+            ['dismissed_at' => now()],
+        );
     }
 
     /** @param  list<string>  $options */
@@ -346,7 +406,11 @@ class PipelineCollaborationService
             $query->whereNull('lead_id');
         }
 
-        return $this->serializePolls($query->get(), $user, $board);
+        $polls = $query->get()->reject(
+            fn (PipelinePoll $poll) => in_array((int) $poll->id, $this->dismissedPollIdsForUser($user->id, $board->id), true),
+        );
+
+        return $this->serializePolls($polls, $user, $board);
     }
 
     /** @return array<string, mixed> */
@@ -425,11 +489,13 @@ class PipelineCollaborationService
 
         $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
 
-        if (! $this->canManagePoll($poll, $user, $board)) {
-            abort(403, 'You do not have permission to delete this poll.');
+        if ($this->canManagePoll($poll, $user, $board)) {
+            $poll->delete();
+
+            return;
         }
 
-        $poll->delete();
+        $this->dismissPollForUser($poll, $user);
     }
 
     protected function canManagePoll(PipelinePoll $poll, User $user, PipelineBoard $board): bool
@@ -492,6 +558,7 @@ class PipelineCollaborationService
             'read_count' => $readCount,
             'team_member_count' => $teamMemberCount,
             'can_delete' => $canManage,
+            'can_dismiss' => ! $canManage,
         ];
     }
 
@@ -565,6 +632,8 @@ class PipelineCollaborationService
             'results_hidden' => ! $canSeeResults,
             'can_manage_poll' => $canManagePoll,
             'can_remove_own_vote' => $userHasVoted,
+            'can_delete' => $canManagePoll,
+            'can_dismiss' => ! $canManagePoll,
         ];
 
         if ($canManagePoll) {

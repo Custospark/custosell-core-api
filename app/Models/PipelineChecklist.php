@@ -11,6 +11,7 @@ class PipelineChecklist extends Model
     protected $fillable = [
         'lead_id',
         'title',
+        'description',
         'sort_order',
     ];
 

@@ -13,6 +13,7 @@ class PipelineChecklistResource extends JsonResource
             'id' => $this->id,
             'lead_id' => $this->lead_id,
             'title' => $this->title,
+            'description' => $this->description,
             'sort_order' => $this->sort_order,
             'items' => PipelineChecklistItemResource::collection($this->whenLoaded('items')),
         ];

@@ -12,6 +12,8 @@ class PipelineBoardAnnouncementRead extends Model
         'user_id',
         'is_read',
         'read_at',
+        'is_dismissed',
+        'dismissed_at',
     ];
 
     protected function casts(): array
@@ -19,6 +21,8 @@ class PipelineBoardAnnouncementRead extends Model
         return [
             'is_read' => 'boolean',
             'read_at' => 'datetime',
+            'is_dismissed' => 'boolean',
+            'dismissed_at' => 'datetime',
         ];
     }
 
