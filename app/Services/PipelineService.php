@@ -258,14 +258,13 @@ class PipelineService
             return true;
         }
 
-        $modules = $this->moduleAccess->storedStaffModules($user);
-
         if ($workspace === 'estimates') {
-            return in_array('estimates', $modules, true)
-                || in_array(ModuleAccessService::ESTIMATES_FULL_SLUG, $modules, true);
+            // Personal/project boards: any active staff in the business can be invited or listed.
+            // Full Projects & Estimates admin (estimates_full) is not required.
+            return true;
         }
 
-        return in_array('pipeline', $modules, true);
+        return in_array('pipeline', $this->moduleAccess->storedStaffModules($user), true);
     }
 
     protected function seedDefaultLabels(int $businessId, int $boardId): void

@@ -157,6 +157,10 @@ class ProjectAccessService
         $path = $request->path();
 
         if ($this->moduleAccess->canAccess($user, 'estimates')) {
+            if (str_contains($path, 'pipeline/team-members')) {
+                return true;
+            }
+
             $board = $this->resolveBoardFromRequest($request, $businessId);
             if ($board) {
                 if ($board->project_id) {
@@ -191,6 +195,10 @@ class ProjectAccessService
 
         $board = $this->resolveBoardFromRequest($request, $businessId);
         if (!$board) {
+            if (str_contains($path, 'pipeline/team-members') && $this->memberProjectIds($user) !== []) {
+                return true;
+            }
+
             return false;
         }
 
