@@ -67,4 +67,9 @@ class PipelineBoard extends Model
     {
         return $this->hasMany(PipelineBoardResource::class, 'board_id')->orderByDesc('created_at');
     }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(PipelineBoardMessage::class, 'board_id')->orderBy('created_at');
+    }
 }

@@ -132,6 +132,77 @@ class PipelineNotificationService
     }
 
     /** @param  list<User>  $recipients */
+    public function notifyBoardMessage(
+        PipelineBoard $board,
+        User $actor,
+        string $messagePreview,
+        array $recipients,
+        bool $isReply = false,
+    ): void {
+        foreach ($recipients as $recipient) {
+            if ((int) $recipient->id === (int) $actor->id) {
+                continue;
+            }
+
+            $title = $isReply
+                ? "New reply on {$board->name}"
+                : "New board message on {$board->name}";
+
+            $body = $this->wrapBody(
+                '<p><strong>'.e($actor->name).'</strong> '
+                .($isReply ? 'replied in' : 'posted in')
+                .' the board conversation for <em>'.e($board->name).'</em>.</p>'
+                .'<blockquote style="margin:12px 0;padding:12px 16px;border-left:3px solid #2563eb;background:#f8fafc;color:#334155;">'
+                .e($this->truncate($messagePreview, 280))
+                .'</blockquote>',
+            );
+
+            $this->dispatch(
+                $recipient,
+                $title,
+                $body,
+                'pipeline.board_message',
+                (int) $board->business_id,
+                ['board_id' => $board->id],
+                $this->boardConversationCta($board),
+                'Open conversation',
+            );
+        }
+    }
+
+    /** @param  list<User>  $recipients */
+    public function notifyBoardMention(
+        PipelineBoard $board,
+        User $actor,
+        string $messagePreview,
+        array $recipients,
+    ): void {
+        foreach ($recipients as $recipient) {
+            if ((int) $recipient->id === (int) $actor->id) {
+                continue;
+            }
+
+            $title = "You were mentioned on {$board->name}";
+            $body = $this->wrapBody(
+                '<p><strong>'.e($actor->name).'</strong> mentioned you in the board conversation for <em>'.e($board->name).'</em>.</p>'
+                .'<blockquote style="margin:12px 0;padding:12px 16px;border-left:3px solid #2563eb;background:#f8fafc;color:#334155;">'
+                .e($this->truncate($messagePreview, 280))
+                .'</blockquote>',
+            );
+
+            $this->dispatch(
+                $recipient,
+                $title,
+                $body,
+                'pipeline.board_message',
+                (int) $board->business_id,
+                ['board_id' => $board->id, 'mention' => true],
+                $this->boardConversationCta($board),
+                'Open conversation',
+            );
+        }
+    }
+
     public function notifyPoll(
         PipelinePoll $poll,
         PipelineBoard $board,
@@ -244,10 +315,19 @@ class PipelineNotificationService
     protected function boardCta(PipelineBoard $board, ?PipelineLead $lead = null): ?string
     {
         $base = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+        $prefix = $board->workspace === 'estimates' ? 'estimates' : 'pipeline';
         if ($lead) {
-            return "{$base}/pipeline/boards/{$board->id}?lead={$lead->id}";
+            return "{$base}/{$prefix}/boards/{$board->id}?lead={$lead->id}";
         }
 
-        return "{$base}/pipeline/boards/{$board->id}";
+        return "{$base}/{$prefix}/boards/{$board->id}";
+    }
+
+    protected function boardConversationCta(PipelineBoard $board): ?string
+    {
+        $base = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+        $prefix = $board->workspace === 'estimates' ? 'estimates' : 'pipeline';
+
+        return "{$base}/{$prefix}/boards/{$board->id}?conversation=1";
     }
 }

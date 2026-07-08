@@ -18,6 +18,8 @@ use App\Models\Project;
 use App\Models\ProjectTask;
 use App\Models\PipelineLeadAssignee;
 use App\Models\User;
+use App\Services\Pipeline\PipelineBoardActivityService;
+use App\Services\Pipeline\PipelineBoardAutomationService;
 use App\Services\Pipeline\PipelineCollaborationService;
 use App\Services\Pipeline\PipelineNotificationService;
 use Illuminate\Database\Eloquent\Collection;
@@ -869,6 +871,25 @@ class PipelineService
         $lead->refresh();
         $this->recordLeadUpdateActivities($lead, $user, $before, $data);
 
+        if (array_key_exists('status', $data)) {
+            $newStatus = (string) ($lead->status ?? 'open');
+            $oldStatus = (string) ($before->status ?? 'open');
+            if ($newStatus !== $oldStatus && in_array($newStatus, ['won', 'lost'], true)) {
+                $lead->load('board');
+                app(PipelineBoardAutomationService::class)->runForLeadStatusChange($lead, $lead->board, $newStatus, $user);
+                app(PipelineBoardActivityService::class)->log(
+                    $lead->board,
+                    $user,
+                    'lead_status',
+                    "Marked {$lead->title} as ".strtoupper($newStatus),
+                    null,
+                    'lead',
+                    (int) $lead->id,
+                    ['status' => $newStatus],
+                );
+            }
+        }
+
         return $this->loadLeadWithHistory($lead);
     }
 
@@ -934,6 +955,24 @@ class PipelineService
                 'to' => $status,
                 'card_type' => $lead->card_type ?? 'lead',
             ]);
+        }
+
+        $lead->load('board');
+        if ($fromStageId !== $stage->id) {
+            app(PipelineBoardActivityService::class)->log(
+                $lead->board,
+                $user,
+                'lead_moved',
+                "Moved {$lead->title} to {$stage->name}",
+                null,
+                'lead',
+                (int) $lead->id,
+                ['stage_id' => $stage->id, 'stage_name' => $stage->name],
+            );
+            app(PipelineBoardAutomationService::class)->runForLeadStageChange($lead, $lead->board, $stage, $user);
+        }
+        if ($fromStatus !== $status && in_array($status, ['won', 'lost'], true)) {
+            app(PipelineBoardAutomationService::class)->runForLeadStatusChange($lead, $lead->board, $status, $user);
         }
 
         return $this->loadLeadWithHistory($lead);

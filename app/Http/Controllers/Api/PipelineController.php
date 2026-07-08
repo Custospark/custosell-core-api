@@ -12,7 +12,11 @@ use App\Http\Resources\PipelineLeadActivityResource;
 use App\Http\Resources\PipelineLeadResource;
 use App\Http\Resources\PipelineSourceResource;
 use App\Http\Resources\PipelineStageResource;
+use App\Services\Pipeline\PipelineBoardActivityService;
+use App\Services\Pipeline\PipelineBoardAutomationService;
+use App\Services\Pipeline\PipelineBoardConversationService;
 use App\Services\Pipeline\PipelineBoardResourceService;
+use App\Services\Pipeline\PipelineBoardTemplateService;
 use App\Services\Pipeline\PipelineCollaborationService;
 use App\Services\PipelineService;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +28,10 @@ class PipelineController extends Controller
         protected PipelineService $pipelineService,
         protected PipelineCollaborationService $collaboration,
         protected PipelineBoardResourceService $boardResources,
+        protected PipelineBoardConversationService $boardConversation,
+        protected PipelineBoardActivityService $boardActivity,
+        protected PipelineBoardAutomationService $boardAutomations,
+        protected PipelineBoardTemplateService $boardTemplates,
     ) {}
 
     public function boards(Request $request): JsonResponse
@@ -1080,5 +1088,257 @@ class PipelineController extends Controller
         );
 
         return response()->json(['data' => $resource]);
+    }
+
+    public function boardConversationSummary(Request $request, int $boardId): JsonResponse
+    {
+        $summary = $this->boardConversation->conversationSummary(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        return response()->json(['data' => $summary]);
+    }
+
+    public function boardConversationMessages(Request $request, int $boardId): JsonResponse
+    {
+        $messages = $this->boardConversation->listMessages(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        return response()->json(['data' => $messages]);
+    }
+
+    public function storeBoardConversationMessage(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+            'parent_id' => ['nullable', 'integer'],
+        ]);
+
+        $message = $this->boardConversation->storeMessage(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['body'],
+            $validated['parent_id'] ?? null,
+        );
+
+        return response()->json(['data' => $message], 201);
+    }
+
+    public function updateBoardConversationMessage(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $message = $this->boardConversation->updateMessage(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated['body'],
+        );
+
+        return response()->json(['data' => $message]);
+    }
+
+    public function destroyBoardConversationMessage(Request $request, int $id): JsonResponse
+    {
+        $this->boardConversation->deleteMessage(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['message' => 'Message deleted']);
+    }
+
+    public function toggleBoardConversationReaction(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reaction' => ['nullable', 'string', 'max:32'],
+        ]);
+
+        $summary = $this->boardConversation->toggleReaction(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated['reaction'] ?? null,
+        );
+
+        return response()->json(['data' => $summary]);
+    }
+
+    public function markBoardConversationRead(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'last_read_message_id' => ['nullable', 'integer'],
+        ]);
+
+        $state = $this->boardConversation->markConversationRead(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['last_read_message_id'] ?? null,
+        );
+
+        return response()->json(['data' => $state]);
+    }
+
+    public function boardConversationActivity(Request $request, int $boardId): JsonResponse
+    {
+        $events = $this->boardActivity->listActivity(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        return response()->json(['data' => $events]);
+    }
+
+    public function toggleBoardConversationPin(Request $request, int $id): JsonResponse
+    {
+        $message = $this->boardConversation->togglePin(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['data' => $message]);
+    }
+
+    public function uploadBoardConversationAttachment(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        $attachment = $this->boardConversation->uploadAttachment(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+            $validated['file'],
+        );
+
+        return response()->json(['data' => $attachment], 201);
+    }
+
+    public function destroyBoardConversationAttachment(Request $request, int $id): JsonResponse
+    {
+        $this->boardConversation->deleteAttachment(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['message' => 'Attachment deleted']);
+    }
+
+    public function boardAutomations(Request $request, int $boardId): JsonResponse
+    {
+        $items = $this->boardAutomations->listAutomations(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+        );
+
+        return response()->json(['data' => $items]);
+    }
+
+    public function storeBoardAutomation(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'trigger_type' => ['required', 'in:stage_entered,status_won,status_lost'],
+            'trigger_stage_id' => ['nullable', 'integer'],
+            'action_type' => ['required', 'in:conversation_post,conversation_notify'],
+            'action_body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $automation = $this->boardAutomations->createAutomation(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            $validated['name'],
+            $validated['trigger_type'],
+            $validated['action_type'],
+            $validated['action_body'],
+            $validated['trigger_stage_id'] ?? null,
+        );
+
+        return response()->json(['data' => $automation], 201);
+    }
+
+    public function destroyBoardAutomation(Request $request, int $id): JsonResponse
+    {
+        $this->boardAutomations->deleteAutomation(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['message' => 'Automation deleted']);
+    }
+
+    public function boardTemplates(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'workspace' => ['nullable', 'in:pipeline,estimates'],
+        ]);
+
+        $templates = $this->boardTemplates->listTemplates(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $validated['workspace'] ?? 'pipeline',
+        );
+
+        return response()->json(['data' => $templates]);
+    }
+
+    public function storeBoardTemplate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'workspace' => ['nullable', 'in:pipeline,estimates'],
+            'stages' => ['nullable', 'array'],
+            'labels' => ['nullable', 'array'],
+            'resources' => ['nullable', 'array'],
+            'automations' => ['nullable', 'array'],
+        ]);
+
+        $template = $this->boardTemplates->createTemplate(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $validated['name'],
+            $validated['workspace'] ?? 'pipeline',
+            $validated['description'] ?? null,
+            $validated['stages'] ?? null,
+            $validated['labels'] ?? null,
+            $validated['resources'] ?? null,
+            $validated['automations'] ?? null,
+        );
+
+        return response()->json(['data' => $template], 201);
+    }
+
+    public function applyBoardTemplate(Request $request, int $boardId): JsonResponse
+    {
+        $validated = $request->validate([
+            'template_id' => ['required', 'integer'],
+        ]);
+
+        $this->boardTemplates->applyTemplate(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $boardId,
+            (int) $validated['template_id'],
+        );
+
+        return response()->json(['message' => 'Template applied']);
     }
 }

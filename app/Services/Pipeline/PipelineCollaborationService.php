@@ -797,6 +797,12 @@ class PipelineCollaborationService
     }
 
     /** @return list<User> */
+    public function boardRecipientsForNotifications(PipelineBoard $board, User $exclude): array
+    {
+        return $this->boardRecipients($board, $exclude);
+    }
+
+    /** @return list<User> */
     protected function boardRecipients(PipelineBoard $board, User $exclude): array
     {
         $ids = collect([(int) $board->created_by]);

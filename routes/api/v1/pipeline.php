@@ -74,4 +74,22 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::delete('/pipeline/resources/{id}', [PipelineController::class, 'destroyBoardResource'])->whereNumber('id');
     Route::post('/pipeline/resources/{id}/view', [PipelineController::class, 'recordBoardResourceView'])->whereNumber('id');
     Route::post('/pipeline/resources/{id}/download', [PipelineController::class, 'recordBoardResourceDownload'])->whereNumber('id');
+
+    Route::get('/pipeline/boards/{boardId}/conversation/summary', [PipelineController::class, 'boardConversationSummary'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/conversation/messages', [PipelineController::class, 'boardConversationMessages'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/conversation/messages', [PipelineController::class, 'storeBoardConversationMessage'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/conversation/read', [PipelineController::class, 'markBoardConversationRead'])->whereNumber('boardId');
+    Route::patch('/pipeline/conversation/messages/{id}', [PipelineController::class, 'updateBoardConversationMessage'])->whereNumber('id');
+    Route::delete('/pipeline/conversation/messages/{id}', [PipelineController::class, 'destroyBoardConversationMessage'])->whereNumber('id');
+    Route::post('/pipeline/conversation/messages/{id}/reaction', [PipelineController::class, 'toggleBoardConversationReaction'])->whereNumber('id');
+    Route::post('/pipeline/conversation/messages/{id}/pin', [PipelineController::class, 'toggleBoardConversationPin'])->whereNumber('id');
+    Route::post('/pipeline/conversation/messages/{id}/attachments', [PipelineController::class, 'uploadBoardConversationAttachment'])->whereNumber('id');
+    Route::delete('/pipeline/conversation/attachments/{id}', [PipelineController::class, 'destroyBoardConversationAttachment'])->whereNumber('id');
+    Route::get('/pipeline/boards/{boardId}/conversation/activity', [PipelineController::class, 'boardConversationActivity'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/automations', [PipelineController::class, 'boardAutomations'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/automations', [PipelineController::class, 'storeBoardAutomation'])->whereNumber('boardId');
+    Route::delete('/pipeline/automations/{id}', [PipelineController::class, 'destroyBoardAutomation'])->whereNumber('id');
+    Route::get('/pipeline/board-templates', [PipelineController::class, 'boardTemplates']);
+    Route::post('/pipeline/board-templates', [PipelineController::class, 'storeBoardTemplate']);
+    Route::post('/pipeline/boards/{boardId}/apply-template', [PipelineController::class, 'applyBoardTemplate'])->whereNumber('boardId');
 });
