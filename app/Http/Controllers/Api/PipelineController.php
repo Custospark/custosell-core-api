@@ -871,6 +871,27 @@ class PipelineController extends Controller
         return response()->json(['data' => $poll], 201);
     }
 
+    public function updatePoll(Request $request, int $pollId): JsonResponse
+    {
+        $validated = $request->validate([
+            'question' => ['sometimes', 'string', 'max:500'],
+            'options' => ['sometimes', 'array', 'min:2', 'max:12'],
+            'options.*.id' => ['sometimes', 'integer'],
+            'options.*.label' => ['required_with:options', 'string', 'max:255'],
+            'closes_at' => ['nullable', 'date'],
+            'results_visibility' => ['sometimes', 'in:team,creator_only'],
+        ]);
+
+        $poll = $this->collaboration->updatePoll(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $pollId,
+            $validated,
+        );
+
+        return response()->json(['data' => $poll]);
+    }
+
     public function votePoll(Request $request, int $pollId): JsonResponse
     {
         $validated = $request->validate([

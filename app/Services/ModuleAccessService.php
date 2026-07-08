@@ -126,7 +126,16 @@ class ModuleAccessService
             return in_array($module, $this->resolvedOwnerBusinessModules($user), true);
         }
 
-        return in_array($module, $this->storedBusinessModules($user), true);
+        $modules = $this->storedBusinessModules($user);
+
+        // Customers depends on Sales for shared flows (e.g. customer purchases, invoices, sales catalog snapshots).
+        // Treat `customers` as granting access to `sales` to avoid 403s for staff who were intentionally given
+        // only customers, while still keeping other modules locked down.
+        if ($module === 'sales' && in_array('customers', $modules, true)) {
+            return true;
+        }
+
+        return in_array($module, $modules, true);
     }
 
     /** @param  list<string>|null  $modules */
@@ -142,6 +151,11 @@ class ModuleAccessService
             fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG,
         ));
         $validated = $this->validateBusinessModules($businessOnly, $allowEmpty);
+
+        // Customers implies Sales (dependency).
+        if (in_array('customers', $validated, true) && ! in_array('sales', $validated, true)) {
+            $validated[] = 'sales';
+        }
 
         if ($wantsFullEstimates) {
             if (! in_array('estimates', $validated, true)) {

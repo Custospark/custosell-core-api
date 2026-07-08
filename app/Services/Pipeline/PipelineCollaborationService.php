@@ -257,6 +257,10 @@ class PipelineCollaborationService
         $canContribute = $this->pipeline->userCanContributeToBoard($user, $board);
         $pollsPendingVoteCount = $canContribute
             ? $activePolls->filter(function (PipelinePoll $poll) use ($user) {
+                if ($this->pollIsClosed($poll)) {
+                    return false;
+                }
+
                 return ! $poll->votes->contains(fn ($vote) => (int) $vote->user_id === (int) $user->id);
             })->count()
             : 0;
@@ -367,6 +371,10 @@ class PipelineCollaborationService
             abort(422, 'Results visibility must be team or creator_only.');
         }
 
+        if ($closesAt && Carbon::parse($closesAt)->isPast()) {
+            abort(422, 'Voting deadline must be in the future.');
+        }
+
         $poll = DB::transaction(function () use ($businessId, $user, $board, $question, $options, $leadId, $closesAt, $resultsVisibility) {
             $poll = PipelinePoll::create([
                 'business_id' => $businessId,
@@ -419,6 +427,66 @@ class PipelineCollaborationService
         return $this->serializePolls($polls, $user, $board);
     }
 
+    /**
+     * @param  array{
+     *   question?: string,
+     *   options?: list<array{id?: int, label: string}>,
+     *   closes_at?: string|null,
+     *   results_visibility?: string,
+     * }  $data
+     * @return array<string, mixed>
+     */
+    public function updatePoll(int $businessId, User $user, int $pollId, array $data): array
+    {
+        $poll = PipelinePoll::query()
+            ->where('business_id', $businessId)
+            ->whereKey($pollId)
+            ->with(['options', 'creator:id,name,avatar', 'votes'])
+            ->firstOrFail();
+
+        $board = $this->pipeline->getBoard($businessId, $user, (int) $poll->board_id);
+
+        if (! $this->canEditPoll($poll, $user)) {
+            abort(403, 'Only the poll creator can edit this poll.');
+        }
+
+        DB::transaction(function () use ($poll, $data) {
+            if (array_key_exists('question', $data)) {
+                $question = trim((string) $data['question']);
+                if ($question === '') {
+                    abort(422, 'Poll question is required.');
+                }
+                $poll->question = $question;
+            }
+
+            if (array_key_exists('closes_at', $data)) {
+                $poll->closes_at = $data['closes_at']
+                    ? Carbon::parse((string) $data['closes_at'])
+                    : null;
+            }
+
+            if (array_key_exists('results_visibility', $data)) {
+                $visibility = (string) $data['results_visibility'];
+                if (! in_array($visibility, ['team', 'creator_only'], true)) {
+                    abort(422, 'Results visibility must be team or creator_only.');
+                }
+                $poll->results_visibility = $visibility;
+            }
+
+            $poll->save();
+
+            if (array_key_exists('options', $data)) {
+                $this->syncPollOptions($poll, $data['options'] ?? []);
+            }
+        });
+
+        return $this->serializePoll(
+            $poll->fresh(['options', 'creator:id,name,avatar', 'votes']),
+            $user,
+            $board,
+        );
+    }
+
     /** @return array<string, mixed> */
     public function votePoll(int $businessId, User $user, int $pollId, int $optionId): array
     {
@@ -432,7 +500,7 @@ class PipelineCollaborationService
 
         $this->pipeline->ensureCanContributeToBoard($user, $board);
 
-        if ($poll->closes_at && $poll->closes_at->isPast()) {
+        if ($this->pollIsClosed($poll)) {
             abort(422, 'This poll is closed.');
         }
 
@@ -479,6 +547,10 @@ class PipelineCollaborationService
 
         $this->pipeline->ensureCanContributeToBoard($user, $board);
 
+        if ($this->pollIsClosed($poll)) {
+            abort(422, 'This poll is closed.');
+        }
+
         PipelinePollVote::query()
             ->where('poll_id', $poll->id)
             ->where('user_id', $targetUserId)
@@ -510,6 +582,66 @@ class PipelineCollaborationService
     {
         return (int) $poll->created_by === (int) $user->id
             || $this->pipeline->userCanManageBoard($user, $board);
+    }
+
+    protected function canEditPoll(PipelinePoll $poll, User $user): bool
+    {
+        return (int) $poll->created_by === (int) $user->id;
+    }
+
+    protected function pollIsClosed(PipelinePoll $poll): bool
+    {
+        return $poll->closes_at && $poll->closes_at->isPast();
+    }
+
+    /** @param  list<array{id?: int, label: string}>  $options */
+    protected function syncPollOptions(PipelinePoll $poll, array $options): void
+    {
+        $votesByOption = $poll->votes->groupBy('option_id');
+        $existingIds = $poll->options->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $keptIds = [];
+
+        foreach (array_values($options) as $index => $optionData) {
+            $label = trim((string) ($optionData['label'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+
+            $id = isset($optionData['id']) ? (int) $optionData['id'] : null;
+            if ($id && in_array($id, $existingIds, true)) {
+                PipelinePollOption::query()
+                    ->where('poll_id', $poll->id)
+                    ->whereKey($id)
+                    ->update(['label' => $label, 'sort_order' => $index]);
+                $keptIds[] = $id;
+            } else {
+                $created = PipelinePollOption::create([
+                    'poll_id' => $poll->id,
+                    'label' => $label,
+                    'sort_order' => $index,
+                ]);
+                $keptIds[] = (int) $created->id;
+            }
+        }
+
+        if (count($keptIds) < 2) {
+            abort(422, 'A poll must have at least two options.');
+        }
+
+        foreach ($existingIds as $existingId) {
+            if (in_array($existingId, $keptIds, true)) {
+                continue;
+            }
+
+            if ($votesByOption->has($existingId)) {
+                abort(422, 'Cannot remove an option that already has votes.');
+            }
+
+            PipelinePollOption::query()
+                ->where('poll_id', $poll->id)
+                ->whereKey($existingId)
+                ->delete();
+        }
     }
 
     /** @param  Collection<int, PipelineBoardAnnouncement>  $items
@@ -583,7 +715,9 @@ class PipelineCollaborationService
     {
         $isCreator = (int) $poll->created_by === (int) $viewer->id;
         $canManagePoll = $this->canManagePoll($poll, $viewer, $board);
+        $canEditPoll = $this->canEditPoll($poll, $viewer);
         $canContribute = $this->pipeline->userCanContributeToBoard($viewer, $board);
+        $isClosed = $this->pollIsClosed($poll);
         $visibility = $poll->results_visibility ?? 'team';
         $canSeeResults = $visibility === 'team' || $isCreator || $canManagePoll;
         $userVotes = $poll->votes->where('user_id', $viewer->id)->values();
@@ -640,8 +774,10 @@ class PipelineCollaborationService
             'can_see_results' => $canSeeResults,
             'results_hidden' => ! $canSeeResults,
             'can_manage_poll' => $canManagePoll,
-            'can_remove_own_vote' => $userHasVoted && $canContribute,
-            'can_vote' => $canContribute,
+            'can_edit_poll' => $canEditPoll,
+            'is_closed' => $isClosed,
+            'can_remove_own_vote' => $userHasVoted && $canContribute && ! $isClosed,
+            'can_vote' => $canContribute && ! $isClosed,
             'can_delete' => $canManagePoll,
             'can_dismiss' => ! $canManagePoll,
         ];
