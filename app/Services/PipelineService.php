@@ -223,7 +223,7 @@ class PipelineService
             }
             $role = $this->normalizeBoardMemberRole($role);
             if (! in_array($role, ['viewer', 'contributor', 'manager'], true)) {
-                $role = 'contributor';
+                $role = 'viewer';
             }
             PipelineBoardMember::create([
                 'board_id' => $board->id,
@@ -1882,8 +1882,59 @@ class PipelineService
         return match ($role) {
             'editor' => 'contributor',
             'viewer', 'contributor', 'manager' => $role,
-            default => 'contributor',
+            default => 'viewer',
         };
+    }
+
+    public function userCanContributeToBoard(User $user, PipelineBoard $board): bool
+    {
+        if (! $this->canViewBoard($user, $board)) {
+            return false;
+        }
+
+        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+            return true;
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+
+            return $project && $this->projectAccess->canEditProjectBoard($user, $project);
+        }
+
+        if ($board->visibility === 'team') {
+            return $this->moduleAccess->canAccess($user, 'pipeline')
+                || $this->moduleAccess->canAccess($user, 'estimates');
+        }
+
+        if ($board->visibility === 'shared') {
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            return $member && $this->boardMemberRoleAllowsEdit($member->role);
+        }
+
+        return false;
+    }
+
+    public function resolveCurrentUserBoardMemberRole(User $user, PipelineBoard $board): ?string
+    {
+        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+            return 'manager';
+        }
+
+        if ($board->visibility !== 'shared') {
+            return null;
+        }
+
+        $member = PipelineBoardMember::query()
+            ->where('board_id', $board->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        return $member ? $this->normalizeBoardMemberRole((string) $member->role) : null;
     }
 
     public function boardMemberRoleAllowsEdit(?string $role): bool
@@ -1901,6 +1952,11 @@ class PipelineService
     public function ensureCanEditBoard(User $user, PipelineBoard $board): void
     {
         $this->assertCanEditBoard($user, $board);
+    }
+
+    public function ensureCanManageBoard(User $user, PipelineBoard $board): void
+    {
+        $this->assertCanManageBoard($user, $board);
     }
 
     protected function assertCanManageBoard(User $user, PipelineBoard $board): void

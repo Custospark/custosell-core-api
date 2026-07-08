@@ -430,7 +430,7 @@ class ProjectService implements ProjectServiceInterface
             return;
         }
 
-        $boardRole = in_array($role, ['contributor', 'manager'], true) ? 'editor' : 'viewer';
+        $boardRole = in_array($role, ['contributor', 'manager'], true) ? 'contributor' : 'viewer';
 
         \App\Models\PipelineBoardMember::query()->updateOrCreate(
             ['board_id' => $board->id, 'user_id' => $userId],

@@ -352,6 +352,7 @@ class PipelineCollaborationService
         string $resultsVisibility = 'team',
     ): array {
         $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $this->assertCanManageBoard($user, $board);
 
         if ($leadId) {
             $this->pipeline->getLead($businessId, $user, $leadId);
@@ -701,6 +702,7 @@ class PipelineCollaborationService
         ?int $recipientUserId = null,
     ): PipelineReminder {
         $lead = $this->pipeline->getLead($businessId, $user, $leadId);
+        $this->pipeline->ensureCanEditBoard($user, $lead->board);
         $recipientId = $recipientUserId ?? $user->id;
 
         return PipelineReminder::create([

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\PipelineService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,6 +10,9 @@ class PipelineBoardResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $user = $request->user();
+        $pipeline = app(PipelineService::class);
+
         return [
             'id' => $this->id,
             'business_id' => $this->business_id,
@@ -31,6 +35,9 @@ class PipelineBoardResource extends JsonResource
             ]),
             'members' => PipelineBoardMemberResource::collection($this->whenLoaded('members')),
             'stages' => PipelineStageResource::collection($this->whenLoaded('stages')),
+            'can_contribute' => $user ? $pipeline->userCanContributeToBoard($user, $this->resource) : false,
+            'can_manage_settings' => $user ? $pipeline->userCanManageBoard($user, $this->resource) : false,
+            'current_member_role' => $user ? $pipeline->resolveCurrentUserBoardMemberRole($user, $this->resource) : null,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

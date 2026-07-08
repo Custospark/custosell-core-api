@@ -176,11 +176,13 @@ class PipelineController extends Controller
 
     public function uploadBoardBackground(Request $request, int $boardId): \Illuminate\Http\JsonResponse
     {
+        $user = $request->user();
         $board = $this->pipelineService->getBoard(
-            (int) $request->user()->business_id,
-            $request->user(),
+            (int) $user->business_id,
+            $user,
             $boardId,
         );
+        $this->pipelineService->ensureCanManageBoard($user, $board);
 
         $request->validate([
             'background' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
