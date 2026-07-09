@@ -776,7 +776,7 @@ class PipelineBoardProgressService
                 ->values()
                 ->all();
 
-            if ($target->type === 'objective' && count($payload['key_results']) > 0) {
+            if ($target->type === 'objective' && count($payload['key_results']) > 0 && ! isset($payload['period_slice'])) {
                 $payload['progress_percent'] = round(
                     collect($payload['key_results'])->avg('progress_percent') ?? 0,
                     1,
