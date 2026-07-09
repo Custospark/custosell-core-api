@@ -96,6 +96,11 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/boards/{boardId}/apply-template', [PipelineController::class, 'applyBoardTemplate'])->whereNumber('boardId');
 
     Route::get('/pipeline/boards/{boardId}/progress/summary', [PipelineController::class, 'boardProgressSummary'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/progress/query', [PipelineController::class, 'boardProgressQuery'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/progress/my', [PipelineController::class, 'myBoardProgress'])->whereNumber('boardId');
+    Route::get('/pipeline/boards/{boardId}/progress/config', [PipelineController::class, 'boardProgressConfig'])->whereNumber('boardId');
+    Route::put('/pipeline/boards/{boardId}/progress/config', [PipelineController::class, 'updateBoardProgressConfig'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/targets/decompose-preview', [PipelineController::class, 'decomposeBoardTargetPreview'])->whereNumber('boardId');
     Route::get('/pipeline/boards/{boardId}/progress/export', [PipelineController::class, 'exportBoardProgress'])->whereNumber('boardId');
     Route::get('/pipeline/boards/{boardId}/targets', [PipelineController::class, 'boardTargets'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/targets', [PipelineController::class, 'storeBoardTarget'])->whereNumber('boardId');

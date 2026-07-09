@@ -6,6 +6,7 @@ namespace App\Services\Pipeline;
 
 use App\Models\PipelineBoard;
 use App\Models\PipelineBoardMetricSnapshot;
+use App\Models\PipelineBoardProgressConfig;
 use App\Models\PipelineBoardTarget;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
@@ -40,6 +41,8 @@ class PipelineBoardProgressService
 
     public function __construct(
         protected PipelineService $pipeline,
+        protected PipelineColumnMetricsService $columnMetrics,
+        protected PipelineGoalDecompositionService $decomposition,
     ) {}
 
     /** @return array<string, mixed> */
@@ -50,16 +53,25 @@ class PipelineBoardProgressService
         string $periodType = 'month',
         ?string $from = null,
         ?string $to = null,
+        ?array $stageIds = null,
     ): array {
         $board = $this->pipeline->getBoard($businessId, $user, $boardId);
         [$start, $end] = $this->resolvePeriod($periodType, $from, $to);
         $context = $this->boardContext($board);
+        $resolvedStageIds = $this->resolveStageIds($board, $stageIds);
 
         $teamMetrics = $this->computeTeamMetrics($board, $start, $end);
         $memberMetrics = $this->computeMemberMetrics($board, $start, $end);
         $trends = $this->computeTrendSeries($board, $start, $end);
+        $expectedTrend = $this->computeExpectedTrendSeries($board, $start, $end, $resolvedStageIds);
         $funnel = $this->computeStageFunnel($board, $start, $end);
+        $columnMetrics = $this->columnMetrics->columnMetricsForStages($board, $resolvedStageIds, $start, $end);
+        $columnTrends = $this->columnMetrics->columnTrendSeries($board, $resolvedStageIds, $start, $end);
         $targets = $this->listTargetsWithProgress($businessId, $user, $boardId, $start, $end);
+        $stages = $this->columnMetrics->serializeBoardStages($board);
+        $config = $this->getProgressConfig($businessId, $user, $boardId);
+        $alerts = $this->computePaceAlerts($targets);
+        $capacityRecommendations = $this->columnMetrics->capacityRecommendations($board, $resolvedStageIds);
 
         return [
             'board_id' => $board->id,
@@ -69,13 +81,127 @@ class PipelineBoardProgressService
                 'end' => $end->toDateString(),
             ],
             'context' => $context,
+            'stages' => $stages,
+            'selected_stage_ids' => $resolvedStageIds,
             'team' => $teamMetrics,
             'members' => $memberMetrics,
             'trends' => $trends,
+            'expected_trends' => $expectedTrend,
             'funnel' => $funnel,
+            'column_metrics' => $columnMetrics,
+            'column_trends' => $columnTrends,
             'targets' => $targets,
+            'chart_config' => $config,
+            'pace_alerts' => $alerts,
+            'capacity_recommendations' => $capacityRecommendations,
             'can_manage_targets' => $this->pipeline->userCanManageBoard($user, $board),
         ];
+    }
+
+    /** @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function progressQuery(int $businessId, User $user, int $boardId, array $filters): array
+    {
+        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $periodType = $filters['period'] ?? 'month';
+        [$start, $end] = $this->resolvePeriod($periodType, $filters['from'] ?? null, $filters['to'] ?? null);
+        $stageIds = $this->resolveStageIds($board, $filters['stage_ids'] ?? null);
+        $memberIds = array_map('intval', $filters['member_ids'] ?? []);
+        $metrics = $filters['metrics'] ?? self::METRIC_KEYS;
+
+        $series = [];
+        foreach ($metrics as $metricKey) {
+            if ($parsed = $this->columnMetrics->parseStageMetricKey($metricKey)) {
+                $value = $this->columnMetrics->computeStageMetric(
+                    $board,
+                    $parsed['stage_id'],
+                    $parsed['suffix'],
+                    $start,
+                    $end,
+                    $memberIds[0] ?? null,
+                );
+                $series[] = ['metric_key' => $metricKey, 'value' => $value];
+                continue;
+            }
+            if (in_array($metricKey, self::METRIC_KEYS, true)) {
+                $series[] = [
+                    'metric_key' => $metricKey,
+                    'value' => $this->computeMetricValue($board, $metricKey, $start, $end, $memberIds[0] ?? null),
+                ];
+            }
+        }
+
+        return [
+            'board_id' => $board->id,
+            'period' => ['type' => $periodType, 'start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'stage_ids' => $stageIds,
+            'member_ids' => $memberIds,
+            'series' => $series,
+            'column_metrics' => $this->columnMetrics->columnMetricsForStages($board, $stageIds, $start, $end),
+            'column_trends' => $this->columnMetrics->columnTrendSeries($board, $stageIds, $start, $end),
+        ];
+    }
+
+    public function myProgress(int $businessId, User $user, int $boardId, string $periodType = 'month'): array
+    {
+        $summary = $this->progressSummary($businessId, $user, $boardId, $periodType);
+        $myTargets = collect($summary['targets'])->filter(function ($target) use ($user) {
+            return ($target['scope'] ?? 'board') === 'member'
+                && (int) ($target['member_user_id'] ?? 0) === (int) $user->id;
+        })->values()->all();
+
+        $myMember = collect($summary['members'])->firstWhere('user_id', (int) $user->id);
+        $teamAvgWon = collect($summary['members'])->avg(fn ($m) => $m['metrics']['cards_won'] ?? 0) ?? 0;
+
+        return [
+            'user_id' => (int) $user->id,
+            'period' => $summary['period'],
+            'context' => $summary['context'],
+            'metrics' => $myMember['metrics'] ?? [],
+            'targets' => $myTargets,
+            'team_average' => ['cards_won' => round($teamAvgWon, 1)],
+            'pace_alerts' => $this->computePaceAlerts($myTargets),
+            'selected_stage_ids' => $summary['selected_stage_ids'],
+            'column_metrics' => $summary['column_metrics'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function getProgressConfig(int $businessId, User $user, int $boardId): array
+    {
+        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $row = PipelineBoardProgressConfig::query()
+            ->where('board_id', $board->id)
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhereNull('user_id');
+            })
+            ->orderByRaw('user_id is null')
+            ->first();
+
+        return $row?->config_json ?? $this->defaultChartConfig($board);
+    }
+
+    /** @param  array<string, mixed>  $config */
+    public function saveProgressConfig(int $businessId, User $user, int $boardId, array $config): array
+    {
+        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $this->pipeline->ensureCanManageBoard($user, $board);
+
+        $row = PipelineBoardProgressConfig::query()->updateOrCreate(
+            ['board_id' => $board->id, 'user_id' => $user->id],
+            ['business_id' => $businessId, 'config_json' => $config],
+        );
+
+        return $row->config_json ?? [];
+    }
+
+    /** @param  array<string, mixed>  $data */
+    public function decomposePreview(int $businessId, User $user, int $boardId, array $data): array
+    {
+        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+
+        return $this->decomposition->preview($businessId, $board, $data);
     }
 
     /** @return list<array<string, mixed>> */
@@ -86,7 +212,7 @@ class PipelineBoardProgressService
         return PipelineBoardTarget::query()
             ->where('board_id', $board->id)
             ->where('status', '!=', 'archived')
-            ->with(['member:id,name,avatar', 'keyResults.member:id,name,avatar'])
+            ->with(['member:id,name,avatar', 'keyResults.member:id,name,avatar', 'allocations'])
             ->orderByDesc('created_at')
             ->get()
             ->filter(fn (PipelineBoardTarget $t) => $t->type !== 'key_result')
@@ -111,6 +237,21 @@ class PipelineBoardProgressService
             'created_by' => $user->id,
         ]);
 
+        if (! empty($data['allocations']) && is_array($data['allocations'])) {
+            $this->decomposition->persistAllocations($businessId, $target, $data['allocations'], $user);
+        } elseif (! empty($data['planning_level'])) {
+            $preview = $this->decomposition->preview($businessId, $board, [
+                'planning_level' => $data['planning_level'],
+                'target_value' => $validated['target_value'],
+                'anchor_start' => $validated['anchor_start'] ?? $validated['period_start'],
+                'anchor_end' => $validated['anchor_end'] ?? $validated['period_end'],
+                'stage_ids' => $validated['stage_id'] ? [$validated['stage_id']] : ($data['stage_ids'] ?? []),
+                'member_user_ids' => $validated['member_user_id'] ? [(int) $validated['member_user_id']] : [],
+                'decomposition_mode' => $validated['decomposition_mode'] ?? 'hybrid',
+            ]);
+            $this->decomposition->persistAllocations($businessId, $target, $preview['nodes'], $user);
+        }
+
         if (! empty($data['key_results']) && is_array($data['key_results'])) {
             foreach ($data['key_results'] as $kr) {
                 $krPayload = $this->validateTargetPayload([
@@ -120,6 +261,7 @@ class PipelineBoardProgressService
                     'period_type' => $validated['period_type'],
                     'period_start' => $validated['period_start'],
                     'period_end' => $validated['period_end'],
+                    'stage_id' => $kr['stage_id'] ?? $validated['stage_id'],
                 ], $board);
                 PipelineBoardTarget::create([
                     ...$krPayload,
@@ -132,9 +274,9 @@ class PipelineBoardProgressService
             }
         }
 
-        $target->load(['member:id,name,avatar', 'keyResults.member:id,name,avatar']);
+        $target->load(['member:id,name,avatar', 'keyResults.member:id,name,avatar', 'allocations']);
 
-        return $this->serializeTargetTree($target->fresh(['keyResults']), $board);
+        return $this->serializeTargetTree($target->fresh(['keyResults', 'allocations']), $board);
     }
 
     /** @param  array<string, mixed>  $data
@@ -148,7 +290,12 @@ class PipelineBoardProgressService
 
         $validated = $this->validateTargetPayload($data, $board, $target);
         $target->update($validated);
-        $target->load(['member:id,name,avatar', 'keyResults.member:id,name,avatar']);
+
+        if (! empty($data['allocations']) && is_array($data['allocations'])) {
+            $this->decomposition->persistAllocations($businessId, $target, $data['allocations'], $user);
+        }
+
+        $target->load(['member:id,name,avatar', 'keyResults.member:id,name,avatar', 'allocations']);
 
         return $this->serializeTargetTree($target, $board);
     }
@@ -359,6 +506,22 @@ class PipelineBoardProgressService
             $leadQuery->whereIn('id', $leadIds);
         }
 
+        if (! in_array($metricKey, self::METRIC_KEYS, true)) {
+            $parsed = $this->columnMetrics->parseStageMetricKey($metricKey);
+            if ($parsed && in_array($parsed['suffix'], PipelineColumnMetricsService::COLUMN_METRIC_SUFFIXES, true)) {
+                return $this->columnMetrics->computeStageMetric(
+                    $board,
+                    $parsed['stage_id'],
+                    $parsed['suffix'],
+                    $start,
+                    $end,
+                    $memberUserId,
+                );
+            }
+
+            throw ValidationException::withMessages(['metric_key' => 'Invalid metric key.']);
+        }
+
         return match ($metricKey) {
             'cards_created' => (float) (clone $leadQuery)
                 ->whereBetween('created_at', [$start, $end])
@@ -530,7 +693,7 @@ class PipelineBoardProgressService
                             ->where('period_end', '>=', $end->toDateString());
                     });
             })
-            ->with(['member:id,name,avatar', 'keyResults.member:id,name,avatar'])
+            ->with(['member:id,name,avatar', 'keyResults.member:id,name,avatar', 'allocations'])
             ->orderBy('type')
             ->orderBy('title')
             ->get()
@@ -575,6 +738,15 @@ class PipelineBoardProgressService
             'status' => $target->status,
             'progress_percent' => $this->progressPercent($actual, (float) $target->target_value),
             'pace_status' => $this->paceStatus($actual, (float) $target->target_value, $periodStart, $periodEnd, $target->metric_key),
+            'planning_level' => $target->planning_level,
+            'anchor_start' => $target->anchor_start?->toDateString(),
+            'anchor_end' => $target->anchor_end?->toDateString(),
+            'stage_id' => $target->stage_id ? (int) $target->stage_id : null,
+            'goal_tag' => $target->goal_tag,
+            'decomposition_mode' => $target->decomposition_mode,
+            'allocations' => $target->relationLoaded('allocations')
+                ? $this->decomposition->allocationsForTarget($target)
+                : [],
             'key_results' => [],
         ];
 
@@ -658,17 +830,30 @@ class PipelineBoardProgressService
             throw ValidationException::withMessages(['type' => 'Invalid target type.']);
         }
 
-        if (! in_array($metricKey, self::METRIC_KEYS, true)) {
+        if (! in_array($metricKey, self::METRIC_KEYS, true) && ! $this->columnMetrics->parseStageMetricKey($metricKey)) {
             throw ValidationException::withMessages(['metric_key' => 'Invalid metric key.']);
         }
 
         $periodType = $data['period_type'] ?? $existing?->period_type ?? 'month';
+        $planningLevel = $data['planning_level'] ?? $existing?->planning_level;
         [$start, $end] = isset($data['period_start'], $data['period_end'])
             ? [Carbon::parse($data['period_start']), Carbon::parse($data['period_end'])]
             : $this->resolvePeriod($periodType, $data['period_from'] ?? null, $data['period_to'] ?? null);
 
+        $anchorStart = isset($data['anchor_start'])
+            ? Carbon::parse($data['anchor_start'])
+            : ($existing?->anchor_start ? Carbon::parse($existing->anchor_start) : $start->copy());
+        $anchorEnd = isset($data['anchor_end'])
+            ? Carbon::parse($data['anchor_end'])
+            : ($existing?->anchor_end ? Carbon::parse($existing->anchor_end) : $end->copy());
+
         $scope = $data['scope'] ?? $existing?->scope ?? 'board';
         $memberUserId = $data['member_user_id'] ?? $existing?->member_user_id;
+        $stageId = $data['stage_id'] ?? $existing?->stage_id;
+
+        if ($type !== 'key_result' && empty($stageId) && empty($existing?->stage_id)) {
+            throw ValidationException::withMessages(['stage_id' => 'Select a board column for this target.']);
+        }
 
         if ($scope === 'member' && ! $memberUserId) {
             throw ValidationException::withMessages(['member_user_id' => 'Select a team member for member-scoped targets.']);
@@ -680,20 +865,103 @@ class PipelineBoardProgressService
 
         return [
             'type' => $type,
+            'goal_tag' => $data['goal_tag'] ?? $existing?->goal_tag ?? $type,
             'title' => $data['title'] ?? $existing?->title,
             'description' => $data['description'] ?? $existing?->description,
             'metric_key' => $metricKey,
             'target_value' => (float) ($data['target_value'] ?? $existing?->target_value ?? 0),
             'unit' => $data['unit'] ?? $existing?->unit ?? 'count',
             'period_type' => $periodType,
+            'planning_level' => $planningLevel,
+            'anchor_start' => $anchorStart->toDateString(),
+            'anchor_end' => $anchorEnd->toDateString(),
             'period_start' => $start->toDateString(),
             'period_end' => $end->toDateString(),
             'scope' => $scope,
             'member_user_id' => $scope === 'member' ? (int) $memberUserId : null,
+            'stage_id' => $stageId ? (int) $stageId : null,
             'weight' => (int) ($data['weight'] ?? $existing?->weight ?? 100),
             'status' => $data['status'] ?? $existing?->status ?? 'active',
+            'decomposition_mode' => $data['decomposition_mode'] ?? $existing?->decomposition_mode ?? 'hybrid',
             'parent_id' => $data['parent_id'] ?? $existing?->parent_id,
         ];
+    }
+
+    /** @param  list<int>|null  $stageIds
+     * @return list<int>
+     */
+    protected function resolveStageIds(PipelineBoard $board, ?array $stageIds): array
+    {
+        $board->loadMissing('stages');
+        $all = $board->stages->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if ($stageIds === null || $stageIds === []) {
+            return $all;
+        }
+
+        return array_values(array_intersect(array_map('intval', $stageIds), $all));
+    }
+
+    /** @return array<string, mixed> */
+    protected function defaultChartConfig(PipelineBoard $board): array
+    {
+        $board->loadMissing('stages');
+        $stageIds = $board->stages->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return [
+            'charts' => [
+                ['id' => 'funnel', 'type' => 'bar', 'metric' => 'count', 'stage_ids' => $stageIds],
+                ['id' => 'trend', 'type' => 'line', 'metrics' => ['cards_created', 'cards_won', 'cards_lost'], 'stage_ids' => $stageIds],
+                ['id' => 'column_throughput', 'type' => 'bar', 'metric' => 'throughput', 'stage_ids' => $stageIds],
+            ],
+            'funnel_mode' => 'count',
+        ];
+    }
+
+    /** @param  list<array<string, mixed>>  $targets
+     * @return list<array<string, mixed>>
+     */
+    protected function computePaceAlerts(array $targets): array
+    {
+        $alerts = [];
+        foreach ($targets as $target) {
+            if (in_array($target['pace_status'] ?? '', ['behind', 'at_risk'], true)) {
+                $alerts[] = [
+                    'target_id' => $target['id'],
+                    'title' => $target['title'],
+                    'pace_status' => $target['pace_status'],
+                    'progress_percent' => $target['progress_percent'],
+                ];
+            }
+        }
+
+        return $alerts;
+    }
+
+    /** @return list<array{date: string, expected: float}> */
+    protected function computeExpectedTrendSeries(
+        PipelineBoard $board,
+        Carbon $start,
+        Carbon $end,
+        array $stageIds,
+    ): array {
+        $allocations = PipelineBoardTargetAllocation::query()
+            ->whereIn('target_id', PipelineBoardTarget::query()->where('board_id', $board->id)->where('status', 'active')->select('id'))
+            ->where('planning_level', 'day')
+            ->whereBetween('period_start', [$start->toDateString(), $end->toDateString()])
+            ->when($stageIds !== [], fn ($q) => $q->whereIn('stage_id', $stageIds))
+            ->get();
+
+        $period = CarbonPeriod::create($start->copy()->startOfDay(), '1 day', $end->copy()->startOfDay());
+        $series = [];
+        foreach ($period as $day) {
+            $date = $day->toDateString();
+            $expected = $allocations->where('period_start', '<=', $date)
+                ->where('period_end', '>=', $date)
+                ->sum('expected_value');
+            $series[] = ['date' => $date, 'expected' => round((float) $expected, 2)];
+        }
+
+        return $series;
     }
 
     protected function findTargetForBusiness(int $businessId, int $targetId): PipelineBoardTarget
