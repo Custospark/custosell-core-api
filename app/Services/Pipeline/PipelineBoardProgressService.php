@@ -68,7 +68,7 @@ class PipelineBoardProgressService
         $funnel = $this->computeStageFunnel($board, $start, $end);
         $columnMetrics = $this->columnMetrics->columnMetricsForStages($board, $resolvedStageIds, $start, $end);
         $columnTrends = $this->columnMetrics->columnTrendSeries($board, $resolvedStageIds, $start, $end);
-        $targets = $this->listTargetsWithProgress($businessId, $user, $boardId, $start, $end);
+        $targets = $this->listTargetsWithProgress($businessId, $user, $boardId, $start, $end, $periodType);
         $stages = $this->columnMetrics->serializeBoardStages($board);
         $config = $this->getProgressConfig($businessId, $user, $boardId);
         $alerts = $this->computePaceAlerts($targets);
@@ -679,6 +679,7 @@ class PipelineBoardProgressService
         int $boardId,
         Carbon $start,
         Carbon $end,
+        ?string $viewPeriodType = null,
     ): array {
         $board = $this->pipeline->getBoard($businessId, $user, $boardId);
 
@@ -698,7 +699,7 @@ class PipelineBoardProgressService
             ->orderBy('type')
             ->orderBy('title')
             ->get()
-            ->map(fn (PipelineBoardTarget $t) => $this->serializeTargetTree($t, $board, $start, $end))
+            ->map(fn (PipelineBoardTarget $t) => $this->serializeTargetTree($t, $board, $start, $end, $viewPeriodType))
             ->values()
             ->all();
     }
@@ -709,11 +710,24 @@ class PipelineBoardProgressService
         PipelineBoard $board,
         ?Carbon $start = null,
         ?Carbon $end = null,
+        ?string $viewPeriodType = null,
     ): array {
         $periodStart = $start ?? Carbon::parse($target->period_start)->startOfDay();
         $periodEnd = $end ?? Carbon::parse($target->period_end)->endOfDay();
         $memberId = $target->scope === 'member' ? (int) $target->member_user_id : null;
         $actual = $this->computeMetricValue($board, $target->metric_key, $periodStart, $periodEnd, $memberId);
+        $progressPercent = $this->progressPercent($actual, (float) $target->target_value);
+        $paceStatus = $this->paceStatus($actual, (float) $target->target_value, $periodStart, $periodEnd, $target->metric_key);
+        $periodSlice = null;
+
+        if ($start !== null && $end !== null) {
+            $periodSlice = $this->buildPeriodSlice($target, $board, $periodStart, $periodEnd, $viewPeriodType);
+            if ($periodSlice !== null) {
+                $actual = $periodSlice['actual_value'];
+                $progressPercent = $periodSlice['progress_percent'];
+                $paceStatus = $periodSlice['pace_status'];
+            }
+        }
 
         $payload = [
             'id' => (int) $target->id,
@@ -737,8 +751,8 @@ class PipelineBoardProgressService
             ] : null,
             'weight' => (int) $target->weight,
             'status' => $target->status,
-            'progress_percent' => $this->progressPercent($actual, (float) $target->target_value),
-            'pace_status' => $this->paceStatus($actual, (float) $target->target_value, $periodStart, $periodEnd, $target->metric_key),
+            'progress_percent' => $progressPercent,
+            'pace_status' => $paceStatus,
             'planning_level' => $target->planning_level,
             'anchor_start' => $target->anchor_start?->toDateString(),
             'anchor_end' => $target->anchor_end?->toDateString(),
@@ -751,10 +765,14 @@ class PipelineBoardProgressService
             'key_results' => [],
         ];
 
+        if ($periodSlice !== null) {
+            $payload['period_slice'] = $periodSlice;
+        }
+
         if ($target->relationLoaded('keyResults')) {
             $payload['key_results'] = $target->keyResults
                 ->where('status', '!=', 'archived')
-                ->map(fn (PipelineBoardTarget $kr) => $this->serializeTargetTree($kr, $board, $periodStart, $periodEnd))
+                ->map(fn (PipelineBoardTarget $kr) => $this->serializeTargetTree($kr, $board, $periodStart, $periodEnd, $viewPeriodType))
                 ->values()
                 ->all();
 
@@ -837,16 +855,34 @@ class PipelineBoardProgressService
 
         $periodType = $data['period_type'] ?? $existing?->period_type ?? 'month';
         $planningLevel = $data['planning_level'] ?? $existing?->planning_level;
-        [$start, $end] = isset($data['period_start'], $data['period_end'])
-            ? [Carbon::parse($data['period_start']), Carbon::parse($data['period_end'])]
-            : $this->resolvePeriod($periodType, $data['period_from'] ?? null, $data['period_to'] ?? null);
 
-        $anchorStart = isset($data['anchor_start'])
-            ? Carbon::parse($data['anchor_start'])
-            : ($existing?->anchor_start ? Carbon::parse($existing->anchor_start) : $start->copy());
-        $anchorEnd = isset($data['anchor_end'])
-            ? Carbon::parse($data['anchor_end'])
-            : ($existing?->anchor_end ? Carbon::parse($existing->anchor_end) : $end->copy());
+        if ($planningLevel && ! $existing) {
+            $anchorStart = isset($data['anchor_start'])
+                ? Carbon::parse($data['anchor_start'])
+                : Carbon::parse($this->decomposition->defaultAnchorStart($planningLevel));
+            $anchorEnd = isset($data['anchor_end'])
+                ? Carbon::parse($data['anchor_end'])
+                : Carbon::parse($this->decomposition->defaultAnchorEnd($planningLevel, $anchorStart));
+            $start = $anchorStart->copy()->startOfDay();
+            $end = $anchorEnd->copy()->endOfDay();
+        } elseif (isset($data['period_start'], $data['period_end'])) {
+            $start = Carbon::parse($data['period_start'])->startOfDay();
+            $end = Carbon::parse($data['period_end'])->endOfDay();
+            $anchorStart = isset($data['anchor_start'])
+                ? Carbon::parse($data['anchor_start'])
+                : $start->copy();
+            $anchorEnd = isset($data['anchor_end'])
+                ? Carbon::parse($data['anchor_end'])
+                : $end->copy();
+        } else {
+            [$start, $end] = $this->resolvePeriod($periodType, $data['period_from'] ?? null, $data['period_to'] ?? null);
+            $anchorStart = isset($data['anchor_start'])
+                ? Carbon::parse($data['anchor_start'])
+                : ($existing?->anchor_start ? Carbon::parse($existing->anchor_start) : $start->copy());
+            $anchorEnd = isset($data['anchor_end'])
+                ? Carbon::parse($data['anchor_end'])
+                : ($existing?->anchor_end ? Carbon::parse($existing->anchor_end) : $end->copy());
+        }
 
         $scope = $data['scope'] ?? $existing?->scope ?? 'board';
         $memberUserId = $data['member_user_id'] ?? $existing?->member_user_id;
@@ -915,6 +951,128 @@ class PipelineBoardProgressService
                 ['id' => 'column_throughput', 'type' => 'bar', 'metric' => 'throughput', 'stage_ids' => $stageIds],
             ],
             'funnel_mode' => 'count',
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    protected function buildPeriodSlice(
+        PipelineBoardTarget $target,
+        PipelineBoard $board,
+        Carbon $viewStart,
+        Carbon $viewEnd,
+        ?string $viewPeriodType,
+    ): ?array {
+        $memberId = $target->scope === 'member' ? (int) $target->member_user_id : null;
+        $stageId = $target->stage_id ? (int) $target->stage_id : null;
+        $allocations = $target->relationLoaded('allocations')
+            ? $target->allocations
+            : $target->allocations()->get();
+
+        if ($allocations->isEmpty()) {
+            return $this->buildFallbackPeriodSlice($target, $board, $viewStart, $viewEnd, $memberId, $viewPeriodType);
+        }
+
+        $preferredLevel = $viewPeriodType
+            ? $this->decomposition->viewPeriodToPlanningLevel($viewPeriodType)
+            : null;
+
+        $rows = $this->decomposition->resolveSliceAllocations(
+            $allocations,
+            $viewStart,
+            $viewEnd,
+            $preferredLevel,
+            $stageId,
+            $memberId,
+        );
+
+        $expected = 0.0;
+        $planningLevel = $preferredLevel ?? 'month';
+
+        if ($rows !== []) {
+            $expected = array_sum(array_map(fn ($row) => (float) $row->expected_value, $rows));
+            $planningLevel = $rows[0]->planning_level;
+        } elseif ($viewPeriodType === 'custom' || $preferredLevel === null) {
+            $expected = $this->decomposition->sumDailyExpectedInView(
+                $allocations,
+                $viewStart,
+                $viewEnd,
+                $stageId,
+                $memberId,
+            );
+            $planningLevel = 'day';
+        }
+
+        if ($expected <= 0) {
+            return $this->buildFallbackPeriodSlice($target, $board, $viewStart, $viewEnd, $memberId, $viewPeriodType);
+        }
+
+        $sliceStart = $viewStart->copy();
+        $sliceEnd = $viewEnd->copy();
+        if (count($rows) === 1) {
+            $row = $rows[0];
+            $sliceStart = $viewStart->gt(Carbon::parse($row->period_start))
+                ? $viewStart->copy()
+                : Carbon::parse($row->period_start)->startOfDay();
+            $sliceEnd = $viewEnd->lt(Carbon::parse($row->period_end))
+                ? $viewEnd->copy()
+                : Carbon::parse($row->period_end)->endOfDay();
+        }
+
+        $actual = $this->computeMetricValue($board, $target->metric_key, $viewStart, $viewEnd, $memberId);
+        $expectedToDate = $this->decomposition->expectedToDate($expected, $sliceStart, $sliceEnd, now());
+
+        return [
+            'planning_level' => $planningLevel,
+            'period_start' => $sliceStart->toDateString(),
+            'period_end' => $sliceEnd->toDateString(),
+            'view_period_type' => $viewPeriodType,
+            'expected_value' => round($expected, 4),
+            'expected_to_date' => round($expectedToDate, 4),
+            'actual_value' => $actual,
+            'progress_percent' => $this->progressPercent($actual, $expected),
+            'pace_status' => $this->paceStatus($actual, $expected, $sliceStart, $sliceEnd, $target->metric_key),
+            'root_target_value' => (float) $target->target_value,
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    protected function buildFallbackPeriodSlice(
+        PipelineBoardTarget $target,
+        PipelineBoard $board,
+        Carbon $viewStart,
+        Carbon $viewEnd,
+        ?int $memberId,
+        ?string $viewPeriodType,
+    ): ?array {
+        $anchorStart = Carbon::parse($target->anchor_start ?? $target->period_start)->startOfDay();
+        $anchorEnd = Carbon::parse($target->anchor_end ?? $target->period_end)->endOfDay();
+
+        if ($viewEnd->lt($anchorStart) || $viewStart->gt($anchorEnd)) {
+            return null;
+        }
+
+        $sliceStart = $viewStart->gt($anchorStart) ? $viewStart->copy() : $anchorStart->copy();
+        $sliceEnd = $viewEnd->lt($anchorEnd) ? $viewEnd->copy() : $anchorEnd->copy();
+        $totalDays = max(1, $anchorStart->diffInDays($anchorEnd) + 1);
+        $sliceDays = max(1, $sliceStart->diffInDays($sliceEnd) + 1);
+        $expected = (float) $target->target_value * ($sliceDays / $totalDays);
+        $actual = $this->computeMetricValue($board, $target->metric_key, $viewStart, $viewEnd, $memberId);
+        $expectedToDate = $this->decomposition->expectedToDate($expected, $sliceStart, $sliceEnd, now());
+        $planningLevel = $viewPeriodType
+            ? ($this->decomposition->viewPeriodToPlanningLevel($viewPeriodType) ?? 'month')
+            : ($target->planning_level ?? 'month');
+
+        return [
+            'planning_level' => $planningLevel,
+            'period_start' => $sliceStart->toDateString(),
+            'period_end' => $sliceEnd->toDateString(),
+            'view_period_type' => $viewPeriodType,
+            'expected_value' => round($expected, 4),
+            'expected_to_date' => round($expectedToDate, 4),
+            'actual_value' => $actual,
+            'progress_percent' => $this->progressPercent($actual, $expected),
+            'pace_status' => $this->paceStatus($actual, $expected, $sliceStart, $sliceEnd, $target->metric_key),
+            'root_target_value' => (float) $target->target_value,
         ];
     }
 

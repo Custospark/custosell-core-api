@@ -196,6 +196,38 @@ class BoardProgressTest extends TestCase
         );
     }
 
+    public function test_year_target_month_view_returns_period_slice(): void
+    {
+        $create = $this->authPost("/api/v1/pipeline/boards/{$this->boardId}/targets", [
+            'type' => 'goal',
+            'title' => 'Annual wins',
+            'metric_key' => 'cards_won',
+            'target_value' => 120,
+            'unit' => 'count',
+            'period_type' => 'month',
+            'planning_level' => 'year',
+            'scope' => 'board',
+            'stage_id' => $this->stageId,
+            'decomposition_mode' => 'equal',
+        ])->assertCreated();
+
+        $targetId = (int) $create->json('data.id');
+
+        $summary = $this->authGet("/api/v1/pipeline/boards/{$this->boardId}/progress/summary", [
+            'period' => 'month',
+            'stage_ids' => [$this->stageId],
+        ])->assertOk();
+
+        $targets = collect($summary->json('data.targets'));
+        $target = $targets->firstWhere('id', $targetId);
+        $this->assertNotNull($target);
+        $this->assertArrayHasKey('period_slice', $target);
+        $this->assertSame('month', $target['period_slice']['planning_level']);
+        $this->assertSame(120.0, (float) $target['target_value']);
+        $this->assertLessThan(120.0, (float) $target['period_slice']['expected_value']);
+        $this->assertSame(120.0, (float) $target['period_slice']['root_target_value']);
+    }
+
     public function test_list_and_archive_targets(): void
     {
         $create = $this->authPost("/api/v1/pipeline/boards/{$this->boardId}/targets", [

@@ -14,6 +14,20 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
+/** @phpstan-type PeriodSlice array{
+ *     planning_level: string,
+ *     period_start: string,
+ *     period_end: string,
+ *     view_period_type: ?string,
+ *     expected_value: float,
+ *     expected_to_date: float,
+ *     actual_value: float,
+ *     progress_percent: float,
+ *     pace_status: string,
+ *     root_target_value: float,
+ * }
+ */
+
 class PipelineGoalDecompositionService
 {
     public const PLANNING_LEVELS = ['decade', 'five_year', 'year', 'quarter', 'month', 'week', 'day'];
@@ -134,6 +148,119 @@ class PipelineGoalDecompositionService
         $elapsed = max(0, min($totalDays, $start->diffInDays(min($asOf->copy()->endOfDay(), $end)) + 1));
 
         return ($expected / $totalDays) * $elapsed;
+    }
+
+    public function viewPeriodToPlanningLevel(string $periodType): ?string
+    {
+        return match ($periodType) {
+            'day' => 'day',
+            'week' => 'week',
+            'month' => 'month',
+            'quarter' => 'quarter',
+            'year' => 'year',
+            default => null,
+        };
+    }
+
+    /**
+     * Resolve allocation rows that represent the active view window for a target.
+     *
+     * @param  Collection<int, PipelineBoardTargetAllocation>  $allocations
+     * @return list<PipelineBoardTargetAllocation>
+     */
+    public function resolveSliceAllocations(
+        Collection $allocations,
+        Carbon $viewStart,
+        Carbon $viewEnd,
+        ?string $preferredLevel,
+        ?int $stageId,
+        ?int $memberUserId,
+    ): array {
+        $overlapping = $allocations->filter(function (PipelineBoardTargetAllocation $row) use (
+            $viewStart,
+            $viewEnd,
+            $stageId,
+            $memberUserId,
+        ) {
+            if ($stageId && $row->stage_id && (int) $row->stage_id !== $stageId) {
+                return false;
+            }
+
+            if ($memberUserId !== null) {
+                if ($row->member_user_id && (int) $row->member_user_id !== $memberUserId) {
+                    return false;
+                }
+            } elseif ($row->member_user_id) {
+                return false;
+            }
+
+            $periodStart = Carbon::parse($row->period_start)->startOfDay();
+            $periodEnd = Carbon::parse($row->period_end)->endOfDay();
+
+            return $periodStart->lte($viewEnd) && $periodEnd->gte($viewStart);
+        });
+
+        if ($overlapping->isEmpty()) {
+            return [];
+        }
+
+        if ($preferredLevel) {
+            $atLevel = $overlapping->where('planning_level', $preferredLevel)->values();
+            if ($atLevel->isNotEmpty()) {
+                return $atLevel->all();
+            }
+        }
+
+        foreach (array_reverse(self::PLANNING_LEVELS) as $level) {
+            $atLevel = $overlapping->where('planning_level', $level)->values();
+            if ($atLevel->isNotEmpty()) {
+                return $atLevel->all();
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Sum expected allocation for a custom or multi-row view by using daily nodes when present.
+     *
+     * @param  Collection<int, PipelineBoardTargetAllocation>  $allocations
+     */
+    public function sumDailyExpectedInView(
+        Collection $allocations,
+        Carbon $viewStart,
+        Carbon $viewEnd,
+        ?int $stageId,
+        ?int $memberUserId,
+    ): float {
+        $daily = $allocations->filter(function (PipelineBoardTargetAllocation $row) use (
+            $viewStart,
+            $viewEnd,
+            $stageId,
+            $memberUserId,
+        ) {
+            if ($row->planning_level !== 'day') {
+                return false;
+            }
+
+            if ($stageId && $row->stage_id && (int) $row->stage_id !== $stageId) {
+                return false;
+            }
+
+            if ($memberUserId !== null) {
+                if ($row->member_user_id && (int) $row->member_user_id !== $memberUserId) {
+                    return false;
+                }
+            } elseif ($row->member_user_id) {
+                return false;
+            }
+
+            $day = Carbon::parse($row->period_start)->startOfDay();
+
+            return $day->gte($viewStart->copy()->startOfDay()) && $day->lte($viewEnd->copy()->endOfDay());
+        });
+
+        return (float) $daily->sum('expected_value');
     }
 
     public function defaultAnchorStart(string $planningLevel, ?int $year = null): string
