@@ -8,6 +8,7 @@ use App\Models\PipelineBoard;
 use App\Models\PipelineBoardMetricSnapshot;
 use App\Models\PipelineBoardProgressConfig;
 use App\Models\PipelineBoardTarget;
+use App\Models\PipelineBoardTargetAllocation;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
 use App\Models\PipelineLeadActivity;

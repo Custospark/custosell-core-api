@@ -204,9 +204,11 @@ class PipelineGoalDecompositionService
         foreach ($rootNodes as $slice) {
             foreach ($stageIds as $stageId) {
                 $stageShare = $perRoot * ($stageWeights[$stageId] ?? (1 / max(1, count($stageIds))));
-                $memberShare = $this->distributeAmongMembers($stageShare, $memberIds);
+                $memberShares = $this->distributeAmongMembers($stageShare, $memberIds);
 
-                foreach ($memberShare as $memberId => $value) {
+                foreach ($memberShares as $share) {
+                    $memberId = $share['member_id'];
+                    $value = $share['value'];
                     $nodes[] = $this->nodePayload($rootLevel, $slice['start'], $slice['end'], $value, $stageId, $memberId);
 
                     foreach ($this->childLevelsBelow($rootLevel) as $childLevel) {
@@ -292,18 +294,18 @@ class PipelineGoalDecompositionService
     }
 
     /** @param  list<int>  $memberIds
-     * @return array<int|null, float>
+     * @return list<array{member_id: ?int, value: float}>
      */
     protected function distributeAmongMembers(float $value, array $memberIds): array
     {
         if ($memberIds === []) {
-            return [null => $value];
+            return [['member_id' => null, 'value' => $value]];
         }
 
         $share = $value / count($memberIds);
         $out = [];
         foreach ($memberIds as $id) {
-            $out[$id] = $share;
+            $out[] = ['member_id' => (int) $id, 'value' => $share];
         }
 
         return $out;
