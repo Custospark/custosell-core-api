@@ -924,7 +924,7 @@ class HrPayrollService
     /**
      * Latest non-soft-deleted compensation on or before $asOfDate (SoftDeletes excludes deleted rows).
      */
-    protected function latestCompensation(int $businessId, int $employeeId, string $asOfDate): ?HrEmployeeCompensation
+    public function latestCompensation(int $businessId, int $employeeId, string $asOfDate): ?HrEmployeeCompensation
     {
         return HrEmployeeCompensation::query()
             ->where('business_id', $businessId)

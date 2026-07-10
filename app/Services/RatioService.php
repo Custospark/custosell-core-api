@@ -96,7 +96,7 @@ class RatioService
     public function getLiquidityRatios(int $businessId, int $periodId): array
     {
         $currentAssets = $this->getSignedAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1101', '1102', '1103', '1104', '1105']);
-        $currentLiabilities = $this->getSignedAccountBalanceByCodes($businessId, $periodId, 'Liability', ['2101', '2102', '2103', '2104']);
+        $currentLiabilities = $this->getSignedAccountBalanceByCodes($businessId, $periodId, 'Liability', ['2101', '2102', '2103', '2104', '2110', '2111', '2112']);
         $inventory = $this->getSignedAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1104']);
         $cashAndEquivalents = $this->getSignedAccountBalanceByCodes($businessId, $periodId, 'Asset', ['1101', '1102']);
 

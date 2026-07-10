@@ -112,4 +112,14 @@ class FinancialStatementServiceTest extends TestCase
         $this->assertEquals($sheet['total_liabilities'] + $sheet['total_equity'], $sheet['total_liabilities_and_equity']);
         $this->assertTrue($sheet['is_balanced']);
     }
+
+    public function test_cash_flow_includes_payroll_liability_changes(): void
+    {
+        $stmt = $this->service->cashFlowStatement($this->business->id, $this->period->id);
+        $labels = array_column($stmt['operating']['items'], 'label');
+
+        $this->assertContains('Change in Salaries Payable', $labels);
+        $this->assertContains('Change in PAYE Payable', $labels);
+        $this->assertContains('Change in NSSF Payable', $labels);
+    }
 }

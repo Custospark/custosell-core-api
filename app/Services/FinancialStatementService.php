@@ -202,6 +202,9 @@ class FinancialStatementService
     $apChange = $getBal($currentLiabilities, '2101') - $getBal($prevLiabilities, '2101');
     $vatChange = $getBal($currentLiabilities, '2102') - $getBal($prevLiabilities, '2102');
     $accruedChange = $getBal($currentLiabilities, '2103') - $getBal($prevLiabilities, '2103');
+    $salariesPayChange = $getBal($currentLiabilities, '2110') - $getBal($prevLiabilities, '2110');
+    $payePayChange = $getBal($currentLiabilities, '2111') - $getBal($prevLiabilities, '2111');
+    $nssfPayChange = $getBal($currentLiabilities, '2112') - $getBal($prevLiabilities, '2112');
 
     $operatingItems = [
       ['label' => 'Net Income', 'amount' => $netIncome],
@@ -212,6 +215,9 @@ class FinancialStatementService
       ['label' => 'Change in Accounts Payable', 'amount' => $apChange],
       ['label' => 'Change in VAT Payable', 'amount' => $vatChange],
       ['label' => 'Change in Accrued Expenses', 'amount' => $accruedChange],
+      ['label' => 'Change in Salaries Payable', 'amount' => $salariesPayChange],
+      ['label' => 'Change in PAYE Payable', 'amount' => $payePayChange],
+      ['label' => 'Change in NSSF Payable', 'amount' => $nssfPayChange],
     ];
 
     $operatingTotal = array_sum(array_column($operatingItems, 'amount'));
@@ -465,6 +471,9 @@ class FinancialStatementService
     $apChange = $getBal($currentLiabilities, '2101') - $getBal($prevLiabilities, '2101');
     $vatChange = $getBal($currentLiabilities, '2102') - $getBal($prevLiabilities, '2102');
     $accruedChange = $getBal($currentLiabilities, '2103') - $getBal($prevLiabilities, '2103');
+    $salariesPayChange = $getBal($currentLiabilities, '2110') - $getBal($prevLiabilities, '2110');
+    $payePayChange = $getBal($currentLiabilities, '2111') - $getBal($prevLiabilities, '2111');
+    $nssfPayChange = $getBal($currentLiabilities, '2112') - $getBal($prevLiabilities, '2112');
 
     $operatingItems = [
       ['label' => 'Net Income', 'amount' => $netIncome],
@@ -475,6 +484,9 @@ class FinancialStatementService
       ['label' => 'Change in Accounts Payable', 'amount' => $apChange],
       ['label' => 'Change in VAT Payable', 'amount' => $vatChange],
       ['label' => 'Change in Accrued Expenses', 'amount' => $accruedChange],
+      ['label' => 'Change in Salaries Payable', 'amount' => $salariesPayChange],
+      ['label' => 'Change in PAYE Payable', 'amount' => $payePayChange],
+      ['label' => 'Change in NSSF Payable', 'amount' => $nssfPayChange],
     ];
     $operatingTotal = array_sum(array_column($operatingItems, 'amount'));
 

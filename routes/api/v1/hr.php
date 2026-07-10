@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:hr'])->prefix('hr'
     Route::middleware('hr.full')->group(function () {
         Route::get('/reports/paye-schedule', [HrReportController::class, 'payeSchedule']);
         Route::get('/reports/nssf-schedule', [HrReportController::class, 'nssfSchedule']);
+        Route::post('/reports/payroll-affordability', [HrReportController::class, 'payrollAffordability']);
         Route::get('/audit-logs', [HrReportController::class, 'auditLogs']);
     });
 });

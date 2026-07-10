@@ -66,6 +66,30 @@ class LedgerService
         });
     }
 
+    public function closingBalance(int $businessId, int $periodId, int $accountId): float
+    {
+        $row = GeneralLedger::where('business_id', $businessId)
+            ->where('period_id', $periodId)
+            ->where('account_id', $accountId)
+            ->first();
+
+        return $row ? (float) $row->closing_balance : 0.0;
+    }
+
+    /** @param string[] $codes */
+    public function closingBalanceByCodes(int $businessId, int $periodId, array $codes): float
+    {
+        $sum = 0.0;
+        foreach ($codes as $code) {
+            $account = ChartOfAccount::where('business_id', $businessId)->where('code', $code)->first();
+            if ($account) {
+                $sum += $this->closingBalance($businessId, $periodId, $account->id);
+            }
+        }
+
+        return round($sum, 2);
+    }
+
     public function calculateAccountBalance(int $accountId, int $businessId, ?int $periodId = null): float
     {
         $query = GeneralLedger::where('business_id', $businessId)

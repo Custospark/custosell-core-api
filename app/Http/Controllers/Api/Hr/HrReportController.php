@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\Hr;
 
 use App\Http\Controllers\Controller;
 use App\Services\Hr\HrAuditService;
+use App\Services\Hr\HrPayrollAffordabilityService;
 use App\Services\Hr\HrReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class HrReportController extends Controller
     public function __construct(
         protected HrReportService $reports,
         protected HrAuditService $audit,
+        protected HrPayrollAffordabilityService $affordability,
     ) {}
 
     public function payeSchedule(Request $request): JsonResponse
@@ -105,5 +107,29 @@ class HrReportController extends Controller
                 'last_page' => $paginator->lastPage(),
             ],
         ]);
+    }
+
+    public function payrollAffordability(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'as_of_date' => ['nullable', 'date'],
+            'period_id' => ['nullable', 'integer'],
+            'horizon_months' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'hire' => ['nullable', 'array'],
+            'hire.basic_salary' => ['required_with:hire', 'numeric', 'gt:0'],
+            'hire.allowances' => ['nullable', 'array'],
+            'hire.deductions' => ['nullable', 'array'],
+            'hire.start_month_offset' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $data = $this->affordability->analyze(
+            (int) $request->user()->business_id,
+            $validated['as_of_date'] ?? null,
+            isset($validated['period_id']) ? (int) $validated['period_id'] : null,
+            (int) ($validated['horizon_months'] ?? 3),
+            $validated['hire'] ?? null,
+        );
+
+        return response()->json(['data' => $data]);
     }
 }
