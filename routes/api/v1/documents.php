@@ -4,6 +4,12 @@ use App\Http\Controllers\Api\DocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->group(function () {
+    Route::get('/documents/cabinets', [DocumentController::class, 'indexCabinets']);
+    Route::post('/documents/cabinets', [DocumentController::class, 'storeCabinet']);
+    Route::get('/documents/cabinets/{id}', [DocumentController::class, 'showCabinet'])->whereNumber('id');
+    Route::patch('/documents/cabinets/{id}', [DocumentController::class, 'updateCabinet'])->whereNumber('id');
+    Route::delete('/documents/cabinets/{id}', [DocumentController::class, 'destroyCabinet'])->whereNumber('id');
+
     Route::get('/documents/activity', [DocumentController::class, 'activity']);
     Route::get('/documents/vault-appearance', [DocumentController::class, 'vaultAppearance']);
     Route::patch('/documents/vault-appearance', [DocumentController::class, 'updateVaultAppearance']);

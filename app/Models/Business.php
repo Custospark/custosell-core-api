@@ -25,6 +25,11 @@ class Business extends Model
                 $business->status_changed_at = now();
             }
         });
+
+        static::created(function (Business $business): void {
+            app(\App\Services\Documents\DocumentCabinetService::class)
+                ->ensureGeneralCabinet((int) $business->id, $business->owner_id ? (int) $business->owner_id : null);
+        });
     }
 
     protected $fillable = [

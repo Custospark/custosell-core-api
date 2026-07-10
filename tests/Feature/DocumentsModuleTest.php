@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Business;
 use App\Models\Document;
+use App\Models\DocumentCabinet;
 use App\Models\DocumentFolder;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
@@ -21,6 +22,8 @@ class DocumentsModuleTest extends TestCase
     protected Business $business;
 
     protected User $owner;
+
+    protected int $cabinetId;
 
     protected function setUp(): void
     {
@@ -42,6 +45,29 @@ class DocumentsModuleTest extends TestCase
         ]);
 
         $this->owner->update(['business_id' => $this->business->id]);
+
+        $this->cabinetId = (int) DocumentCabinet::query()
+            ->where('business_id', $this->business->id)
+            ->where('name', 'General')
+            ->value('id');
+    }
+
+    protected function folderAttributes(array $overrides = []): array
+    {
+        return array_merge([
+            'business_id' => $this->business->id,
+            'cabinet_id' => $this->cabinetId,
+            'created_by' => $this->owner->id,
+        ], $overrides);
+    }
+
+    protected function documentAttributes(array $overrides = []): array
+    {
+        return array_merge([
+            'business_id' => $this->business->id,
+            'cabinet_id' => $this->cabinetId,
+            'uploaded_by' => $this->owner->id,
+        ], $overrides);
     }
 
     public function test_owner_can_create_folder_and_upload_document(): void
@@ -52,6 +78,7 @@ class DocumentsModuleTest extends TestCase
             ->postJson('/api/v1/documents/folders', [
                 'name' => 'HR',
                 'visibility' => 'all_staff',
+                'cabinet_id' => $this->cabinetId,
             ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'HR');
@@ -97,6 +124,7 @@ class DocumentsModuleTest extends TestCase
             ->postJson('/api/v1/documents/folders', [
                 'name' => 'Shared',
                 'visibility' => 'all_staff',
+                'cabinet_id' => $this->cabinetId,
             ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Shared');
@@ -106,20 +134,86 @@ class DocumentsModuleTest extends TestCase
                 'title' => 'Company site',
                 'url' => 'https://example.com',
                 'visibility' => 'all_staff',
+                'cabinet_id' => $this->cabinetId,
             ])
             ->assertCreated()
             ->assertJsonPath('data.title', 'Company site');
     }
 
-    public function test_root_folder_rejects_inherit_visibility(): void
+    public function test_root_folder_can_inherit_cabinet_visibility(): void
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
         $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/v1/documents/folders', [
-                'name' => 'Bad root',
+                'name' => 'Inherited root',
                 'visibility' => 'inherit',
+                'cabinet_id' => $this->cabinetId,
             ])
+            ->assertCreated()
+            ->assertJsonPath('data.visibility', 'inherit');
+    }
+
+    public function test_folder_children_requires_cabinet_id(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/documents/folders/children')
+            ->assertStatus(422);
+
+        DocumentFolder::create($this->folderAttributes([
+            'name' => 'Root folder',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+        ]));
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson("/api/v1/documents/folders/children?cabinet_id={$this->cabinetId}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Root folder');
+    }
+
+    public function test_owner_can_create_and_list_cabinets(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $create = $this->withHeader('Authorization', "Bearer $token")
+            ->postJson('/api/v1/documents/cabinets', [
+                'name' => 'Finance',
+                'visibility' => 'all_staff',
+                'description' => 'Finance docs',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Finance');
+
+        $cabinetId = (int) $create->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/documents/cabinets')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'General'])
+            ->assertJsonFragment(['name' => 'Finance']);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson("/api/v1/documents/cabinets/{$cabinetId}")
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Finance');
+    }
+
+    public function test_cannot_delete_cabinet_with_contents(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        DocumentFolder::create($this->folderAttributes([
+            'name' => 'Blocked',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+        ]));
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->deleteJson("/api/v1/documents/cabinets/{$this->cabinetId}")
             ->assertStatus(422);
     }
 
@@ -131,23 +225,19 @@ class DocumentsModuleTest extends TestCase
             'modules' => ['documents'],
         ]);
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Private',
             'visibility' => 'owner_only',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
-        $document = Document::create([
-            'business_id' => $this->business->id,
+        $document = Document::create($this->documentAttributes([
             'folder_id' => $folder->id,
             'type' => 'link',
             'title' => 'Secret',
             'visibility' => 'inherit',
             'url' => 'https://example.com',
-            'uploaded_by' => $this->owner->id,
-        ]);
+        ]));
 
         $this->actingAs($staff, 'sanctum')
             ->getJson("/api/v1/documents/{$document->id}")
@@ -170,15 +260,13 @@ class DocumentsModuleTest extends TestCase
         $token = $this->owner->createToken('owner')->plainTextToken;
 
         for ($i = 1; $i <= 3; $i++) {
-            Document::create([
-                'business_id' => $this->business->id,
+            Document::create($this->documentAttributes([
                 'folder_id' => null,
                 'type' => 'link',
                 'title' => "Doc {$i}",
                 'visibility' => 'all_staff',
                 'url' => "https://example.com/{$i}",
-                'uploaded_by' => $this->owner->id,
-            ]);
+            ]));
         }
 
         $this->withHeader('Authorization', "Bearer $token")
@@ -193,36 +281,30 @@ class DocumentsModuleTest extends TestCase
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Nested',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
-        Document::create([
-            'business_id' => $this->business->id,
+        Document::create($this->documentAttributes([
             'folder_id' => null,
             'type' => 'link',
             'title' => 'Root Doc',
             'visibility' => 'all_staff',
             'url' => 'https://example.com/root',
-            'uploaded_by' => $this->owner->id,
-        ]);
+        ]));
 
-        Document::create([
-            'business_id' => $this->business->id,
+        Document::create($this->documentAttributes([
             'folder_id' => $folder->id,
             'type' => 'link',
             'title' => 'Nested Doc',
             'visibility' => 'inherit',
             'url' => 'https://example.com/nested',
-            'uploaded_by' => $this->owner->id,
-        ]);
+        ]));
 
         $this->withHeader('Authorization', "Bearer $token")
-            ->getJson('/api/v1/documents?root_only=true&per_page=100&page=1')
+            ->getJson("/api/v1/documents?root_only=true&cabinet_id={$this->cabinetId}&per_page=100&page=1")
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'Root Doc');
@@ -232,23 +314,19 @@ class DocumentsModuleTest extends TestCase
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Projects',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
-        Document::create([
-            'business_id' => $this->business->id,
+        Document::create($this->documentAttributes([
             'folder_id' => $folder->id,
             'type' => 'link',
             'title' => 'Brief',
             'visibility' => 'inherit',
             'url' => 'https://example.com/brief',
-            'uploaded_by' => $this->owner->id,
-        ]);
+        ]));
 
         $this->withHeader('Authorization', "Bearer $token")
             ->getJson("/api/v1/documents/folders/{$folder->id}/contents?page=1")
@@ -267,7 +345,7 @@ class DocumentsModuleTest extends TestCase
             'name' => 'Sales Rep',
         ]);
 
-        $inactiveStaff = User::factory()->create([
+        User::factory()->create([
             'business_id' => $this->business->id,
             'is_active' => false,
             'modules' => ['documents'],
@@ -291,13 +369,11 @@ class DocumentsModuleTest extends TestCase
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Legal',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
         app(\App\Services\Documents\DocumentActivityService::class)->record(
             $this->business->id,
@@ -320,13 +396,11 @@ class DocumentsModuleTest extends TestCase
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Archive',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
         $upload = $this->withHeader('Authorization', "Bearer $token")
             ->post('/api/v1/documents/upload', [
@@ -356,13 +430,11 @@ class DocumentsModuleTest extends TestCase
     {
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Exports',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
         $this->withHeader('Authorization', "Bearer $token")
             ->post('/api/v1/documents/upload', [
@@ -387,13 +459,11 @@ class DocumentsModuleTest extends TestCase
 
         $token = $this->owner->createToken('owner')->plainTextToken;
 
-        $folder = DocumentFolder::create([
-            'business_id' => $this->business->id,
+        $folder = DocumentFolder::create($this->folderAttributes([
             'name' => 'Shareable',
             'visibility' => 'all_staff',
             'depth' => 1,
-            'created_by' => $this->owner->id,
-        ]);
+        ]));
 
         $upload = $this->withHeader('Authorization', "Bearer $token")
             ->post('/api/v1/documents/upload', [
@@ -434,6 +504,7 @@ class DocumentsModuleTest extends TestCase
                 'file' => UploadedFile::fake()->create('clip.mp3', 11000, 'audio/mpeg'),
                 'title' => 'Too large',
                 'visibility' => 'all_staff',
+                'cabinet_id' => $this->cabinetId,
             ])
             ->assertStatus(422);
     }
@@ -447,6 +518,7 @@ class DocumentsModuleTest extends TestCase
                 'file' => UploadedFile::fake()->createWithContent('notes.txt', "Hello world\n"),
                 'title' => 'Notes',
                 'visibility' => 'all_staff',
+                'cabinet_id' => $this->cabinetId,
             ])
             ->assertCreated();
 

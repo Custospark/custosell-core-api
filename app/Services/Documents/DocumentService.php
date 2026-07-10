@@ -6,6 +6,7 @@ namespace App\Services\Documents;
 
 use App\Models\Customer;
 use App\Models\Document;
+use App\Models\DocumentCabinet;
 use App\Models\DocumentFolder;
 use App\Models\DocumentTag;
 use App\Models\Project;
@@ -36,6 +37,7 @@ class DocumentService
         bool $rootOnly = false,
         int $page = 1,
         int $perPage = 50,
+        ?int $cabinetId = null,
     ): array {
         $perPage = min(max($perPage, 1), 200);
         $page = max($page, 1);
@@ -48,9 +50,13 @@ class DocumentService
                 'tags:id,name,slug',
                 'customer:id,name',
                 'project:id,name',
-                'folder:id,name,parent_id,visibility',
+                'folder:id,name,parent_id,visibility,cabinet_id',
             ])
             ->orderByDesc('updated_at');
+
+        if ($cabinetId !== null) {
+            $builder->where('cabinet_id', $cabinetId);
+        }
 
         if ($rootOnly) {
             $builder->whereNull('folder_id');
@@ -165,9 +171,11 @@ class DocumentService
         ?int $customerId = null,
         ?int $projectId = null,
         array $tagNames = [],
+        ?int $cabinetId = null,
     ): array {
         $this->access->assertHasDocumentsModule($user);
-        $this->assertFolderUploadAccess($businessId, $user, $folderId);
+        $resolvedCabinetId = $this->resolveCabinetIdForWrite($businessId, $user, $folderId, $cabinetId);
+        $this->assertFolderUploadAccess($businessId, $user, $folderId, $resolvedCabinetId);
         $this->access->assertValidVisibility($visibility, $memberUserIds, true);
         $this->assertLinkedEntities($businessId, $customerId, $projectId);
 
@@ -186,6 +194,7 @@ class DocumentService
 
         $document = Document::create([
             'business_id' => $businessId,
+            'cabinet_id' => $resolvedCabinetId,
             'folder_id' => $folderId,
             'type' => $type,
             'title' => $title ? trim($title) : ($file->getClientOriginalName() ?: 'Untitled'),
@@ -234,14 +243,17 @@ class DocumentService
         ?int $customerId = null,
         ?int $projectId = null,
         array $tagNames = [],
+        ?int $cabinetId = null,
     ): array {
         $this->access->assertHasDocumentsModule($user);
-        $this->assertFolderUploadAccess($businessId, $user, $folderId);
+        $resolvedCabinetId = $this->resolveCabinetIdForWrite($businessId, $user, $folderId, $cabinetId);
+        $this->assertFolderUploadAccess($businessId, $user, $folderId, $resolvedCabinetId);
         $this->access->assertValidVisibility($visibility, $memberUserIds, true);
         $this->assertLinkedEntities($businessId, $customerId, $projectId);
 
         $document = Document::create([
             'business_id' => $businessId,
+            'cabinet_id' => $resolvedCabinetId,
             'folder_id' => $folderId,
             'type' => 'link',
             'title' => trim($title),
@@ -323,8 +335,13 @@ class DocumentService
         }
 
         if ($folderId !== null) {
-            $this->assertFolderUploadAccess($businessId, $user, $folderId);
+            $targetFolder = DocumentFolder::query()
+                ->where('business_id', $businessId)
+                ->whereKey($folderId)
+                ->firstOrFail();
+            $this->assertFolderUploadAccess($businessId, $user, $folderId, (int) $targetFolder->cabinet_id);
             $document->folder_id = $folderId;
+            $document->cabinet_id = $targetFolder->cabinet_id;
         }
 
         if ($unsetCustomer) {
@@ -643,10 +660,17 @@ class DocumentService
         }
     }
 
-    protected function assertFolderUploadAccess(int $businessId, User $user, ?int $folderId): void
+    protected function assertFolderUploadAccess(int $businessId, User $user, ?int $folderId, ?int $cabinetId = null): void
     {
         if ($folderId === null) {
-            $this->access->assertHasDocumentsModule($user);
+            if ($cabinetId === null) {
+                abort(422, 'Cabinet is required for root uploads.');
+            }
+            $cabinet = DocumentCabinet::query()
+                ->where('business_id', $businessId)
+                ->whereKey($cabinetId)
+                ->firstOrFail();
+            $this->access->assertCanContributeToCabinet($user, $cabinet);
 
             return;
         }
@@ -657,6 +681,30 @@ class DocumentService
             ->firstOrFail();
 
         $this->access->assertCanContributeToFolder($user, $folder);
+    }
+
+    protected function resolveCabinetIdForWrite(int $businessId, User $user, ?int $folderId, ?int $cabinetId): int
+    {
+        if ($folderId !== null) {
+            $folder = DocumentFolder::query()
+                ->where('business_id', $businessId)
+                ->whereKey($folderId)
+                ->firstOrFail();
+
+            return (int) $folder->cabinet_id;
+        }
+
+        if ($cabinetId === null) {
+            abort(422, 'Cabinet is required.');
+        }
+
+        $cabinet = DocumentCabinet::query()
+            ->where('business_id', $businessId)
+            ->whereKey($cabinetId)
+            ->firstOrFail();
+        $this->access->assertCanContributeToCabinet($user, $cabinet);
+
+        return $cabinetId;
     }
 
     protected function assertLinkedEntities(int $businessId, ?int $customerId, ?int $projectId): void
@@ -729,6 +777,7 @@ class DocumentService
 
         return [
             'id' => $document->id,
+            'cabinet_id' => $document->cabinet_id,
             'folder_id' => $document->folder_id,
             'folder_path' => $this->folderPathForDocument($document),
             'type' => $document->type,

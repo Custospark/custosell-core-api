@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Services\Documents\DocumentAccessService;
+use App\Services\Documents\DocumentCabinetService;
 use App\Services\Documents\DocumentFolderService;
 use App\Services\Documents\DocumentService;
 use App\Services\Documents\DocumentTagService;
@@ -23,12 +24,108 @@ class DocumentController extends Controller
     public function __construct(
         protected DocumentAccessService $access,
         protected DocumentFolderService $folders,
+        protected DocumentCabinetService $cabinets,
         protected DocumentService $documents,
         protected DocumentTagService $tags,
         protected DocumentVaultService $vault,
         protected DocumentActivityService $activity,
         protected DocumentVaultEmailService $vaultEmail,
     ) {}
+
+    public function indexCabinets(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:200'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json($this->cabinets->listPaginated(
+            $businessId,
+            $request->user(),
+            $validated['q'] ?? null,
+            (int) ($validated['page'] ?? 1),
+            (int) ($validated['per_page'] ?? 50),
+        ));
+    }
+
+    public function showCabinet(Request $request, int $id): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json([
+            'data' => $this->cabinets->show($businessId, $request->user(), $id),
+        ]);
+    }
+
+    public function storeCabinet(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'visibility' => ['required', 'string'],
+            'cover_color' => ['nullable', 'string', 'max:7'],
+            'member_user_ids' => ['array'],
+            'member_user_ids.*' => ['integer'],
+            'member_roles' => ['array'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json([
+            'data' => $this->cabinets->create(
+                $businessId,
+                $request->user(),
+                $validated['name'],
+                $validated['description'] ?? null,
+                $validated['visibility'],
+                array_map('intval', $validated['member_user_ids'] ?? []),
+                $this->parseMemberRoles($request),
+                $validated['cover_color'] ?? null,
+            ),
+        ], 201);
+    }
+
+    public function updateCabinet(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'visibility' => ['sometimes', 'string'],
+            'cover_color' => ['nullable', 'string', 'max:7'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'member_user_ids' => ['array'],
+            'member_user_ids.*' => ['integer'],
+            'member_roles' => ['array'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json([
+            'data' => $this->cabinets->update(
+                $businessId,
+                $request->user(),
+                $id,
+                $validated['name'] ?? null,
+                array_key_exists('description', $validated) ? $validated['description'] : null,
+                $validated['visibility'] ?? null,
+                array_key_exists('member_user_ids', $validated) ? array_map('intval', $validated['member_user_ids']) : null,
+                array_key_exists('member_roles', $validated) ? $this->parseMemberRoles($request) : null,
+                array_key_exists('cover_color', $validated) ? ($validated['cover_color'] ?? '') : null,
+                isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
+            ),
+        ]);
+    }
+
+    public function destroyCabinet(Request $request, int $id): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+        $this->cabinets->destroy($businessId, $request->user(), $id);
+
+        return response()->json(['message' => 'Cabinet deleted.']);
+    }
 
     public function vaultAppearance(Request $request): JsonResponse
     {
@@ -79,10 +176,15 @@ class DocumentController extends Controller
 
     public function folderTree(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'cabinet_id' => ['nullable', 'integer'],
+        ]);
+
         $businessId = (int) $request->user()->business_id;
+        $cabinetId = isset($validated['cabinet_id']) ? (int) $validated['cabinet_id'] : null;
 
         return response()->json([
-            'data' => $this->folders->tree($businessId, $request->user()),
+            'data' => $this->folders->tree($businessId, $request->user(), $cabinetId),
         ]);
     }
 
@@ -98,6 +200,7 @@ class DocumentController extends Controller
     public function folderChildren(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'cabinet_id' => ['required', 'integer'],
             'parent_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
@@ -109,6 +212,7 @@ class DocumentController extends Controller
         $result = $this->folders->listChildren(
             $businessId,
             $request->user(),
+            (int) $validated['cabinet_id'],
             isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
             (int) ($validated['page'] ?? 1),
             $perPage,
@@ -146,6 +250,7 @@ class DocumentController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['required', 'string'],
             'parent_id' => ['nullable', 'integer'],
+            'cabinet_id' => ['nullable', 'integer'],
             'member_user_ids' => ['array'],
             'member_user_ids.*' => ['integer'],
             'member_roles' => ['array'],
@@ -164,6 +269,7 @@ class DocumentController extends Controller
                 isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
                 array_map('intval', $validated['member_user_ids'] ?? []),
                 $memberRoles,
+                isset($validated['cabinet_id']) ? (int) $validated['cabinet_id'] : null,
             ),
         ], 201);
     }
@@ -227,6 +333,7 @@ class DocumentController extends Controller
             'type' => ['nullable', 'string'],
             'uploaded_by' => ['nullable', 'integer'],
             'root_only' => ['nullable'],
+            'cabinet_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
@@ -247,6 +354,7 @@ class DocumentController extends Controller
             $request->boolean('root_only'),
             (int) ($validated['page'] ?? 1),
             $perPage,
+            isset($validated['cabinet_id']) ? (int) $validated['cabinet_id'] : null,
         );
 
         return response()->json($result);
@@ -293,6 +401,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'file' => ['required', 'file'],
             'folder_id' => ['nullable', 'integer'],
+            'cabinet_id' => ['nullable', 'integer'],
             'title' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['nullable', 'string'],
@@ -321,6 +430,7 @@ class DocumentController extends Controller
                 isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
                 isset($validated['project_id']) ? (int) $validated['project_id'] : null,
                 $validated['tags'] ?? [],
+                isset($validated['cabinet_id']) ? (int) $validated['cabinet_id'] : null,
             ),
         ], 201);
     }
@@ -331,6 +441,7 @@ class DocumentController extends Controller
             'title' => ['required', 'string', 'max:200'],
             'url' => ['required', 'string', 'max:2000'],
             'folder_id' => ['nullable', 'integer'],
+            'cabinet_id' => ['nullable', 'integer'],
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['nullable', 'string'],
             'member_user_ids' => ['array'],
@@ -358,6 +469,7 @@ class DocumentController extends Controller
                 isset($validated['customer_id']) ? (int) $validated['customer_id'] : null,
                 isset($validated['project_id']) ? (int) $validated['project_id'] : null,
                 $validated['tags'] ?? [],
+                isset($validated['cabinet_id']) ? (int) $validated['cabinet_id'] : null,
             ),
         ], 201);
     }

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Documents\DocumentAccessService;
 use App\Services\Documents\DocumentActivityService;
+use App\Services\Documents\DocumentCabinetService;
 use App\Services\Documents\DocumentFolderService;
 use App\Services\Documents\DocumentService;
 use App\Services\Documents\DocumentTagService;
@@ -17,6 +18,7 @@ class DocumentServiceProvider extends ServiceProvider
     {
         $this->app->singleton(DocumentAccessService::class);
         $this->app->singleton(DocumentActivityService::class);
+        $this->app->singleton(DocumentCabinetService::class);
         $this->app->singleton(DocumentVaultService::class);
         $this->app->singleton(DocumentVaultEmailService::class);
         $this->app->singleton(DocumentFolderService::class);

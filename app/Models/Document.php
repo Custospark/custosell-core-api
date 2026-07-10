@@ -16,6 +16,7 @@ class Document extends Model
 
     protected $fillable = [
         'business_id',
+        'cabinet_id',
         'folder_id',
         'type',
         'title',
@@ -49,6 +50,11 @@ class Document extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function cabinet(): BelongsTo
+    {
+        return $this->belongsTo(DocumentCabinet::class, 'cabinet_id');
     }
 
     public function folder(): BelongsTo

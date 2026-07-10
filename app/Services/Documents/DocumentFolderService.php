@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Documents;
 
 use App\Models\Document;
+use App\Models\DocumentCabinet;
 use App\Models\DocumentFolder;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -22,9 +23,9 @@ class DocumentFolderService
     ) {}
 
     /** @return list<array<string, mixed>> */
-    public function tree(int $businessId, User $user): array
+    public function tree(int $businessId, User $user, ?int $cabinetId = null): array
     {
-        $folders = DocumentFolder::query()
+        $builder = DocumentFolder::query()
             ->where('business_id', $businessId)
             ->with([
                 'creator:id,name,avatar',
@@ -32,8 +33,18 @@ class DocumentFolderService
                 'parent:id,parent_id,visibility,name',
             ])
             ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($cabinetId !== null) {
+            $cabinet = DocumentCabinet::query()
+                ->where('business_id', $businessId)
+                ->whereKey($cabinetId)
+                ->firstOrFail();
+            $this->access->assertCanViewCabinet($user, $cabinet);
+            $builder->where('cabinet_id', $cabinetId);
+        }
+
+        $folders = $builder->get();
 
         $byParent = $folders->groupBy(fn (DocumentFolder $folder) => (string) ($folder->parent_id ?? 'root'));
 
@@ -80,6 +91,7 @@ class DocumentFolderService
     public function listChildren(
         int $businessId,
         User $user,
+        int $cabinetId,
         ?int $parentId,
         int $page = 1,
         int $perPage = 100,
@@ -87,8 +99,15 @@ class DocumentFolderService
         $perPage = min(max($perPage, 1), 200);
         $page = max($page, 1);
 
+        $cabinet = DocumentCabinet::query()
+            ->where('business_id', $businessId)
+            ->whereKey($cabinetId)
+            ->firstOrFail();
+        $this->access->assertCanViewCabinet($user, $cabinet);
+
         $paginator = DocumentFolder::query()
             ->where('business_id', $businessId)
+            ->where('cabinet_id', $cabinetId)
             ->where('parent_id', $parentId)
             ->with(['creator:id,name,avatar', 'members:id,name,avatar'])
             ->orderBy('sort_order')
@@ -132,7 +151,7 @@ class DocumentFolderService
         $folder = $this->findFolder($businessId, $folderId);
         $this->access->assertCanView($user, $folder);
 
-        $children = $this->listChildren($businessId, $user, $folder->id, 1, min($perPage, 100));
+        $children = $this->listChildren($businessId, $user, (int) $folder->cabinet_id, $folder->id, 1, min($perPage, 100));
         $documentPage = $documentService->listPaginated(
             $businessId,
             $user,
@@ -146,6 +165,7 @@ class DocumentFolderService
             false,
             $page,
             $perPage,
+            (int) $folder->cabinet_id,
         );
 
         return [
@@ -171,31 +191,39 @@ class DocumentFolderService
         ?int $parentId,
         array $memberUserIds = [],
         array $memberRoles = [],
+        ?int $cabinetId = null,
     ): array {
         $this->access->assertHasDocumentsModule($user);
 
         $depth = 1;
         $parent = null;
+        $resolvedCabinetId = $cabinetId;
 
         if ($parentId !== null) {
             $parent = $this->findFolder($businessId, $parentId);
             $this->access->assertCanContributeToFolder($user, $parent);
             $depth = $parent->depth + 1;
+            $resolvedCabinetId = (int) $parent->cabinet_id;
             if ($depth > (int) config('documents.max_depth', 5)) {
                 abort(422, 'Maximum folder depth of '.config('documents.max_depth', 5).' reached.');
             }
-        } elseif (! $this->access->hasDocumentsModule($user)) {
-            abort(403, 'You do not have access to create folders.');
+        } else {
+            if ($resolvedCabinetId === null) {
+                abort(422, 'Cabinet is required for root folders.');
+            }
+            $cabinet = DocumentCabinet::query()
+                ->where('business_id', $businessId)
+                ->whereKey($resolvedCabinetId)
+                ->firstOrFail();
+            $this->access->assertCanContributeToCabinet($user, $cabinet);
         }
 
-        if ($parentId === null) {
-            $this->access->assertValidVisibility($visibility, $memberUserIds, false);
-        } else {
-            $this->access->assertValidVisibility($visibility, $memberUserIds, true);
-        }
+        $allowInherit = $parentId !== null || $resolvedCabinetId !== null;
+        $this->access->assertValidVisibility($visibility, $memberUserIds, $allowInherit);
 
         $folder = DocumentFolder::create([
             'business_id' => $businessId,
+            'cabinet_id' => $resolvedCabinetId,
             'parent_id' => $parentId,
             'name' => trim($name),
             'description' => $description,
@@ -566,6 +594,7 @@ class DocumentFolderService
 
         $payload = [
             'id' => $folder->id,
+            'cabinet_id' => $folder->cabinet_id,
             'parent_id' => $folder->parent_id,
             'name' => $folder->name,
             'description' => $folder->description,

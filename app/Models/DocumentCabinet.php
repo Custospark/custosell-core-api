@@ -10,27 +10,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class DocumentFolder extends Model
+class DocumentCabinet extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
         'business_id',
-        'cabinet_id',
-        'parent_id',
         'name',
         'description',
         'visibility',
         'cover_color',
-        'depth',
-        'created_by',
         'sort_order',
+        'created_by',
     ];
 
     protected function casts(): array
     {
         return [
-            'depth' => 'integer',
             'sort_order' => 'integer',
         ];
     }
@@ -40,21 +36,6 @@ class DocumentFolder extends Model
         return $this->belongsTo(Business::class);
     }
 
-    public function cabinet(): BelongsTo
-    {
-        return $this->belongsTo(DocumentCabinet::class, 'cabinet_id');
-    }
-
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'parent_id');
-    }
-
-    public function children(): HasMany
-    {
-        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -62,18 +43,23 @@ class DocumentFolder extends Model
 
     public function memberLinks(): HasMany
     {
-        return $this->hasMany(DocumentFolderMember::class, 'folder_id');
+        return $this->hasMany(DocumentCabinetMember::class, 'cabinet_id');
     }
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'document_folder_members', 'folder_id', 'user_id')
+        return $this->belongsToMany(User::class, 'document_cabinet_members', 'cabinet_id', 'user_id')
             ->withPivot('role')
             ->withTimestamps();
     }
 
+    public function folders(): HasMany
+    {
+        return $this->hasMany(DocumentFolder::class, 'cabinet_id');
+    }
+
     public function documents(): HasMany
     {
-        return $this->hasMany(Document::class, 'folder_id');
+        return $this->hasMany(Document::class, 'cabinet_id');
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Documents;
 
 use App\Models\Document;
+use App\Models\DocumentCabinet;
 use App\Models\DocumentFolder;
 use App\Models\User;
 use App\Services\ModuleAccessService;
@@ -46,7 +47,7 @@ class DocumentAccessService
         }
     }
 
-    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, members: Collection<int, User>} */
+    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, source_cabinet: DocumentCabinet|null, members: Collection<int, User>} */
     public function resolveEffectiveAcl(DocumentFolder|Document $resource): array
     {
         if ($resource instanceof Document) {
@@ -55,6 +56,7 @@ class DocumentAccessService
                     'visibility' => $resource->visibility,
                     'source_folder' => null,
                     'source_document' => $resource,
+                    'source_cabinet' => null,
                     'members' => $resource->relationLoaded('members')
                         ? $resource->members
                         : $resource->members()->get(),
@@ -62,6 +64,10 @@ class DocumentAccessService
             }
 
             if ($resource->folder_id === null) {
+                if ($resource->cabinet_id !== null) {
+                    return $this->resolveCabinetAcl($this->loadCabinet((int) $resource->cabinet_id));
+                }
+
                 return $this->defaultAcl();
             }
 
@@ -79,7 +85,7 @@ class DocumentAccessService
         return $this->resolveFolderEffectiveAcl($resource);
     }
 
-    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, members: Collection<int, User>} */
+    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, source_cabinet: DocumentCabinet|null, members: Collection<int, User>} */
     protected function resolveFolderEffectiveAcl(DocumentFolder $folder): array
     {
         $current = $folder;
@@ -96,6 +102,7 @@ class DocumentAccessService
                     'visibility' => $current->visibility,
                     'source_folder' => $current,
                     'source_document' => null,
+                    'source_cabinet' => null,
                     'members' => $current->relationLoaded('members')
                         ? $current->members
                         : $current->members()->get(),
@@ -103,6 +110,10 @@ class DocumentAccessService
             }
 
             if ($current->parent_id === null) {
+                if ($current->cabinet_id !== null) {
+                    return $this->resolveCabinetAcl($this->loadCabinet((int) $current->cabinet_id));
+                }
+
                 break;
             }
 
@@ -114,6 +125,156 @@ class DocumentAccessService
         return $this->defaultAcl();
     }
 
+    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, source_cabinet: DocumentCabinet|null, members: Collection<int, User>} */
+    protected function resolveCabinetAcl(DocumentCabinet $cabinet): array
+    {
+        return [
+            'visibility' => $cabinet->visibility,
+            'source_folder' => null,
+            'source_document' => null,
+            'source_cabinet' => $cabinet,
+            'members' => $cabinet->relationLoaded('members')
+                ? $cabinet->members
+                : $cabinet->members()->get(),
+        ];
+    }
+
+    protected function loadCabinet(int $cabinetId): DocumentCabinet
+    {
+        return DocumentCabinet::query()
+            ->with(['members:id,name,avatar'])
+            ->findOrFail($cabinetId);
+    }
+
+    public function canViewCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        if ($this->isOwner($user)) {
+            return true;
+        }
+
+        if (! $this->hasDocumentsModule($user) || ! $user->is_active) {
+            return false;
+        }
+
+        if ((int) $cabinet->created_by === (int) $user->id) {
+            return true;
+        }
+
+        return match ($cabinet->visibility) {
+            'all_staff' => true,
+            'owner_only' => false,
+            'selected_staff' => $cabinet->relationLoaded('members')
+                ? $cabinet->members->contains(fn (User $member) => (int) $member->id === (int) $user->id)
+                : $cabinet->members()->where('users.id', $user->id)->exists(),
+            default => false,
+        };
+    }
+
+    public function roleForCabinet(User $user, DocumentCabinet $cabinet): ?string
+    {
+        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
+            return 'manager';
+        }
+
+        if (! $this->canViewCabinet($user, $cabinet)) {
+            return null;
+        }
+
+        return match ($cabinet->visibility) {
+            'all_staff' => 'contributor',
+            'selected_staff' => $this->memberRole(
+                $user,
+                $cabinet->relationLoaded('members') ? $cabinet->members : $cabinet->members()->get(),
+            ),
+            'owner_only' => null,
+            default => null,
+        };
+    }
+
+    public function canContributeToCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
+            return true;
+        }
+
+        $role = $this->roleForCabinet($user, $cabinet);
+
+        return $role !== null && self::ROLE_RANK[$role] >= self::ROLE_RANK['contributor'];
+    }
+
+    public function canManageCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
+            return true;
+        }
+
+        return $this->roleForCabinet($user, $cabinet) === 'manager';
+    }
+
+    public function assertCanViewCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        if (! $this->canViewCabinet($user, $cabinet)) {
+            abort(403, 'You do not have access to this cabinet.');
+        }
+    }
+
+    public function assertCanContributeToCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        if (! $this->canContributeToCabinet($user, $cabinet)) {
+            abort(403, 'You cannot add content to this cabinet.');
+        }
+    }
+
+    public function assertCanManageCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        if (! $this->canManageCabinet($user, $cabinet)) {
+            abort(403, 'You cannot manage this cabinet.');
+        }
+    }
+
+    /** @return array<string, mixed> */
+    public function cabinetPermissionFlags(User $user, DocumentCabinet $cabinet): array
+    {
+        $role = $this->roleForCabinet($user, $cabinet);
+        $canView = $this->canViewCabinet($user, $cabinet);
+        $canManage = $this->canManageCabinet($user, $cabinet);
+        $canContribute = $this->canContributeToCabinet($user, $cabinet);
+
+        return [
+            'can_view' => $canView,
+            'can_contribute' => $canContribute,
+            'can_edit' => $canManage,
+            'can_delete' => $canManage,
+            'can_manage' => $canManage,
+            'effective_visibility' => $cabinet->visibility,
+            'inherited_from_folder_id' => null,
+            'inherited_from_cabinet_id' => null,
+            'current_member_role' => $role,
+        ];
+    }
+
+    /** @param  list<int>  $memberUserIds
+     * @param  array<int, string>  $memberRoles
+     */
+    public function syncCabinetMembers(DocumentCabinet $cabinet, int $businessId, array $memberUserIds, array $memberRoles = []): void
+    {
+        if ($cabinet->visibility !== 'selected_staff') {
+            $cabinet->memberLinks()->delete();
+
+            return;
+        }
+
+        $validIds = $this->filterValidMemberIds($businessId, $memberUserIds);
+        $cabinet->memberLinks()->whereNotIn('user_id', $validIds)->delete();
+
+        foreach ($validIds as $userId) {
+            $cabinet->memberLinks()->updateOrCreate(
+                ['user_id' => $userId],
+                ['role' => $this->assertValidRole($memberRoles[$userId] ?? null)],
+            );
+        }
+    }
+
     /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, members: Collection<int, User>} */
     protected function defaultAcl(): array
     {
@@ -121,6 +282,7 @@ class DocumentAccessService
             'visibility' => 'all_staff',
             'source_folder' => null,
             'source_document' => null,
+            'source_cabinet' => null,
             'members' => collect(),
         ];
     }
@@ -316,6 +478,7 @@ class DocumentAccessService
             'can_manage' => $canManage,
             'effective_visibility' => $acl['visibility'],
             'inherited_from_folder_id' => $acl['source_folder']?->id,
+            'inherited_from_cabinet_id' => $acl['source_cabinet']?->id ?? null,
         ];
     }
 
