@@ -20,6 +20,8 @@ class DocumentCabinet extends Model
         'description',
         'visibility',
         'cover_color',
+        'background_type',
+        'background_value',
         'sort_order',
         'created_by',
     ];

@@ -55,6 +55,9 @@ return new class extends Migration
 
         foreach ($businessIds as $businessId) {
             $ownerId = DB::table('businesses')->where('id', $businessId)->value('owner_id');
+            if ($ownerId !== null && ! DB::table('users')->where('id', $ownerId)->exists()) {
+                $ownerId = null;
+            }
 
             $cabinetId = DB::table('document_cabinets')->insertGetId([
                 'business_id' => $businessId,

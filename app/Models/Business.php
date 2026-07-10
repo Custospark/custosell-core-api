@@ -28,7 +28,7 @@ class Business extends Model
 
         static::created(function (Business $business): void {
             app(\App\Services\Documents\DocumentCabinetService::class)
-                ->ensureGeneralCabinet((int) $business->id, $business->owner_id ? (int) $business->owner_id : null);
+                ->seedDefaultCabinets((int) $business->id, $business->owner_id ? (int) $business->owner_id : null);
         });
     }
 

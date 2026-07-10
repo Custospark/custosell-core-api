@@ -95,6 +95,8 @@ class DocumentController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['sometimes', 'string'],
             'cover_color' => ['nullable', 'string', 'max:7'],
+            'background_type' => ['nullable', 'string', 'max:32'],
+            'background_value' => ['nullable', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'member_user_ids' => ['array'],
             'member_user_ids.*' => ['integer'],
@@ -114,6 +116,8 @@ class DocumentController extends Controller
                 array_key_exists('member_user_ids', $validated) ? array_map('intval', $validated['member_user_ids']) : null,
                 array_key_exists('member_roles', $validated) ? $this->parseMemberRoles($request) : null,
                 array_key_exists('cover_color', $validated) ? ($validated['cover_color'] ?? '') : null,
+                array_key_exists('background_type', $validated) ? ($validated['background_type'] ?? '') : null,
+                array_key_exists('background_value', $validated) ? ($validated['background_value'] ?? '') : null,
                 isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
             ),
         ]);

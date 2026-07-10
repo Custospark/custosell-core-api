@@ -120,6 +120,8 @@ class DocumentCabinetService
         ?array $memberUserIds = null,
         ?array $memberRoles = null,
         ?string $coverColor = null,
+        ?string $backgroundType = null,
+        ?string $backgroundValue = null,
         ?int $sortOrder = null,
     ): array {
         $cabinet = $this->findCabinet($businessId, $cabinetId);
@@ -136,6 +138,12 @@ class DocumentCabinetService
         }
         if ($coverColor !== null) {
             $cabinet->cover_color = $coverColor === '' ? null : $coverColor;
+        }
+        if ($backgroundType !== null) {
+            $cabinet->background_type = $backgroundType === '' ? null : $backgroundType;
+        }
+        if ($backgroundValue !== null) {
+            $cabinet->background_value = $backgroundValue === '' ? null : $backgroundValue;
         }
 
         if ($visibility !== null) {
@@ -177,25 +185,43 @@ class DocumentCabinetService
         $this->activity->record($businessId, $user, 'cabinet_deleted', 'cabinet', null, $name, null);
     }
 
+    public function seedDefaultCabinets(int $businessId, ?int $ownerId = null): void
+    {
+        $starters = [
+            ['name' => 'General', 'description' => 'Shared company files and everyday documents', 'cover_color' => '#6366f1', 'sort_order' => 0],
+            ['name' => 'HR', 'description' => 'People policies, contracts, and HR records', 'cover_color' => '#8b5cf6', 'sort_order' => 1],
+            ['name' => 'Finance', 'description' => 'Invoices, budgets, tax records, and accounting files', 'cover_color' => '#059669', 'sort_order' => 2],
+            ['name' => 'Legal & Compliance', 'description' => 'Agreements, licenses, and regulatory documents', 'cover_color' => '#dc2626', 'sort_order' => 3],
+            ['name' => 'Sales & Marketing', 'description' => 'Proposals, campaigns, brand assets, and collateral', 'cover_color' => '#ea580c', 'sort_order' => 4],
+            ['name' => 'Operations', 'description' => 'SOPs, vendor files, and day-to-day operations', 'cover_color' => '#0284c7', 'sort_order' => 5],
+        ];
+
+        foreach ($starters as $starter) {
+            DocumentCabinet::query()->firstOrCreate(
+                [
+                    'business_id' => $businessId,
+                    'name' => $starter['name'],
+                ],
+                [
+                    'description' => $starter['description'],
+                    'visibility' => 'all_staff',
+                    'cover_color' => $starter['cover_color'],
+                    'sort_order' => $starter['sort_order'],
+                    'created_by' => $ownerId,
+                ],
+            );
+        }
+    }
+
+    /** @deprecated Use seedDefaultCabinets() */
     public function ensureGeneralCabinet(int $businessId, ?int $ownerId = null): DocumentCabinet
     {
-        $existing = DocumentCabinet::query()
+        $this->seedDefaultCabinets($businessId, $ownerId);
+
+        return DocumentCabinet::query()
             ->where('business_id', $businessId)
             ->where('name', 'General')
-            ->first();
-
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        return DocumentCabinet::create([
-            'business_id' => $businessId,
-            'name' => 'General',
-            'description' => 'Default document cabinet',
-            'visibility' => 'all_staff',
-            'sort_order' => 0,
-            'created_by' => $ownerId,
-        ]);
+            ->firstOrFail();
     }
 
     public function findCabinet(int $businessId, int $cabinetId): DocumentCabinet
@@ -228,6 +254,8 @@ class DocumentCabinetService
             'description' => $cabinet->description,
             'visibility' => $cabinet->visibility,
             'cover_color' => $cabinet->cover_color,
+            'background_type' => $cabinet->background_type,
+            'background_value' => $cabinet->background_value,
             'sort_order' => $cabinet->sort_order,
             'folder_count' => $folderCount,
             'document_count' => $documentCount,
