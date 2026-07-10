@@ -638,6 +638,10 @@ class ReportMetricsService
 
         $lowStock = Product::where('business_id', $businessId)
             ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('type', Product::TYPE_PRODUCT)
+                    ->orWhereNull('type');
+            })
             ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
             ->get(['id', 'name', 'stock_quantity', 'low_stock_threshold']);
 

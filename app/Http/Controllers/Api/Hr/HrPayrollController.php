@@ -55,6 +55,17 @@ class HrPayrollController extends Controller
         return response()->json(['data' => $structure]);
     }
 
+    public function destroyStructure(Request $request, int $id): JsonResponse
+    {
+        $this->payroll->deleteStructure(
+            (int) $request->user()->business_id,
+            $id,
+            $request->user()->id,
+        );
+
+        return response()->json(null, 204);
+    }
+
     public function indexCompensations(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -91,6 +102,17 @@ class HrPayrollController extends Controller
         return response()->json(['data' => $comp], 201);
     }
 
+    public function destroyCompensation(Request $request, int $id): JsonResponse
+    {
+        $this->payroll->deleteCompensation(
+            (int) $request->user()->business_id,
+            $id,
+            $request->user()->id,
+        );
+
+        return response()->json(null, 204);
+    }
+
     public function indexPayRuns(Request $request): JsonResponse
     {
         return response()->json([
@@ -121,6 +143,34 @@ class HrPayrollController extends Controller
         ]);
     }
 
+    public function updatePayRun(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'period_start' => ['sometimes', 'date'],
+            'period_end' => ['sometimes', 'date'],
+        ]);
+
+        $payRun = $this->payroll->updatePayRun(
+            (int) $request->user()->business_id,
+            $id,
+            $validated,
+            $request->user()->id,
+        );
+
+        return response()->json(['data' => $payRun]);
+    }
+
+    public function destroyPayRun(Request $request, int $id): JsonResponse
+    {
+        $this->payroll->deletePayRun(
+            (int) $request->user()->business_id,
+            $id,
+            $request->user()->id,
+        );
+
+        return response()->json(null, 204);
+    }
+
     public function calculatePayRun(Request $request, int $id): JsonResponse
     {
         $payRun = $this->payroll->calculatePayRun(
@@ -146,6 +196,49 @@ class HrPayrollController extends Controller
     public function postPayRun(Request $request, int $id): JsonResponse
     {
         $payRun = $this->payroll->postPayRun(
+            (int) $request->user()->business_id,
+            $id,
+            $request->user()->id,
+        );
+
+        return response()->json(['data' => $payRun]);
+    }
+
+    public function settlePayRun(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'funding_account_code' => ['nullable', 'string', 'max:16'],
+        ]);
+
+        $payRun = $this->payroll->settlePayRun(
+            (int) $request->user()->business_id,
+            $id,
+            $validated,
+            $request->user()->id,
+        );
+
+        return response()->json(['data' => $payRun]);
+    }
+
+    public function remitStatutory(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'funding_account_code' => ['nullable', 'string', 'max:16'],
+        ]);
+
+        $payRun = $this->payroll->remitStatutory(
+            (int) $request->user()->business_id,
+            $id,
+            $validated,
+            $request->user()->id,
+        );
+
+        return response()->json(['data' => $payRun]);
+    }
+
+    public function voidPayRun(Request $request, int $id): JsonResponse
+    {
+        $payRun = $this->payroll->voidPayRun(
             (int) $request->user()->business_id,
             $id,
             $request->user()->id,

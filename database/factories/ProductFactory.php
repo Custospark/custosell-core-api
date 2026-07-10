@@ -19,6 +19,7 @@ class ProductFactory extends Factory
             'business_id' => Business::factory(),
             'category_id' => null,
             'name' => fake()->unique()->word(),
+            'type' => Product::TYPE_PRODUCT,
             'description' => fake()->sentence(),
             'sku' => 'SKU-' . fake()->unique()->randomNumber(6),
             'barcode' => null,
@@ -29,5 +30,15 @@ class ProductFactory extends Factory
             'tax_percentage' => 0,
             'is_active' => true,
         ];
+    }
+
+    public function service(): static
+    {
+        return $this->state(fn () => [
+            'type' => Product::TYPE_SERVICE,
+            'stock_quantity' => 0,
+            'cost_price' => 0,
+            'low_stock_threshold' => 0,
+        ]);
     }
 }

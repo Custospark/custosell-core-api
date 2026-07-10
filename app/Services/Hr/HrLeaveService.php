@@ -234,10 +234,22 @@ class HrLeaveService
         return $this->review($businessId, $id, $reviewerId, 'rejected', $note);
     }
 
-    public function cancel(int $businessId, int $id, ?int $actorUserId = null): HrLeaveRequest
+    /**
+     * Cancel a pending or approved leave request.
+     * Limited HR (no hr_full) may only cancel when the request's employee is linked to $actorUserId.
+     * Full HR may cancel any request in the business.
+     */
+    public function cancel(int $businessId, int $id, ?int $actorUserId = null, bool $isFullHr = false): HrLeaveRequest
     {
-        return DB::transaction(function () use ($businessId, $id, $actorUserId) {
+        return DB::transaction(function () use ($businessId, $id, $actorUserId, $isFullHr) {
             $request = $this->findRequestOrFail($businessId, $id);
+
+            if (! $isFullHr) {
+                $request->loadMissing('employee');
+                if (! $actorUserId || (int) ($request->employee?->user_id) !== (int) $actorUserId) {
+                    abort(403, 'You can only cancel your own leave requests.');
+                }
+            }
 
             if (! in_array($request->status, ['pending', 'approved'], true)) {
                 throw ValidationException::withMessages([

@@ -26,6 +26,8 @@ class ProductService implements ProductServiceInterface
     public function create(int $businessId, array $data): Product
     {
         $data['business_id'] = $businessId;
+        $data = $this->normalizeCatalogType($data);
+
         return $this->productRepository->create($data);
     }
 
@@ -35,7 +37,25 @@ class ProductService implements ProductServiceInterface
         if (!$product) {
             throw new \RuntimeException('Product not found');
         }
+        $data = $this->normalizeCatalogType($data, $product);
+
         return $this->productRepository->update($product, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function normalizeCatalogType(array $data, ?Product $existing = null): array
+    {
+        $type = $data['type'] ?? $existing?->type ?? Product::TYPE_PRODUCT;
+        $data['type'] = $type === Product::TYPE_SERVICE ? Product::TYPE_SERVICE : Product::TYPE_PRODUCT;
+
+        if ($data['type'] === Product::TYPE_SERVICE) {
+            $data['stock_quantity'] = 0;
+        }
+
+        return $data;
     }
 
     public function delete(int $id): bool

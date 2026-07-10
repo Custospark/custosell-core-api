@@ -185,8 +185,10 @@ class JournalEntryService
                 now()->toDateString(),
                 "Reversing entry for {$original->entry_number}: {$original->description}",
                 $reversingLines,
-                $original->reference_type,
-                $original->reference_id,
+                $original->reference_type
+                    ? $original->reference_type.'_reversal'
+                    : 'journal_reversal',
+                $original->id,
                 $userId,
             );
 

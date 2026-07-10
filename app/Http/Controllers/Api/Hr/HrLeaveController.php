@@ -188,10 +188,13 @@ class HrLeaveController extends Controller
 
     public function cancel(Request $request, int $id): JsonResponse
     {
+        $user = $request->user();
+
         $leaveRequest = $this->leave->cancel(
-            (int) $request->user()->business_id,
+            (int) $user->business_id,
             $id,
-            $request->user()->id,
+            $user->id,
+            $this->moduleAccess->hasFullHrWorkspace($user),
         );
 
         return response()->json(['data' => $leaveRequest]);

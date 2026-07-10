@@ -70,6 +70,14 @@ class HrPayrollService
         return $structure->fresh();
     }
 
+    public function deleteStructure(int $businessId, int $id, ?int $actorUserId = null): void
+    {
+        $structure = $this->findStructureOrFail($businessId, $id);
+        $structure->delete();
+
+        $this->audit->record($businessId, $actorUserId, 'salary_structure.deleted', 'hr_salary_structure', $id);
+    }
+
     public function findStructureOrFail(int $businessId, int $id): HrSalaryStructure
     {
         $structure = HrSalaryStructure::query()
@@ -124,6 +132,34 @@ class HrPayrollService
         return $query->get();
     }
 
+    public function findCompensationOrFail(int $businessId, int $id): HrEmployeeCompensation
+    {
+        $comp = HrEmployeeCompensation::query()
+            ->where('business_id', $businessId)
+            ->whereKey($id)
+            ->first();
+
+        if (! $comp) {
+            abort(404, 'Compensation not found');
+        }
+
+        return $comp;
+    }
+
+    /**
+     * Soft-delete compensation. Soft-deleted rows are excluded from latestCompensation
+     * (and list queries) via SoftDeletes — historical pay-run lines are left intact.
+     */
+    public function deleteCompensation(int $businessId, int $id, ?int $actorUserId = null): void
+    {
+        $comp = $this->findCompensationOrFail($businessId, $id);
+        $comp->delete();
+
+        $this->audit->record($businessId, $actorUserId, 'compensation.deleted', 'hr_employee_compensation', $id, [
+            'employee_id' => $comp->employee_id,
+        ]);
+    }
+
     public function createPayRun(int $businessId, array $data, ?int $actorUserId = null): HrPayRun
     {
         $start = Carbon::parse($data['period_start'])->toDateString();
@@ -169,6 +205,67 @@ class HrPayrollService
         }
 
         return $payRun;
+    }
+
+    public function updatePayRun(int $businessId, int $id, array $data, ?int $actorUserId = null): HrPayRun
+    {
+        $payRun = $this->findPayRunOrFail($businessId, $id);
+
+        if ($payRun->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'status' => 'Only draft pay runs can have their period updated.',
+            ]);
+        }
+
+        $start = array_key_exists('period_start', $data)
+            ? Carbon::parse($data['period_start'])->toDateString()
+            : $payRun->period_start->toDateString();
+        $end = array_key_exists('period_end', $data)
+            ? Carbon::parse($data['period_end'])->toDateString()
+            : $payRun->period_end->toDateString();
+
+        if ($end < $start) {
+            throw ValidationException::withMessages([
+                'period_end' => 'Period end must be on or after period start.',
+            ]);
+        }
+
+        $payRun->period_start = $start;
+        $payRun->period_end = $end;
+        $payRun->save();
+
+        $this->audit->record($businessId, $actorUserId, 'pay_run.updated', 'hr_pay_run', $payRun->id);
+
+        return $this->findPayRunOrFail($businessId, $payRun->id);
+    }
+
+    /**
+     * Soft-delete a draft or calculated pay run; hard-delete its lines and payslips.
+     */
+    public function deletePayRun(int $businessId, int $id, ?int $actorUserId = null): void
+    {
+        DB::transaction(function () use ($businessId, $id, $actorUserId) {
+            $payRun = $this->findPayRunOrFail($businessId, $id);
+
+            if (! in_array($payRun->status, ['draft', 'calculated'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft or calculated pay runs can be deleted.',
+                ]);
+            }
+
+            $lineIds = HrPayRunLine::query()
+                ->where('pay_run_id', $payRun->id)
+                ->pluck('id');
+
+            if ($lineIds->isNotEmpty()) {
+                HrPayslip::query()->whereIn('pay_run_line_id', $lineIds)->delete();
+                HrPayRunLine::query()->whereIn('id', $lineIds)->delete();
+            }
+
+            $payRun->delete();
+
+            $this->audit->record($businessId, $actorUserId, 'pay_run.deleted', 'hr_pay_run', $id);
+        });
     }
 
     public function calculatePayRun(int $businessId, int $payRunId, ?int $actorUserId = null): HrPayRun
@@ -280,12 +377,15 @@ class HrPayrollService
     {
         $payRun = $this->findPayRunOrFail($businessId, $payRunId);
 
-        // Idempotent: already posted → return existing.
-        if ($payRun->status === 'posted') {
+        // Idempotent: fully posted with journal → return.
+        if ($payRun->status === 'posted' && $payRun->posted_journal_entry_id) {
             return $payRun;
         }
 
-        if ($payRun->status !== 'approved') {
+        // Legacy soft-fail retry: posted without journal may re-attempt.
+        $isLegacyRetry = $payRun->status === 'posted' && ! $payRun->posted_journal_entry_id;
+
+        if (! $isLegacyRetry && $payRun->status !== 'approved') {
             throw ValidationException::withMessages([
                 'status' => 'Only approved pay runs can be posted.',
             ]);
@@ -305,46 +405,28 @@ class HrPayrollService
         $totalOther = (float) $lines->sum('other_deductions');
         $totalNet = (float) $lines->sum('net');
 
-        // Debit expense = gross + employer NSSF; credits = net + PAYE + employee NSSF + other + employer NSSF.
+        $expenseCode = (string) config('accounting.default_account_codes.salaries_expense', '6101');
+        $salariesPayable = (string) config('accounting.default_account_codes.salaries_payable', '2110');
+        $payePayable = (string) config('accounting.default_account_codes.paye_payable', '2111');
+        $nssfPayable = (string) config('accounting.default_account_codes.nssf_payable', '2112');
+
+        // Debit expense = gross + employer NSSF; credits = net + other + PAYE + NSSF (ee+er).
         $expenseDebit = round($totalGross + $totalNssfEr, 2);
+        $netCredit = round($totalNet + $totalOther, 2);
         $intendedLines = [
-            ['account_code' => '6101', 'debit' => $expenseDebit, 'credit' => 0, 'description' => 'Payroll expense (gross + employer NSSF)'],
-            ['account_code' => '2103', 'debit' => 0, 'credit' => round($totalNet, 2), 'description' => 'Net pay payable'],
-            ['account_code' => '2103', 'debit' => 0, 'credit' => round($totalPaye, 2), 'description' => 'PAYE payable'],
-            ['account_code' => '2103', 'debit' => 0, 'credit' => round($totalNssfEmp + $totalNssfEr, 2), 'description' => 'NSSF payable (employee + employer)'],
+            ['account_code' => $expenseCode, 'debit' => $expenseDebit, 'credit' => 0, 'description' => 'Payroll expense (gross + employer NSSF)'],
+            ['account_code' => $salariesPayable, 'debit' => 0, 'credit' => $netCredit, 'description' => 'Salaries payable (net + other deductions)'],
+            ['account_code' => $payePayable, 'debit' => 0, 'credit' => round($totalPaye, 2), 'description' => 'PAYE payable'],
+            ['account_code' => $nssfPayable, 'debit' => 0, 'credit' => round($totalNssfEmp + $totalNssfEr, 2), 'description' => 'NSSF payable (employee + employer)'],
         ];
 
-        if ($totalOther > 0.009) {
-            $intendedLines[] = [
-                'account_code' => '2103',
-                'debit' => 0,
-                'credit' => round($totalOther, 2),
-                'description' => 'Other payroll deductions',
-            ];
-        }
-
-        // Drop zero-amount credit lines for balance cleanliness.
         $intendedLines = array_values(array_filter(
             $intendedLines,
             fn (array $l) => ($l['debit'] ?? 0) > 0.009 || ($l['credit'] ?? 0) > 0.009,
         ));
 
-        $journalEntryId = null;
-        $postingNote = null;
-
         try {
-            $salaryAccount = ChartOfAccount::query()
-                ->where('business_id', $businessId)
-                ->where('code', '6101')
-                ->first();
-            $liabilityAccount = ChartOfAccount::query()
-                ->where('business_id', $businessId)
-                ->where('code', '2103')
-                ->first();
-
-            if (! $salaryAccount || ! $liabilityAccount) {
-                throw new \RuntimeException('Required COA accounts 6101/2103 not found for this business.');
-            }
+            $this->ensurePayrollAccounts($businessId);
 
             $entry = $this->journalEntries->createAndPostEntry(
                 $businessId,
@@ -355,23 +437,32 @@ class HrPayrollService
                 $payRun->id,
                 $actorUserId,
             );
-            $journalEntryId = $entry->id;
-            $postingNote = 'Posted to journal via JournalEntryService (6101 / 2103).';
         } catch (\Throwable $e) {
-            Log::warning('HR pay run journal post skipped', [
+            Log::warning('HR pay run journal post failed', [
                 'pay_run_id' => $payRun->id,
                 'error' => $e->getMessage(),
             ]);
-            $postingNote = 'Journal entry not created: '.$e->getMessage()
-                .'. Intended lines: '.json_encode($intendedLines)
-                .'. Note: COA 2104–2106 are reserved (loans/dividends/deferred); payroll liabilities use 2103 Accrued Expenses.';
+
+            $note = ($isLegacyRetry ? 'Retry failed: ' : 'Journal entry not created: ')
+                .$e->getMessage()
+                .'. Intended lines: '.json_encode($intendedLines);
+
+            HrPayRun::query()->whereKey($payRun->id)->update([
+                'posting_note' => $note,
+            ]);
+
+            throw ValidationException::withMessages([
+                'accounting' => 'Could not post payroll to accounting: '.$e->getMessage()
+                    .'. Ensure accounts '.$expenseCode.'/'.$salariesPayable.'/'.$payePayable.'/'.$nssfPayable
+                    .' exist and an open accounting period covers '.$payRun->period_end->toDateString().'.',
+            ]);
         }
 
         $payRun->update([
             'status' => 'posted',
-            'posted_journal_entry_id' => $journalEntryId,
+            'posted_journal_entry_id' => $entry->id,
             'posted_at' => now(),
-            'posting_note' => $postingNote,
+            'posting_note' => "Posted to journal #{$entry->id} ({$expenseCode} / {$salariesPayable} / {$payePayable} / {$nssfPayable}).",
         ]);
 
         HrPayslip::query()
@@ -380,10 +471,314 @@ class HrPayrollService
             ->update(['issued_at' => now()]);
 
         $this->audit->record($businessId, $actorUserId, 'pay_run.posted', 'hr_pay_run', $payRun->id, [
-            'journal_entry_id' => $journalEntryId,
+            'journal_entry_id' => $entry->id,
         ]);
 
         return $this->findPayRunOrFail($businessId, $payRun->id);
+    }
+
+    /**
+     * Pay net salaries (and other deductions held in salaries payable) from bank/cash.
+     *
+     * @param  array{funding_account_code?: string}  $options
+     */
+    public function settlePayRun(int $businessId, int $payRunId, array $options = [], ?int $actorUserId = null): HrPayRun
+    {
+        $payRun = $this->findPayRunOrFail($businessId, $payRunId);
+
+        if ($payRun->status === 'posted' && $payRun->settlement_journal_entry_id && $payRun->net_settled_at) {
+            return $payRun;
+        }
+
+        if ($payRun->status !== 'posted' || ! $payRun->posted_journal_entry_id) {
+            throw ValidationException::withMessages([
+                'status' => 'Only posted pay runs with an accrual journal can be settled.',
+            ]);
+        }
+
+        if ($payRun->voided_at) {
+            throw ValidationException::withMessages([
+                'status' => 'Voided pay runs cannot be settled.',
+            ]);
+        }
+
+        $lines = $payRun->lines;
+        $totalNet = round((float) $lines->sum('net') + (float) $lines->sum('other_deductions'), 2);
+        if ($totalNet <= 0.009) {
+            throw ValidationException::withMessages([
+                'lines' => 'Nothing to settle — net pay is zero.',
+            ]);
+        }
+
+        $funding = $this->resolveFundingAccountCode($options['funding_account_code'] ?? null);
+        $salariesPayable = (string) config('accounting.default_account_codes.salaries_payable', '2110');
+
+        $journalLines = [
+            ['account_code' => $salariesPayable, 'debit' => $totalNet, 'credit' => 0, 'description' => 'Clear salaries payable'],
+            ['account_code' => $funding, 'debit' => 0, 'credit' => $totalNet, 'description' => 'Net payroll payment'],
+        ];
+
+        try {
+            $this->ensurePayrollAccounts($businessId);
+            $entry = $this->journalEntries->createAndPostEntry(
+                $businessId,
+                now()->toDateString(),
+                "Payroll settlement {$payRun->period_start->toDateString()} – {$payRun->period_end->toDateString()}",
+                $journalLines,
+                'hr_pay_run_settlement',
+                $payRun->id,
+                $actorUserId,
+            );
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'accounting' => 'Could not settle payroll: '.$e->getMessage(),
+            ]);
+        }
+
+        $payRun->update([
+            'settlement_journal_entry_id' => $entry->id,
+            'net_settled_at' => now(),
+            'posting_note' => trim(($payRun->posting_note ? $payRun->posting_note.' ' : '')."Net settled via journal #{$entry->id}."),
+        ]);
+
+        $this->audit->record($businessId, $actorUserId, 'pay_run.settled', 'hr_pay_run', $payRun->id, [
+            'journal_entry_id' => $entry->id,
+            'funding_account_code' => $funding,
+        ]);
+
+        return $this->findPayRunOrFail($businessId, $payRun->id);
+    }
+
+    /**
+     * Remit PAYE + NSSF liabilities from bank/cash.
+     *
+     * @param  array{funding_account_code?: string}  $options
+     */
+    public function remitStatutory(int $businessId, int $payRunId, array $options = [], ?int $actorUserId = null): HrPayRun
+    {
+        $payRun = $this->findPayRunOrFail($businessId, $payRunId);
+
+        if ($payRun->status === 'posted' && $payRun->statutory_journal_entry_id && $payRun->statutory_remitted_at) {
+            return $payRun;
+        }
+
+        if ($payRun->status !== 'posted' || ! $payRun->posted_journal_entry_id) {
+            throw ValidationException::withMessages([
+                'status' => 'Only posted pay runs with an accrual journal can remit statutory amounts.',
+            ]);
+        }
+
+        if ($payRun->voided_at) {
+            throw ValidationException::withMessages([
+                'status' => 'Voided pay runs cannot remit statutory amounts.',
+            ]);
+        }
+
+        $lines = $payRun->lines;
+        $totalPaye = round((float) $lines->sum('paye'), 2);
+        $totalNssf = round((float) $lines->sum('nssf_employee') + (float) $lines->sum('nssf_employer'), 2);
+        $total = round($totalPaye + $totalNssf, 2);
+
+        if ($total <= 0.009) {
+            throw ValidationException::withMessages([
+                'lines' => 'Nothing to remit — PAYE and NSSF are zero.',
+            ]);
+        }
+
+        $funding = $this->resolveFundingAccountCode($options['funding_account_code'] ?? null);
+        $payePayable = (string) config('accounting.default_account_codes.paye_payable', '2111');
+        $nssfPayable = (string) config('accounting.default_account_codes.nssf_payable', '2112');
+
+        $journalLines = [];
+        if ($totalPaye > 0.009) {
+            $journalLines[] = ['account_code' => $payePayable, 'debit' => $totalPaye, 'credit' => 0, 'description' => 'Clear PAYE payable'];
+        }
+        if ($totalNssf > 0.009) {
+            $journalLines[] = ['account_code' => $nssfPayable, 'debit' => $totalNssf, 'credit' => 0, 'description' => 'Clear NSSF payable'];
+        }
+        $journalLines[] = ['account_code' => $funding, 'debit' => 0, 'credit' => $total, 'description' => 'PAYE/NSSF remittance'];
+
+        try {
+            $this->ensurePayrollAccounts($businessId);
+            $entry = $this->journalEntries->createAndPostEntry(
+                $businessId,
+                now()->toDateString(),
+                "Payroll statutory remittance {$payRun->period_start->toDateString()} – {$payRun->period_end->toDateString()}",
+                $journalLines,
+                'hr_pay_run_statutory',
+                $payRun->id,
+                $actorUserId,
+            );
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'accounting' => 'Could not remit statutory payroll: '.$e->getMessage(),
+            ]);
+        }
+
+        $payRun->update([
+            'statutory_journal_entry_id' => $entry->id,
+            'statutory_remitted_at' => now(),
+            'posting_note' => trim(($payRun->posting_note ? $payRun->posting_note.' ' : '')."Statutory remitted via journal #{$entry->id}."),
+        ]);
+
+        $this->audit->record($businessId, $actorUserId, 'pay_run.statutory_remitted', 'hr_pay_run', $payRun->id, [
+            'journal_entry_id' => $entry->id,
+            'funding_account_code' => $funding,
+        ]);
+
+        return $this->findPayRunOrFail($businessId, $payRun->id);
+    }
+
+    public function voidPayRun(int $businessId, int $payRunId, ?int $actorUserId = null): HrPayRun
+    {
+        $payRun = $this->findPayRunOrFail($businessId, $payRunId);
+
+        if ($payRun->status === 'void') {
+            return $payRun;
+        }
+
+        if (! in_array($payRun->status, ['posted', 'approved'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Only approved or posted pay runs can be voided.',
+            ]);
+        }
+
+        // Approved with no journal: just mark void.
+        if ($payRun->status === 'approved' && ! $payRun->posted_journal_entry_id) {
+            $payRun->update([
+                'status' => 'void',
+                'voided_at' => now(),
+                'posting_note' => trim(($payRun->posting_note ? $payRun->posting_note.' ' : '').'Voided before accounting post.'),
+            ]);
+            $this->audit->record($businessId, $actorUserId, 'pay_run.voided', 'hr_pay_run', $payRun->id);
+
+            return $this->findPayRunOrFail($businessId, $payRun->id);
+        }
+
+        if ($payRun->status === 'posted' && ! $payRun->posted_journal_entry_id) {
+            // Legacy soft-fail: void without reversing.
+            $payRun->update([
+                'status' => 'void',
+                'voided_at' => now(),
+                'posting_note' => trim(($payRun->posting_note ? $payRun->posting_note.' ' : '').'Voided (no accrual journal existed).'),
+            ]);
+            $this->audit->record($businessId, $actorUserId, 'pay_run.voided', 'hr_pay_run', $payRun->id);
+
+            return $this->findPayRunOrFail($businessId, $payRun->id);
+        }
+
+        $journalIds = array_values(array_filter([
+            $payRun->settlement_journal_entry_id,
+            $payRun->statutory_journal_entry_id,
+            $payRun->posted_journal_entry_id,
+        ]));
+
+        try {
+            foreach ($journalIds as $journalId) {
+                $this->journalEntries->createReversingEntry((int) $journalId, $actorUserId);
+            }
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'accounting' => 'Could not void payroll in accounting: '.$e->getMessage()
+                    .'. Ensure the accounting period is open for reversing entries.',
+            ]);
+        }
+
+        $payRun->update([
+            'status' => 'void',
+            'voided_at' => now(),
+            'posting_note' => trim(($payRun->posting_note ? $payRun->posting_note.' ' : '').'Voided; linked journals reversed.'),
+        ]);
+
+        $this->audit->record($businessId, $actorUserId, 'pay_run.voided', 'hr_pay_run', $payRun->id, [
+            'reversed_journal_ids' => $journalIds,
+        ]);
+
+        return $this->findPayRunOrFail($businessId, $payRun->id);
+    }
+
+    /**
+     * Ensure payroll COA codes exist for the business (idempotent).
+     */
+    public function ensurePayrollAccounts(int $businessId): void
+    {
+        $codes = [
+            (string) config('accounting.default_account_codes.salaries_expense', '6101') => [
+                'name' => 'Salaries & Wages',
+                'parent_code' => '6100',
+                'normal_balance' => 'debit',
+            ],
+            (string) config('accounting.default_account_codes.salaries_payable', '2110') => [
+                'name' => 'Salaries Payable',
+                'parent_code' => '2100',
+                'normal_balance' => 'credit',
+            ],
+            (string) config('accounting.default_account_codes.paye_payable', '2111') => [
+                'name' => 'PAYE Payable',
+                'parent_code' => '2100',
+                'normal_balance' => 'credit',
+            ],
+            (string) config('accounting.default_account_codes.nssf_payable', '2112') => [
+                'name' => 'NSSF Payable',
+                'parent_code' => '2100',
+                'normal_balance' => 'credit',
+            ],
+            (string) config('accounting.default_account_codes.bank', '1102') => [
+                'name' => 'Bank',
+                'parent_code' => '1100',
+                'normal_balance' => 'debit',
+            ],
+            (string) config('accounting.default_account_codes.cash', '1101') => [
+                'name' => 'Cash',
+                'parent_code' => '1100',
+                'normal_balance' => 'debit',
+            ],
+        ];
+
+        $existing = ChartOfAccount::query()
+            ->where('business_id', $businessId)
+            ->get()
+            ->keyBy('code');
+
+        foreach ($codes as $code => $meta) {
+            if ($existing->has($code)) {
+                continue;
+            }
+
+            $parent = $existing->get($meta['parent_code']);
+            $typeSibling = $existing->first(fn (ChartOfAccount $a) => $a->normal_balance === $meta['normal_balance']);
+            if (! $parent && ! $typeSibling) {
+                throw new \RuntimeException("Cannot ensure payroll account {$code}: chart of accounts is not seeded for this business.");
+            }
+
+            $created = ChartOfAccount::create([
+                'business_id' => $businessId,
+                'code' => $code,
+                'name' => $meta['name'],
+                'parent_id' => $parent?->id,
+                'type_id' => $parent?->type_id ?? $typeSibling->type_id,
+                'normal_balance' => $meta['normal_balance'],
+                'is_active' => true,
+                'is_system' => true,
+            ]);
+            $existing->put($code, $created);
+        }
+    }
+
+    protected function resolveFundingAccountCode(?string $requested): string
+    {
+        $bank = (string) config('accounting.default_account_codes.bank', '1102');
+        $cash = (string) config('accounting.default_account_codes.cash', '1101');
+        if ($requested === null || $requested === '') {
+            return $bank;
+        }
+        if (! in_array($requested, [$bank, $cash], true)) {
+            throw ValidationException::withMessages([
+                'funding_account_code' => "Funding account must be {$bank} (Bank) or {$cash} (Cash).",
+            ]);
+        }
+
+        return $requested;
     }
 
     /**
@@ -526,6 +921,9 @@ class HrPayrollService
         ];
     }
 
+    /**
+     * Latest non-soft-deleted compensation on or before $asOfDate (SoftDeletes excludes deleted rows).
+     */
     protected function latestCompensation(int $businessId, int $employeeId, string $asOfDate): ?HrEmployeeCompensation
     {
         return HrEmployeeCompensation::query()

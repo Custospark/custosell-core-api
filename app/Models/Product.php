@@ -12,10 +12,15 @@ class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const TYPE_PRODUCT = 'product';
+
+    public const TYPE_SERVICE = 'service';
+
     protected $fillable = [
         'business_id',
         'category_id',
         'name',
+        'type',
         'unit',
         'description',
         'sku',
@@ -41,6 +46,16 @@ class Product extends Model
             'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function tracksStock(): bool
+    {
+        return ($this->type ?? self::TYPE_PRODUCT) === self::TYPE_PRODUCT;
+    }
+
+    public function isService(): bool
+    {
+        return ($this->type ?? self::TYPE_PRODUCT) === self::TYPE_SERVICE;
     }
 
     public function business(): BelongsTo

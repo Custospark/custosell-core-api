@@ -19,6 +19,7 @@ class ProductRequest extends BaseFormRequest
         return [
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:product,service'],
             'description' => ['nullable', 'string'],
             'sku' => [
                 'nullable',
@@ -41,10 +42,22 @@ class ProductRequest extends BaseFormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $type = $this->input('type', 'product');
+        if ($type === 'service') {
+            $this->merge([
+                'type' => 'service',
+                'stock_quantity' => 0,
+            ]);
+        }
+    }
+
     public function messages(): array
     {
         return array_merge(parent::messages(), [
             'name.required' => 'Please enter a product name.',
+            'type.in' => 'Type must be product or service.',
             'category_id.exists' => 'The selected category does not exist.',
             'sku.unique' => 'This SKU is already in use by another product.',
             'unit_price.required' => 'Please enter the unit price.',

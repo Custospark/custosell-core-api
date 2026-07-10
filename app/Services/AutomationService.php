@@ -43,34 +43,41 @@ class AutomationService
     protected function postCashSaleEntry(Sale $sale): void
     {
         $businessId = $sale->business_id;
-            $codes = config('accounting.default_account_codes');
-            $date = $sale->sale_date instanceof \Carbon\Carbon
-                ? $sale->sale_date->toDateString()
-                : now()->toDateString();
+        $codes = config('accounting.default_account_codes');
+        $date = $sale->sale_date instanceof \Carbon\Carbon
+            ? $sale->sale_date->toDateString()
+            : now()->toDateString();
 
-            $totalAmount = (float) $sale->total_amount;
-            $subtotal = (float) $sale->subtotal;
-            $taxTotal = (float) $sale->tax_total;
+        $totalAmount = (float) $sale->total_amount;
+        $taxTotal = (float) $sale->tax_total;
         $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
 
-            $lines = [];
+        $lines = [];
+        $lines[] = [
+            'account_code' => $paymentAccount,
+            'debit' => $totalAmount,
+            'credit' => 0,
+            'description' => "Sale {$sale->receipt_number} - payment received",
+        ];
 
-            if ($taxTotal > 0) {
-            $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
-            $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $subtotal, 'description' => "Sale {$sale->receipt_number} - revenue"];
-                $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Sale {$sale->receipt_number} - VAT"];
-            } else {
-            $lines[] = ['account_code' => $paymentAccount, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Sale {$sale->receipt_number} - payment received"];
-            $lines[] = ['account_code' => $codes['sales_revenue'], 'debit' => 0, 'credit' => $totalAmount, 'description' => "Sale {$sale->receipt_number} - revenue"];
+        $this->appendSaleRevenueLines($lines, $sale, $codes, "Sale {$sale->receipt_number}");
+
+        if ($taxTotal > 0) {
+            $lines[] = [
+                'account_code' => $codes['vat_payable'],
+                'debit' => 0,
+                'credit' => $taxTotal,
+                'description' => "Sale {$sale->receipt_number} - VAT",
+            ];
         }
 
         $cogsTotal = $this->inventoryCogsService->calculateSaleCogs($sale);
         $this->appendCogsLines($lines, $businessId, $cogsTotal, "Sale {$sale->receipt_number}");
 
-            $this->journalEntryService->createAndPostEntry(
-                $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
-                $lines, 'sale', $sale->id, $sale->user_id,
-            );
+        $this->journalEntryService->createAndPostEntry(
+            $businessId, $date, "Journal entry for sale {$sale->receipt_number}",
+            $lines, 'sale', $sale->id, $sale->user_id,
+        );
 
         Log::info("Accounting automation: Cash sale entry posted", [
             'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number, 'total_amount' => $totalAmount,
@@ -86,20 +93,26 @@ class AutomationService
             : now()->toDateString();
 
         $totalAmount = (float) $sale->total_amount;
-        $subtotal = (float) $sale->subtotal;
         $taxTotal = (float) $sale->tax_total;
         $arCode = $codes['accounts_receivable'];
-        $revenueCode = $codes['sales_revenue'];
 
         $lines = [];
+        $lines[] = [
+            'account_code' => $arCode,
+            'debit' => $totalAmount,
+            'credit' => 0,
+            'description' => "Credit sale {$sale->receipt_number} - receivable",
+        ];
+
+        $this->appendSaleRevenueLines($lines, $sale, $codes, "Credit sale {$sale->receipt_number}");
 
         if ($taxTotal > 0) {
-            $lines[] = ['account_code' => $arCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Credit sale {$sale->receipt_number} - receivable"];
-            $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $subtotal, 'description' => "Credit sale {$sale->receipt_number} - revenue"];
-            $lines[] = ['account_code' => $codes['vat_payable'], 'debit' => 0, 'credit' => $taxTotal, 'description' => "Credit sale {$sale->receipt_number} - VAT"];
-        } else {
-            $lines[] = ['account_code' => $arCode, 'debit' => $totalAmount, 'credit' => 0, 'description' => "Credit sale {$sale->receipt_number} - receivable"];
-            $lines[] = ['account_code' => $revenueCode, 'debit' => 0, 'credit' => $totalAmount, 'description' => "Credit sale {$sale->receipt_number} - revenue"];
+            $lines[] = [
+                'account_code' => $codes['vat_payable'],
+                'debit' => 0,
+                'credit' => $taxTotal,
+                'description' => "Credit sale {$sale->receipt_number} - VAT",
+            ];
         }
 
         $cogsTotal = $this->inventoryCogsService->calculateSaleCogs($sale);
@@ -113,6 +126,86 @@ class AutomationService
         Log::info("Accounting automation: Credit sale entry posted", [
             'sale_id' => $sale->id, 'receipt_number' => $sale->receipt_number, 'total_amount' => $totalAmount,
         ]);
+    }
+
+    /**
+     * Split revenue credits by product type: products → 4100, services → 4200.
+     * Total credits equal sale.subtotal when tax > 0, else sale.total_amount (balanced with payment/AR debit).
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     * @param  array<string, string>  $codes
+     */
+    protected function appendSaleRevenueLines(array &$lines, Sale $sale, array $codes, string $label): void
+    {
+        $taxTotal = (float) $sale->tax_total;
+        $revenueTotal = $taxTotal > 0 ? (float) $sale->subtotal : (float) $sale->total_amount;
+        $split = $this->splitRevenueByProductType($sale, $revenueTotal);
+
+        if ($split['product'] > 0) {
+            $lines[] = [
+                'account_code' => $codes['sales_revenue'],
+                'debit' => 0,
+                'credit' => $split['product'],
+                'description' => "{$label} - product revenue",
+            ];
+        }
+
+        if ($split['service'] > 0) {
+            $lines[] = [
+                'account_code' => $codes['service_revenue'] ?? '4200',
+                'debit' => 0,
+                'credit' => $split['service'],
+                'description' => "{$label} - service revenue",
+            ];
+        }
+
+        if ($split['product'] <= 0 && $split['service'] <= 0 && $revenueTotal > 0) {
+            $lines[] = [
+                'account_code' => $codes['sales_revenue'],
+                'debit' => 0,
+                'credit' => $revenueTotal,
+                'description' => "{$label} - revenue",
+            ];
+        }
+    }
+
+    /**
+     * @return array{product: float, service: float}
+     */
+    protected function splitRevenueByProductType(Sale $sale, float $revenueTotal): array
+    {
+        $sale->loadMissing('saleItems.product');
+
+        $productSum = 0.0;
+        $serviceSum = 0.0;
+
+        foreach ($sale->saleItems as $item) {
+            $amount = (float) $item->subtotal;
+            if ($item->product && $item->product->isService()) {
+                $serviceSum += $amount;
+            } else {
+                $productSum += $amount;
+            }
+        }
+
+        $lineSum = $productSum + $serviceSum;
+        if ($lineSum <= 0) {
+            return ['product' => round($revenueTotal, 2), 'service' => 0.0];
+        }
+
+        if (abs($lineSum - $revenueTotal) > 0.009) {
+            $scale = $revenueTotal / $lineSum;
+            $productSum = round($productSum * $scale, 2);
+            $serviceSum = round($revenueTotal - $productSum, 2);
+        } else {
+            $productSum = round($productSum, 2);
+            $serviceSum = round($revenueTotal - $productSum, 2);
+        }
+
+        return [
+            'product' => max(0, $productSum),
+            'service' => max(0, $serviceSum),
+        ];
     }
 
     /**

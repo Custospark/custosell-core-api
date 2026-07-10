@@ -8,6 +8,10 @@ return [
         'inventory' => '1104',
         'accounts_payable' => '2101',
         'vat_payable' => '2102',
+        'accrued_expenses' => '2103',
+        'salaries_payable' => '2110',
+        'paye_payable' => '2111',
+        'nssf_payable' => '2112',
         'sales_revenue' => '4100',
         'sales_returns' => '4400',
         'service_revenue' => '4200',
@@ -16,6 +20,7 @@ return [
         'depreciation_expense' => '6300',
         'accumulated_depreciation' => '1205',
         'operating_expense' => '6101',
+        'salaries_expense' => '6101',
     ],
 
     'inventory' => [

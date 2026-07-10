@@ -367,7 +367,7 @@ class HrPerformanceService
             ->where('scope', 'member')
             ->where('member_user_id', $userId)
             ->whereNull('parent_id')
-            ->with(['board:id,name,workspace', 'member:id,name'])
+            ->with(['board:id,name,workspace', 'member:id,name', 'allocations'])
             ->orderBy('period_end')
             ->get();
 
@@ -389,6 +389,11 @@ class HrPerformanceService
                 $end,
                 $periodType === 'custom' ? null : $periodType,
             );
+            $slice = $serialized['period_slice'] ?? null;
+            $expected = is_array($slice) && isset($slice['expected_value'])
+                ? (float) $slice['expected_value']
+                : (float) $serialized['target_value'];
+
             $items[] = [
                 'id' => $serialized['id'],
                 'title' => $serialized['title'],
@@ -397,13 +402,22 @@ class HrPerformanceService
                 'board_name' => $board->name,
                 'workspace' => $board->workspace,
                 'metric_key' => $serialized['metric_key'],
-                'target_value' => $serialized['target_value'],
-                'actual_value' => $serialized['actual_value'],
+                'target_value' => (float) $serialized['target_value'],
+                'expected_value' => round($expected, 4),
+                'actual_value' => (float) $serialized['actual_value'],
                 'unit' => $serialized['unit'],
                 'progress_percent' => $serialized['progress_percent'],
                 'pace_status' => $serialized['pace_status'],
-                'period_start' => $serialized['period_start'],
-                'period_end' => $serialized['period_end'],
+                'period_start' => is_array($slice)
+                    ? ($slice['period_start'] ?? $serialized['period_start'])
+                    : $serialized['period_start'],
+                'period_end' => is_array($slice)
+                    ? ($slice['period_end'] ?? $serialized['period_end'])
+                    : $serialized['period_end'],
+                'view_period_type' => is_array($slice)
+                    ? ($slice['view_period_type'] ?? $periodType)
+                    : $periodType,
+                'period_slice' => $slice,
             ];
         }
 

@@ -73,14 +73,21 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:hr'])->prefix('hr'
         Route::get('/payroll/structures', [HrPayrollController::class, 'indexStructures']);
         Route::post('/payroll/structures', [HrPayrollController::class, 'storeStructure']);
         Route::patch('/payroll/structures/{id}', [HrPayrollController::class, 'updateStructure'])->whereNumber('id');
+        Route::delete('/payroll/structures/{id}', [HrPayrollController::class, 'destroyStructure'])->whereNumber('id');
         Route::get('/payroll/compensations', [HrPayrollController::class, 'indexCompensations']);
         Route::post('/payroll/compensations', [HrPayrollController::class, 'storeCompensation']);
+        Route::delete('/payroll/compensations/{id}', [HrPayrollController::class, 'destroyCompensation'])->whereNumber('id');
         Route::get('/payroll/pay-runs', [HrPayrollController::class, 'indexPayRuns']);
         Route::post('/payroll/pay-runs', [HrPayrollController::class, 'storePayRun']);
         Route::get('/payroll/pay-runs/{id}', [HrPayrollController::class, 'showPayRun'])->whereNumber('id');
+        Route::patch('/payroll/pay-runs/{id}', [HrPayrollController::class, 'updatePayRun'])->whereNumber('id');
+        Route::delete('/payroll/pay-runs/{id}', [HrPayrollController::class, 'destroyPayRun'])->whereNumber('id');
         Route::post('/payroll/pay-runs/{id}/calculate', [HrPayrollController::class, 'calculatePayRun'])->whereNumber('id');
         Route::post('/payroll/pay-runs/{id}/approve', [HrPayrollController::class, 'approvePayRun'])->whereNumber('id');
         Route::post('/payroll/pay-runs/{id}/post', [HrPayrollController::class, 'postPayRun'])->whereNumber('id');
+        Route::post('/payroll/pay-runs/{id}/settle', [HrPayrollController::class, 'settlePayRun'])->whereNumber('id');
+        Route::post('/payroll/pay-runs/{id}/remit-statutory', [HrPayrollController::class, 'remitStatutory'])->whereNumber('id');
+        Route::post('/payroll/pay-runs/{id}/void', [HrPayrollController::class, 'voidPayRun'])->whereNumber('id');
     });
 
     // Talent — tasks index/update for all HR; templates/assign/reviews require full HR

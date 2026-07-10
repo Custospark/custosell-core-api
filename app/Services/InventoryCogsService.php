@@ -45,6 +45,10 @@ class InventoryCogsService
             }
             /** @var SaleItem $saleItem */
             $saleItem = $row['saleItem'];
+            $saleItem->loadMissing('product');
+            if ($saleItem->product && $saleItem->product->isService()) {
+                continue;
+            }
             $refundQty = (int) ($row['refundQty'] ?? 0);
             if ($refundQty <= 0) {
                 continue;
@@ -70,6 +74,11 @@ class InventoryCogsService
     {
         $netQty = max(0, (int) $item->quantity - (int) $item->refunded_quantity);
         if ($netQty <= 0 || !$item->product_id) {
+            return 0.0;
+        }
+
+        $item->loadMissing('product');
+        if ($item->product && $item->product->isService()) {
             return 0.0;
         }
 

@@ -98,11 +98,15 @@ class SaleService implements SaleServiceInterface
                     'product_price' => $product->unit_price,
                     'quantity' => $qty,
                     'unit_price' => $line['unit_price'],
-                    'unit_cost' => (float) $product->cost_price,
+                    'unit_cost' => $product->tracksStock() ? (float) $product->cost_price : 0.0,
                     'subtotal' => $line['subtotal'],
                     'tax_amount' => $line['tax_amount'],
                     'discount_amount' => (float) ($line['discount_amount'] ?? 0),
                 ]);
+
+                if (!$product->tracksStock()) {
+                    continue;
+                }
 
                 $stockBefore = $product->stock_quantity;
 
@@ -329,9 +333,9 @@ class SaleService implements SaleServiceInterface
                 $pi['saleItem']->save();
                 $pi['saleItem']->refresh();
 
-                // Restore stock
+                // Restore stock only for tracked products
                 $product = Product::find($pi['saleItem']->product_id);
-                if ($product) {
+                if ($product && $product->tracksStock()) {
                     $stockBefore = $product->stock_quantity;
                     $product->stock_quantity += $pi['refundQty'];
                     $product->save();
