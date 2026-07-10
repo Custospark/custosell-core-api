@@ -22,6 +22,7 @@ class ModuleAccessService
         'pipeline',
         'estimates',
         'documents',
+        'hr',
         'settings',
     ];
 
@@ -292,6 +293,7 @@ class ModuleAccessService
             'pipeline' => 'pipeline',
             'estimates', 'projects' => 'estimates',
             'documents' => 'documents',
+            'hr', 'payroll', 'attendance', 'leave' => 'hr',
             default => null,
         };
     }
