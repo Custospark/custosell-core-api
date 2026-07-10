@@ -428,18 +428,18 @@ class DocumentService
         $fileName = (string) ($document->file_name ?? '');
 
         if ($this->isWordDocument($mime, $fileName)) {
-            $content = $this->extractDocxText($diskPath);
-            $truncated = strlen($content) > $maxBytes;
-            if ($truncated) {
-                $content = substr($content, 0, $maxBytes);
+            if ($fileSize > $maxBytes) {
+                abort(422, 'File is too large to view inline. Download the file instead.');
             }
+
+            $content = $this->extractDocxHtml($diskPath);
 
             return [
                 'content' => $content,
-                'content_type' => 'word',
+                'content_type' => 'word-html',
                 'encoding' => 'utf-8',
                 'editable' => false,
-                'truncated' => $truncated,
+                'truncated' => false,
             ];
         }
 
@@ -586,6 +586,76 @@ class DocumentService
         return strtolower(substr($fileName, $idx + 1));
     }
 
+    protected function extractDocxHtml(string $diskPath): string
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($diskPath) !== true) {
+            abort(422, 'Could not read Word document.');
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        if ($xml === false || $xml === '') {
+            return '<p></p>';
+        }
+
+        $dom = new \DOMDocument();
+        $dom->preserveWhiteSpace = false;
+        if (@$dom->loadXML($xml) === false) {
+            return '<p>'.htmlspecialchars($this->extractDocxText($diskPath), ENT_QUOTES, 'UTF-8').'</p>';
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+
+        $html = '';
+        $paragraphs = $xpath->query('//w:p');
+        if ($paragraphs === false || $paragraphs->length === 0) {
+            return '<p></p>';
+        }
+
+        foreach ($paragraphs as $paragraph) {
+            $html .= '<p>';
+            $runs = $xpath->query('.//w:r', $paragraph);
+            if ($runs !== false) {
+                foreach ($runs as $run) {
+                    $textNodes = $xpath->query('.//w:t', $run);
+                    $text = '';
+                    if ($textNodes !== false) {
+                        foreach ($textNodes as $textNode) {
+                            $text .= $textNode->textContent;
+                        }
+                    }
+
+                    if ($text === '') {
+                        continue;
+                    }
+
+                    $escaped = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+                    $bold = $xpath->query('.//w:b', $run)?->length > 0;
+                    $italic = $xpath->query('.//w:i', $run)?->length > 0;
+                    $underline = $xpath->query('.//w:u', $run)?->length > 0;
+
+                    if ($bold) {
+                        $escaped = '<strong>'.$escaped.'</strong>';
+                    }
+                    if ($italic) {
+                        $escaped = '<em>'.$escaped.'</em>';
+                    }
+                    if ($underline) {
+                        $escaped = '<u>'.$escaped.'</u>';
+                    }
+
+                    $html .= $escaped;
+                }
+            }
+            $html .= '</p>';
+        }
+
+        return $html;
+    }
+
     protected function extractDocxText(string $diskPath): string
     {
         $zip = new \ZipArchive();
@@ -606,6 +676,34 @@ class DocumentService
         $text = strip_tags($xml);
 
         return trim(html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8'));
+    }
+
+    protected function folderPathForDocument(Document $document): ?string
+    {
+        if ($document->folder_id === null) {
+            return null;
+        }
+
+        $segments = [];
+        $folderId = $document->folder_id;
+        $visited = [];
+
+        while ($folderId !== null && ! in_array($folderId, $visited, true)) {
+            $visited[] = $folderId;
+            $folder = DocumentFolder::query()
+                ->where('business_id', $document->business_id)
+                ->whereKey($folderId)
+                ->first();
+
+            if ($folder === null) {
+                break;
+            }
+
+            array_unshift($segments, $folder->name);
+            $folderId = $folder->parent_id;
+        }
+
+        return $segments === [] ? null : implode('/', $segments);
     }
 
     public function deleteFileFromDisk(Document $document): void
@@ -702,6 +800,7 @@ class DocumentService
         return [
             'id' => $document->id,
             'folder_id' => $document->folder_id,
+            'folder_path' => $this->folderPathForDocument($document),
             'type' => $document->type,
             'title' => $document->title,
             'description' => $document->description,
