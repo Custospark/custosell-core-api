@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\DocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->group(function () {
+    Route::get('/documents/vault-appearance', [DocumentController::class, 'vaultAppearance']);
+    Route::patch('/documents/vault-appearance', [DocumentController::class, 'updateVaultAppearance']);
     Route::get('/documents/accessible-members', [DocumentController::class, 'accessibleMembers']);
     Route::get('/documents/tags', [DocumentController::class, 'tags']);
     Route::post('/documents/tags', [DocumentController::class, 'storeTag']);

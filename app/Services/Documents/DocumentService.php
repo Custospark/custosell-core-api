@@ -476,11 +476,7 @@ class DocumentService
                 'id' => $document->project->id,
                 'name' => $document->project->name,
             ] : null,
-            'tags' => $document->tags->map(fn (DocumentTag $tag) => [
-                'id' => $tag->id,
-                'name' => $tag->name,
-                'slug' => $tag->slug,
-            ])->values()->all(),
+            'tags' => $document->tags->map(fn (DocumentTag $tag) => $this->tags->serializeTag($tag))->values()->all(),
             'created_at' => $document->created_at?->toISOString(),
             'updated_at' => $document->updated_at?->toISOString(),
             'uploader' => $document->uploader ? [

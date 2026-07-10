@@ -256,4 +256,33 @@ class DocumentsModuleTest extends TestCase
             ->assertJsonCount(1, 'data.documents')
             ->assertJsonPath('data.documents.0.title', 'Brief');
     }
+
+    public function test_accessible_members_returns_all_active_business_staff(): void
+    {
+        $salesStaff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['sales'],
+            'name' => 'Sales Rep',
+        ]);
+
+        $inactiveStaff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => false,
+            'modules' => ['documents'],
+            'name' => 'Inactive User',
+        ]);
+
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/documents/accessible-members')
+            ->assertOk();
+
+        $names = collect($response->json('data'))->pluck('name')->all();
+
+        $this->assertContains('Sales Rep', $names);
+        $this->assertContains($this->owner->name, $names);
+        $this->assertNotContains('Inactive User', $names);
+    }
 }

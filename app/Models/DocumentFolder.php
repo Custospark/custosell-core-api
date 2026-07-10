@@ -20,6 +20,7 @@ class DocumentFolder extends Model
         'name',
         'description',
         'visibility',
+        'cover_color',
         'depth',
         'created_by',
         'sort_order',

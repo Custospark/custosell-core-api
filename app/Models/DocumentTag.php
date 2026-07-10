@@ -14,6 +14,7 @@ class DocumentTag extends Model
         'business_id',
         'name',
         'slug',
+        'color',
     ];
 
     public function business(): BelongsTo

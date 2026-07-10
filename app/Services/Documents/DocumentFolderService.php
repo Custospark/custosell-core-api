@@ -220,6 +220,7 @@ class DocumentFolderService
         ?array $memberUserIds = null,
         ?array $memberRoles = null,
         ?int $sortOrder = null,
+        ?string $coverColor = null,
     ): array {
         $folder = $this->findFolder($businessId, $folderId);
         $this->access->assertCanManage($user, $folder);
@@ -232,6 +233,9 @@ class DocumentFolderService
         }
         if ($sortOrder !== null) {
             $folder->sort_order = $sortOrder;
+        }
+        if ($coverColor !== null) {
+            $folder->cover_color = $coverColor === '' ? null : $coverColor;
         }
 
         if ($visibility !== null) {
@@ -421,6 +425,7 @@ class DocumentFolderService
             'name' => $folder->name,
             'description' => $folder->description,
             'visibility' => $folder->visibility,
+            'cover_color' => $folder->cover_color,
             'depth' => $folder->depth,
             'sort_order' => $folder->sort_order,
             'created_at' => $folder->created_at?->toISOString(),

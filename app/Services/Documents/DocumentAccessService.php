@@ -281,7 +281,6 @@ class DocumentAccessService
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'avatar'])
-            ->filter(fn (User $member) => $this->isOwner($member) || $this->hasDocumentsModule($member))
             ->map(fn (User $member) => [
                 'id' => (int) $member->id,
                 'name' => $member->name,
@@ -384,7 +383,7 @@ class DocumentAccessService
         $filtered = $ids->intersect($allowed)->values();
 
         if ($filtered->isEmpty()) {
-            abort(422, 'Selected members must be active staff with Documents access.');
+            abort(422, 'Select at least one active team member.');
         }
 
         return $filtered->all();

@@ -10,7 +10,11 @@ use Illuminate\Support\Str;
 
 class DocumentTagService
 {
-    /** @return list<array{id: int, name: string, slug: string}> */
+  private const TAG_COLORS = [
+        '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b',
+    ];
+
+    /** @return list<array{id: int, name: string, slug: string, color: string|null}> */
     public function list(int $businessId, ?string $query = null): array
     {
         $builder = DocumentTag::query()
@@ -22,16 +26,23 @@ class DocumentTagService
         }
 
         return $builder->get()
-            ->map(fn (DocumentTag $tag) => [
-                'id' => $tag->id,
-                'name' => $tag->name,
-                'slug' => $tag->slug,
-            ])
+            ->map(fn (DocumentTag $tag) => $this->serializeTag($tag))
             ->values()
             ->all();
     }
 
-    /** @return array{id: int, name: string, slug: string} */
+    /** @return array{id: int, name: string, slug: string, color: string|null} */
+    public function serializeTag(DocumentTag $tag): array
+    {
+        return [
+            'id' => $tag->id,
+            'name' => $tag->name,
+            'slug' => $tag->slug,
+            'color' => $tag->color ?? $this->colorForSlug($tag->slug),
+        ];
+    }
+
+    /** @return array{id: int, name: string, slug: string, color: string|null} */
     public function create(int $businessId, string $name): array
     {
         $normalized = $this->normalizeName($name);
@@ -39,14 +50,15 @@ class DocumentTagService
 
         $tag = DocumentTag::query()->firstOrCreate(
             ['business_id' => $businessId, 'slug' => $slug],
-            ['name' => $normalized],
+            ['name' => $normalized, 'color' => $this->colorForSlug($slug)],
         );
 
-        return [
-            'id' => $tag->id,
-            'name' => $tag->name,
-            'slug' => $tag->slug,
-        ];
+        if ($tag->color === null) {
+            $tag->color = $this->colorForSlug($slug);
+            $tag->save();
+        }
+
+        return $this->serializeTag($tag);
     }
 
     /** @param  list<string>  $tagNames */
@@ -71,5 +83,12 @@ class DocumentTagService
         }
 
         return mb_substr($trimmed, 0, 50);
+    }
+
+    protected function colorForSlug(string $slug): string
+    {
+        $index = abs(crc32($slug)) % count(self::TAG_COLORS);
+
+        return self::TAG_COLORS[$index];
     }
 }

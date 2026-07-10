@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Services\Documents\DocumentAccessService;
 use App\Services\Documents\DocumentFolderService;
 use App\Services\Documents\DocumentService;
 use App\Services\Documents\DocumentTagService;
+use App\Services\Documents\DocumentVaultService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +21,32 @@ class DocumentController extends Controller
         protected DocumentFolderService $folders,
         protected DocumentService $documents,
         protected DocumentTagService $tags,
+        protected DocumentVaultService $vault,
     ) {}
+
+    public function vaultAppearance(Request $request): JsonResponse
+    {
+        $business = Business::query()->findOrFail((int) $request->user()->business_id);
+
+        return response()->json([
+            'data' => $this->vault->getAppearance($business),
+        ]);
+    }
+
+    public function updateVaultAppearance(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'cover_color' => ['nullable', 'string', 'max:7'],
+            'background_type' => ['nullable', 'string', 'max:16'],
+            'background_value' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $business = Business::query()->findOrFail((int) $request->user()->business_id);
+
+        return response()->json([
+            'data' => $this->vault->updateAppearance($business, $request->user(), $validated),
+        ]);
+    }
 
     public function accessibleMembers(Request $request): JsonResponse
     {
@@ -132,6 +159,7 @@ class DocumentController extends Controller
             'member_user_ids.*' => ['integer'],
             'member_roles' => ['array'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'cover_color' => ['nullable', 'string', 'max:7'],
         ]);
 
         $businessId = (int) $request->user()->business_id;
@@ -148,6 +176,7 @@ class DocumentController extends Controller
                 array_key_exists('member_user_ids', $validated) ? array_map('intval', $validated['member_user_ids']) : null,
                 array_key_exists('member_roles', $validated) ? $this->parseMemberRoles($request) : null,
                 isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
+                array_key_exists('cover_color', $validated) ? ($validated['cover_color'] ?? '') : null,
             ),
         ]);
     }
