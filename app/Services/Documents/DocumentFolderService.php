@@ -139,6 +139,7 @@ class DocumentFolderService
             null,
             null,
             null,
+            false,
             $page,
             $perPage,
         );

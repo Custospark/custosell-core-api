@@ -32,6 +32,7 @@ class DocumentService
         ?int $projectId = null,
         ?string $type = null,
         ?int $uploadedBy = null,
+        bool $rootOnly = false,
         int $page = 1,
         int $perPage = 50,
     ): array {
@@ -50,7 +51,9 @@ class DocumentService
             ])
             ->orderByDesc('updated_at');
 
-        if ($folderId !== null) {
+        if ($rootOnly) {
+            $builder->whereNull('folder_id');
+        } elseif ($folderId !== null) {
             $builder->where('folder_id', $folderId);
         }
 
@@ -114,6 +117,7 @@ class DocumentService
         ?int $projectId = null,
         ?string $type = null,
         ?int $uploadedBy = null,
+        bool $rootOnly = false,
         int $page = 1,
         int $perPage = 50,
     ): array {
@@ -127,6 +131,7 @@ class DocumentService
             $projectId,
             $type,
             $uploadedBy,
+            $rootOnly,
             $page,
             $perPage,
         )['data'];

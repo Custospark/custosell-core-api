@@ -187,4 +187,73 @@ class DocumentsModuleTest extends TestCase
             ->assertJsonPath('meta.total', 3)
             ->assertJsonPath('meta.last_page', 2);
     }
+
+    public function test_documents_list_accepts_root_only_query_flag(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Nested',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        Document::create([
+            'business_id' => $this->business->id,
+            'folder_id' => null,
+            'type' => 'link',
+            'title' => 'Root Doc',
+            'visibility' => 'all_staff',
+            'url' => 'https://example.com/root',
+            'uploaded_by' => $this->owner->id,
+        ]);
+
+        Document::create([
+            'business_id' => $this->business->id,
+            'folder_id' => $folder->id,
+            'type' => 'link',
+            'title' => 'Nested Doc',
+            'visibility' => 'inherit',
+            'url' => 'https://example.com/nested',
+            'uploaded_by' => $this->owner->id,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/documents?root_only=true&per_page=100&page=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Root Doc');
+    }
+
+    public function test_folder_contents_returns_documents_in_folder(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Projects',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        Document::create([
+            'business_id' => $this->business->id,
+            'folder_id' => $folder->id,
+            'type' => 'link',
+            'title' => 'Brief',
+            'visibility' => 'inherit',
+            'url' => 'https://example.com/brief',
+            'uploaded_by' => $this->owner->id,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson("/api/v1/documents/folders/{$folder->id}/contents?page=1")
+            ->assertOk()
+            ->assertJsonPath('data.folder.name', 'Projects')
+            ->assertJsonCount(1, 'data.documents')
+            ->assertJsonPath('data.documents.0.title', 'Brief');
+    }
 }

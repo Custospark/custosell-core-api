@@ -170,6 +170,7 @@ class DocumentController extends Controller
             'project_id' => ['nullable', 'integer'],
             'type' => ['nullable', 'string'],
             'uploaded_by' => ['nullable', 'integer'],
+            'root_only' => ['nullable'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
@@ -187,6 +188,7 @@ class DocumentController extends Controller
             isset($validated['project_id']) ? (int) $validated['project_id'] : null,
             $validated['type'] ?? null,
             isset($validated['uploaded_by']) ? (int) $validated['uploaded_by'] : null,
+            $request->boolean('root_only'),
             (int) ($validated['page'] ?? 1),
             $perPage,
         );
