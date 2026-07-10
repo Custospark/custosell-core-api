@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Models\Hr\HrEmployee;
+use App\Models\User;
 use App\Services\Hr\HrAttendanceService;
 use App\Services\Hr\HrIntegrationService;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class HrAttendanceController extends Controller
 {
     public function __construct(
         protected HrAttendanceService $attendance,
         protected HrIntegrationService $integrations,
+        protected ModuleAccessService $moduleAccess,
     ) {}
 
     public function clock(Request $request): JsonResponse
@@ -27,14 +32,17 @@ class HrAttendanceController extends Controller
             'note' => ['nullable', 'string'],
         ]);
 
+        $user = $request->user();
+        $employeeId = $this->resolveSelfServiceEmployeeId($user, (int) $validated['employee_id']);
+
         $event = $this->attendance->clock(
-            (int) $request->user()->business_id,
-            (int) $validated['employee_id'],
+            (int) $user->business_id,
+            $employeeId,
             $validated['type'],
             $validated['occurred_at'] ?? null,
             $validated['source'] ?? null,
             $validated['note'] ?? null,
-            $request->user()->id,
+            $user->id,
         );
 
         return response()->json(['data' => $event], 201);
@@ -121,5 +129,30 @@ class HrAttendanceController extends Controller
                 isset($validated['employee_id']) ? (int) $validated['employee_id'] : null,
             ),
         ]);
+    }
+
+    /**
+     * Limited HR users may only clock for their linked employee record.
+     */
+    protected function resolveSelfServiceEmployeeId(User $user, int $requestedEmployeeId): int
+    {
+        if ($this->moduleAccess->hasFullHrWorkspace($user)) {
+            return $requestedEmployeeId;
+        }
+
+        $linked = HrEmployee::query()
+            ->where('business_id', $user->business_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $linked) {
+            throw new HttpException(403, 'No HR employee record is linked to your account.');
+        }
+
+        if ((int) $linked->id !== $requestedEmployeeId) {
+            throw new HttpException(403, 'You can only clock attendance for your own employee record.');
+        }
+
+        return (int) $linked->id;
     }
 }

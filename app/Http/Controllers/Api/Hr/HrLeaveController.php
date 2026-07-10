@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Models\Hr\HrEmployee;
 use App\Services\Hr\HrLeaveService;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,6 +15,7 @@ class HrLeaveController extends Controller
 {
     public function __construct(
         protected HrLeaveService $leave,
+        protected ModuleAccessService $moduleAccess,
     ) {}
 
     public function indexTypes(Request $request): JsonResponse
@@ -125,10 +128,27 @@ class HrLeaveController extends Controller
             'reason' => ['nullable', 'string'],
         ]);
 
+        $user = $request->user();
+
+        if (! $this->moduleAccess->hasFullHrWorkspace($user)) {
+            $linked = HrEmployee::query()
+                ->where('business_id', $user->business_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (! $linked) {
+                return response()->json([
+                    'message' => 'No HR employee record is linked to your account.',
+                ], 403);
+            }
+
+            $validated['employee_id'] = (int) $linked->id;
+        }
+
         $leaveRequest = $this->leave->requestLeave(
-            (int) $request->user()->business_id,
+            (int) $user->business_id,
             $validated,
-            $request->user()->id,
+            $user->id,
         );
 
         return response()->json(['data' => $leaveRequest], 201);

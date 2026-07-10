@@ -29,7 +29,7 @@ class HrModuleTest extends TestCase
 
         $this->owner = User::factory()->create([
             'is_active' => true,
-            'modules' => ['hr', 'settings'],
+            'modules' => ['hr', 'hr_full', 'settings'],
         ]);
 
         $this->business = Business::factory()->create([
@@ -46,7 +46,10 @@ class HrModuleTest extends TestCase
     {
         $token ??= $this->ownerToken;
 
-        return $this->withHeader('Authorization', "Bearer {$token}")
+        // Ensure prior requests do not leave a sticky authenticated user in the app container.
+        $this->app['auth']->forgetGuards();
+
+        return $this->withToken($token)
             ->json($method, $uri, $data);
     }
 
@@ -420,5 +423,152 @@ class HrModuleTest extends TestCase
         $this->assertEqualsWithDelta(1000000.0, $gross, 0.01);
         $this->assertEqualsWithDelta(50000.0, $nssf, 0.01); // 5% of basic
         $this->assertGreaterThan(0, $paye);
+    }
+
+    public function test_staff_with_hr_only_cannot_create_department(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['hr'],
+        ]);
+        $token = $staff->createToken('staff')->plainTextToken;
+
+        $this->authJson('POST', '/api/v1/hr/departments', [
+            'name' => 'Blocked Ops',
+        ], $token)->assertStatus(403);
+    }
+
+    public function test_owner_without_hr_full_cannot_create_department(): void
+    {
+        $this->owner->update(['modules' => ['hr', 'settings']]);
+
+        $this->authJson('POST', '/api/v1/hr/departments', [
+            'name' => 'Owner Limited',
+        ])->assertStatus(403);
+    }
+
+    public function test_staff_with_hr_only_can_clock_self_but_not_another(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['hr'],
+            'name' => 'Self Clock',
+        ]);
+        $token = $staff->createToken('staff')->plainTextToken;
+
+        $selfEmployee = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-SELF',
+            'first_name' => 'Self',
+            'last_name' => 'Clock',
+            'status' => 'active',
+            'user_id' => $staff->id,
+        ])->assertCreated()->json('data');
+
+        $otherEmployee = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-OTHER',
+            'first_name' => 'Other',
+            'last_name' => 'Worker',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+
+        $this->authJson('POST', '/api/v1/hr/attendance/clock', [
+            'employee_id' => $selfEmployee['id'],
+            'type' => 'clock_in',
+            'occurred_at' => '2026-07-10T08:00:00',
+        ], $token)
+            ->assertCreated()
+            ->assertJsonPath('data.type', 'clock_in');
+
+        $this->authJson('POST', '/api/v1/hr/attendance/clock', [
+            'employee_id' => $otherEmployee['id'],
+            'type' => 'clock_in',
+            'occurred_at' => '2026-07-10T09:00:00',
+        ], $token)->assertStatus(403);
+    }
+
+    public function test_performance_roster_and_employee_snapshot(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['hr', 'pipeline'],
+            'name' => 'Perf Staff',
+        ]);
+
+        $employee = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-PERF',
+            'first_name' => 'Perf',
+            'last_name' => 'Staff',
+            'status' => 'active',
+            'user_id' => $staff->id,
+        ])->assertCreated()->json('data');
+
+        $roster = $this->authJson('GET', '/api/v1/hr/talent/performance')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($roster);
+        $row = collect($roster)->firstWhere('employee_id', $employee['id']);
+        $this->assertNotNull($row);
+        $this->assertSame('no_data', $row['verdict']);
+
+        $detail = $this->authJson('GET', "/api/v1/hr/talent/performance/employees/{$employee['id']}")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('linked', $detail['link_status']);
+        $this->assertSame($staff->id, $detail['user_id']);
+        $this->assertArrayHasKey('leads', $detail);
+        $this->assertArrayHasKey('project_tasks', $detail);
+        $this->assertArrayHasKey('goals', $detail);
+
+        $byUser = $this->authJson('GET', "/api/v1/hr/talent/performance/by-user/{$staff->id}")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($employee['id'], $byUser['employee']['id']);
+
+        $seeded = $this->authJson('POST', "/api/v1/hr/talent/performance/employees/{$employee['id']}/seed-review")
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame('draft', $seeded['review']['status']);
+        $this->assertStringContainsString('Work performance', $seeded['review']['period_label']);
+    }
+
+    public function test_limited_hr_cannot_view_another_employee_performance(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['hr'],
+        ]);
+        $token = $staff->createToken('staff')->plainTextToken;
+
+        $self = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-LIM-SELF',
+            'first_name' => 'Lim',
+            'last_name' => 'Self',
+            'status' => 'active',
+            'user_id' => $staff->id,
+        ])->assertCreated()->json('data');
+
+        $other = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-LIM-OTHER',
+            'first_name' => 'Lim',
+            'last_name' => 'Other',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+
+        $this->authJson('GET', "/api/v1/hr/talent/performance/employees/{$self['id']}", [], $token)
+            ->assertOk();
+
+        $this->authJson('GET', "/api/v1/hr/talent/performance/employees/{$other['id']}", [], $token)
+            ->assertStatus(403);
+
+        $this->authJson('POST', "/api/v1/hr/talent/performance/employees/{$self['id']}/seed-review", [], $token)
+            ->assertStatus(403);
     }
 }

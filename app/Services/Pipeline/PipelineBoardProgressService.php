@@ -989,8 +989,9 @@ class PipelineBoardProgressService
         $planningLevel = $preferredLevel ?? 'month';
 
         if ($rows !== []) {
-            $expected = array_sum(array_map(fn ($row) => (float) $row->expected_value, $rows));
-            $planningLevel = $rows[0]->planning_level;
+            // Prorate coarser allocations into the active view (e.g. month goal → day = x/2).
+            $expected = $this->sumProratedAllocationExpected($rows, $viewStart, $viewEnd);
+            $planningLevel = $preferredLevel ?? $rows[0]->planning_level;
         } elseif ($viewPeriodType === 'custom' || $preferredLevel === null) {
             $expected = $this->decomposition->sumDailyExpectedInView(
                 $allocations,
@@ -1006,17 +1007,9 @@ class PipelineBoardProgressService
             return $this->buildFallbackPeriodSlice($target, $board, $viewStart, $viewEnd, $memberId, $viewPeriodType);
         }
 
-        $sliceStart = $viewStart->copy();
-        $sliceEnd = $viewEnd->copy();
-        if (count($rows) === 1) {
-            $row = $rows[0];
-            $sliceStart = $viewStart->gt(Carbon::parse($row->period_start))
-                ? $viewStart->copy()
-                : Carbon::parse($row->period_start)->startOfDay();
-            $sliceEnd = $viewEnd->lt(Carbon::parse($row->period_end))
-                ? $viewEnd->copy()
-                : Carbon::parse($row->period_end)->endOfDay();
-        }
+        // Achievement window is always the selected Progress period (Today / week / month…).
+        $sliceStart = $viewStart->copy()->startOfDay();
+        $sliceEnd = $viewEnd->copy()->endOfDay();
 
         $actual = $this->computeMetricValue($board, $target->metric_key, $viewStart, $viewEnd, $memberId);
         $expectedToDate = $this->decomposition->expectedToDate($expected, $sliceStart, $sliceEnd, now());
@@ -1033,6 +1026,34 @@ class PipelineBoardProgressService
             'pace_status' => $this->paceStatus($actual, $expected, $sliceStart, $sliceEnd, $target->metric_key),
             'root_target_value' => (float) $target->target_value,
         ];
+    }
+
+    /**
+     * Sum allocation expected values clipped to the Progress view window.
+     * A full-month row of 60 over 30 days becomes 2 for a single-day view.
+     *
+     * @param  list<\App\Models\PipelineBoardTargetAllocation>  $rows
+     */
+    protected function sumProratedAllocationExpected(array $rows, Carbon $viewStart, Carbon $viewEnd): float
+    {
+        $expected = 0.0;
+
+        foreach ($rows as $row) {
+            $rowStart = Carbon::parse($row->period_start)->startOfDay();
+            $rowEnd = Carbon::parse($row->period_end)->endOfDay();
+            $overlapStart = $viewStart->greaterThan($rowStart) ? $viewStart->copy() : $rowStart->copy();
+            $overlapEnd = $viewEnd->lessThan($rowEnd) ? $viewEnd->copy() : $rowEnd->copy();
+
+            if ($overlapStart->gt($overlapEnd)) {
+                continue;
+            }
+
+            $rowDays = max(1, $rowStart->diffInDays($rowEnd) + 1);
+            $overlapDays = max(1, $overlapStart->diffInDays($overlapEnd) + 1);
+            $expected += (float) $row->expected_value * ($overlapDays / $rowDays);
+        }
+
+        return $expected;
     }
 
     /** @return array<string, mixed>|null */
@@ -1121,6 +1142,21 @@ class PipelineBoardProgressService
         }
 
         return $series;
+    }
+
+    /**
+     * Public snapshot of a target for HR performance evaluation (member goals).
+     *
+     * @return array<string, mixed>
+     */
+    public function serializeTargetForHr(
+        PipelineBoardTarget $target,
+        PipelineBoard $board,
+        ?Carbon $start = null,
+        ?Carbon $end = null,
+        ?string $viewPeriodType = null,
+    ): array {
+        return $this->serializeTargetTree($target, $board, $start, $end, $viewPeriodType);
     }
 
     protected function findTargetForBusiness(int $businessId, int $targetId): PipelineBoardTarget

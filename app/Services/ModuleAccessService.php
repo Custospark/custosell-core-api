@@ -12,6 +12,8 @@ class ModuleAccessService
 {
     public const ESTIMATES_FULL_SLUG = 'estimates_full';
 
+    public const HR_FULL_SLUG = 'hr_full';
+
     public const BUSINESS_MODULES = [
         'dashboard',
         'sales',
@@ -45,7 +47,7 @@ class ModuleAccessService
     /** @return list<string> */
     public static function assignableModuleSlugs(): array
     {
-        return [...self::BUSINESS_MODULES, self::ESTIMATES_FULL_SLUG];
+        return [...self::BUSINESS_MODULES, self::ESTIMATES_FULL_SLUG, self::HR_FULL_SLUG];
     }
 
     public function isBusinessOwner(User $user): bool
@@ -73,6 +75,11 @@ class ModuleAccessService
     public function hasFullEstimatesWorkspace(User $user): bool
     {
         return in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true);
+    }
+
+    public function hasFullHrWorkspace(User $user): bool
+    {
+        return in_array(self::HR_FULL_SLUG, $this->storedStaffModules($user), true);
     }
 
     public function ownerHasLegacyFullEstimatesAccess(User $user): bool
@@ -155,9 +162,10 @@ class ModuleAccessService
         }
 
         $wantsFullEstimates = in_array(self::ESTIMATES_FULL_SLUG, $modules, true);
+        $wantsFullHr = in_array(self::HR_FULL_SLUG, $modules, true);
         $businessOnly = array_values(array_filter(
             $modules,
-            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG,
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG && $module !== self::HR_FULL_SLUG,
         ));
         $validated = $this->validateBusinessModules($businessOnly, $allowEmpty);
 
@@ -173,6 +181,13 @@ class ModuleAccessService
             $validated[] = self::ESTIMATES_FULL_SLUG;
         }
 
+        if ($wantsFullHr) {
+            if (! in_array('hr', $validated, true)) {
+                $validated[] = 'hr';
+            }
+            $validated[] = self::HR_FULL_SLUG;
+        }
+
         return array_values(array_unique($validated));
     }
 
@@ -184,9 +199,10 @@ class ModuleAccessService
         }
 
         $wantsFullEstimates = in_array(self::ESTIMATES_FULL_SLUG, $modules, true);
+        $wantsFullHr = in_array(self::HR_FULL_SLUG, $modules, true);
         $businessOnly = array_values(array_filter(
             $modules,
-            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG,
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG && $module !== self::HR_FULL_SLUG,
         ));
         $validated = $this->validateBusinessModules($businessOnly, allowEmpty: false);
 
@@ -201,6 +217,13 @@ class ModuleAccessService
             $validated[] = self::ESTIMATES_FULL_SLUG;
         }
 
+        if ($wantsFullHr) {
+            if (! in_array('hr', $validated, true)) {
+                $validated[] = 'hr';
+            }
+            $validated[] = self::HR_FULL_SLUG;
+        }
+
         return array_values(array_unique($validated));
     }
 
@@ -208,18 +231,26 @@ class ModuleAccessService
     public function clampStaffModulesToOwnerCatalog(array $staffModules, User $owner): array
     {
         $ownerCatalog = array_flip($this->resolvedOwnerBusinessModules($owner));
-        $wantsFull = in_array(self::ESTIMATES_FULL_SLUG, $staffModules, true);
-        $ownerHasFull = $this->hasFullEstimatesWorkspace($owner);
+        $wantsFullEstimates = in_array(self::ESTIMATES_FULL_SLUG, $staffModules, true);
+        $ownerHasFullEstimates = $this->hasFullEstimatesWorkspace($owner);
+        $wantsFullHr = in_array(self::HR_FULL_SLUG, $staffModules, true);
+        $ownerHasFullHr = $this->hasFullHrWorkspace($owner);
 
         $business = array_values(array_filter(
             $staffModules,
-            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG && isset($ownerCatalog[$module]),
+            fn (string $module) => $module !== self::ESTIMATES_FULL_SLUG
+                && $module !== self::HR_FULL_SLUG
+                && isset($ownerCatalog[$module]),
         ));
 
         $normalized = $this->normalizeStaffModules($business, allowEmpty: true);
 
-        if ($wantsFull && $ownerHasFull && in_array('estimates', $normalized, true)) {
+        if ($wantsFullEstimates && $ownerHasFullEstimates && in_array('estimates', $normalized, true)) {
             $normalized[] = self::ESTIMATES_FULL_SLUG;
+        }
+
+        if ($wantsFullHr && $ownerHasFullHr && in_array('hr', $normalized, true)) {
+            $normalized[] = self::HR_FULL_SLUG;
         }
 
         return array_values(array_unique($normalized));

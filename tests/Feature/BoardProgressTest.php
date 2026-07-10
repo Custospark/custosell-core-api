@@ -228,6 +228,43 @@ class BoardProgressTest extends TestCase
         $this->assertSame(120.0, (float) $target['period_slice']['root_target_value']);
     }
 
+    public function test_month_target_day_view_prorates_expected_to_period_ratio(): void
+    {
+        $create = $this->authPost("/api/v1/pipeline/boards/{$this->boardId}/targets", [
+            'type' => 'goal',
+            'title' => 'Monthly wins',
+            'metric_key' => 'cards_won',
+            'target_value' => 60,
+            'unit' => 'count',
+            'period_type' => 'month',
+            'planning_level' => 'month',
+            'scope' => 'board',
+            'stage_id' => $this->stageId,
+            'decomposition_mode' => 'equal',
+        ])->assertCreated();
+
+        $targetId = (int) $create->json('data.id');
+
+        $summary = $this->authGet("/api/v1/pipeline/boards/{$this->boardId}/progress/summary", [
+            'period' => 'day',
+            'stage_ids' => [$this->stageId],
+        ])->assertOk();
+
+        $targets = collect($summary->json('data.targets'));
+        $target = $targets->firstWhere('id', $targetId);
+        $this->assertNotNull($target);
+        $this->assertArrayHasKey('period_slice', $target);
+
+        $daysInMonth = (int) now()->daysInMonth;
+        $expectedDaily = 60 / $daysInMonth;
+
+        $this->assertSame('day', $target['period_slice']['planning_level']);
+        $this->assertEqualsWithDelta($expectedDaily, (float) $target['period_slice']['expected_value'], 0.05);
+        $this->assertSame(60.0, (float) $target['period_slice']['root_target_value']);
+        $this->assertSame(now()->toDateString(), $target['period_slice']['period_start']);
+        $this->assertSame(now()->toDateString(), $target['period_slice']['period_end']);
+    }
+
     public function test_list_and_archive_targets(): void
     {
         $create = $this->authPost("/api/v1/pipeline/boards/{$this->boardId}/targets", [

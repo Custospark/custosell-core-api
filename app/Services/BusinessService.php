@@ -79,6 +79,7 @@ class BusinessService implements BusinessServiceInterface
             $user->modules = [
                 ...$this->moduleAccess->fullBusinessModulesForOwner(),
                 ModuleAccessService::ESTIMATES_FULL_SLUG,
+                ModuleAccessService::HR_FULL_SLUG,
             ];
             $user->save();
 
