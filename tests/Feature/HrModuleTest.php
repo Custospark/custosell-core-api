@@ -137,6 +137,183 @@ class HrModuleTest extends TestCase
             ->assertJsonPath('data.user.id', $staff->id);
     }
 
+    public function test_create_staff_mirrors_hr_employee(): void
+    {
+        $role = \App\Models\Role::query()->firstOrFail();
+
+        $this->authJson('POST', '/api/v1/users', [
+            'name' => 'Mirrored Staff',
+            'email' => 'mirrored.staff@example.com',
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'role_id' => $role->id,
+            'modules' => ['sales'],
+            'business_id' => $this->business->id,
+        ])->assertCreated();
+
+        $user = User::query()->where('email', 'mirrored.staff@example.com')->firstOrFail();
+
+        $this->assertDatabaseHas('hr_employees', [
+            'business_id' => $this->business->id,
+            'user_id' => $user->id,
+            'employee_number' => 'STF-'.$user->id,
+            'first_name' => 'Mirrored',
+            'last_name' => 'Staff',
+        ]);
+    }
+
+    public function test_employees_index_backfills_existing_staff(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['sales'],
+            'name' => 'Backfill Me',
+            'email' => 'backfill.me@example.com',
+        ]);
+
+        $this->assertDatabaseMissing('hr_employees', [
+            'business_id' => $this->business->id,
+            'user_id' => $staff->id,
+        ]);
+
+        $this->authJson('GET', '/api/v1/hr/employees')
+            ->assertOk();
+
+        $this->assertDatabaseHas('hr_employees', [
+            'business_id' => $this->business->id,
+            'user_id' => $staff->id,
+            'first_name' => 'Backfill',
+            'last_name' => 'Me',
+        ]);
+
+        $totalBefore = \App\Models\Hr\HrEmployee::query()
+            ->where('business_id', $this->business->id)
+            ->count();
+
+        $this->authJson('POST', '/api/v1/hr/employees/sync-staff')
+            ->assertOk()
+            ->assertJsonPath('data.created', 0);
+
+        $this->assertSame(
+            $totalBefore,
+            \App\Models\Hr\HrEmployee::query()->where('business_id', $this->business->id)->count()
+        );
+    }
+
+    public function test_create_employee_with_account(): void
+    {
+        $role = \App\Models\Role::query()->firstOrFail();
+
+        $employee = $this->authJson('POST', '/api/v1/hr/employees/with-account', [
+            'employee_number' => 'EMP-ACC-1',
+            'first_name' => 'Ada',
+            'last_name' => 'Okello',
+            'email' => 'ada.okello@example.com',
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'role_id' => $role->id,
+            'modules' => ['hr', 'sales'],
+            'employment_type' => 'full_time',
+            'status' => 'active',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.employee_number', 'EMP-ACC-1')
+            ->assertJsonPath('data.user.email', 'ada.okello@example.com')
+            ->json('data');
+
+        $this->assertNotNull($employee['user_id']);
+        $this->assertDatabaseHas('users', [
+            'id' => $employee['user_id'],
+            'email' => 'ada.okello@example.com',
+        ]);
+    }
+
+    public function test_create_employee_with_account_rejects_duplicate_email(): void
+    {
+        $role = \App\Models\Role::query()->firstOrFail();
+
+        User::factory()->create([
+            'business_id' => $this->business->id,
+            'email' => 'taken@example.com',
+        ]);
+
+        $this->authJson('POST', '/api/v1/hr/employees/with-account', [
+            'employee_number' => 'EMP-DUP',
+            'first_name' => 'Dup',
+            'last_name' => 'Email',
+            'email' => 'taken@example.com',
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'role_id' => $role->id,
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('hr_employees', [
+            'business_id' => $this->business->id,
+            'employee_number' => 'EMP-DUP',
+        ]);
+    }
+
+    public function test_create_account_for_existing_employee_and_remove_account(): void
+    {
+        $role = \App\Models\Role::query()->firstOrFail();
+
+        $employee = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-LOGIN',
+            'first_name' => 'No',
+            'last_name' => 'Login',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+
+        $linked = $this->authJson('POST', "/api/v1/hr/employees/{$employee['id']}/create-account", [
+            'email' => 'nologin.now@example.com',
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'role_id' => $role->id,
+            'modules' => ['sales'],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.user.email', 'nologin.now@example.com')
+            ->json('data');
+
+        $userId = $linked['user_id'];
+        $this->assertNotNull($userId);
+
+        $this->authJson('POST', "/api/v1/hr/employees/{$employee['id']}/remove-account")
+            ->assertOk()
+            ->assertJsonPath('data.user_id', null);
+
+        $this->assertSoftDeleted('users', ['id' => $userId]);
+        $this->assertDatabaseHas('hr_employees', [
+            'id' => $employee['id'],
+            'user_id' => null,
+        ]);
+    }
+
+    public function test_unlink_user_keeps_staff_account(): void
+    {
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['hr'],
+            'name' => 'Unlink Keep',
+        ]);
+
+        $employee = $this->authJson('POST', '/api/v1/hr/employees', [
+            'employee_number' => 'EMP-UNLINK',
+            'first_name' => 'Unlink',
+            'last_name' => 'Keep',
+            'status' => 'active',
+            'user_id' => $staff->id,
+        ])->assertCreated()->json('data');
+
+        $this->authJson('POST', "/api/v1/hr/employees/{$employee['id']}/unlink-user")
+            ->assertOk()
+            ->assertJsonPath('data.user_id', null);
+
+        $this->assertDatabaseHas('users', ['id' => $staff->id]);
+    }
+
     public function test_clock_in_and_out(): void
     {
         $employee = $this->authJson('POST', '/api/v1/hr/employees', [

@@ -24,11 +24,16 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:hr'])->prefix('hr'
     // Employees
     Route::get('/employees', [HrEmployeeController::class, 'index']);
     Route::post('/employees', [HrEmployeeController::class, 'store']);
+    Route::post('/employees/with-account', [HrEmployeeController::class, 'storeWithAccount']);
+    Route::post('/employees/sync-staff', [HrEmployeeController::class, 'syncStaff']);
+    Route::get('/account-options', [HrEmployeeController::class, 'accountOptions']);
     Route::get('/employees/{id}', [HrEmployeeController::class, 'show'])->whereNumber('id');
     Route::patch('/employees/{id}', [HrEmployeeController::class, 'update'])->whereNumber('id');
     Route::delete('/employees/{id}', [HrEmployeeController::class, 'destroy'])->whereNumber('id');
     Route::post('/employees/{id}/link-user', [HrEmployeeController::class, 'linkUser'])->whereNumber('id');
     Route::post('/employees/{id}/unlink-user', [HrEmployeeController::class, 'unlinkUser'])->whereNumber('id');
+    Route::post('/employees/{id}/create-account', [HrEmployeeController::class, 'createAccount'])->whereNumber('id');
+    Route::post('/employees/{id}/remove-account', [HrEmployeeController::class, 'removeAccount'])->whereNumber('id');
 
     // Attendance
     Route::post('/attendance/clock', [HrAttendanceController::class, 'clock']);

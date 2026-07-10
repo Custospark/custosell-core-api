@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\Hr\HrStaffMirrorService;
 use App\Services\ModuleAccessService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,7 @@ class UserService implements UserServiceInterface
     public function __construct(
         protected UserRepositoryInterface $userRepository,
         protected ModuleAccessService $moduleAccess,
+        protected HrStaffMirrorService $hrStaffMirror,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -56,7 +58,7 @@ class UserService implements UserServiceInterface
         return $user;
     }
 
-    public function createStaff(int $businessId, array $data): User
+    public function createStaff(int $businessId, array $data, bool $mirrorEmployee = true): User
     {
         $data['business_id'] = $businessId;
         $data['password'] = Hash::make($data['password']);
@@ -72,7 +74,13 @@ class UserService implements UserServiceInterface
             $this->assertRoleAvailableForBusiness($businessId, (int) $data['role_id']);
         }
 
-        return $this->userRepository->create($data)->load('role');
+        $user = $this->userRepository->create($data)->load('role');
+
+        if ($mirrorEmployee) {
+            $this->hrStaffMirror->ensureEmployeeForUser($user, Auth::id());
+        }
+
+        return $user;
     }
 
     public function update(int $id, int $businessId, int $actorId, array $data): User
@@ -101,6 +109,14 @@ class UserService implements UserServiceInterface
             && $this->isBusinessOwner($updated, $businessId)
         ) {
             $this->clampStaffModulesAfterOwnerUpdate($updated);
+        }
+
+        if (
+            array_key_exists('name', $data)
+            || array_key_exists('email', $data)
+            || array_key_exists('phone', $data)
+        ) {
+            $this->hrStaffMirror->syncContactFromUser($updated->fresh() ?? $updated);
         }
 
         return $updated;
