@@ -301,6 +301,10 @@ class DocumentAccessService
             return true;
         }
 
+        if ($resource instanceof DocumentFolder && (int) $resource->created_by === (int) $user->id) {
+            return true;
+        }
+
         $acl = $this->resolveEffectiveAcl($resource);
 
         return match ($acl['visibility']) {
@@ -326,7 +330,10 @@ class DocumentAccessService
         return match ($acl['visibility']) {
             'all_staff' => 'contributor',
             'selected_staff' => $this->memberRole($user, $acl['members']),
-            'owner_only' => null,
+            'owner_only' => (
+                ($resource instanceof DocumentFolder && (int) $resource->created_by === (int) $user->id)
+                || ($resource instanceof Document && (int) $resource->uploaded_by === (int) $user->id)
+            ) ? 'manager' : null,
             default => null,
         };
     }

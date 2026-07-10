@@ -544,4 +544,131 @@ class DocumentsModuleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.content', 'Updated notes');
     }
+
+    public function test_cabinet_member_roles_viewer_contributor_manager(): void
+    {
+        $viewer = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['documents'],
+        ]);
+        $contributor = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['documents'],
+        ]);
+        $manager = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['documents'],
+        ]);
+
+        $cabinetResponse = $this->actingAs($this->owner, 'sanctum')
+            ->postJson('/api/v1/documents/cabinets', [
+                'name' => 'Role Matrix Cabinet',
+                'visibility' => 'selected_staff',
+                'member_user_ids' => [$viewer->id, $contributor->id, $manager->id],
+                'member_roles' => [
+                    (string) $viewer->id => 'viewer',
+                    (string) $contributor->id => 'contributor',
+                    (string) $manager->id => 'manager',
+                ],
+            ])
+            ->assertCreated();
+
+        $cabinetId = (int) $cabinetResponse->json('data.id');
+
+        $this->actingAs($viewer, 'sanctum')
+            ->getJson("/api/v1/documents/cabinets/{$cabinetId}")
+            ->assertOk()
+            ->assertJsonPath('data.can_view', true)
+            ->assertJsonPath('data.can_contribute', false)
+            ->assertJsonPath('data.can_manage', false)
+            ->assertJsonPath('data.current_member_role', 'viewer');
+
+        $this->actingAs($contributor, 'sanctum')
+            ->getJson("/api/v1/documents/cabinets/{$cabinetId}")
+            ->assertOk()
+            ->assertJsonPath('data.can_view', true)
+            ->assertJsonPath('data.can_contribute', true)
+            ->assertJsonPath('data.can_manage', false)
+            ->assertJsonPath('data.current_member_role', 'contributor');
+
+        $this->actingAs($manager, 'sanctum')
+            ->getJson("/api/v1/documents/cabinets/{$cabinetId}")
+            ->assertOk()
+            ->assertJsonPath('data.can_view', true)
+            ->assertJsonPath('data.can_contribute', true)
+            ->assertJsonPath('data.can_manage', true)
+            ->assertJsonPath('data.current_member_role', 'manager');
+
+        $this->actingAs($viewer, 'sanctum')
+            ->postJson('/api/v1/documents/folders', [
+                'name' => 'Viewer folder',
+                'visibility' => 'inherit',
+                'cabinet_id' => $cabinetId,
+            ])
+            ->assertStatus(403);
+
+        $folderId = (int) $this->actingAs($contributor, 'sanctum')
+            ->postJson('/api/v1/documents/folders', [
+                'name' => 'Contributor folder',
+                'visibility' => 'inherit',
+                'cabinet_id' => $cabinetId,
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $ownerDocId = (int) $this->actingAs($this->owner, 'sanctum')
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('owner.pdf', 50, 'application/pdf'),
+                'folder_id' => $folderId,
+                'title' => 'Owner file',
+                'visibility' => 'inherit',
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $contributorDocId = (int) $this->actingAs($contributor, 'sanctum')
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('mine.pdf', 50, 'application/pdf'),
+                'folder_id' => $folderId,
+                'title' => 'Contributor file',
+                'visibility' => 'inherit',
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($contributor, 'sanctum')
+            ->patchJson("/api/v1/documents/{$contributorDocId}", ['title' => 'Renamed mine'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Renamed mine');
+
+        $this->actingAs($contributor, 'sanctum')
+            ->patchJson("/api/v1/documents/{$ownerDocId}", ['title' => 'Hijack'])
+            ->assertStatus(403);
+
+        $this->actingAs($manager, 'sanctum')
+            ->patchJson("/api/v1/documents/{$ownerDocId}", ['title' => 'Manager rename'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Manager rename');
+
+        $this->actingAs($contributor, 'sanctum')
+            ->patchJson("/api/v1/documents/folders/{$folderId}", ['name' => 'Nope'])
+            ->assertStatus(403);
+
+        $this->actingAs($manager, 'sanctum')
+            ->patchJson("/api/v1/documents/folders/{$folderId}", ['name' => 'Managed folder'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Managed folder');
+
+        $this->actingAs($contributor, 'sanctum')
+            ->patchJson("/api/v1/documents/cabinets/{$cabinetId}", ['name' => 'Nope cabinet'])
+            ->assertStatus(403);
+
+        $this->actingAs($manager, 'sanctum')
+            ->patchJson("/api/v1/documents/cabinets/{$cabinetId}", ['description' => 'Managed by role'])
+            ->assertOk()
+            ->assertJsonPath('data.description', 'Managed by role');
+    }
 }

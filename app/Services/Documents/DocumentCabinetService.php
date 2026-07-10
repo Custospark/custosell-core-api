@@ -190,28 +190,77 @@ class DocumentCabinetService
     public function seedDefaultCabinets(int $businessId, ?int $ownerId = null): void
     {
         $starters = [
-            ['name' => 'General', 'description' => 'Shared company files and everyday documents', 'cover_color' => '#6366f1', 'sort_order' => 0],
-            ['name' => 'HR', 'description' => 'People policies, contracts, and HR records', 'cover_color' => '#8b5cf6', 'sort_order' => 1],
-            ['name' => 'Finance', 'description' => 'Invoices, budgets, tax records, and accounting files', 'cover_color' => '#059669', 'sort_order' => 2],
-            ['name' => 'Legal & Compliance', 'description' => 'Agreements, licenses, and regulatory documents', 'cover_color' => '#dc2626', 'sort_order' => 3],
-            ['name' => 'Sales & Marketing', 'description' => 'Proposals, campaigns, brand assets, and collateral', 'cover_color' => '#ea580c', 'sort_order' => 4],
-            ['name' => 'Operations', 'description' => 'SOPs, vendor files, and day-to-day operations', 'cover_color' => '#0284c7', 'sort_order' => 5],
+            [
+                'name' => 'General',
+                'description' => 'Shared company files and everyday documents',
+                'cover_color' => '#6366f1',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/10/1200/800',
+                'sort_order' => 0,
+            ],
+            [
+                'name' => 'HR',
+                'description' => 'People policies, contracts, and HR records',
+                'cover_color' => '#8b5cf6',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/15/1200/800',
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'Finance',
+                'description' => 'Invoices, budgets, tax records, and accounting files',
+                'cover_color' => '#059669',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/26/1200/800',
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'Legal & Compliance',
+                'description' => 'Agreements, licenses, and regulatory documents',
+                'cover_color' => '#dc2626',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/28/1200/800',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Sales & Marketing',
+                'description' => 'Proposals, campaigns, brand assets, and collateral',
+                'cover_color' => '#ea580c',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/36/1200/800',
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'Operations',
+                'description' => 'SOPs, vendor files, and day-to-day operations',
+                'cover_color' => '#0284c7',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/40/1200/800',
+                'sort_order' => 5,
+            ],
         ];
 
         foreach ($starters as $starter) {
-            DocumentCabinet::query()->firstOrCreate(
-                [
-                    'business_id' => $businessId,
-                    'name' => $starter['name'],
-                ],
-                [
-                    'description' => $starter['description'],
-                    'visibility' => 'all_staff',
-                    'cover_color' => $starter['cover_color'],
-                    'sort_order' => $starter['sort_order'],
-                    'created_by' => $ownerId,
-                ],
-            );
+            $exists = DocumentCabinet::withTrashed()
+                ->where('business_id', $businessId)
+                ->where('name', $starter['name'])
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            DocumentCabinet::query()->create([
+                'business_id' => $businessId,
+                'name' => $starter['name'],
+                'description' => $starter['description'],
+                'visibility' => 'all_staff',
+                'cover_color' => $starter['cover_color'],
+                'background_type' => $starter['background_type'],
+                'background_value' => $starter['background_value'],
+                'sort_order' => $starter['sort_order'],
+                'created_by' => $ownerId,
+            ]);
         }
     }
 
