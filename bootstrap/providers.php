@@ -18,6 +18,7 @@ use App\Providers\SaleServiceProvider;
 use App\Providers\ShiftServiceProvider;
 use App\Providers\StockMovementServiceProvider;
 use App\Providers\SubscriptionServiceProvider;
+use App\Providers\DocumentServiceProvider;
 use App\Providers\PipelineServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
@@ -42,6 +43,7 @@ return [
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
     PipelineServiceProvider::class,
+    DocumentServiceProvider::class,
     EstimateServiceProvider::class,
     EventServiceProvider::class,
 ];

@@ -21,6 +21,7 @@ class ModuleAccessService
         'accounting',
         'pipeline',
         'estimates',
+        'documents',
         'settings',
     ];
 
@@ -290,6 +291,7 @@ class ModuleAccessService
             'accounting' => 'accounting',
             'pipeline' => 'pipeline',
             'estimates', 'projects' => 'estimates',
+            'documents' => 'documents',
             default => null,
         };
     }
