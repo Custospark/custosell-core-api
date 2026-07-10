@@ -509,6 +509,8 @@ class DocumentService
             'file_size' => $document->file_size,
             'views_count' => $document->views_count,
             'downloads_count' => $document->downloads_count,
+            'email_sent_count' => (int) ($document->email_sent_count ?? 0),
+            'last_emailed_at' => $document->last_emailed_at?->toISOString(),
             'customer_id' => $document->customer_id,
             'project_id' => $document->project_id,
             'customer' => $document->customer ? [

@@ -280,11 +280,12 @@ class DocumentAccessService
             ->where('business_id', $businessId)
             ->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'avatar'])
+            ->get(['id', 'name', 'avatar', 'email'])
             ->map(fn (User $member) => [
                 'id' => (int) $member->id,
                 'name' => $member->name,
                 'avatar' => $member->avatar,
+                'email' => $member->email,
             ])
             ->values()
             ->all();

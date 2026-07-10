@@ -12,8 +12,11 @@ use App\Services\Documents\DocumentService;
 use App\Services\Documents\DocumentTagService;
 use App\Services\Documents\DocumentActivityService;
 use App\Services\Documents\DocumentVaultService;
+use App\Services\Documents\DocumentVaultEmailService;
+use App\Http\Requests\SendDocumentEmailRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
@@ -24,6 +27,7 @@ class DocumentController extends Controller
         protected DocumentTagService $tags,
         protected DocumentVaultService $vault,
         protected DocumentActivityService $activity,
+        protected DocumentVaultEmailService $vaultEmail,
     ) {}
 
     public function vaultAppearance(Request $request): JsonResponse
@@ -203,6 +207,13 @@ class DocumentController extends Controller
         $this->folders->destroy($businessId, $request->user(), $id);
 
         return response()->json(['message' => 'Folder deleted.']);
+    }
+
+    public function exportFolder(Request $request, int $id): StreamedResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+
+        return $this->folders->exportFolder($businessId, $request->user(), $id);
     }
 
     public function index(Request $request): JsonResponse
@@ -390,6 +401,46 @@ class DocumentController extends Controller
         return response()->json([
             'data' => $this->documents->recordDownload($businessId, $request->user(), $id),
         ]);
+    }
+
+    public function emailDocument(SendDocumentEmailRequest $request, int $id): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+        $to = trim((string) ($request->validated('to') ?? ''));
+
+        if ($to === '') {
+            return response()->json(['message' => 'Enter a recipient email address.'], 422);
+        }
+
+        $result = $this->vaultEmail->sendFile(
+            $businessId,
+            $request->user(),
+            $id,
+            $to,
+            $request->validated('message'),
+        );
+
+        return response()->json($result);
+    }
+
+    public function emailFolder(SendDocumentEmailRequest $request, int $id): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+        $to = trim((string) ($request->validated('to') ?? ''));
+
+        if ($to === '') {
+            return response()->json(['message' => 'Enter a recipient email address.'], 422);
+        }
+
+        $result = $this->vaultEmail->sendFolder(
+            $businessId,
+            $request->user(),
+            $id,
+            $to,
+            $request->validated('message'),
+        );
+
+        return response()->json($result);
     }
 
     public function tags(Request $request): JsonResponse

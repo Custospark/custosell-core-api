@@ -16,6 +16,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->grou
     Route::post('/documents/folders', [DocumentController::class, 'storeFolder']);
     Route::get('/documents/folders/{id}', [DocumentController::class, 'showFolder'])->whereNumber('id');
     Route::get('/documents/folders/{id}/contents', [DocumentController::class, 'folderContents'])->whereNumber('id');
+    Route::get('/documents/folders/{id}/export', [DocumentController::class, 'exportFolder'])->whereNumber('id');
+    Route::post('/documents/folders/{id}/email', [DocumentController::class, 'emailFolder'])->whereNumber('id');
     Route::patch('/documents/folders/{id}', [DocumentController::class, 'updateFolder'])->whereNumber('id');
     Route::delete('/documents/folders/{id}', [DocumentController::class, 'destroyFolder'])->whereNumber('id');
 
@@ -27,4 +29,5 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->grou
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->whereNumber('id');
     Route::post('/documents/{id}/view', [DocumentController::class, 'recordView'])->whereNumber('id');
     Route::post('/documents/{id}/download', [DocumentController::class, 'recordDownload'])->whereNumber('id');
+    Route::post('/documents/{id}/email', [DocumentController::class, 'emailDocument'])->whereNumber('id');
 });

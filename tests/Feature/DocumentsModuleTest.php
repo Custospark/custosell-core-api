@@ -10,6 +10,7 @@ use Database\Seeders\PlanSeeder;
 use Database\Seeders\SystemRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -313,5 +314,113 @@ class DocumentsModuleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.action', 'folder_created')
             ->assertJsonPath('data.0.subject_name', 'Legal');
+    }
+
+    public function test_owner_can_delete_document_and_folder(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Archive',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        $upload = $this->withHeader('Authorization', "Bearer $token")
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('notes.txt', 10, 'text/plain'),
+                'folder_id' => $folder->id,
+                'title' => 'Notes',
+                'visibility' => 'inherit',
+            ])
+            ->assertCreated();
+
+        $documentId = (int) $upload->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->deleteJson("/api/v1/documents/{$documentId}")
+            ->assertOk();
+
+        $this->assertSoftDeleted('documents', ['id' => $documentId]);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->deleteJson("/api/v1/documents/folders/{$folder->id}")
+            ->assertOk();
+
+        $this->assertSoftDeleted('document_folders', ['id' => $folder->id]);
+    }
+
+    public function test_owner_can_export_folder_as_zip(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Exports',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('readme.txt', 10, 'text/plain'),
+                'folder_id' => $folder->id,
+                'title' => 'Readme',
+                'visibility' => 'inherit',
+            ])
+            ->assertCreated();
+
+        $response = $this->withHeader('Authorization', "Bearer $token")
+            ->get("/api/v1/documents/folders/{$folder->id}/export");
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/zip', (string) $response->headers->get('content-type'));
+        $this->assertNotSame('', $response->getContent());
+    }
+
+    public function test_owner_can_email_document_and_folder(): void
+    {
+        Mail::fake();
+
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Shareable',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        $upload = $this->withHeader('Authorization', "Bearer $token")
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('share.txt', 10, 'text/plain'),
+                'folder_id' => $folder->id,
+                'title' => 'Share me',
+                'visibility' => 'inherit',
+            ])
+            ->assertCreated();
+
+        $documentId = (int) $upload->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->postJson("/api/v1/documents/{$documentId}/email", [
+                'to' => 'staff@example.com',
+                'message' => 'Please review',
+            ])
+            ->assertOk()
+            ->assertJsonPath('sent_to', 'staff@example.com');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->postJson("/api/v1/documents/folders/{$folder->id}/email", [
+                'to' => 'external@example.com',
+            ])
+            ->assertOk()
+            ->assertJsonPath('sent_to', 'external@example.com');
+
+        Mail::assertSent(\App\Mail\CustomerDocumentEmail::class, 2);
     }
 }

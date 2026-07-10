@@ -31,6 +31,8 @@ class Document extends Model
         'uploaded_by',
         'views_count',
         'downloads_count',
+        'email_sent_count',
+        'last_emailed_at',
     ];
 
     protected function casts(): array
@@ -39,6 +41,8 @@ class Document extends Model
             'file_size' => 'integer',
             'views_count' => 'integer',
             'downloads_count' => 'integer',
+            'email_sent_count' => 'integer',
+            'last_emailed_at' => 'datetime',
         ];
     }
 
