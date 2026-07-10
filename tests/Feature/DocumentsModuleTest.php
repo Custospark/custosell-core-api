@@ -423,4 +423,52 @@ class DocumentsModuleTest extends TestCase
 
         Mail::assertSent(\App\Mail\CustomerDocumentEmail::class, 2);
     }
+
+    public function test_audio_upload_rejects_files_over_ten_mb(): void
+    {
+        config(['documents.max_media_file_size_kb' => 10240]);
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->create('clip.mp3', 11000, 'audio/mpeg'),
+                'title' => 'Too large',
+                'visibility' => 'all_staff',
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_owner_can_view_and_edit_text_file_content(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $upload = $this->withHeader('Authorization', "Bearer $token")
+            ->post('/api/v1/documents/upload', [
+                'file' => UploadedFile::fake()->createWithContent('notes.txt', "Hello world\n"),
+                'title' => 'Notes',
+                'visibility' => 'all_staff',
+            ])
+            ->assertCreated();
+
+        $documentId = (int) $upload->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson("/api/v1/documents/{$documentId}/content")
+            ->assertOk()
+            ->assertJsonPath('data.content', "Hello world\n")
+            ->assertJsonPath('data.content_type', 'text')
+            ->assertJsonPath('data.editable', true);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->putJson("/api/v1/documents/{$documentId}/content", [
+                'content' => "Updated notes\n",
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Notes');
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson("/api/v1/documents/{$documentId}/content")
+            ->assertOk()
+            ->assertJsonPath('data.content', 'Updated notes');
+    }
 }

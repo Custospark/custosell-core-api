@@ -25,6 +25,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->grou
     Route::post('/documents/upload', [DocumentController::class, 'upload']);
     Route::post('/documents/link', [DocumentController::class, 'storeLink']);
     Route::get('/documents/{id}', [DocumentController::class, 'show'])->whereNumber('id');
+    Route::get('/documents/{id}/content', [DocumentController::class, 'showContent'])->whereNumber('id');
+    Route::put('/documents/{id}/content', [DocumentController::class, 'updateContent'])->whereNumber('id');
     Route::patch('/documents/{id}', [DocumentController::class, 'update'])->whereNumber('id');
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->whereNumber('id');
     Route::post('/documents/{id}/view', [DocumentController::class, 'recordView'])->whereNumber('id');

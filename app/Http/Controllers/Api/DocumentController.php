@@ -261,6 +261,33 @@ class DocumentController extends Controller
         ]);
     }
 
+    public function showContent(Request $request, int $id): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json([
+            'data' => $this->documents->getFileContent($businessId, $request->user(), $id),
+        ]);
+    }
+
+    public function updateContent(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'content' => ['required', 'string'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+
+        return response()->json([
+            'data' => $this->documents->updateFileContent(
+                $businessId,
+                $request->user(),
+                $id,
+                $validated['content'],
+            ),
+        ]);
+    }
+
     public function upload(Request $request): JsonResponse
     {
         $validated = $request->validate([
