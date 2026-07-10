@@ -15,6 +15,7 @@ class DocumentFolderService
 {
     public function __construct(
         protected DocumentAccessService $access,
+        protected DocumentActivityService $activity,
     ) {}
 
     /** @return list<array<string, mixed>> */
@@ -202,6 +203,16 @@ class DocumentFolderService
 
         $this->access->syncFolderMembers($folder, $businessId, $memberUserIds, $memberRoles);
 
+        $this->activity->record(
+            $businessId,
+            $user,
+            'folder_created',
+            'folder',
+            $folder->id,
+            $folder->name,
+            $folder->parent_id,
+        );
+
         return $this->serializeFolder($this->reloadFolder($folder), $user, true);
     }
 
@@ -224,6 +235,12 @@ class DocumentFolderService
     ): array {
         $folder = $this->findFolder($businessId, $folderId);
         $this->access->assertCanManage($user, $folder);
+
+        $previousName = $folder->name;
+        $previousParentId = $folder->parent_id;
+        $previousVisibility = $folder->visibility;
+        $hadMemberUpdate = $memberUserIds !== null;
+        $hadColorUpdate = $coverColor !== null;
 
         if ($name !== null) {
             $folder->name = trim($name);
@@ -264,7 +281,22 @@ class DocumentFolderService
             $folder->memberLinks()->delete();
         }
 
-        return $this->serializeFolder($this->reloadFolder($folder), $user, true);
+        $reloaded = $this->reloadFolder($folder);
+
+        if ($name !== null && trim($name) !== $previousName) {
+            $this->activity->record($businessId, $user, 'folder_renamed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+        }
+        if ($parentId !== null && $parentId !== $previousParentId) {
+            $this->activity->record($businessId, $user, 'folder_moved', 'folder', $folder->id, $folder->name, $folder->parent_id);
+        }
+        if (($visibility !== null && $visibility !== $previousVisibility) || $hadMemberUpdate) {
+            $this->activity->record($businessId, $user, 'folder_access_changed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+        }
+        if ($hadColorUpdate) {
+            $this->activity->record($businessId, $user, 'folder_color_changed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+        }
+
+        return $this->serializeFolder($reloaded, $user, true);
     }
 
     public function destroy(int $businessId, User $user, int $folderId): void
@@ -272,9 +304,14 @@ class DocumentFolderService
         $folder = $this->findFolder($businessId, $folderId);
         $this->access->assertCanManage($user, $folder);
 
+        $folderName = $folder->name;
+        $folderParentId = $folder->parent_id;
+
         DB::transaction(function () use ($folder, $businessId): void {
             $this->cascadeDeleteFolder($folder, $businessId);
         });
+
+        $this->activity->record($businessId, $user, 'folder_deleted', 'folder', null, $folderName, $folderParentId);
     }
 
     protected function cascadeDeleteFolder(DocumentFolder $folder, int $businessId): void

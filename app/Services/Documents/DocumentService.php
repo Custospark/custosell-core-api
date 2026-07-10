@@ -19,6 +19,7 @@ class DocumentService
     public function __construct(
         protected DocumentAccessService $access,
         protected DocumentTagService $tags,
+        protected DocumentActivityService $activity,
     ) {}
 
     /** @return array{data: list<array<string, mixed>>, meta: array<string, int>} */
@@ -198,6 +199,16 @@ class DocumentService
         $this->access->syncDocumentMembers($document, $businessId, $memberUserIds, $memberRoles);
         $this->tags->syncDocumentTags($document, $businessId, $tagNames);
 
+        $this->activity->record(
+            $businessId,
+            $user,
+            'document_uploaded',
+            'document',
+            $document->id,
+            $document->title,
+            $document->folder_id,
+        );
+
         return $this->serializeDocument($this->reloadDocument($document), $user);
     }
 
@@ -241,6 +252,16 @@ class DocumentService
         $this->access->syncDocumentMembers($document, $businessId, $memberUserIds, $memberRoles);
         $this->tags->syncDocumentTags($document, $businessId, $tagNames);
 
+        $this->activity->record(
+            $businessId,
+            $user,
+            'document_linked',
+            'document',
+            $document->id,
+            $document->title,
+            $document->folder_id,
+        );
+
         return $this->serializeDocument($this->reloadDocument($document), $user);
     }
 
@@ -272,6 +293,11 @@ class DocumentService
         if (! $this->access->canEditDocument($user, $document)) {
             abort(403, 'You cannot edit this document.');
         }
+
+        $previousTitle = $document->title;
+        $previousFolderId = $document->folder_id;
+        $previousVisibility = $document->visibility;
+        $hadMemberUpdate = $memberUserIds !== null;
 
         if ($title !== null) {
             $document->title = trim($title);
@@ -323,7 +349,19 @@ class DocumentService
             $this->tags->syncDocumentTags($document, $businessId, $tagNames);
         }
 
-        return $this->serializeDocument($this->reloadDocument($document), $user);
+        $reloaded = $this->reloadDocument($document);
+
+        if ($title !== null && trim($title) !== $previousTitle) {
+            $this->activity->record($businessId, $user, 'document_renamed', 'document', $document->id, $document->title, $document->folder_id);
+        }
+        if ($folderId !== null && $folderId !== $previousFolderId) {
+            $this->activity->record($businessId, $user, 'document_moved', 'document', $document->id, $document->title, $document->folder_id);
+        }
+        if (($visibility !== null && $visibility !== $previousVisibility) || $hadMemberUpdate) {
+            $this->activity->record($businessId, $user, 'document_access_changed', 'document', $document->id, $document->title, $document->folder_id);
+        }
+
+        return $this->serializeDocument($reloaded, $user);
     }
 
     public function destroy(int $businessId, User $user, int $documentId): void
@@ -334,10 +372,15 @@ class DocumentService
             abort(403, 'You cannot delete this document.');
         }
 
+        $title = $document->title;
+        $folderId = $document->folder_id;
+
         $this->deleteFileFromDisk($document);
         $document->memberLinks()->delete();
         $document->tags()->detach();
         $document->delete();
+
+        $this->activity->record($businessId, $user, 'document_deleted', 'document', null, $title, $folderId);
     }
 
     /** @return array{file_url: string|null} */

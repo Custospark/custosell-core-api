@@ -285,4 +285,33 @@ class DocumentsModuleTest extends TestCase
         $this->assertContains($this->owner->name, $names);
         $this->assertNotContains('Inactive User', $names);
     }
+
+    public function test_activity_feed_returns_recent_events(): void
+    {
+        $token = $this->owner->createToken('owner')->plainTextToken;
+
+        $folder = DocumentFolder::create([
+            'business_id' => $this->business->id,
+            'name' => 'Legal',
+            'visibility' => 'all_staff',
+            'depth' => 1,
+            'created_by' => $this->owner->id,
+        ]);
+
+        app(\App\Services\Documents\DocumentActivityService::class)->record(
+            $this->business->id,
+            $this->owner,
+            'folder_created',
+            'folder',
+            $folder->id,
+            $folder->name,
+            null,
+        );
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/documents/activity')
+            ->assertOk()
+            ->assertJsonPath('data.0.action', 'folder_created')
+            ->assertJsonPath('data.0.subject_name', 'Legal');
+    }
 }

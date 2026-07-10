@@ -10,6 +10,7 @@ use App\Services\Documents\DocumentAccessService;
 use App\Services\Documents\DocumentFolderService;
 use App\Services\Documents\DocumentService;
 use App\Services\Documents\DocumentTagService;
+use App\Services\Documents\DocumentActivityService;
 use App\Services\Documents\DocumentVaultService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class DocumentController extends Controller
         protected DocumentService $documents,
         protected DocumentTagService $tags,
         protected DocumentVaultService $vault,
+        protected DocumentActivityService $activity,
     ) {}
 
     public function vaultAppearance(Request $request): JsonResponse
@@ -55,6 +57,20 @@ class DocumentController extends Controller
         return response()->json([
             'data' => $this->access->listAccessibleMembers($businessId),
         ]);
+    }
+
+    public function activity(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 30);
+
+        return response()->json($this->activity->listRecent($businessId, $page, $perPage));
     }
 
     public function folderTree(Request $request): JsonResponse
