@@ -383,10 +383,11 @@ class DocumentsModuleTest extends TestCase
             $folder->id,
             $folder->name,
             null,
+            $folder->cabinet_id,
         );
 
         $this->withHeader('Authorization', "Bearer $token")
-            ->getJson('/api/v1/documents/activity')
+            ->getJson('/api/v1/documents/activity?cabinet_id='.$this->cabinetId)
             ->assertOk()
             ->assertJsonPath('data.0.action', 'folder_created')
             ->assertJsonPath('data.0.subject_name', 'Legal');

@@ -13,6 +13,7 @@ class DocumentActivityLog extends Model
 
     protected $fillable = [
         'business_id',
+        'cabinet_id',
         'actor_id',
         'action',
         'subject_type',

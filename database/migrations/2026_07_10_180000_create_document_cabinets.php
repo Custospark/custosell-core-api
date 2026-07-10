@@ -9,45 +9,53 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('document_cabinets', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('visibility', 32)->default('all_staff');
-            $table->string('cover_color', 7)->nullable();
-            $table->unsignedInteger('sort_order')->default(0);
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamps();
-            $table->softDeletes();
+        if (! Schema::hasTable('document_cabinets')) {
+            Schema::create('document_cabinets', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+                $table->string('name');
+                $table->text('description')->nullable();
+                $table->string('visibility', 32)->default('all_staff');
+                $table->string('cover_color', 7)->nullable();
+                $table->unsignedInteger('sort_order')->default(0);
+                $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->timestamps();
+                $table->softDeletes();
 
-            $table->index(['business_id', 'sort_order']);
-        });
+                $table->index(['business_id', 'sort_order']);
+            });
+        }
 
-        Schema::create('document_cabinet_members', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('cabinet_id')->constrained('document_cabinets')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('role', 32)->default('viewer');
-            $table->timestamps();
+        if (! Schema::hasTable('document_cabinet_members')) {
+            Schema::create('document_cabinet_members', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('cabinet_id')->constrained('document_cabinets')->cascadeOnDelete();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->string('role', 32)->default('viewer');
+                $table->timestamps();
 
-            $table->unique(['cabinet_id', 'user_id']);
-        });
+                $table->unique(['cabinet_id', 'user_id']);
+            });
+        }
 
-        Schema::table('document_folders', function (Blueprint $table) {
-            $table->foreignId('cabinet_id')->nullable()->after('business_id')->constrained('document_cabinets')->cascadeOnDelete();
-        });
+        if (Schema::hasTable('document_folders') && ! Schema::hasColumn('document_folders', 'cabinet_id')) {
+            Schema::table('document_folders', function (Blueprint $table) {
+                $table->foreignId('cabinet_id')->nullable()->after('business_id')->constrained('document_cabinets')->cascadeOnDelete();
+            });
+        }
 
-        Schema::table('documents', function (Blueprint $table) {
-            $table->foreignId('cabinet_id')->nullable()->after('business_id')->constrained('document_cabinets')->cascadeOnDelete();
-        });
+        if (Schema::hasTable('documents') && ! Schema::hasColumn('documents', 'cabinet_id')) {
+            Schema::table('documents', function (Blueprint $table) {
+                $table->foreignId('cabinet_id')->nullable()->after('business_id')->constrained('document_cabinets')->cascadeOnDelete();
+            });
+        }
 
         $this->migrateExistingData();
     }
 
     protected function migrateExistingData(): void
     {
-        if (! Schema::hasTable('businesses')) {
+        if (! Schema::hasTable('businesses') || ! Schema::hasTable('document_cabinets')) {
             return;
         }
 
@@ -59,31 +67,53 @@ return new class extends Migration
                 $ownerId = null;
             }
 
-            $cabinetId = DB::table('document_cabinets')->insertGetId([
-                'business_id' => $businessId,
-                'name' => 'General',
-                'description' => 'Default document cabinet',
-                'visibility' => 'all_staff',
-                'sort_order' => 0,
-                'created_by' => $ownerId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $cabinetId = DB::table('document_cabinets')
+                ->where('business_id', $businessId)
+                ->where('name', 'General')
+                ->value('id');
 
-            DB::table('document_folders')->where('business_id', $businessId)->update(['cabinet_id' => $cabinetId]);
-            DB::table('documents')->where('business_id', $businessId)->update(['cabinet_id' => $cabinetId]);
+            if (! $cabinetId) {
+                $cabinetId = DB::table('document_cabinets')->insertGetId([
+                    'business_id' => $businessId,
+                    'name' => 'General',
+                    'description' => 'Default document cabinet',
+                    'visibility' => 'all_staff',
+                    'sort_order' => 0,
+                    'created_by' => $ownerId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            if (Schema::hasColumn('document_folders', 'cabinet_id')) {
+                DB::table('document_folders')
+                    ->where('business_id', $businessId)
+                    ->whereNull('cabinet_id')
+                    ->update(['cabinet_id' => $cabinetId]);
+            }
+
+            if (Schema::hasColumn('documents', 'cabinet_id')) {
+                DB::table('documents')
+                    ->where('business_id', $businessId)
+                    ->whereNull('cabinet_id')
+                    ->update(['cabinet_id' => $cabinetId]);
+            }
         }
     }
 
     public function down(): void
     {
-        Schema::table('documents', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('cabinet_id');
-        });
+        if (Schema::hasTable('documents') && Schema::hasColumn('documents', 'cabinet_id')) {
+            Schema::table('documents', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('cabinet_id');
+            });
+        }
 
-        Schema::table('document_folders', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('cabinet_id');
-        });
+        if (Schema::hasTable('document_folders') && Schema::hasColumn('document_folders', 'cabinet_id')) {
+            Schema::table('document_folders', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('cabinet_id');
+            });
+        }
 
         Schema::dropIfExists('document_cabinet_members');
         Schema::dropIfExists('document_cabinets');

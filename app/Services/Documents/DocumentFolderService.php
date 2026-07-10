@@ -242,6 +242,7 @@ class DocumentFolderService
             $folder->id,
             $folder->name,
             $folder->parent_id,
+            $folder->cabinet_id,
         );
 
         return $this->serializeFolder($this->reloadFolder($folder), $user, true);
@@ -315,16 +316,16 @@ class DocumentFolderService
         $reloaded = $this->reloadFolder($folder);
 
         if ($name !== null && trim($name) !== $previousName) {
-            $this->activity->record($businessId, $user, 'folder_renamed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+            $this->activity->record($businessId, $user, 'folder_renamed', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
         }
         if ($parentId !== null && $parentId !== $previousParentId) {
-            $this->activity->record($businessId, $user, 'folder_moved', 'folder', $folder->id, $folder->name, $folder->parent_id);
+            $this->activity->record($businessId, $user, 'folder_moved', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
         }
         if (($visibility !== null && $visibility !== $previousVisibility) || $hadMemberUpdate) {
-            $this->activity->record($businessId, $user, 'folder_access_changed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+            $this->activity->record($businessId, $user, 'folder_access_changed', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
         }
         if ($hadColorUpdate) {
-            $this->activity->record($businessId, $user, 'folder_color_changed', 'folder', $folder->id, $folder->name, $folder->parent_id);
+            $this->activity->record($businessId, $user, 'folder_color_changed', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
         }
 
         return $this->serializeFolder($reloaded, $user, true);
@@ -337,12 +338,13 @@ class DocumentFolderService
 
         $folderName = $folder->name;
         $folderParentId = $folder->parent_id;
+        $cabinetId = $folder->cabinet_id;
 
         DB::transaction(function () use ($folder, $businessId): void {
             $this->cascadeDeleteFolder($folder, $businessId);
         });
 
-        $this->activity->record($businessId, $user, 'folder_deleted', 'folder', null, $folderName, $folderParentId);
+        $this->activity->record($businessId, $user, 'folder_deleted', 'folder', null, $folderName, $folderParentId, $cabinetId);
     }
 
     public function exportFolder(int $businessId, User $user, int $folderId): StreamedResponse

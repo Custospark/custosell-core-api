@@ -19,10 +19,12 @@ class DocumentActivityService
         ?int $subjectId,
         ?string $subjectName,
         ?int $folderId = null,
+        ?int $cabinetId = null,
         array $metadata = [],
     ): void {
         DocumentActivityLog::query()->create([
             'business_id' => $businessId,
+            'cabinet_id' => $cabinetId,
             'actor_id' => $actor?->id,
             'action' => $action,
             'subject_type' => $subjectType,
@@ -35,13 +37,14 @@ class DocumentActivityService
     }
 
     /** @return array{data: list<array<string, mixed>>, meta: array<string, int>} */
-    public function listRecent(int $businessId, int $page = 1, int $perPage = 30): array
+    public function listRecent(int $businessId, int $cabinetId, int $page = 1, int $perPage = 30): array
     {
         $perPage = min(max($perPage, 1), 100);
         $page = max($page, 1);
 
         $paginator = DocumentActivityLog::query()
             ->where('business_id', $businessId)
+            ->where('cabinet_id', $cabinetId)
             ->with('actor:id,name,avatar')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -70,6 +73,7 @@ class DocumentActivityService
 
         return [
             'id' => $entry->id,
+            'cabinet_id' => $entry->cabinet_id,
             'action' => $entry->action,
             'message' => $this->messageFor($entry->action, $actorName, $entry->subject_name, $entry->metadata ?? []),
             'subject_type' => $entry->subject_type,
@@ -92,6 +96,8 @@ class DocumentActivityService
         $name = $subjectName ?: 'item';
 
         return match ($action) {
+            'cabinet_created' => "{$actorName} created cabinet {$name}",
+            'cabinet_deleted' => "{$actorName} deleted cabinet {$name}",
             'folder_created' => "{$actorName} created folder {$name}",
             'folder_renamed' => "{$actorName} renamed folder to {$name}",
             'folder_moved' => "{$actorName} moved folder {$name}",
@@ -104,6 +110,7 @@ class DocumentActivityService
             'document_moved' => "{$actorName} moved {$name}",
             'document_deleted' => "{$actorName} deleted {$name}",
             'document_access_changed' => "{$actorName} updated access for {$name}",
+            'document_updated' => "{$actorName} updated {$name}",
             default => "{$actorName} updated {$name}",
         };
     }

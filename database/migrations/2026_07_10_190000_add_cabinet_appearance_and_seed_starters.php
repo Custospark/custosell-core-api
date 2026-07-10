@@ -19,10 +19,17 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::table('document_cabinets', function (Blueprint $table) {
-            $table->string('background_type', 32)->nullable()->after('cover_color');
-            $table->string('background_value', 500)->nullable()->after('background_type');
-        });
+        if (Schema::hasTable('document_cabinets') && ! Schema::hasColumn('document_cabinets', 'background_type')) {
+            Schema::table('document_cabinets', function (Blueprint $table) {
+                $table->string('background_type', 32)->nullable()->after('cover_color');
+            });
+        }
+
+        if (Schema::hasTable('document_cabinets') && ! Schema::hasColumn('document_cabinets', 'background_value')) {
+            Schema::table('document_cabinets', function (Blueprint $table) {
+                $table->string('background_value', 500)->nullable()->after('background_type');
+            });
+        }
 
         $this->seedStarterCabinets();
     }
@@ -68,8 +75,20 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('document_cabinets', function (Blueprint $table) {
-            $table->dropColumn(['background_type', 'background_value']);
-        });
+        if (! Schema::hasTable('document_cabinets')) {
+            return;
+        }
+
+        if (Schema::hasColumn('document_cabinets', 'background_type') || Schema::hasColumn('document_cabinets', 'background_value')) {
+            Schema::table('document_cabinets', function (Blueprint $table) {
+                $columns = array_filter([
+                    Schema::hasColumn('document_cabinets', 'background_type') ? 'background_type' : null,
+                    Schema::hasColumn('document_cabinets', 'background_value') ? 'background_value' : null,
+                ]);
+                if ($columns !== []) {
+                    $table->dropColumn($columns);
+                }
+            });
+        }
     }
 };

@@ -167,15 +167,20 @@ class DocumentController extends Controller
     public function activity(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'cabinet_id' => ['required', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $businessId = (int) $request->user()->business_id;
+        $cabinetId = (int) $validated['cabinet_id'];
         $page = (int) ($validated['page'] ?? 1);
         $perPage = (int) ($validated['per_page'] ?? 30);
 
-        return response()->json($this->activity->listRecent($businessId, $page, $perPage));
+        $cabinet = $this->cabinets->findCabinet($businessId, $cabinetId);
+        $this->access->assertCanViewCabinet($request->user(), $cabinet);
+
+        return response()->json($this->activity->listRecent($businessId, $cabinetId, $page, $perPage));
     }
 
     public function folderTree(Request $request): JsonResponse

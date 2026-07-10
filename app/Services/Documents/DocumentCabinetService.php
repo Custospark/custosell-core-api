@@ -101,6 +101,7 @@ class DocumentCabinetService
             $cabinet->id,
             $cabinet->name,
             null,
+            $cabinet->id,
         );
 
         return $this->serializeCabinet($this->reloadCabinet($cabinet), $user);
@@ -179,10 +180,11 @@ class DocumentCabinetService
         }
 
         $name = $cabinet->name;
+        $cabinetId = $cabinet->id;
         $cabinet->memberLinks()->delete();
         $cabinet->delete();
 
-        $this->activity->record($businessId, $user, 'cabinet_deleted', 'cabinet', null, $name, null);
+        $this->activity->record($businessId, $user, 'cabinet_deleted', 'cabinet', null, $name, null, $cabinetId);
     }
 
     public function seedDefaultCabinets(int $businessId, ?int $ownerId = null): void

@@ -220,6 +220,7 @@ class DocumentService
             $document->id,
             $document->title,
             $document->folder_id,
+            $document->cabinet_id,
         );
 
         return $this->serializeDocument($this->reloadDocument($document), $user);
@@ -276,6 +277,7 @@ class DocumentService
             $document->id,
             $document->title,
             $document->folder_id,
+            $document->cabinet_id,
         );
 
         return $this->serializeDocument($this->reloadDocument($document), $user);
@@ -373,13 +375,13 @@ class DocumentService
         $reloaded = $this->reloadDocument($document);
 
         if ($title !== null && trim($title) !== $previousTitle) {
-            $this->activity->record($businessId, $user, 'document_renamed', 'document', $document->id, $document->title, $document->folder_id);
+            $this->activity->record($businessId, $user, 'document_renamed', 'document', $document->id, $document->title, $document->folder_id, $document->cabinet_id);
         }
         if ($folderId !== null && $folderId !== $previousFolderId) {
-            $this->activity->record($businessId, $user, 'document_moved', 'document', $document->id, $document->title, $document->folder_id);
+            $this->activity->record($businessId, $user, 'document_moved', 'document', $document->id, $document->title, $document->folder_id, $document->cabinet_id);
         }
         if (($visibility !== null && $visibility !== $previousVisibility) || $hadMemberUpdate) {
-            $this->activity->record($businessId, $user, 'document_access_changed', 'document', $document->id, $document->title, $document->folder_id);
+            $this->activity->record($businessId, $user, 'document_access_changed', 'document', $document->id, $document->title, $document->folder_id, $document->cabinet_id);
         }
 
         return $this->serializeDocument($reloaded, $user);
@@ -395,13 +397,14 @@ class DocumentService
 
         $title = $document->title;
         $folderId = $document->folder_id;
+        $cabinetId = $document->cabinet_id;
 
         $this->deleteFileFromDisk($document);
         $document->memberLinks()->delete();
         $document->tags()->detach();
         $document->delete();
 
-        $this->activity->record($businessId, $user, 'document_deleted', 'document', null, $title, $folderId);
+        $this->activity->record($businessId, $user, 'document_deleted', 'document', null, $title, $folderId, $cabinetId);
     }
 
     /** @return array{file_url: string|null} */
@@ -534,6 +537,7 @@ class DocumentService
             $document->id,
             $document->title,
             $document->folder_id,
+            $document->cabinet_id,
         );
 
         return $this->serializeDocument($this->reloadDocument($document), $user);
