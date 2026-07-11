@@ -49,6 +49,26 @@ class PurchaseOrderController extends Controller
         return response()->json(new PurchaseOrderResource($po));
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'items' => ['nullable', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_total' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $po = $this->purchaseOrderService->update(
+            $id,
+            $request->user()->business_id,
+            $data,
+        );
+
+        return response()->json(new PurchaseOrderResource($po));
+    }
+
     public function submit(Request $request, int $id): JsonResponse
     {
         $po = $this->purchaseOrderService->submit($id, $request->user()->business_id);
