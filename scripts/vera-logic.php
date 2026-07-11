@@ -21,6 +21,7 @@ function veraLogicChangedPhpFiles(string $root): array
     $commands = [
         'git diff --name-only --diff-filter=ACMRTUXB HEAD',
         'git diff --cached --name-only --diff-filter=ACMRTUXB',
+        'git ls-files --others --exclude-standard',
     ];
 
     $files = [];
@@ -166,6 +167,80 @@ function veraLogicBuyerApAccounts(string $root): array
 /**
  * @return array{id: string, ok: bool, detail: string}
  */
+function veraLogicPhpImports(string $root, array $changed): array
+{
+    if ($changed === []) {
+        return [
+            'id' => 'php-imports',
+            'ok' => true,
+            'detail' => 'No changed app/tests PHP — import check skipped',
+        ];
+    }
+
+    $broken = [];
+
+    foreach ($changed as $file) {
+        $text = veraLogicRead($root, $file);
+        if ($text === null) {
+            continue;
+        }
+
+        // use App\Foo\Bar; | use App\Foo\Bar as Alias;
+        if (!preg_match_all('/^\s*use\s+(App\\\\[A-Za-z0-9_\\\\]+|Tests\\\\[A-Za-z0-9_\\\\]+)\s*(?:as\s+\w+)?\s*;/m', $text, $matches)) {
+            continue;
+        }
+
+        foreach ($matches[1] as $fqcn) {
+            $resolved = veraLogicResolvePsr4($root, $fqcn);
+            if ($resolved === null || !is_file($resolved)) {
+                $broken[] = "{$file} → {$fqcn}";
+            }
+        }
+    }
+
+    if ($broken !== []) {
+        $shown = array_slice($broken, 0, 8);
+        $extra = count($broken) > 8 ? ' (+' . (count($broken) - 8) . ' more)' : '';
+
+        return [
+            'id' => 'php-imports',
+            'ok' => false,
+            'detail' => 'Unresolved App/Tests use import(s): ' . implode('; ', $shown) . $extra,
+        ];
+    }
+
+    return [
+        'id' => 'php-imports',
+        'ok' => true,
+        'detail' => 'App/Tests use imports resolve for ' . count($changed) . ' changed file(s)',
+    ];
+}
+
+/**
+ * Map App\ / Tests\ FQCN to a filesystem path (PSR-4).
+ */
+function veraLogicResolvePsr4(string $root, string $fqcn): ?string
+{
+    $map = [
+        'App\\' => 'app/',
+        'Tests\\' => 'tests/',
+    ];
+
+    foreach ($map as $prefix => $base) {
+        if (!str_starts_with($fqcn, $prefix)) {
+            continue;
+        }
+        $relative = str_replace('\\', '/', substr($fqcn, strlen($prefix))) . '.php';
+
+        return $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $base . $relative);
+    }
+
+    return null;
+}
+
+/**
+ * @return array{id: string, ok: bool, detail: string}
+ */
 function veraLogicBuyerApTest(string $root): array
 {
     $testA = veraLogicRead($root, 'tests/Feature/SupplyChainTest.php') ?? '';
@@ -187,6 +262,7 @@ $changed = veraLogicChangedPhpFiles($root);
 $results = array_merge(
     veraLogicCheckFileSize($root, $changed),
     [
+        veraLogicPhpImports($root, $changed),
         veraLogicOwnerOnlyPayments($root),
         veraLogicBuyerApService($root),
         veraLogicBuyerApAccounts($root),

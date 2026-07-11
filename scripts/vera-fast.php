@@ -15,6 +15,7 @@ function veraCollectChangedPhpFiles(string $root): array
     $commands = [
         'git diff --name-only --diff-filter=ACMRTUXB HEAD',
         'git diff --cached --name-only --diff-filter=ACMRTUXB',
+        'git ls-files --others --exclude-standard',
     ];
 
     $files = [];
@@ -25,9 +26,10 @@ function veraCollectChangedPhpFiles(string $root): array
             if ($path === '' || !str_ends_with($path, '.php')) {
                 continue;
             }
+            $normalized = str_replace('\\', '/', $path);
             $full = $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
             if (is_file($full)) {
-                $files[$path] = $path;
+                $files[$normalized] = $normalized;
             }
         }
     }
