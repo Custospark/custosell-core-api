@@ -9,6 +9,7 @@ use App\Models\InvoiceItem;
 use App\Models\Sale;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
+use App\Services\Contracts\OrderServiceInterface;
 use App\Services\PaymentService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class InvoiceService implements InvoiceServiceInterface
     public function __construct(
         protected InvoiceRepositoryInterface $invoiceRepository,
         protected PaymentService $paymentService,
+        protected OrderServiceInterface $orderService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -78,6 +80,7 @@ class InvoiceService implements InvoiceServiceInterface
 
             if (!empty($data['sale_id'])) {
                 $invoice = $this->paymentService->syncInvoiceFromLinkedSale($invoice->fresh());
+                $this->orderService->markInvoicedForSale((int) $data['sale_id']);
             }
 
             return $invoice->load(['customer', 'createdBy', 'items.product', 'payments']);

@@ -14,6 +14,7 @@ class SaleRequest extends BaseFormRequest
         return [
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
+            'order_id' => ['nullable', 'integer', 'exists:orders,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

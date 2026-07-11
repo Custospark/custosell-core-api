@@ -5,32 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Sale extends Model
+class Order extends Model
 {
     use SoftDeletes;
+
+    public const STATUS_OPEN = 'open';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_INVOICED = 'invoiced';
+    public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'business_id',
         'user_id',
         'customer_id',
         'shift_id',
-        'order_id',
-        'receipt_number',
+        'order_number',
+        'status',
+        'customer_name',
         'subtotal',
         'tax_total',
         'discount_amount',
         'total_amount',
-        'amount_paid',
-        'amount_tendered',
-        'change_given',
-        'payment_method',
-        'payment_status',
         'notes',
-        'sale_date',
+        'sale_id',
+        'held_at',
     ];
 
     protected function casts(): array
@@ -40,10 +40,7 @@ class Sale extends Model
             'tax_total' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
-            'amount_paid' => 'decimal:2',
-            'amount_tendered' => 'decimal:2',
-            'change_given' => 'decimal:2',
-            'sale_date' => 'datetime',
+            'held_at' => 'datetime',
         ];
     }
 
@@ -67,23 +64,18 @@ class Sale extends Model
         return $this->belongsTo(Shift::class);
     }
 
-    public function order(): BelongsTo
+    public function sale(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Sale::class);
     }
 
-    public function saleItems(): HasMany
+    public function items(): HasMany
     {
-        return $this->hasMany(SaleItem::class);
+        return $this->hasMany(OrderItem::class);
     }
 
-    public function payments(): MorphMany
+    public function isOpen(): bool
     {
-        return $this->morphMany(Payment::class, 'payable');
-    }
-
-    public function linkedInvoice(): HasOne
-    {
-        return $this->hasOne(Invoice::class, 'sale_id');
+        return $this->status === self::STATUS_OPEN;
     }
 }

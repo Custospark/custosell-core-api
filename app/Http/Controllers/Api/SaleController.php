@@ -142,6 +142,7 @@ class SaleController extends Controller
             'sales.*.payment_method' => ['required', 'string', 'in:cash,mobile_money,card,bank,other'],
             'sales.*.shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'sales.*.customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'sales.*.order_id' => ['nullable', 'integer', 'exists:orders,id'],
             'sales.*.sale_date' => ['nullable', 'date'],
             'sales.*.notes' => ['nullable', 'string'],
             'sales.*.items' => ['required', 'array', 'min:1'],

@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
 use App\Repositories\Contracts\SaleRepositoryInterface;
+use App\Services\Contracts\OrderServiceInterface;
 use App\Services\Contracts\SaleServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use App\Support\TaxEngine;
@@ -23,6 +24,7 @@ class SaleService implements SaleServiceInterface
         protected SaleRepositoryInterface $saleRepository,
         protected TaxEngine $taxEngine,
         protected PaymentService $paymentService,
+        protected OrderServiceInterface $orderService,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -68,11 +70,17 @@ class SaleService implements SaleServiceInterface
             $storedTendered = $this->resolveStoredAmountTendered($data, $amountPaid, $isFullyPaid);
             $storedChange = $this->resolveStoredChangeGiven($data, $amountPaid, $isFullyPaid);
 
+            $orderId = isset($data['order_id']) ? (int) $data['order_id'] : null;
+            if ($orderId) {
+                $this->orderService->assertOrderOpenForSale($orderId, $businessId);
+            }
+
             $sale = Sale::create([
                 'business_id' => $businessId,
                 'user_id' => $userId,
                 'customer_id' => $data['customer_id'] ?? null,
                 'shift_id' => $shiftId,
+                'order_id' => $orderId,
                 'receipt_number' => $receiptNumber,
                 'subtotal' => $computed['subtotal'],
                 'tax_total' => $computed['tax_total'],
@@ -86,6 +94,10 @@ class SaleService implements SaleServiceInterface
                 'notes' => $data['notes'] ?? null,
                 'sale_date' => $data['sale_date'] ?? now(),
             ]);
+
+            if ($orderId) {
+                $this->orderService->completeFromSale($orderId, $businessId, $sale->id);
+            }
 
             foreach ($computed['lines'] as $line) {
                 $product = $line['product'];
