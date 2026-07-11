@@ -18,7 +18,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
     {
         $query = PurchaseOrder::query()
             ->where('buyer_business_id', $buyerBusinessId)
-            ->with(['items', 'sellerBusiness'])
+            ->with(['items', 'sellerBusiness', 'buyerBusiness'])
             ->orderByDesc('id');
 
         if (! empty($filters['status'])) {
@@ -33,7 +33,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
         $query = PurchaseOrder::query()
             ->where('seller_business_id', $sellerBusinessId)
             ->where('status', '!=', PurchaseOrder::STATUS_DRAFT)
-            ->with(['items', 'buyerBusiness'])
+            ->with(['items', 'buyerBusiness', 'sellerBusiness'])
             ->orderByDesc('id');
 
         if (! empty($filters['status'])) {
