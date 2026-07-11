@@ -28,6 +28,27 @@ class FixedAssetResource extends JsonResource
             'status' => $this->status,
             'monthly_depreciation' => round($monthlyDepreciation, 2),
             'notes' => $this->notes,
+            'asset_tag' => $this->asset_tag,
+            'serial_number' => $this->serial_number,
+            'category' => $this->category,
+            'location' => $this->location,
+            'condition' => $this->condition,
+            'assigned_employee_id' => $this->assigned_employee_id,
+            'assigned_at' => $this->assigned_at?->toISOString(),
+            'returned_at' => $this->returned_at?->toISOString(),
+            'assigned_employee' => $this->whenLoaded('assignedEmployee', function () {
+                if (!$this->assignedEmployee) {
+                    return null;
+                }
+
+                return [
+                    'id' => $this->assignedEmployee->id,
+                    'first_name' => $this->assignedEmployee->first_name,
+                    'last_name' => $this->assignedEmployee->last_name,
+                    'employee_number' => $this->assignedEmployee->employee_number,
+                ];
+            }),
+            'assignments' => FixedAssetAssignmentResource::collection($this->whenLoaded('assignments')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

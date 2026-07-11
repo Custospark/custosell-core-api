@@ -19,6 +19,7 @@ class ExpenseResource extends JsonResource
             'shift_id' => $this->shift_id,
             'project_id' => $this->project_id,
             'project' => new ProjectResource($this->whenLoaded('project')),
+            'fixed_asset_id' => $this->fixed_asset_id,
             'amount' => $this->amount,
             'description' => $this->description,
             'reference' => $this->reference,

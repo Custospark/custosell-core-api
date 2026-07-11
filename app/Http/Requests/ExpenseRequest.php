@@ -25,6 +25,11 @@ class ExpenseRequest extends BaseFormRequest
                 'integer',
                 Rule::exists('projects', 'id')->where(fn($query) => $query->where('business_id', $this->user()?->business_id)),
             ],
+            'fixed_asset_id' => [
+                'nullable',
+                'integer',
+                'exists:fixed_assets,id',
+            ],
             'amount' => ['required', 'numeric', 'min:0'],
             'description' => ['required', 'string'],
             'reference' => ['nullable', 'string', 'max:255'],

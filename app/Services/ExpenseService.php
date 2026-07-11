@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 use App\Events\ExpenseCreatedForAccounting;
+use App\Models\FixedAsset;
 use App\Models\ProjectCostAllocation;
 use App\Services\Contracts\ProjectServiceInterface;
 
@@ -36,6 +37,7 @@ class ExpenseService implements ExpenseServiceInterface
     {
         $data['business_id'] = $businessId;
         $this->assertCategoryAvailable($businessId, $data['expense_category_id'] ?? null);
+        $this->assertFixedAssetBelongsToBusiness($businessId, $data['fixed_asset_id'] ?? null);
 
         $expense = $this->expenseRepository->create($data);
 
@@ -57,6 +59,10 @@ class ExpenseService implements ExpenseServiceInterface
 
         if (array_key_exists('expense_category_id', $data)) {
             $this->assertCategoryAvailable($expense->business_id, $data['expense_category_id']);
+        }
+
+        if (array_key_exists('fixed_asset_id', $data)) {
+            $this->assertFixedAssetBelongsToBusiness($expense->business_id, $data['fixed_asset_id']);
         }
 
         return $this->expenseRepository->update($expense, $data);
@@ -101,6 +107,24 @@ class ExpenseService implements ExpenseServiceInterface
         if (!$category) {
             throw ValidationException::withMessages([
                 'expense_category_id' => 'Invalid expense category.',
+            ]);
+        }
+    }
+
+    protected function assertFixedAssetBelongsToBusiness(int $businessId, mixed $fixedAssetId): void
+    {
+        if ($fixedAssetId === null || $fixedAssetId === '') {
+            return;
+        }
+
+        $asset = FixedAsset::query()
+            ->where('id', (int) $fixedAssetId)
+            ->where('business_id', $businessId)
+            ->first();
+
+        if (!$asset) {
+            throw ValidationException::withMessages([
+                'fixed_asset_id' => 'Invalid fixed asset for this business.',
             ]);
         }
     }

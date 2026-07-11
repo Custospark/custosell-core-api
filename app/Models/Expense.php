@@ -16,6 +16,7 @@ class Expense extends Model
         'recorded_by',
         'shift_id',
         'project_id',
+        'fixed_asset_id',
         'amount',
         'description',
         'reference',
@@ -67,5 +68,10 @@ class Expense extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function fixedAsset(): BelongsTo
+    {
+        return $this->belongsTo(FixedAsset::class);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Hr\HrAttendanceController;
+use App\Http\Controllers\Api\Hr\HrCompanyAssetsController;
 use App\Http\Controllers\Api\Hr\HrEmployeeController;
 use App\Http\Controllers\Api\Hr\HrLeaveController;
 use App\Http\Controllers\Api\Hr\HrOrgController;
@@ -117,5 +118,18 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:hr'])->prefix('hr'
         Route::get('/reports/nssf-schedule', [HrReportController::class, 'nssfSchedule']);
         Route::post('/reports/payroll-affordability', [HrReportController::class, 'payrollAffordability']);
         Route::get('/audit-logs', [HrReportController::class, 'auditLogs']);
+    });
+
+    // Company assets (full HR)
+    Route::middleware('hr.full')->group(function () {
+        Route::get('/company-assets', [HrCompanyAssetsController::class, 'index']);
+        Route::post('/company-assets', [HrCompanyAssetsController::class, 'store']);
+        Route::get('/company-assets/{id}', [HrCompanyAssetsController::class, 'show'])->whereNumber('id');
+        Route::patch('/company-assets/{id}', [HrCompanyAssetsController::class, 'updateCustody'])->whereNumber('id');
+        Route::post('/company-assets/{id}/assign', [HrCompanyAssetsController::class, 'assign'])->whereNumber('id');
+        Route::post('/company-assets/{id}/transfer', [HrCompanyAssetsController::class, 'transfer'])->whereNumber('id');
+        Route::post('/company-assets/{id}/return', [HrCompanyAssetsController::class, 'returnAsset'])->whereNumber('id');
+        Route::get('/company-assets/{id}/assignments', [HrCompanyAssetsController::class, 'assignments'])->whereNumber('id');
+        Route::get('/company-assets/{id}/maintenance-expenses', [HrCompanyAssetsController::class, 'maintenanceExpenses'])->whereNumber('id');
     });
 });

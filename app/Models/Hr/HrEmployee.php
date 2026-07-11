@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Hr;
 
 use App\Models\Business;
+use App\Models\FixedAsset;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -76,6 +77,11 @@ class HrEmployee extends Model
     public function compensations(): HasMany
     {
         return $this->hasMany(HrEmployeeCompensation::class, 'employee_id');
+    }
+
+    public function assignedAssets(): HasMany
+    {
+        return $this->hasMany(FixedAsset::class, 'assigned_employee_id');
     }
 
     public function getFullNameAttribute(): string

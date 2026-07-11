@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\StockMovement;
 use App\Services\Contracts\PurchaseOrderServiceInterface;
+use App\Services\DocumentNumberGenerator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -478,12 +479,6 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
 
     protected function generatePoNumber(Business $buyer): string
     {
-        $date = now()->format('Ymd');
-
-        do {
-            $number = sprintf('PO-%s-%s', $date, strtoupper(substr(bin2hex(random_bytes(3)), 0, 4)));
-        } while (PurchaseOrder::where('buyer_business_id', $buyer->id)->where('po_number', $number)->exists());
-
-        return $number;
+        return DocumentNumberGenerator::purchaseOrderNumber($buyer, PurchaseOrder::class, 'po_number');
     }
 }

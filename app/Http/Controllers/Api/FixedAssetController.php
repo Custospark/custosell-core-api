@@ -11,6 +11,7 @@ use App\Services\DepreciationService;
 use App\Services\FixedAssetService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class FixedAssetController extends Controller
 {
@@ -22,7 +23,7 @@ class FixedAssetController extends Controller
     public function index(Request $request): FixedAssetCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['status', 'search']);
+        $filters = $request->only(['status', 'search', 'category', 'assigned_employee_id', 'unassigned']);
         return new FixedAssetCollection(
             $this->fixedAssetService->getAll($businessId, $filters)
         );
@@ -39,13 +40,27 @@ class FixedAssetController extends Controller
     {
         $businessId = $request->user()->business_id;
         $asset = $this->fixedAssetService->create($businessId, $request->validated());
-        return response()->json(new FixedAssetResource($asset), 201);
+        return (new FixedAssetResource($asset))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function update(StoreFixedAssetRequest $request, int $id): FixedAssetResource
     {
+        $businessId = (int) $request->user()->business_id;
+        $data = $request->validated();
+
+        if (($data['status'] ?? null) === 'disposed') {
+            $asset = $this->fixedAssetService->getByIdForBusiness($id, $businessId);
+            if ($asset->assigned_employee_id) {
+                throw ValidationException::withMessages([
+                    'status' => 'Cannot dispose an asset that is still assigned. Return it first.',
+                ]);
+            }
+        }
+
         return new FixedAssetResource(
-            $this->fixedAssetService->update($id, $request->validated())
+            $this->fixedAssetService->update($id, $data, $businessId)
         );
     }
 
@@ -71,8 +86,10 @@ class FixedAssetController extends Controller
 
     public function schedule(int $id): JsonResponse
     {
-        return response()->json(
-            $this->depreciationService->getSchedule($id)
-        );
+        return response()->json([
+            'data' => DepreciationEntryResource::collection(
+                $this->depreciationService->getSchedule($id)
+            ),
+        ]);
     }
 }

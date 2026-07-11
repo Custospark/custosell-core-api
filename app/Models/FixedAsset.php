@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Hr\HrEmployee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +23,14 @@ class FixedAsset extends Model
         'book_value',
         'status',
         'notes',
+        'asset_tag',
+        'serial_number',
+        'category',
+        'location',
+        'condition',
+        'assigned_employee_id',
+        'assigned_at',
+        'returned_at',
     ];
 
     protected function casts(): array
@@ -31,6 +40,8 @@ class FixedAsset extends Model
             'salvage_value' => 'decimal:2',
             'book_value' => 'decimal:2',
             'purchase_date' => 'date',
+            'assigned_at' => 'datetime',
+            'returned_at' => 'datetime',
         ];
     }
 
@@ -47,5 +58,20 @@ class FixedAsset extends Model
     public function depreciationEntries(): HasMany
     {
         return $this->hasMany(DepreciationEntry::class, 'asset_id');
+    }
+
+    public function assignedEmployee(): BelongsTo
+    {
+        return $this->belongsTo(HrEmployee::class, 'assigned_employee_id');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(FixedAssetAssignment::class, 'asset_id')->orderByDesc('occurred_at');
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class, 'fixed_asset_id');
     }
 }

@@ -52,6 +52,29 @@ class DocumentNumberGenerator
         return sprintf('%s-EST-%s-%s', $code, $date, $rand);
     }
 
+    /** {BIZ4}-PO-{YYYYMM}-{00001} — scoped by buyer_business_id */
+    public static function purchaseOrderNumber(Business $buyer, string $modelClass, string $column): string
+    {
+        $code = self::businessCode($buyer);
+        $ym = now()->format('Ym');
+        $prefix = sprintf('%s-PO-%s', $code, $ym);
+
+        $last = $modelClass::query()
+            ->where('buyer_business_id', $buyer->id)
+            ->where($column, 'like', $prefix . '-%')
+            ->orderByDesc($column)
+            ->lockForUpdate()
+            ->first();
+
+        $seq = 1;
+        if ($last) {
+            $parts = explode('-', (string) $last->{$column});
+            $seq = ((int) end($parts)) + 1;
+        }
+
+        return sprintf('%s-%05d', $prefix, $seq);
+    }
+
     /** {BIZ4}-PRJ-{YYMMDD}-{RANDOM7} */
     public static function projectNumber(Business $business, string $modelClass, string $column): string
     {

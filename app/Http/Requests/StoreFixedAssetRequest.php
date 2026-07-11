@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
+
 class StoreFixedAssetRequest extends BaseFormRequest
 {
     public function authorize(): bool
@@ -11,14 +13,39 @@ class StoreFixedAssetRequest extends BaseFormRequest
 
     public function rules(): array
     {
+        $isPut = $this->isMethod('PUT');
+        $financialRequired = $isPut ? 'sometimes' : 'required';
+
         return [
-            'name' => ['required', 'string', 'max:200'],
-            'account_id' => ['required', 'integer', 'exists:chart_of_accounts,id'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'salvage_value' => ['required', 'numeric', 'min:0', 'lte:cost'],
-            'useful_life_months' => ['required', 'integer', 'min:1'],
-            'purchase_date' => ['required', 'date'],
+            'name' => [$financialRequired, 'string', 'max:200'],
+            'account_id' => [
+                $isPut ? 'sometimes' : 'nullable',
+                'integer',
+                'exists:chart_of_accounts,id',
+            ],
+            'cost' => [$financialRequired, 'numeric', 'min:0'],
+            'salvage_value' => array_values(array_filter([
+                $financialRequired,
+                'numeric',
+                'min:0',
+                $this->filled('cost') ? 'lte:cost' : null,
+            ])),
+            'useful_life_months' => [$financialRequired, 'integer', 'min:1'],
+            'purchase_date' => [$financialRequired, 'date'],
+            'status' => ['sometimes', 'string', 'in:active,disposed,sold'],
             'notes' => ['nullable', 'string'],
+            'asset_tag' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('fixed_assets', 'asset_tag')
+                    ->where(fn ($query) => $query->where('business_id', $this->user()?->business_id))
+                    ->ignore($this->route('id')),
+            ],
+            'serial_number' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'in:laptop,phone,furniture,vehicle,other'],
+            'location' => ['nullable', 'string', 'max:200'],
+            'condition' => ['nullable', 'string', 'in:new,good,fair,poor,retired'],
         ];
     }
 
