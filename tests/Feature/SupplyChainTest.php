@@ -2,17 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Business, JournalEntry, JournalEntryLine, Product, User};
-use App\Services\SupplierInvoiceAccountingService;
+use App\Models\{Business, Product, User};
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Support\SeedsAccounting;
 use Tests\TestCase;
 
 class SupplyChainTest extends TestCase
 {
     use RefreshDatabase;
-    use SeedsAccounting;
 
     protected User $sellerOwner;
 
@@ -429,83 +426,5 @@ class SupplyChainTest extends TestCase
             'amount' => 10,
             'payment_method' => 'cash',
         ])->assertStatus(200);
-    }
-
-    public function test_shared_po_invoice_posts_seller_ar_and_buyer_ap(): void
-    {
-        $this->seedAccountingForBusiness($this->seller);
-        $this->seedAccountingForBusiness($this->buyer);
-
-        $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [
-            'seller_business_id' => $this->seller->id,
-            'items' => [
-                ['product_id' => $this->listedProduct->id, 'quantity' => 2],
-            ],
-        ]);
-        $poId = $create->json('id');
-        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
-        $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
-
-        $invoice = \App\Models\Invoice::query()->where('purchase_order_id', $poId)->first();
-        $this->assertNotNull($invoice);
-        $total = round((float) $invoice->total_amount, 2);
-
-        $sellerAr = JournalEntry::query()
-            ->where('business_id', $this->seller->id)
-            ->where('reference_type', 'invoice')
-            ->where('reference_id', $invoice->id)
-            ->first();
-        $this->assertNotNull($sellerAr, 'Seller AR invoice JE expected');
-
-        $buyerAp = JournalEntry::query()
-            ->where('business_id', $this->buyer->id)
-            ->where('reference_type', SupplierInvoiceAccountingService::REF_INVOICE)
-            ->where('reference_id', $invoice->id)
-            ->first();
-        $this->assertNotNull($buyerAp, 'Buyer supplier_invoice AP JE expected');
-
-        $apCredit = JournalEntryLine::query()
-            ->where('entry_id', $buyerAp->id)
-            ->whereHas('chartOfAccount', fn ($q) => $q->where('code', '2101'))
-            ->sum('credit_amount');
-        $this->assertEqualsWithDelta($total, (float) $apCredit, 0.02);
-
-        $invDebit = JournalEntryLine::query()
-            ->where('entry_id', $buyerAp->id)
-            ->whereHas('chartOfAccount', fn ($q) => $q->where('code', '1104'))
-            ->sum('debit_amount');
-        $this->assertEqualsWithDelta((float) $invoice->subtotal, (float) $invDebit, 0.02);
-
-        $payAmount = min(10.0, $total);
-        $this->asSeller('POST', "/api/v1/invoices/{$invoice->id}/payment", [
-            'amount' => $payAmount,
-            'payment_method' => 'cash',
-        ])->assertStatus(200);
-
-        $paymentId = (int) \App\Models\Payment::query()
-            ->where('payable_type', 'invoice')
-            ->where('payable_id', $invoice->id)
-            ->value('id');
-        $this->assertGreaterThan(0, $paymentId);
-
-        $sellerPay = JournalEntry::query()
-            ->where('business_id', $this->seller->id)
-            ->where('reference_type', 'invoice_payment')
-            ->where('reference_id', $paymentId)
-            ->first();
-        $this->assertNotNull($sellerPay, 'Seller invoice_payment JE expected');
-
-        $buyerSettle = JournalEntry::query()
-            ->where('business_id', $this->buyer->id)
-            ->where('reference_type', SupplierInvoiceAccountingService::REF_PAYMENT)
-            ->where('reference_id', $paymentId)
-            ->first();
-        $this->assertNotNull($buyerSettle, 'Buyer supplier_invoice_payment JE expected');
-
-        $apDebit = JournalEntryLine::query()
-            ->where('entry_id', $buyerSettle->id)
-            ->whereHas('chartOfAccount', fn ($q) => $q->where('code', '2101'))
-            ->sum('debit_amount');
-        $this->assertEqualsWithDelta($payAmount, (float) $apDebit, 0.02);
     }
 }

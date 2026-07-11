@@ -51,7 +51,7 @@ class PaymentReceiptDataBuilder
 
     protected static function fromInvoice(Invoice $invoice): array
     {
-        $invoice->loadMissing('items', 'customer');
+        $invoice->loadMissing(['items', 'customer', 'business:id,name']);
 
         $items = $invoice->items->map(fn ($item) => [
             'name' => $item->description,
@@ -65,6 +65,7 @@ class PaymentReceiptDataBuilder
         ])->values()->all();
 
         $linesSubtotal = array_sum(array_column($items, 'subtotal'));
+        $sellerName = $invoice->business?->name;
 
         return [
             'lineItems' => $items,
@@ -73,7 +74,11 @@ class PaymentReceiptDataBuilder
             'tax_total' => (float) ($invoice->tax_total ?? 0),
             'total_refunded' => 0.0,
             'bill_total' => (float) $invoice->total_amount,
+            // Bill-to / paid-by party (buyer customer on seller books).
             'customer_name' => $invoice->customer?->name,
+            // Issuing supplier — used when the viewer is the buyer (received invoice).
+            'seller_name' => $sellerName,
+            'supplier_name' => $sellerName,
         ];
     }
 
@@ -87,6 +92,8 @@ class PaymentReceiptDataBuilder
             'total_refunded' => 0.0,
             'bill_total' => 0.0,
             'customer_name' => null,
+            'seller_name' => null,
+            'supplier_name' => null,
         ];
     }
 }

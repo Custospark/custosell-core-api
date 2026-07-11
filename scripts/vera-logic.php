@@ -168,16 +168,18 @@ function veraLogicBuyerApAccounts(string $root): array
  */
 function veraLogicBuyerApTest(string $root): array
 {
-    $test = veraLogicRead($root, 'tests/Feature/SupplyChainTest.php') ?? '';
-    $ok = str_contains($test, 'test_shared_po_invoice_posts_seller_ar_and_buyer_ap')
-        || str_contains($test, 'shared_po_invoice_posts_seller_ar_and_buyer_ap');
+    $testA = veraLogicRead($root, 'tests/Feature/SupplyChainTest.php') ?? '';
+    $testB = veraLogicRead($root, 'tests/Feature/SupplyChainReceiveAndPartyTest.php') ?? '';
+    $haystack = $testA."\n".$testB;
+    $ok = str_contains($haystack, 'test_shared_po_invoice_posts_seller_ar_and_buyer_ap')
+        || str_contains($haystack, 'shared_po_invoice_posts_seller_ar_and_buyer_ap');
 
     return [
         'id' => 'buyer-ap-feature-test',
         'ok' => $ok,
         'detail' => $ok
-            ? 'SupplyChainTest covers seller AR + buyer AP journals'
-            : 'Missing SupplyChainTest for shared PO invoice AR/AP posting',
+            ? 'Supply chain tests cover seller AR + buyer AP journals'
+            : 'Missing feature test for shared PO invoice AR/AP posting',
     ];
 }
 

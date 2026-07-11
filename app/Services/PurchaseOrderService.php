@@ -385,15 +385,23 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                     ]);
                 }
 
-                $localProduct = Product::where('id', $mapping['product_id'])
-                    ->where('business_id', $buyerBusinessId)
-                    ->lockForUpdate()
-                    ->first();
+                $createProduct = filter_var($mapping['create_product'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $localProduct = null;
 
-                if (! $localProduct) {
-                    throw ValidationException::withMessages([
-                        'items' => ["The selected local product for line #{$item->id} was not found in your catalog."],
-                    ]);
+                if ($createProduct) {
+                    $localProduct = $this->createBuyerProductFromPoLine($buyerBusinessId, $item);
+                } else {
+                    $productId = (int) ($mapping['product_id'] ?? 0);
+                    $localProduct = Product::where('id', $productId)
+                        ->where('business_id', $buyerBusinessId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $localProduct) {
+                        throw ValidationException::withMessages([
+                            'items' => ["The selected local product for line #{$item->id} was not found in your catalog."],
+                        ]);
+                    }
                 }
 
                 $resolved[] = ['item' => $item, 'product' => $localProduct];
@@ -433,6 +441,54 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
 
             return $po->fresh(['items.receivedProduct', 'sellerBusiness', 'buyerBusiness', 'invoice']);
         });
+    }
+
+    /**
+     * Create a buyer-owned stocked product from a supplier PO line (new SKU they don't have yet).
+     */
+    protected function createBuyerProductFromPoLine(int $buyerBusinessId, PurchaseOrderItem $item): Product
+    {
+        $sku = $this->uniqueBuyerSku($buyerBusinessId, $item->product_sku, $item->product_name);
+        $unitPrice = (float) $item->unit_price;
+
+        return Product::create([
+            'business_id' => $buyerBusinessId,
+            'name' => $item->product_name,
+            'type' => Product::TYPE_PRODUCT,
+            'sku' => $sku,
+            'unit_price' => $unitPrice,
+            'cost_price' => $unitPrice,
+            'stock_quantity' => 0,
+            'low_stock_threshold' => 5,
+            'is_active' => true,
+            'listed_for_supply' => false,
+            'description' => 'Created from purchase order receive (supplier line).',
+        ]);
+    }
+
+    protected function uniqueBuyerSku(int $buyerBusinessId, ?string $sourceSku, string $productName): ?string
+    {
+        $base = trim((string) $sourceSku);
+        if ($base === '') {
+            $base = strtoupper(substr(preg_replace('/[^A-Za-z0-9]+/', '', $productName) ?: 'ITEM', 0, 12));
+        }
+
+        $candidate = $base;
+        $n = 1;
+        while (
+            Product::query()
+                ->where('business_id', $buyerBusinessId)
+                ->where('sku', $candidate)
+                ->exists()
+        ) {
+            $candidate = $base.'-'.$n;
+            $n++;
+            if ($n > 50) {
+                return $base.'-'.substr((string) time(), -4);
+            }
+        }
+
+        return $candidate;
     }
 }
 

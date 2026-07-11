@@ -38,7 +38,8 @@ class PurchaseOrderResource extends JsonResource
                     'total_amount' => $this->invoice->total_amount,
                     'payments_count' => $this->invoice->relationLoaded('payments')
                         ? $this->invoice->payments->count()
-                        : null,
+                        : (int) ($this->invoice->payments_count ?? 0),
+                    'payment_status' => $this->resolveInvoicePaymentStatus(),
                 ],
             ),
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
@@ -51,5 +52,23 @@ class PurchaseOrderResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    protected function resolveInvoicePaymentStatus(): string
+    {
+        if (! $this->invoice) {
+            return 'unpaid';
+        }
+
+        $total = (float) $this->invoice->total_amount;
+        $paid = (float) $this->invoice->amount_paid;
+        if ($paid <= 0.009) {
+            return 'unpaid';
+        }
+        if ($total > 0 && $paid + 0.009 >= $total) {
+            return 'paid';
+        }
+
+        return 'partial';
     }
 }

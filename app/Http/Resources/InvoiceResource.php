@@ -10,6 +10,11 @@ class InvoiceResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $this->resource->loadMissing(['business:id,name', 'customer']);
+
+        $direction = $this->resolveDirection($request);
+        $seller = $this->resolveSellerBusiness();
+
         return [
             'id' => $this->id,
             'business_id' => $this->business_id,
@@ -19,14 +24,13 @@ class InvoiceResource extends JsonResource
             'estimate_id' => $this->estimate_id,
             'purchase_order_id' => $this->purchase_order_id,
             'buyer_business_id' => $this->buyer_business_id,
-            'direction' => $this->resolveDirection($request),
-            'seller_business' => $this->when(
-                $this->relationLoaded('business') && $this->business,
-                fn () => [
-                    'id' => $this->business->id,
-                    'name' => $this->business->name,
-                ],
-            ),
+            'direction' => $direction,
+            /** Counterparty for the viewer: supplier name when received, customer when issued. */
+            'party_name' => $direction === 'received'
+                ? ($seller['name'] ?? 'Supplier')
+                : ($this->customer?->name ?? 'Walk-in'),
+            'party_role' => $direction === 'received' ? 'supplier' : 'customer',
+            'seller_business' => $seller,
             'purchase_order' => $this->when(
                 $this->relationLoaded('purchaseOrder') && $this->purchaseOrder,
                 fn () => [
@@ -53,6 +57,28 @@ class InvoiceResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * @return array{id: int, name: string}|null
+     */
+    protected function resolveSellerBusiness(): ?array
+    {
+        if ($this->business) {
+            return [
+                'id' => (int) $this->business->id,
+                'name' => (string) $this->business->name,
+            ];
+        }
+
+        if ($this->business_id) {
+            return [
+                'id' => (int) $this->business_id,
+                'name' => 'Supplier',
+            ];
+        }
+
+        return null;
     }
 
     protected function resolveDirection(Request $request): string
