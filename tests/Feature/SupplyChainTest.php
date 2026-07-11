@@ -394,4 +394,37 @@ class SupplyChainTest extends TestCase
             'seller_business_id' => $closed->id,
         ])->assertStatus(422);
     }
+
+    public function test_only_seller_can_record_payment_on_po_invoice(): void
+    {
+        $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [
+            'seller_business_id' => $this->seller->id,
+            'items' => [
+                ['product_id' => $this->listedProduct->id, 'quantity' => 2],
+            ],
+        ]);
+        $poId = $create->json('id');
+        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
+        $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
+
+        $invoiceId = (int) \App\Models\Invoice::query()
+            ->where('purchase_order_id', $poId)
+            ->value('id');
+        $this->assertGreaterThan(0, $invoiceId);
+
+        $buyerShow = $this->asBuyer('GET', "/api/v1/invoices/{$invoiceId}");
+        $buyerShow->assertStatus(200);
+        $direction = $buyerShow->json('direction') ?? $buyerShow->json('data.direction');
+        $this->assertSame('received', $direction);
+
+        $this->asBuyer('POST', "/api/v1/invoices/{$invoiceId}/payment", [
+            'amount' => 10,
+            'payment_method' => 'cash',
+        ])->assertStatus(404);
+
+        $this->asSeller('POST', "/api/v1/invoices/{$invoiceId}/payment", [
+            'amount' => 10,
+            'payment_method' => 'cash',
+        ])->assertStatus(200);
+    }
 }
