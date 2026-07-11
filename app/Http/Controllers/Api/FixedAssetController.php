@@ -23,7 +23,7 @@ class FixedAssetController extends Controller
     public function index(Request $request): FixedAssetCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['status', 'search', 'category', 'assigned_employee_id', 'unassigned']);
+        $filters = $request->only(['status', 'search', 'category', 'assigned_employee_id', 'unassigned', 'per_page']);
         return new FixedAssetCollection(
             $this->fixedAssetService->getAll($businessId, $filters)
         );

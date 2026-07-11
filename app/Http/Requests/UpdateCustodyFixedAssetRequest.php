@@ -14,6 +14,17 @@ class UpdateCustodyFixedAssetRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
+            'name' => ['sometimes', 'required', 'string', 'max:200'],
+            'cost' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'salvage_value' => array_values(array_filter([
+                'sometimes',
+                'required',
+                'numeric',
+                'min:0',
+                $this->filled('cost') ? 'lte:cost' : null,
+            ])),
+            'useful_life_months' => ['sometimes', 'required', 'integer', 'min:1'],
+            'purchase_date' => ['sometimes', 'required', 'date'],
             'asset_tag' => [
                 'nullable',
                 'string',

@@ -102,6 +102,11 @@ class FixedAssetService
         $asset = $this->getByIdForBusiness($id, $businessId);
 
         $allowed = [
+            'name',
+            'cost',
+            'salvage_value',
+            'useful_life_months',
+            'purchase_date',
             'asset_tag',
             'serial_number',
             'category',
@@ -111,6 +116,11 @@ class FixedAssetService
         ];
 
         $payload = array_intersect_key($data, array_flip($allowed));
+
+        if (array_key_exists('cost', $payload) && $payload['cost'] !== null && $payload['cost'] !== '') {
+            $newCost = (float) $payload['cost'];
+            $payload['book_value'] = $newCost - ((float) $asset->cost - (float) $asset->book_value);
+        }
 
         return $this->fixedAssetRepository->update($asset, $payload);
     }

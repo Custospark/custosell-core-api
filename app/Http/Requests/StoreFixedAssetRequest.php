@@ -32,7 +32,7 @@ class StoreFixedAssetRequest extends BaseFormRequest
             ])),
             'useful_life_months' => [$financialRequired, 'integer', 'min:1'],
             'purchase_date' => [$financialRequired, 'date'],
-            'status' => ['sometimes', 'string', 'in:active,disposed,sold'],
+            'status' => ['sometimes', 'string', 'in:active,disposed,fully_depreciated,sold'],
             'notes' => ['nullable', 'string'],
             'asset_tag' => [
                 'nullable',
