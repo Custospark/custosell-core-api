@@ -16,6 +16,7 @@ class MarketplaceBusinessResource extends JsonResource
             'description' => $this->description,
             'business_email' => $this->business_email,
             'business_phone' => $this->business_phone,
+            'address' => $this->address,
             'city' => $this->city,
             'state' => $this->state,
             'country' => $this->country,
