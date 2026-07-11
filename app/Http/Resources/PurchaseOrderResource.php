@@ -24,6 +24,23 @@ class PurchaseOrderResource extends JsonResource
             'total_amount' => $this->total_amount,
             'notes' => $this->notes,
             'rejection_reason' => $this->rejection_reason,
+            'invoice_id' => $this->when(
+                $this->relationLoaded('invoice'),
+                fn () => $this->invoice?->id,
+            ),
+            'invoice' => $this->when(
+                $this->relationLoaded('invoice') && $this->invoice,
+                fn () => [
+                    'id' => $this->invoice->id,
+                    'invoice_number' => $this->invoice->invoice_number,
+                    'status' => $this->invoice->status,
+                    'amount_paid' => $this->invoice->amount_paid,
+                    'total_amount' => $this->invoice->total_amount,
+                    'payments_count' => $this->invoice->relationLoaded('payments')
+                        ? $this->invoice->payments->count()
+                        : null,
+                ],
+            ),
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
             'submitted_at' => $this->submitted_at?->toISOString(),
             'accepted_at' => $this->accepted_at?->toISOString(),

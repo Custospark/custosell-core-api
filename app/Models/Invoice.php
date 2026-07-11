@@ -18,6 +18,8 @@ class Invoice extends Model
         'customer_id',
         'sale_id',
         'estimate_id',
+        'purchase_order_id',
+        'buyer_business_id',
         'issue_date',
         'due_date',
         'status',
@@ -70,6 +72,16 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function buyerBusiness(): BelongsTo
+    {
+        return $this->belongsTo(Business::class, 'buyer_business_id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
@@ -78,5 +90,18 @@ class Invoice extends Model
     public function payments(): MorphMany
     {
         return $this->morphMany(Payment::class, 'payable');
+    }
+
+    /** True when this business is the invoice issuer (seller). */
+    public function isIssuedBy(int $businessId): bool
+    {
+        return (int) $this->business_id === $businessId;
+    }
+
+    /** True when this business is the B2B buyer on a PO-linked invoice. */
+    public function isReceivedBy(int $businessId): bool
+    {
+        return $this->buyer_business_id !== null
+            && (int) $this->buyer_business_id === $businessId;
     }
 }

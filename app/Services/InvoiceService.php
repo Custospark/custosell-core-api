@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\InvoiceSentForAccounting;
 use App\Models\Business;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Sale;
@@ -52,6 +53,9 @@ class InvoiceService implements InvoiceServiceInterface
                 'invoice_number' => $invoiceNumber,
                 'customer_id' => $data['customer_id'] ?? null,
                 'sale_id' => $data['sale_id'] ?? null,
+                'estimate_id' => $data['estimate_id'] ?? null,
+                'purchase_order_id' => $data['purchase_order_id'] ?? null,
+                'buyer_business_id' => $data['buyer_business_id'] ?? null,
                 'issue_date' => $data['issue_date'],
                 'due_date' => $data['due_date'],
                 'status' => 'draft',
@@ -83,8 +87,110 @@ class InvoiceService implements InvoiceServiceInterface
                 $this->orderService->markInvoicedForSale((int) $data['sale_id']);
             }
 
-            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments']);
+            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder']);
         });
+    }
+
+    /**
+     * Create (and send) a seller invoice from an accepted purchase order.
+     * Visible to the buyer via buyer_business_id.
+     */
+    public function createFromPurchaseOrder(\App\Models\PurchaseOrder $po, int $sellerUserId): Invoice
+    {
+        return DB::transaction(function () use ($po, $sellerUserId) {
+            $existing = Invoice::query()
+                ->where('purchase_order_id', $po->id)
+                ->first();
+            if ($existing) {
+                return $existing->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder']);
+            }
+
+            $po->loadMissing(['items', 'buyerBusiness']);
+            $buyer = $po->buyerBusiness;
+            $buyerName = $buyer?->name ?? ('Business #'.$po->buyer_business_id);
+
+            $customer = Customer::query()->firstOrCreate(
+                [
+                    'business_id' => $po->seller_business_id,
+                    'name' => $buyerName,
+                ],
+                [
+                    'email' => $buyer?->business_email,
+                    'phone' => $buyer?->business_phone,
+                ],
+            );
+
+            $items = [];
+            foreach ($po->items as $item) {
+                $items[] = [
+                    'product_id' => $item->product_id,
+                    'description' => $item->product_name,
+                    'quantity' => (int) $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                ];
+            }
+
+            $discount = (float) $po->discount_amount;
+            if ($discount > 0) {
+                $items[] = [
+                    'product_id' => null,
+                    'description' => 'Purchase order discount',
+                    'quantity' => 1,
+                    'unit_price' => -1 * $discount,
+                ];
+            }
+
+            $invoice = $this->create((int) $po->seller_business_id, $sellerUserId, [
+                'customer_id' => $customer->id,
+                'purchase_order_id' => $po->id,
+                'buyer_business_id' => $po->buyer_business_id,
+                'issue_date' => now()->toDateString(),
+                'due_date' => now()->addDays(30)->toDateString(),
+                'tax_total' => (float) $po->tax_total,
+                'notes' => 'Invoice for purchase order '.$po->po_number,
+                'items' => $items,
+            ]);
+
+            return $this->send($invoice->id);
+        });
+    }
+
+    public function getVisibleForBusiness(int $id, int $businessId): ?Invoice
+    {
+        $invoice = $this->invoiceRepository->find($id);
+        if (! $invoice) {
+            return null;
+        }
+
+        if ((int) $invoice->business_id === $businessId) {
+            return $invoice;
+        }
+
+        if (
+            $invoice->buyer_business_id
+            && (int) $invoice->buyer_business_id === $businessId
+            && $invoice->status !== 'draft'
+        ) {
+            return $invoice;
+        }
+
+        return null;
+    }
+
+    public function isOwnedByBusiness(Invoice $invoice, int $businessId): bool
+    {
+        return (int) $invoice->business_id === $businessId;
+    }
+
+    public function canManagePayments(Invoice $invoice, int $businessId): bool
+    {
+        if ((int) $invoice->business_id === $businessId) {
+            return true;
+        }
+
+        return $invoice->buyer_business_id
+            && (int) $invoice->buyer_business_id === $businessId
+            && $invoice->status !== 'draft';
     }
 
     public function update(int $id, array $data): Invoice

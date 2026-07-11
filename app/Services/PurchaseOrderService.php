@@ -3,23 +3,29 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\StockMovement;
+use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\Contracts\PurchaseOrderServiceInterface;
-use App\Services\DocumentNumberGenerator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PurchaseOrderService implements PurchaseOrderServiceInterface
 {
+    public function __construct(
+        protected InvoiceServiceInterface $invoiceService,
+        protected PurchaseOrderLineBuilder $lineBuilder,
+    ) {}
+
     public function getAllForBuyer(int $buyerBusinessId, array $filters = []): Collection
     {
         $query = PurchaseOrder::query()
             ->where('buyer_business_id', $buyerBusinessId)
-            ->with(['items', 'sellerBusiness', 'buyerBusiness'])
+            ->with(['items', 'sellerBusiness', 'buyerBusiness', 'invoice.payments'])
             ->orderByDesc('id');
 
         if (! empty($filters['status'])) {
@@ -34,7 +40,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
         $query = PurchaseOrder::query()
             ->where('seller_business_id', $sellerBusinessId)
             ->where('status', '!=', PurchaseOrder::STATUS_DRAFT)
-            ->with(['items', 'buyerBusiness', 'sellerBusiness'])
+            ->with(['items', 'buyerBusiness', 'sellerBusiness', 'invoice.payments'])
             ->orderByDesc('id');
 
         if (! empty($filters['status'])) {
@@ -52,7 +58,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 $builder->where('buyer_business_id', $businessId)
                     ->orWhere('seller_business_id', $businessId);
             })
-            ->with(['items.product', 'items.receivedProduct', 'buyerBusiness', 'sellerBusiness', 'createdBy'])
+            ->with(['items.product', 'items.receivedProduct', 'buyerBusiness', 'sellerBusiness', 'createdBy', 'invoice.payments'])
             ->first();
     }
 
@@ -74,8 +80,8 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 ]);
             }
 
-            $lines = $this->buildLines($sellerBusinessId, $data['items'] ?? []);
-            $totals = $this->sumLines($lines, (float) ($data['discount_amount'] ?? 0), (float) ($data['tax_total'] ?? 0));
+            $lines = $this->lineBuilder->buildLines($sellerBusinessId, $data['items'] ?? []);
+            $totals = $this->lineBuilder->sumLines($lines, (float) ($data['discount_amount'] ?? 0), (float) ($data['tax_total'] ?? 0));
 
             $buyer = Business::findOrFail($buyerBusinessId);
 
@@ -83,7 +89,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 'buyer_business_id' => $buyerBusinessId,
                 'seller_business_id' => $sellerBusinessId,
                 'created_by' => $userId,
-                'po_number' => $this->generatePoNumber($buyer),
+                'po_number' => $this->lineBuilder->generatePoNumber($buyer),
                 'status' => PurchaseOrder::STATUS_DRAFT,
                 'payment_status' => PurchaseOrder::PAYMENT_STATUS_UNPAID,
                 'subtotal' => $totals['subtotal'],
@@ -93,7 +99,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $this->replaceItems($po, $lines);
+            $this->lineBuilder->replaceItems($po, $lines);
 
             return $po->fresh(['items', 'sellerBusiness', 'buyerBusiness']);
         });
@@ -115,8 +121,8 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
             }
 
             if (isset($data['items'])) {
-                $lines = $this->buildLines((int) $po->seller_business_id, $data['items']);
-                $totals = $this->sumLines(
+                $lines = $this->lineBuilder->buildLines((int) $po->seller_business_id, $data['items']);
+                $totals = $this->lineBuilder->sumLines(
                     $lines,
                     (float) ($data['discount_amount'] ?? $po->discount_amount),
                     (float) ($data['tax_total'] ?? $po->tax_total),
@@ -125,7 +131,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 $po->tax_total = $totals['tax_total'];
                 $po->discount_amount = $totals['discount_amount'];
                 $po->total_amount = $totals['total_amount'];
-                $this->replaceItems($po, $lines);
+                $this->lineBuilder->replaceItems($po, $lines);
             } elseif (isset($data['discount_amount']) || isset($data['tax_total'])) {
                 $lines = $po->items->map(fn (PurchaseOrderItem $item) => [
                     'product_id' => $item->product_id,
@@ -135,7 +141,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                     'quantity' => (int) $item->quantity,
                     'subtotal' => (float) $item->subtotal,
                 ])->all();
-                $totals = $this->sumLines(
+                $totals = $this->lineBuilder->sumLines(
                     $lines,
                     (float) ($data['discount_amount'] ?? $po->discount_amount),
                     (float) ($data['tax_total'] ?? $po->tax_total),
@@ -196,9 +202,9 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
         });
     }
 
-    public function accept(int $id, int $sellerBusinessId): PurchaseOrder
+    public function accept(int $id, int $sellerBusinessId, int $sellerUserId): PurchaseOrder
     {
-        return DB::transaction(function () use ($id, $sellerBusinessId) {
+        return DB::transaction(function () use ($id, $sellerBusinessId, $sellerUserId) {
             $po = PurchaseOrder::where('seller_business_id', $sellerBusinessId)->lockForUpdate()->findOrFail($id);
 
             if (! $po->isSubmitted()) {
@@ -211,7 +217,9 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
             $po->accepted_at = now();
             $po->save();
 
-            return $po->fresh(['items', 'sellerBusiness', 'buyerBusiness']);
+            $this->invoiceService->createFromPurchaseOrder($po->fresh(['items', 'buyerBusiness']), $sellerUserId);
+
+            return $po->fresh(['items', 'sellerBusiness', 'buyerBusiness', 'invoice']);
         });
     }
 
@@ -231,7 +239,50 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
             $po->rejected_at = now();
             $po->save();
 
-            return $po->fresh(['items', 'sellerBusiness', 'buyerBusiness']);
+            return $po->fresh(['items', 'sellerBusiness', 'buyerBusiness', 'invoice']);
+        });
+    }
+
+    public function delete(int $id, int $businessId): void
+    {
+        DB::transaction(function () use ($id, $businessId) {
+            $po = PurchaseOrder::query()
+                ->where('id', $id)
+                ->where(function ($builder) use ($businessId) {
+                    $builder->where('buyer_business_id', $businessId)
+                        ->orWhere('seller_business_id', $businessId);
+                })
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $isBuyer = (int) $po->buyer_business_id === $businessId;
+            $isSeller = (int) $po->seller_business_id === $businessId;
+
+            if ($po->status === PurchaseOrder::STATUS_DRAFT) {
+                if (! $isBuyer) {
+                    throw ValidationException::withMessages([
+                        'status' => ['Only the buyer can delete a draft purchase order.'],
+                    ]);
+                }
+            } elseif ($po->status === PurchaseOrder::STATUS_REJECTED) {
+                if (! $isBuyer && ! $isSeller) {
+                    throw ValidationException::withMessages([
+                        'status' => ['You cannot delete this purchase order.'],
+                    ]);
+                }
+            } else {
+                throw ValidationException::withMessages([
+                    'status' => ['Only draft or rejected purchase orders can be deleted.'],
+                ]);
+            }
+
+            if (Invoice::query()->where('purchase_order_id', $po->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'status' => ['This purchase order has a linked invoice and cannot be deleted.'],
+                ]);
+            }
+
+            $po->forceDelete();
         });
     }
 
@@ -380,105 +431,8 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
             $po->received_at = now();
             $po->save();
 
-            return $po->fresh(['items.receivedProduct', 'sellerBusiness', 'buyerBusiness']);
+            return $po->fresh(['items.receivedProduct', 'sellerBusiness', 'buyerBusiness', 'invoice']);
         });
     }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array<int, array<string, mixed>>
-     */
-    protected function buildLines(int $sellerBusinessId, array $items): array
-    {
-        if (count($items) < 1) {
-            throw ValidationException::withMessages([
-                'items' => ['A purchase order must include at least one item.'],
-            ]);
-        }
-
-        $lines = [];
-        foreach ($items as $index => $item) {
-            $product = Product::where('id', $item['product_id'] ?? null)
-                ->where('business_id', $sellerBusinessId)
-                ->where('type', Product::TYPE_PRODUCT)
-                ->where('is_active', true)
-                ->where('listed_for_supply', true)
-                ->first();
-
-            if (! $product) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.product_id" => ['This product is not available for supply from the selected business.'],
-                ]);
-            }
-
-            $qty = max(1, (int) ($item['quantity'] ?? 1));
-
-            if ($qty < (int) $product->supply_min_qty) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.quantity" => ["\"{$product->name}\" requires a minimum order quantity of {$product->supply_min_qty}."],
-                ]);
-            }
-
-            $unitPrice = $product->supplyUnitPrice();
-
-            $lines[] = [
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'product_sku' => $product->sku,
-                'unit_price' => $unitPrice,
-                'quantity' => $qty,
-                'subtotal' => round($unitPrice * $qty, 2),
-            ];
-        }
-
-        return $lines;
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $lines
-     * @return array{subtotal: float, tax_total: float, discount_amount: float, total_amount: float}
-     */
-    protected function sumLines(array $lines, float $discountAmount, float $taxTotal): array
-    {
-        $subtotal = 0.0;
-        foreach ($lines as $line) {
-            $subtotal += (float) $line['subtotal'];
-        }
-
-        $discount = max(0, $discountAmount);
-        $tax = max(0, $taxTotal);
-        $total = max(0, $subtotal + $tax - $discount);
-
-        return [
-            'subtotal' => round($subtotal, 2),
-            'tax_total' => round($tax, 2),
-            'discount_amount' => round($discount, 2),
-            'total_amount' => round($total, 2),
-        ];
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $lines
-     */
-    protected function replaceItems(PurchaseOrder $po, array $lines): void
-    {
-        $po->items()->delete();
-        foreach ($lines as $line) {
-            PurchaseOrderItem::create([
-                'purchase_order_id' => $po->id,
-                'product_id' => $line['product_id'],
-                'product_name' => $line['product_name'],
-                'product_sku' => $line['product_sku'],
-                'unit_price' => $line['unit_price'],
-                'quantity' => $line['quantity'],
-                'quantity_fulfilled' => 0,
-                'subtotal' => $line['subtotal'],
-            ]);
-        }
-    }
-
-    protected function generatePoNumber(Business $buyer): string
-    {
-        return DocumentNumberGenerator::purchaseOrderNumber($buyer, PurchaseOrder::class, 'po_number');
-    }
 }
+

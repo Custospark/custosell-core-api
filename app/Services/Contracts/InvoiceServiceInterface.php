@@ -11,7 +11,16 @@ interface InvoiceServiceInterface
 
     public function getById(int $id): ?Invoice;
 
+    public function getVisibleForBusiness(int $id, int $businessId): ?Invoice;
+
+    public function isOwnedByBusiness(Invoice $invoice, int $businessId): bool;
+
+    public function canManagePayments(Invoice $invoice, int $businessId): bool;
+
     public function create(int $businessId, int $userId, array $data): Invoice;
+
+    /** Create and send a seller invoice from an accepted purchase order. */
+    public function createFromPurchaseOrder(\App\Models\PurchaseOrder $po, int $sellerUserId): Invoice;
 
     public function update(int $id, array $data): Invoice;
 

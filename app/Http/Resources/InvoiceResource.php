@@ -17,6 +17,24 @@ class InvoiceResource extends JsonResource
             'customer_id' => $this->customer_id,
             'sale_id' => $this->sale_id,
             'estimate_id' => $this->estimate_id,
+            'purchase_order_id' => $this->purchase_order_id,
+            'buyer_business_id' => $this->buyer_business_id,
+            'direction' => $this->resolveDirection($request),
+            'seller_business' => $this->when(
+                $this->relationLoaded('business') && $this->business,
+                fn () => [
+                    'id' => $this->business->id,
+                    'name' => $this->business->name,
+                ],
+            ),
+            'purchase_order' => $this->when(
+                $this->relationLoaded('purchaseOrder') && $this->purchaseOrder,
+                fn () => [
+                    'id' => $this->purchaseOrder->id,
+                    'po_number' => $this->purchaseOrder->po_number,
+                    'status' => $this->purchaseOrder->status,
+                ],
+            ),
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'issue_date' => $this->issue_date?->toISOString(),
             'due_date' => $this->due_date?->toISOString(),
@@ -35,5 +53,15 @@ class InvoiceResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    protected function resolveDirection(Request $request): string
+    {
+        $businessId = (int) ($request->user()?->business_id ?? 0);
+        if ($businessId > 0 && (int) $this->buyer_business_id === $businessId && (int) $this->business_id !== $businessId) {
+            return 'received';
+        }
+
+        return 'issued';
     }
 }

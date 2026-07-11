@@ -167,6 +167,19 @@ class SupplyChainTest extends TestCase
             ->assertStatus(200)
             ->assertJsonPath('status', 'accepted');
 
+        $this->assertDatabaseHas('invoices', [
+            'purchase_order_id' => $poId,
+            'business_id' => $this->seller->id,
+            'buyer_business_id' => $this->buyer->id,
+        ]);
+
+        $buyerInvoices = $this->asBuyer('GET', '/api/v1/invoices');
+        $buyerInvoices->assertStatus(200);
+        $poInvoice = collect($buyerInvoices->json('data'))->firstWhere('purchase_order_id', $poId);
+        $this->assertNotNull($poInvoice);
+        $this->assertSame('received', $poInvoice['direction']);
+        $this->assertNotSame('draft', $poInvoice['status']);
+
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/fulfill")
             ->assertStatus(200)
             ->assertJsonPath('status', 'fulfilled');
@@ -262,5 +275,54 @@ class SupplyChainTest extends TestCase
             'id' => $this->listedProduct->id,
             'supply_price' => 900,
         ]);
+    }
+
+    public function test_buyer_can_delete_draft_and_rejected_purchase_orders(): void
+    {
+        $draft = $this->asBuyer('POST', '/api/v1/purchase-orders', [
+            'seller_business_id' => $this->seller->id,
+            'items' => [
+                ['product_id' => $this->listedProduct->id, 'quantity' => 1],
+            ],
+        ]);
+        $draft->assertStatus(201);
+        $draftId = $draft->json('id');
+
+        $this->asBuyer('DELETE', "/api/v1/purchase-orders/{$draftId}")
+            ->assertStatus(204);
+        $this->assertDatabaseMissing('purchase_orders', ['id' => $draftId]);
+
+        $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [
+            'seller_business_id' => $this->seller->id,
+            'items' => [
+                ['product_id' => $this->listedProduct->id, 'quantity' => 1],
+            ],
+        ]);
+        $poId = $create->json('id');
+        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
+        $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/reject", [
+            'rejection_reason' => 'Out of stock this week',
+        ])->assertStatus(200);
+
+        $this->asBuyer('DELETE', "/api/v1/purchase-orders/{$poId}")
+            ->assertStatus(204);
+        $this->assertDatabaseMissing('purchase_orders', ['id' => $poId]);
+    }
+
+    public function test_cannot_delete_accepted_purchase_order(): void
+    {
+        $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [
+            'seller_business_id' => $this->seller->id,
+            'items' => [
+                ['product_id' => $this->listedProduct->id, 'quantity' => 1],
+            ],
+        ]);
+        $poId = $create->json('id');
+        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
+        $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
+
+        $this->asBuyer('DELETE', "/api/v1/purchase-orders/{$poId}")
+            ->assertStatus(422);
+        $this->assertDatabaseHas('purchase_orders', ['id' => $poId, 'status' => 'accepted']);
     }
 }

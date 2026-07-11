@@ -24,9 +24,11 @@ interface PurchaseOrderServiceInterface
 
     public function cancel(int $id, int $buyerBusinessId): PurchaseOrder;
 
-    public function accept(int $id, int $sellerBusinessId): PurchaseOrder;
+    public function accept(int $id, int $sellerBusinessId, int $sellerUserId): PurchaseOrder;
 
     public function reject(int $id, int $sellerBusinessId, string $reason): PurchaseOrder;
+
+    public function delete(int $id, int $businessId): void;
 
     public function fulfill(int $id, int $sellerBusinessId, ?int $userId): PurchaseOrder;
 

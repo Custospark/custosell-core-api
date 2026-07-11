@@ -93,7 +93,11 @@ class PurchaseOrderController extends Controller
 
     public function accept(Request $request, int $id): JsonResponse
     {
-        $po = $this->purchaseOrderService->accept($id, $request->user()->business_id);
+        $po = $this->purchaseOrderService->accept(
+            $id,
+            $request->user()->business_id,
+            $request->user()->id,
+        );
 
         return response()->json(new PurchaseOrderResource($po));
     }
@@ -107,6 +111,13 @@ class PurchaseOrderController extends Controller
         );
 
         return response()->json(new PurchaseOrderResource($po));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $this->purchaseOrderService->delete($id, $request->user()->business_id);
+
+        return response()->json(null, 204);
     }
 
     public function fulfill(Request $request, int $id): JsonResponse

@@ -10,8 +10,22 @@ class InvoiceRepository implements InvoiceRepositoryInterface
 {
     public function all(int $businessId, array $filters = []): Collection
     {
-        $query = Invoice::where('business_id', $businessId)
-            ->with(['customer', 'createdBy', 'payments' => fn ($q) => $q->orderBy('paid_at')]);
+        $query = Invoice::query()
+            ->where(function ($builder) use ($businessId) {
+                $builder->where('business_id', $businessId)
+                    ->orWhere(function ($received) use ($businessId) {
+                        // Buyers only see non-draft invoices linked to their business.
+                        $received->where('buyer_business_id', $businessId)
+                            ->where('status', '!=', 'draft');
+                    });
+            })
+            ->with([
+                'customer',
+                'createdBy',
+                'purchaseOrder',
+                'business:id,name',
+                'payments' => fn ($q) => $q->orderBy('paid_at'),
+            ]);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -25,13 +39,30 @@ class InvoiceRepository implements InvoiceRepositoryInterface
         if (!empty($filters['date_to'])) {
             $query->where('issue_date', '<=', $filters['date_to']);
         }
+        if (!empty($filters['direction'])) {
+            if ($filters['direction'] === 'issued') {
+                $query->where('business_id', $businessId);
+            } elseif ($filters['direction'] === 'received') {
+                $query->where('buyer_business_id', $businessId)->where('status', '!=', 'draft');
+            }
+        }
+        if (!empty($filters['purchase_order_id'])) {
+            $query->where('purchase_order_id', (int) $filters['purchase_order_id']);
+        }
 
         return $query->orderBy('created_at', 'desc')->get();
     }
 
     public function find(int $id): ?Invoice
     {
-        return Invoice::with(['customer', 'createdBy', 'items.product', 'payments' => fn ($q) => $q->orderBy('paid_at')])->find($id);
+        return Invoice::with([
+            'customer',
+            'createdBy',
+            'items.product',
+            'purchaseOrder',
+            'business:id,name',
+            'payments' => fn ($q) => $q->orderBy('paid_at'),
+        ])->find($id);
     }
 
     public function findByNumber(int $businessId, string $number): ?Invoice

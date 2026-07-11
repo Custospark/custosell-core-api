@@ -28,15 +28,15 @@ class InvoiceController extends Controller
     public function index(Request $request): InvoiceCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['status', 'customer_id', 'date_from', 'date_to']);
+        $filters = $request->only(['status', 'customer_id', 'date_from', 'date_to', 'direction', 'purchase_order_id']);
         return new InvoiceCollection(
             $this->invoiceService->getAll($businessId, $filters)
         );
     }
 
-    public function show(int $id): InvoiceResource
+    public function show(Request $request, int $id): InvoiceResource
     {
-        $invoice = $this->invoiceService->getById($id);
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
         if (!$invoice) {
             abort(404, 'Invoice not found');
         }
@@ -55,35 +55,47 @@ class InvoiceController extends Controller
 
     public function update(StoreInvoiceRequest $request, int $id): InvoiceResource
     {
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
+        if (!$invoice || !$this->invoiceService->isOwnedByBusiness($invoice, $request->user()->business_id)) {
+            abort(404, 'Invoice not found');
+        }
+
         $data = $request->validated();
         $invoice = $this->invoiceService->update($id, $data);
         return new InvoiceResource($invoice);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
+        if (!$invoice || !$this->invoiceService->isOwnedByBusiness($invoice, $request->user()->business_id)) {
+            abort(404, 'Invoice not found');
+        }
+
         $this->invoiceService->delete($id);
         return response()->json(null, 204);
     }
 
-    public function send(int $id): JsonResponse
+    public function send(Request $request, int $id): JsonResponse
     {
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
+        if (!$invoice || !$this->invoiceService->isOwnedByBusiness($invoice, $request->user()->business_id)) {
+            abort(404, 'Invoice not found');
+        }
+
         $invoice = $this->invoiceService->send($id);
         return response()->json(new InvoiceResource($invoice));
     }
 
     public function downloadPdf(Request $request, int $id): Response
     {
-        $invoice = $this->invoiceService->getById($id);
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
         if (!$invoice) {
             abort(404, 'Invoice not found');
         }
 
-        if ((int) $invoice->business_id !== (int) $request->user()->business_id) {
-            abort(404, 'Invoice not found');
-        }
-
-        $business = $request->user()->business;
+        // PDF letterhead uses the issuing business, not the viewer's business.
+        $business = $invoice->business ?? $request->user()->business;
         $pdfConfig = $this->invoicePdfBuilder->build($invoice, $business);
 
         return $this->export->downloadPdf(
@@ -96,12 +108,8 @@ class InvoiceController extends Controller
 
     public function email(SendDocumentEmailRequest $request, int $id): JsonResponse
     {
-        $invoice = $this->invoiceService->getById($id);
-        if (!$invoice) {
-            abort(404, 'Invoice not found');
-        }
-
-        if ((int) $invoice->business_id !== (int) $request->user()->business_id) {
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
+        if (!$invoice || !$this->invoiceService->isOwnedByBusiness($invoice, $request->user()->business_id)) {
             abort(404, 'Invoice not found');
         }
 
@@ -135,6 +143,11 @@ class InvoiceController extends Controller
 
     public function recordPayment(Request $request, int $id): JsonResponse
     {
+        $invoice = $this->invoiceService->getVisibleForBusiness($id, $request->user()->business_id);
+        if (!$invoice || !$this->invoiceService->canManagePayments($invoice, $request->user()->business_id)) {
+            abort(404, 'Invoice not found');
+        }
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['nullable', 'string', 'in:cash,mobile_money,card,bank,other'],

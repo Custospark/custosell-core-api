@@ -11,6 +11,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->grou
     Route::put('/purchase-orders/{id}', [PurchaseOrderController::class, 'update'])->whereNumber('id');
     Route::post('/purchase-orders/{id}/submit', [PurchaseOrderController::class, 'submit'])->whereNumber('id');
     Route::post('/purchase-orders/{id}/cancel', [PurchaseOrderController::class, 'cancel'])->whereNumber('id');
+    Route::delete('/purchase-orders/{id}', [PurchaseOrderController::class, 'destroy'])->whereNumber('id');
     Route::post('/purchase-orders/{id}/accept', [PurchaseOrderController::class, 'accept'])->whereNumber('id');
     Route::post('/purchase-orders/{id}/reject', [PurchaseOrderController::class, 'reject'])->whereNumber('id');
     Route::post('/purchase-orders/{id}/fulfill', [PurchaseOrderController::class, 'fulfill'])->whereNumber('id');
