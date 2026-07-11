@@ -51,7 +51,7 @@ class PaymentReceiptDataBuilder
 
     protected static function fromInvoice(Invoice $invoice): array
     {
-        $invoice->loadMissing(['items', 'customer', 'business:id,name']);
+        $invoice->loadMissing(['items', 'customer', 'business']);
 
         $items = $invoice->items->map(fn ($item) => [
             'name' => $item->description,
@@ -74,9 +74,8 @@ class PaymentReceiptDataBuilder
             'tax_total' => (float) ($invoice->tax_total ?? 0),
             'total_refunded' => 0.0,
             'bill_total' => (float) $invoice->total_amount,
-            // Bill-to / paid-by party (buyer customer on seller books).
+            // Bill-to customer (buyer). Letterhead uses issuing business separately.
             'customer_name' => $invoice->customer?->name,
-            // Issuing supplier — used when the viewer is the buyer (received invoice).
             'seller_name' => $sellerName,
             'supplier_name' => $sellerName,
         ];

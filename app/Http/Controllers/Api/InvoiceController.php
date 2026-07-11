@@ -94,6 +94,8 @@ class InvoiceController extends Controller
             abort(404, 'Invoice not found');
         }
 
+        $invoice->loadMissing(['business', 'customer', 'items.product']);
+
         // PDF letterhead uses the issuing business, not the viewer's business.
         $business = $invoice->business ?? $request->user()->business;
         $pdfConfig = $this->invoicePdfBuilder->build($invoice, $business);

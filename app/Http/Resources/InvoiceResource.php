@@ -10,7 +10,7 @@ class InvoiceResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['business:id,name', 'customer']);
+        $this->resource->loadMissing(['business', 'customer']);
 
         $direction = $this->resolveDirection($request);
         $seller = $this->resolveSellerBusiness();
@@ -25,7 +25,7 @@ class InvoiceResource extends JsonResource
             'purchase_order_id' => $this->purchase_order_id,
             'buyer_business_id' => $this->buyer_business_id,
             'direction' => $direction,
-            /** Counterparty for the viewer: supplier name when received, customer when issued. */
+            /** Counterparty for list UI: supplier when received, customer when issued. */
             'party_name' => $direction === 'received'
                 ? ($seller['name'] ?? 'Supplier')
                 : ($this->customer?->name ?? 'Walk-in'),
@@ -60,14 +60,29 @@ class InvoiceResource extends JsonResource
     }
 
     /**
-     * @return array{id: int, name: string}|null
+     * Issuing seller snapshot for letterheads when the buyer views the document.
+     *
+     * @return array<string, mixed>|null
      */
     protected function resolveSellerBusiness(): ?array
     {
         if ($this->business) {
+            $b = $this->business;
+
             return [
-                'id' => (int) $this->business->id,
-                'name' => (string) $this->business->name,
+                'id' => (int) $b->id,
+                'name' => (string) $b->name,
+                'description' => $b->description,
+                'business_phone' => $b->business_phone ?? $b->phone,
+                'phone' => $b->phone,
+                'business_email' => $b->business_email ?? $b->email,
+                'email' => $b->email,
+                'address' => $b->address,
+                'city' => $b->city,
+                'state' => $b->state,
+                'country' => $b->country,
+                'currency' => $b->currency,
+                'receipt_footer' => $b->receipt_footer,
             ];
         }
 

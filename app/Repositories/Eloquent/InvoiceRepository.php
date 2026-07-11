@@ -23,7 +23,7 @@ class InvoiceRepository implements InvoiceRepositoryInterface
                 'customer',
                 'createdBy',
                 'purchaseOrder',
-                'business:id,name',
+                'business',
                 'payments' => fn ($q) => $q->orderBy('paid_at'),
             ]);
 
@@ -60,7 +60,7 @@ class InvoiceRepository implements InvoiceRepositoryInterface
             'createdBy',
             'items.product',
             'purchaseOrder',
-            'business:id,name',
+            'business',
             'payments' => fn ($q) => $q->orderBy('paid_at'),
         ])->find($id);
     }

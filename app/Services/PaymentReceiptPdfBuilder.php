@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Invoice;
 use App\Models\Payment;
 
 class PaymentReceiptPdfBuilder
@@ -17,18 +18,24 @@ class PaymentReceiptPdfBuilder
     /**
      * @return array{view: string, data: array<string, mixed>, filename: string, orientation: string}
      */
-    public function build(Payment $payment, Business $business): array
+    public function build(Payment $payment, Business $viewerBusiness): array
     {
         $payment->loadMissing(['recordedBy', 'payable']);
         $payable = $payment->payable;
 
         if ($payment->payable_type === 'invoice') {
-            $payable?->load(['items', 'customer']);
+            $payable?->load(['items', 'customer', 'business']);
         } else {
             $payable?->load(['saleItems', 'customer']);
         }
 
-        $currency = $business->currency ?? 'UGX';
+        // Letterhead = issuing seller (invoice.business), not the viewer when a buyer downloads.
+        $issuer = $viewerBusiness;
+        if ($payment->payable_type === 'invoice' && $payable instanceof Invoice && $payable->business) {
+            $issuer = $payable->business;
+        }
+
+        $currency = $issuer->currency ?? $viewerBusiness->currency ?? 'UGX';
 
         $referenceLabel = $payment->payable_type === 'invoice'
             ? ($payable->invoice_number ?? 'Invoice')
@@ -40,12 +47,12 @@ class PaymentReceiptPdfBuilder
         $previousPaid = max(0, $totalPaid - (float) $payment->amount);
         $receiptDetails = PaymentReceiptDataBuilder::buildForPayable($payable, $payment->payable_type);
 
-        $filename = $this->export->buildFilename($business, 'receipt-' . $payment->receipt_number);
+        $filename = $this->export->buildFilename($issuer, 'receipt-' . $payment->receipt_number);
 
         return [
             'view' => 'payments.receipt',
             'data' => [
-                'business' => $business,
+                'business' => $issuer,
                 'payment' => $payment,
                 'payable' => $payable,
                 'formatter' => $this->export,

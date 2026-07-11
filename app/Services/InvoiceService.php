@@ -87,7 +87,7 @@ class InvoiceService implements InvoiceServiceInterface
                 $this->orderService->markInvoicedForSale((int) $data['sale_id']);
             }
 
-            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business:id,name']);
+            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business']);
         });
     }
 
@@ -102,7 +102,7 @@ class InvoiceService implements InvoiceServiceInterface
                 ->where('purchase_order_id', $po->id)
                 ->first();
             if ($existing) {
-                return $existing->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business:id,name']);
+                return $existing->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business']);
             }
 
             $po->loadMissing(['items', 'buyerBusiness']);

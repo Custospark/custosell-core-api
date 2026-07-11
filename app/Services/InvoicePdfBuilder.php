@@ -18,9 +18,11 @@ class InvoicePdfBuilder
      */
     public function build(Invoice $invoice, Business $business): array
     {
-        $invoice->loadMissing(['items.product', 'customer', 'createdBy']);
+        $invoice->loadMissing(['items.product', 'customer', 'createdBy', 'business']);
 
-        $currency = $business->currency ?? 'UGX';
+        // Letterhead must be the issuing seller even when a buyer downloads the PDF.
+        $issuer = $invoice->business ?? $business;
+        $currency = $issuer->currency ?? $business->currency ?? 'UGX';
         $balanceDue = max(0, (float) $invoice->total_amount - (float) $invoice->amount_paid);
 
         $statusLabel = match ($invoice->status) {
@@ -29,12 +31,12 @@ class InvoicePdfBuilder
             default => ucfirst((string) $invoice->status),
         };
 
-        $filename = $this->export->buildFilename($business, 'invoice-' . $invoice->invoice_number);
+        $filename = $this->export->buildFilename($issuer, 'invoice-' . $invoice->invoice_number);
 
         return [
             'view' => 'invoices.pdf',
             'data' => [
-                'business' => $business,
+                'business' => $issuer,
                 'invoice' => $invoice,
                 'formatter' => $this->export,
                 'currency' => $currency,

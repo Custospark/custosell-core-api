@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendDocumentEmailRequest;
 use App\Http\Resources\PaymentResource;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\CustomerDocumentEmailService;
 use App\Services\PaymentReceiptPdfBuilder;
@@ -23,18 +24,14 @@ class PaymentController extends Controller
 
     public function show(Request $request, int $id): PaymentResource
     {
-        $payment = Payment::with(['recordedBy', 'payable'])
-            ->where('business_id', $request->user()->business_id)
-            ->findOrFail($id);
+        $payment = $this->findVisiblePaymentOrFail((int) $request->user()->business_id, $id);
 
         return new PaymentResource($payment);
     }
 
     public function downloadReceiptPdf(Request $request, int $id): Response
     {
-        $payment = Payment::with(['recordedBy', 'payable'])
-            ->where('business_id', $request->user()->business_id)
-            ->findOrFail($id);
+        $payment = $this->findVisiblePaymentOrFail((int) $request->user()->business_id, $id);
 
         $business = $request->user()->business;
         $pdfConfig = $this->paymentReceiptPdfBuilder->build($payment, $business);
@@ -49,6 +46,7 @@ class PaymentController extends Controller
 
     public function emailReceipt(SendDocumentEmailRequest $request, int $id): JsonResponse
     {
+        // Email remains owner-only (seller records and sends).
         $payment = Payment::with(['payable.customer'])
             ->where('business_id', $request->user()->business_id)
             ->findOrFail($id);
@@ -79,5 +77,32 @@ class PaymentController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * Seller owns the payment row; buyer may view/download when they are invoice.buyer_business_id.
+     */
+    protected function findVisiblePaymentOrFail(int $businessId, int $id): Payment
+    {
+        $payment = Payment::with(['recordedBy', 'payable'])->find($id);
+        if (! $payment) {
+            abort(404, 'Payment not found');
+        }
+
+        if ((int) $payment->business_id === $businessId) {
+            return $payment;
+        }
+
+        $payable = $payment->payable;
+        if (
+            $payment->payable_type === 'invoice'
+            && $payable instanceof Invoice
+            && $payable->buyer_business_id
+            && (int) $payable->buyer_business_id === $businessId
+        ) {
+            return $payment;
+        }
+
+        abort(404, 'Payment not found');
     }
 }
