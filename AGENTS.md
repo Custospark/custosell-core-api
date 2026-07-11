@@ -181,10 +181,11 @@ Vera was slowing the pipeline by running **full-project** checks. That is **not*
 
 | Tier | When | Command | Target time |
 |------|------|---------|-------------|
-| **Vera Fast** | **Default** — every handoff Rex → Vera → Quill | `composer vera:fast` (from `Backend/`) | Usually < 30s |
+| **Vera Fast** | **Default** — every handoff Rex → Vera → Quill | `composer vera:fast` (from `Backend/`) | Usually < 30s — `php -l` on changed files **+** `vera:logic` |
+| **Vera Logic** | Part of Fast (also standalone) | `composer vera:logic` | Repo rules & contracts (file ≤500, seller-only payments, buyer AP wiring) |
 | **Vera Extended** | Only when triggers below match | `composer vera:extended` | Minutes, scoped |
 
-**Vera Fast** = `php -l` on **changed `.php` files only** (staged + unstaged vs `HEAD`).
+**Vera Fast** = `php -l` on **changed `.php` files only** (staged + unstaged vs `HEAD`), then **Vera Logic**.
 
 **Vera Extended** = Vera Fast, then **only if applicable**:
 - `php artisan migrate --pretend` — **only** when a file under `database/migrations/` changed
@@ -211,7 +212,7 @@ Vera was slowing the pipeline by running **full-project** checks. That is **not*
 
 ### Report format (fast)
 
-`🧪 Vera: Fast pass — BE php -l (4 files). Extended skipped (no migration).`
+`🧪 Vera: Fast pass — BE php -l (4 files) + logic. Extended skipped (no migration).`
 
 ---
 
@@ -573,7 +574,8 @@ If any agent fails, here's how I'll report it:
 
 | Tier | Command | What It Catches |
 |------|---------|-----------------|
-| **Fast (always)** | `composer vera:fast` | PHP parse errors on changed files |
+| **Fast (always)** | `composer vera:fast` | PHP parse errors on changed files + Vera Logic contracts |
+| **Logic** | `composer vera:logic` (also in Fast) | Owner-only payments, buyer AP automation wiring, file ≤500 |
 | **Extended (triggers only)** | `composer vera:extended` | Pretend migrate, route file syntax, filtered PHPUnit |
 
 **If any command fails:** → Mark work as **INCOMPLETE** → Do **NOT** document → Report to Orchestrator → Orchestrator halts and reports to you.

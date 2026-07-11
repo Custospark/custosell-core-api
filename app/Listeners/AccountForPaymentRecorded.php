@@ -6,12 +6,14 @@ use App\Events\PaymentRecordedForAccounting;
 use App\Models\Invoice;
 use App\Models\Sale;
 use App\Services\JournalEntryService;
+use App\Services\SupplierInvoiceAccountingService;
 use Illuminate\Support\Facades\Log;
 
 class AccountForPaymentRecorded
 {
     public function __construct(
         protected JournalEntryService $journalEntryService,
+        protected SupplierInvoiceAccountingService $supplierInvoiceAccounting,
     ) {}
 
     public function handle(PaymentRecordedForAccounting $event): void
@@ -22,6 +24,15 @@ class AccountForPaymentRecorded
 
             if ($payable instanceof Invoice) {
                 $this->accountForInvoicePayment($payment, $payable);
+                try {
+                    $this->supplierInvoiceAccounting->postBuyerOnPayment($payment, $payable);
+                } catch (\Throwable $e) {
+                    Log::error("Accounting automation failed for buyer AP settlement {$payment->id}: {$e->getMessage()}", [
+                        'payment_id' => $payment->id,
+                        'invoice_id' => $payable->id,
+                        'exception' => $e,
+                    ]);
+                }
             } elseif ($payable instanceof Sale) {
                 $this->accountForSalePayment($payment, $payable);
             }
@@ -37,6 +48,10 @@ class AccountForPaymentRecorded
     {
         $businessId = $invoice->business_id;
         $amount = (float) $payment->amount;
+
+        if ($this->journalEntryService->getEntryByReference('invoice_payment', $payment->id, $businessId)) {
+            return;
+        }
 
         $originalEntry = $this->journalEntryService->getEntryByReference('invoice', $invoice->id, $businessId);
         if (!$originalEntry && $invoice->sale_id) {
