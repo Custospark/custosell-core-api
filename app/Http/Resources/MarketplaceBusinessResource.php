@@ -20,6 +20,9 @@ class MarketplaceBusinessResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
             'country' => $this->country,
+            'is_open_for_supply' => (bool) $this->is_open_for_supply,
+            'is_saved' => (bool) ($this->is_saved ?? false),
+            'listed_products_count' => (int) ($this->listed_products_count ?? 0),
         ];
     }
 }

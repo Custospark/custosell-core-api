@@ -5,10 +5,15 @@ namespace App\Services;
 use App\Models\Business;
 use App\Models\Product;
 use App\Services\Contracts\MarketplaceServiceInterface;
+use App\Services\Contracts\SupplierListServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 class MarketplaceService implements MarketplaceServiceInterface
 {
+    public function __construct(
+        protected SupplierListServiceInterface $supplierListService,
+    ) {}
+
     public function listBusinessesOpenForSupply(int $excludeBusinessId, ?string $q = null): Collection
     {
         $query = Business::query()
@@ -24,7 +29,7 @@ class MarketplaceService implements MarketplaceServiceInterface
             });
         }
 
-        return $query->get();
+        return $this->supplierListService->annotate($query->get(), $excludeBusinessId);
     }
 
     public function listListedProducts(int $sellerBusinessId): Collection

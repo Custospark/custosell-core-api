@@ -342,4 +342,56 @@ class SupplyChainTest extends TestCase
             ->assertStatus(422);
         $this->assertDatabaseHas('purchase_orders', ['id' => $poId, 'status' => 'accepted']);
     }
+
+    public function test_buyer_can_save_list_and_remove_supplier(): void
+    {
+        $empty = $this->asBuyer('GET', '/api/v1/marketplace/suppliers');
+        $empty->assertStatus(200);
+        $this->assertSame([], $empty->json('data'));
+
+        $add = $this->asBuyer('POST', '/api/v1/marketplace/suppliers', [
+            'seller_business_id' => $this->seller->id,
+        ]);
+        $add->assertStatus(201);
+        $add->assertJsonPath('data.id', $this->seller->id);
+        $add->assertJsonPath('data.is_saved', true);
+        $add->assertJsonPath('data.listed_products_count', 1);
+
+        $list = $this->asBuyer('GET', '/api/v1/marketplace/suppliers');
+        $list->assertStatus(200);
+        $this->assertCount(1, $list->json('data'));
+        $this->assertTrue($list->json('data.0.is_saved'));
+
+        $browse = $this->asBuyer('GET', '/api/v1/marketplace/businesses');
+        $browse->assertStatus(200);
+        $sellerRow = collect($browse->json('data'))->firstWhere('id', $this->seller->id);
+        $this->assertNotNull($sellerRow);
+        $this->assertTrue($sellerRow['is_saved']);
+        $this->assertSame(1, $sellerRow['listed_products_count']);
+
+        $this->asBuyer('DELETE', "/api/v1/marketplace/suppliers/{$this->seller->id}")
+            ->assertStatus(204);
+        $this->assertDatabaseMissing('business_supplier_list', [
+            'buyer_business_id' => $this->buyer->id,
+            'seller_business_id' => $this->seller->id,
+        ]);
+    }
+
+    public function test_cannot_add_self_or_closed_business_to_supplier_list(): void
+    {
+        $this->asBuyer('POST', '/api/v1/marketplace/suppliers', [
+            'seller_business_id' => $this->buyer->id,
+        ])->assertStatus(422);
+
+        $closedOwner = User::factory()->create(['is_active' => true]);
+        $closed = Business::factory()->create([
+            'owner_id' => $closedOwner->id,
+            'status' => 'active',
+            'is_open_for_supply' => false,
+        ]);
+
+        $this->asBuyer('POST', '/api/v1/marketplace/suppliers', [
+            'seller_business_id' => $closed->id,
+        ])->assertStatus(422);
+    }
 }
