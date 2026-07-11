@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Events\InvoiceSentForAccounting;
 use App\Models\Business;
-use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Sale;
@@ -87,7 +86,7 @@ class InvoiceService implements InvoiceServiceInterface
                 $this->orderService->markInvoicedForSale((int) $data['sale_id']);
             }
 
-            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business']);
+            return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder']);
         });
     }
 
@@ -102,7 +101,7 @@ class InvoiceService implements InvoiceServiceInterface
                 ->where('purchase_order_id', $po->id)
                 ->first();
             if ($existing) {
-                return $existing->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder', 'business']);
+                return $existing->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder']);
             }
 
             $po->loadMissing(['items', 'buyerBusiness']);
@@ -184,9 +183,13 @@ class InvoiceService implements InvoiceServiceInterface
 
     public function canManagePayments(Invoice $invoice, int $businessId): bool
     {
-        // Only the issuing business (seller) may record payments. Buyers can view
-        // received invoices and payment history but cannot post payments.
-        return $this->isOwnedByBusiness($invoice, $businessId);
+        if ((int) $invoice->business_id === $businessId) {
+            return true;
+        }
+
+        return $invoice->buyer_business_id
+            && (int) $invoice->buyer_business_id === $businessId
+            && $invoice->status !== 'draft';
     }
 
     public function update(int $id, array $data): Invoice

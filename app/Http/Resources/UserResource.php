@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\OnboardingService;
 use App\Services\Platform\PlatformAdminService;
 use App\Services\ProjectAccessService;
 use Illuminate\Http\Request;
@@ -60,10 +61,13 @@ class UserResource extends JsonResource
                     'logo_path' => $this->business?->logo_path,
                     'status' => $this->business?->status,
                     'trial_ends_at' => $this->business?->trial_ends_at,
+                    'primary_intent' => $this->business?->primary_intent,
+                    'secondary_intent' => $this->business?->secondary_intent,
                     'created_at' => $this->business?->created_at,
                 ];
             }),
             'modules' => $this->modules ?? [],
+            'onboarding' => app(OnboardingService::class)->payloadFor($this->resource),
             'is_platform_admin' => app(PlatformAdminService::class)->isPlatformAdmin($this->resource),
             'project_member_ids' => $this->when(
                 $request->user()?->id === $this->id,

@@ -29,6 +29,9 @@ class User extends Authenticatable
         'avatar',
         'created_by',
         'modules',
+        'tour_step',
+        'tour_completed_at',
+        'tour_skipped_at',
     ];
 
     protected $hidden = [
@@ -44,6 +47,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'modules' => 'array',
+            'tour_step' => 'integer',
+            'tour_completed_at' => 'datetime',
+            'tour_skipped_at' => 'datetime',
         ];
     }
 
