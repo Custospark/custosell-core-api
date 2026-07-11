@@ -11,6 +11,19 @@ use Illuminate\Validation\ValidationException;
 class OnboardingService
 {
     public const INTENT_IDS = [
+        'dashboard',
+        'sales',
+        'inventory',
+        'customers',
+        'pipeline',
+        'estimates',
+        'expenses',
+        'documents',
+        'hr',
+        'accounting',
+        'forecasting',
+        'explore',
+        // Legacy aliases
         'sell_pos',
         'get_paid',
         'buy_supply',
@@ -18,7 +31,6 @@ class OnboardingService
         'run_projects',
         'people_payroll',
         'know_numbers',
-        'explore',
     ];
 
     public function isBusinessOwner(User $user): bool
