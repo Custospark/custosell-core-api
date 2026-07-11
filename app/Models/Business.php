@@ -71,6 +71,8 @@ class Business extends Model
         'status',
         'status_changed_at',
         'trial_ends_at',
+        'is_open_for_supply',
+        'supply_headline',
     ];
 
     protected function casts(): array
@@ -80,6 +82,7 @@ class Business extends Model
             'status_changed_at' => 'datetime',
             'default_vat_rate' => 'decimal:2',
             'prices_include_tax' => 'boolean',
+            'is_open_for_supply' => 'boolean',
         ];
     }
 
@@ -141,5 +144,22 @@ class Business extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    /** Purchase orders where this business is the buyer. */
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'buyer_business_id');
+    }
+
+    /** Purchase orders where this business is the seller (incoming supply orders). */
+    public function incomingPurchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'seller_business_id');
+    }
+
+    public function isOpenForSupply(): bool
+    {
+        return (bool) $this->is_open_for_supply;
     }
 }

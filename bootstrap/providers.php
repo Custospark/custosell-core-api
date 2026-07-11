@@ -7,8 +7,10 @@ use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
 use App\Providers\InvoiceServiceProvider;
+use App\Providers\MarketplaceServiceProvider;
 use App\Providers\OrderServiceProvider;
 use App\Providers\PlanServiceProvider;
+use App\Providers\PurchaseOrderServiceProvider;
 use App\Providers\AccountingServiceProvider;
 use App\Providers\EstimateServiceProvider;
 use App\Providers\EventServiceProvider;
@@ -36,6 +38,8 @@ return [
     ShiftServiceProvider::class,
     SaleServiceProvider::class,
     OrderServiceProvider::class,
+    MarketplaceServiceProvider::class,
+    PurchaseOrderServiceProvider::class,
     SaleItemServiceProvider::class,
     StockMovementServiceProvider::class,
     SubscriptionServiceProvider::class,

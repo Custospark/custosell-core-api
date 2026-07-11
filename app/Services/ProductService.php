@@ -83,4 +83,19 @@ class ProductService implements ProductServiceInterface
     {
         return $this->productRepository->getLowStock($businessId);
     }
+
+    public function updateSupplyListing(int $id, int $businessId, array $data): Product
+    {
+        $product = Product::where('business_id', $businessId)->findOrFail($id);
+
+        $listed = (bool) ($data['listed_for_supply'] ?? $product->listed_for_supply);
+
+        $product->listed_for_supply = $listed;
+        $product->supply_price = $data['supply_price'] ?? $product->supply_price;
+        $product->supply_min_qty = $data['supply_min_qty'] ?? $product->supply_min_qty ?? 1;
+        $product->listed_at = $listed ? ($product->listed_at ?? now()) : null;
+        $product->save();
+
+        return $product;
+    }
 }

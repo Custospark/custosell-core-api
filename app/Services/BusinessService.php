@@ -107,4 +107,12 @@ class BusinessService implements BusinessServiceInterface
     {
         return $this->update($id, ['status' => 'suspended']);
     }
+
+    public function updateSupplyProfile(int $id, array $data): Business
+    {
+        return $this->update($id, [
+            'is_open_for_supply' => (bool) ($data['is_open_for_supply'] ?? false),
+            'supply_headline' => $data['supply_headline'] ?? null,
+        ]);
+    }
 }

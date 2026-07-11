@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaleRequest;
+use App\Http\Requests\SendDocumentEmailRequest;
 use App\Http\Resources\SaleCollection;
 use App\Http\Resources\SaleResource;
 use App\Services\Contracts\SaleServiceInterface;
+use App\Services\CustomerDocumentEmailService;
+use App\Services\ReportExportService;
+use App\Services\SalePdfBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,6 +18,9 @@ class SaleController extends Controller
 {
     public function __construct(
         protected SaleServiceInterface $saleService,
+        protected SalePdfBuilder $pdfBuilder,
+        protected ReportExportService $export,
+        protected CustomerDocumentEmailService $emailService,
     ) {}
 
     public function index(Request $request): SaleCollection
@@ -192,5 +199,53 @@ class SaleController extends Controller
     {
         $businessId = $request->user()->business_id;
         return new SaleCollection($this->saleService->getByShift($businessId, $shiftId));
+    }
+
+    public function downloadPdf(int $id, Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+    {
+        $businessId = $request->user()->business_id;
+        $sale = $this->saleService->getById($id);
+        if (!$sale || (int) $sale->business_id !== (int) $businessId) {
+            abort(404, 'Sale not found');
+        }
+        $business = $request->user()->business;
+
+        $pdfConfig = $this->pdfBuilder->build($sale, $business);
+
+        return $this->export->downloadPdf(
+            $pdfConfig['view'],
+            $pdfConfig['data'],
+            $pdfConfig['filename'] . '.pdf',
+            $pdfConfig['orientation'],
+        );
+    }
+
+    public function email(int $id, SendDocumentEmailRequest $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $sale = $this->saleService->getById($id);
+        if (!$sale || (int) $sale->business_id !== (int) $businessId) {
+            abort(404, 'Sale not found');
+        }
+
+        $business = $request->user()->business;
+        $to = $request->validated('to');
+        $message = $request->validated('message');
+
+        if (!$to) {
+            $to = $this->emailService->resolveCustomerEmail($sale->customer);
+            if (!$to) {
+                return response()->json(['message' => 'No recipient email address available for this sale.'], 422);
+            }
+        }
+
+        try {
+            $result = $this->emailService->sendSaleReceipt($sale, $business, $to, $message);
+            return response()->json($result);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\ProductSupplyListingRequest;
 use App\Http\Resources\ProductCollection;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\StockMovementCollection;
@@ -67,6 +68,14 @@ class ProductController extends Controller
         $count = $this->productService->bulkDelete($data['ids'], $businessId);
 
         return response()->json(['deleted' => $count]);
+    }
+
+    public function updateSupplyListing(ProductSupplyListingRequest $request, int $id): ProductResource
+    {
+        $businessId = $request->user()->business_id;
+        $product = $this->productService->updateSupplyListing($id, $businessId, $request->validated());
+
+        return new ProductResource($product);
     }
 
     public function active(Request $request): ProductCollection

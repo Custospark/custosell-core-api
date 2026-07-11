@@ -31,6 +31,8 @@ class Sale extends Model
         'payment_status',
         'notes',
         'sale_date',
+        'email_sent_count',
+        'last_emailed_at',
     ];
 
     protected function casts(): array
@@ -44,6 +46,8 @@ class Sale extends Model
             'amount_tendered' => 'decimal:2',
             'change_given' => 'decimal:2',
             'sale_date' => 'datetime',
+            'email_sent_count' => 'integer',
+            'last_emailed_at' => 'datetime',
         ];
     }
 

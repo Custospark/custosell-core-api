@@ -20,4 +20,6 @@ interface BusinessServiceInterface
     public function updateSettings(int $id, array $data): Business;
 
     public function suspend(int $id): Business;
+
+    public function updateSupplyProfile(int $id, array $data): Business;
 }

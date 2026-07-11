@@ -22,4 +22,7 @@ interface ProductServiceInterface
     public function getActive(int $businessId): Collection;
 
     public function getLowStock(int $businessId): Collection;
+
+    /** Update the supply-marketplace listing for a product owned by the given business. */
+    public function updateSupplyListing(int $id, int $businessId, array $data): Product;
 }

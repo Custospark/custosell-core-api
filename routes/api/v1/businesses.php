@@ -13,3 +13,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group
     Route::get('/businesses/settings', [BusinessController::class, 'settings']);
     Route::put('/businesses/settings', [BusinessController::class, 'updateSettings']);
 });
+
+Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->group(function () {
+    Route::patch('/businesses/supply-profile', [BusinessController::class, 'updateSupplyProfile']);
+});

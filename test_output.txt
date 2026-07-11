@@ -1,0 +1,71 @@
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::chart_of_accounts_returns_all_accounts(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::chart_of_accounts_tree_returns_hierarchy(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_create_chart_of_account(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::accounting_periods_returns_list(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::current_period_returns_period(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::trial_balance_returns_structured_data(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::trial_balance_works_without_period_id(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::profit_loss_returns_structured_data(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::balance_sheet_returns_structured_data(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::journal_entries_returns_list(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_create_journal_entry(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::cannot_create_unbalanced_entry(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_post_journal_entry(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_reverse_journal_entry(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::ratios_return_all_categories(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::ratios_work_without_period_id(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::ratio_trends_return_data(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::fixed_assets_returns_list(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_create_fixed_asset(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::can_close_and_reopen_period(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AccountingTest::requires_authentication(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+array:4 [
+  "poId" => 1
+  "seller_id" => 1
+  "po_seller" => 1
+  "po_status" => "submitted"
+] // tests\Feature\SupplyChainTest.php:205
+
+   FAIL  Tests\Feature\SupplyChainTest
+  ⨯ cannot fulfill without sufficient stock                                                                      3.86s  
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SupplyChainTest > cannot fulfill without sufficient stock                                      
+  Expected response status code [200] but received 404.
+Failed asserting that 404 is identical to 200.
+
+  at tests\Feature\SupplyChainTest.php:207
+    203▕         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
+    204▕         $po = PurchaseOrder::find($poId);
+    205▕         dump(['poId' => $poId, 'seller_id' => $this->seller->id, 'po_seller' => $po?->seller_business_id, 'po_status' => $po?->status]);
+    206▕         $acceptResp = $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept");
+  ➜ 207▕         $acceptResp->assertStatus(200);
+    208▕ 
+    209▕         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/fulfill")
+    210▕             ->assertStatus(422);
+    211▕
+
+
+  Tests:    1 failed (2 assertions)
+  Duration: 4.75s
+

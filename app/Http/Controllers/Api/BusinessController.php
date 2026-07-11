@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BusinessRegisterRequest;
 use App\Http\Requests\BusinessRequest;
+use App\Http\Requests\BusinessSupplyProfileRequest;
 use App\Http\Resources\BusinessResource;
 use App\Services\Contracts\BusinessServiceInterface;
 use Illuminate\Http\JsonResponse;
@@ -93,6 +94,18 @@ class BusinessController extends Controller
             abort(404, 'Business not found');
         }
         $business = $this->businessService->updateSettings($business->id, $request->validated());
+
+        return new BusinessResource($business);
+    }
+
+    public function updateSupplyProfile(BusinessSupplyProfileRequest $request): BusinessResource
+    {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
+            abort(404, 'Business not found');
+        }
+
+        $business = $this->businessService->updateSupplyProfile($business->id, $request->validated());
 
         return new BusinessResource($business);
     }

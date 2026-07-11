@@ -30,6 +30,10 @@ class ProductResource extends JsonResource
             'is_active' => $this->is_active,
             'is_recurring' => (bool) $this->is_recurring,
             'billing_interval' => $this->billing_interval,
+            'listed_for_supply' => (bool) $this->listed_for_supply,
+            'supply_price' => $this->supply_price,
+            'supply_min_qty' => $this->supply_min_qty,
+            'listed_at' => $this->listed_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

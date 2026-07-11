@@ -16,5 +16,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->grou
     Route::get('/products/export', [ProductController::class, 'export']);
     Route::get('/products/{product}/stock-movements', [ProductController::class, 'stockMovements']);
     Route::post('/products/bulk-delete', [ProductController::class, 'bulkDelete']);
+    Route::patch('/products/{id}/supply-listing', [ProductController::class, 'updateSupplyListing'])->whereNumber('id');
     Route::apiResource('products', ProductController::class);
 });

@@ -92,3 +92,20 @@
 - 168 files generated across 14 entities
 - Clear separation of concerns (Controller = HTTP, Service = business logic, Repository = data access)
 - Provider bindings make testing/swapping implementations trivial
+
+---
+
+## ADR-007: B2B Inventory & Supply Chain (online-only)
+
+**Date:** 2026-07-11  
+**Status:** Accepted  
+
+**Context:** Businesses need to buy stock from other tenants. POS Orders already mean held carts.
+
+**Decision:** Opt-in marketplace (`is_open_for_supply`, `listed_for_supply`) and purchase-order lifecycle under `module:inventory`. Online-only (no sync queue). Fulfill stocks out seller; receive requires buyer product mapping then stocks in. Payments off-platform in v1.
+
+**API:** `marketplace.php`, `purchase_orders.php`, `PATCH /businesses/supply-profile`, `PATCH /products/{id}/supply-listing`.
+
+**Tests:** `tests/Feature/SupplyChainTest.php`
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-11-inventory-supply-chain-b2b.md`

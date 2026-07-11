@@ -35,6 +35,10 @@ class Product extends Model
         'is_active',
         'is_recurring',
         'billing_interval',
+        'listed_for_supply',
+        'supply_price',
+        'supply_min_qty',
+        'listed_at',
     ];
 
     protected function casts(): array
@@ -48,12 +52,27 @@ class Product extends Model
             'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
             'is_recurring' => 'boolean',
+            'listed_for_supply' => 'boolean',
+            'supply_price' => 'decimal:2',
+            'supply_min_qty' => 'integer',
+            'listed_at' => 'datetime',
         ];
     }
 
     public function tracksStock(): bool
     {
         return ($this->type ?? self::TYPE_PRODUCT) === self::TYPE_PRODUCT;
+    }
+
+    /** Visible on the supply marketplace only when opted-in, active, and a stocked product. */
+    public function isListedForSupply(): bool
+    {
+        return (bool) $this->listed_for_supply && (bool) $this->is_active && $this->tracksStock();
+    }
+
+    public function supplyUnitPrice(): float
+    {
+        return (float) ($this->supply_price ?? $this->unit_price);
     }
 
     public function isService(): bool
@@ -79,5 +98,10 @@ class Product extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
     }
 }

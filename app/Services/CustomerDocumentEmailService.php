@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Sale;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ class CustomerDocumentEmailService
         protected InvoicePdfBuilder $invoicePdfBuilder,
         protected EstimatePdfBuilder $estimatePdfBuilder,
         protected PaymentReceiptPdfBuilder $paymentReceiptPdfBuilder,
+        protected SalePdfBuilder $salePdfBuilder,
     ) {}
 
     /**
@@ -130,6 +132,39 @@ class CustomerDocumentEmailService
         return $this->buildSendResult($to, 'payment_receipt', $payment->receipt_number, $payment);
     }
 
+    public function sendSaleReceipt(Sale $sale, Business $business, string $to, ?string $customMessage = null): array
+    {
+        $sale->loadMissing(['customer', 'saleItems', 'user', 'payments']);
+        $this->assertValidRecipient($to);
+
+        $customerName = $sale->customer?->name ?? 'Customer';
+        $businessName = $business->name ?: 'Your business';
+        $pdfConfig = $this->salePdfBuilder->build($sale, $business);
+        $pdfBytes = $this->export->renderPdfBytes(
+            $pdfConfig['view'],
+            $pdfConfig['data'],
+            $pdfConfig['orientation'],
+        );
+
+        $subject = sprintf('Receipt %s from %s', $sale->receipt_number, $businessName);
+        $title = sprintf('Sales Receipt %s', $sale->receipt_number);
+        $body = $this->buildSaleReceiptBody($customerName, $businessName, $sale->receipt_number, $customMessage);
+
+        $this->dispatch(
+            to: $to,
+            subject: $subject,
+            title: $title,
+            body: $body,
+            business: $business,
+            attachmentName: $pdfConfig['filename'] . '.pdf',
+            attachmentBytes: $pdfBytes,
+        );
+
+        $this->recordSaleEmailSent($sale);
+
+        return $this->buildSendResult($to, 'sale_receipt', $sale->receipt_number, $sale);
+    }
+
     public function resolveCustomerEmail(?Customer $customer): ?string
     {
         $email = trim((string) ($customer?->email ?? ''));
@@ -195,6 +230,27 @@ class CustomerDocumentEmailService
         $parts = [
             '<p>Dear ' . e($customerName) . ',</p>',
             '<p>Thank you for your payment. Please find your payment receipt <strong>' . e($receiptNumber) . '</strong> attached.</p>',
+        ];
+
+        if ($customMessage !== null && trim($customMessage) !== '') {
+            $parts[] = '<p>' . nl2br(e(trim($customMessage))) . '</p>';
+        }
+
+        $parts[] = '<p>We appreciate your business. If you need anything else, please reply to this email.</p>';
+        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
+
+        return implode("\n", $parts);
+    }
+
+    private function buildSaleReceiptBody(
+        string $customerName,
+        string $businessName,
+        string $receiptNumber,
+        ?string $customMessage,
+    ): string {
+        $parts = [
+            '<p>Dear ' . e($customerName) . ',</p>',
+            '<p>Thank you for your purchase. Please find your sales receipt <strong>' . e($receiptNumber) . '</strong> attached.</p>',
         ];
 
         if ($customMessage !== null && trim($customMessage) !== '') {
@@ -302,6 +358,15 @@ class CustomerDocumentEmailService
         $payment->refresh();
     }
 
+    private function recordSaleEmailSent(Sale $sale): void
+    {
+        $sale->update([
+            'email_sent_count' => (int) $sale->email_sent_count + 1,
+            'last_emailed_at' => now(),
+        ]);
+        $sale->refresh();
+    }
+
     /**
      * @return array{
      *   sent_to: string,
@@ -312,7 +377,7 @@ class CustomerDocumentEmailService
      *   last_emailed_at: string|null
      * }
      */
-    private function buildSendResult(string $to, string $documentType, string $documentRef, Invoice|Payment|Estimate $document): array
+    private function buildSendResult(string $to, string $documentType, string $documentRef, Invoice|Payment|Estimate|Sale $document): array
     {
         return [
             'sent_to' => $to,
