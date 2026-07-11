@@ -33,6 +33,8 @@ class Product extends Model
         'tax_percentage',
         'tax_class',
         'is_active',
+        'is_recurring',
+        'billing_interval',
     ];
 
     protected function casts(): array
@@ -45,6 +47,7 @@ class Product extends Model
             'low_stock_threshold' => 'integer',
             'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
+            'is_recurring' => 'boolean',
         ];
     }
 

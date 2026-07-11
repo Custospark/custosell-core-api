@@ -39,6 +39,8 @@ class ProductRequest extends BaseFormRequest
             'tax_percentage' => ['numeric', 'min:0', 'max:100'],
             'tax_class' => ['nullable', 'string', 'in:standard,exempt,zero_rated'],
             'is_active' => ['boolean'],
+            'is_recurring' => ['boolean'],
+            'billing_interval' => ['nullable', 'string', 'max:50'],
         ];
     }
 

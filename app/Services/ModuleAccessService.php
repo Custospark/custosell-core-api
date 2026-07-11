@@ -25,6 +25,7 @@ class ModuleAccessService
         'estimates',
         'documents',
         'hr',
+        'forecasting',
         'settings',
     ];
 
@@ -325,6 +326,7 @@ class ModuleAccessService
             'estimates', 'projects' => 'estimates',
             'documents' => 'documents',
             'hr', 'payroll', 'attendance', 'leave' => 'hr',
+            'forecasting' => 'forecasting',
             default => null,
         };
     }

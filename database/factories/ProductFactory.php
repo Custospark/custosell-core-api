@@ -29,7 +29,17 @@ class ProductFactory extends Factory
             'low_stock_threshold' => 5,
             'tax_percentage' => 0,
             'is_active' => true,
+            'is_recurring' => false,
+            'billing_interval' => null,
         ];
+    }
+
+    public function recurring(?string $interval = 'month'): static
+    {
+        return $this->state(fn () => [
+            'is_recurring' => true,
+            'billing_interval' => $interval,
+        ]);
     }
 
     public function service(): static

@@ -28,6 +28,8 @@ class ProductResource extends JsonResource
             'tax_percentage' => $this->tax_percentage,
             'tax_class' => $this->tax_class ?? 'standard',
             'is_active' => $this->is_active,
+            'is_recurring' => (bool) $this->is_recurring,
+            'billing_interval' => $this->billing_interval,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
