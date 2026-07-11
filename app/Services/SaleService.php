@@ -91,7 +91,7 @@ class SaleService implements SaleServiceInterface
                 $product = $line['product'];
                 $qty = $line['quantity'];
 
-                SaleItem::create([
+                $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'product_name' => $product->name,
@@ -125,11 +125,13 @@ class SaleService implements SaleServiceInterface
                 StockMovement::create([
                     'business_id' => $businessId,
                     'product_id' => $product->id,
+                    'sale_item_id' => $saleItem->id,
                     'type' => 'sale',
                     'quantity_change' => -$qty,
                     'stock_before' => $stockBefore,
                     'stock_after' => $stockAfter,
                     'notes' => "Sale {$receiptNumber}",
+                    'created_by' => $userId,
                 ]);
 
                 $product->stock_quantity = $stockAfter;
@@ -275,10 +277,11 @@ class SaleService implements SaleServiceInterface
         return $this->saleRepository->getByShift($businessId, $shiftId);
     }
 
-    public function refund(int $id, array $data): Sale
+    public function refund(int $id, array $data, ?int $actorUserId = null): Sale
     {
-        return DB::transaction(function () use ($id, $data) {
+        return DB::transaction(function () use ($id, $data, $actorUserId) {
             $sale = Sale::with('saleItems')->findOrFail($id);
+            $refundedBy = $actorUserId ?? auth()->id() ?? $sale->user_id;
             $saleSubtotal = (float) $sale->subtotal;
             $saleDiscount = (float) $sale->discount_amount;
             $discountRatio = $saleSubtotal > 0 ? $saleDiscount / $saleSubtotal : 0;
@@ -349,6 +352,7 @@ class SaleService implements SaleServiceInterface
                         'stock_before' => $stockBefore,
                         'stock_after' => $product->stock_quantity,
                         'notes' => "Refund from sale {$sale->receipt_number}",
+                        'created_by' => $refundedBy,
                     ]);
                 }
             }

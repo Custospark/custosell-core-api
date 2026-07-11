@@ -110,8 +110,11 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'type', 'quantity_change', 'stock_before', 'stock_after'])
-            ->assertJsonPath('type', 'adjustment');
+            ->assertJsonStructure(['id', 'type', 'quantity_change', 'stock_before', 'stock_after', 'created_by', 'created_by_user'])
+            ->assertJsonPath('type', 'adjustment')
+            ->assertJsonPath('created_by', $this->admin->id)
+            ->assertJsonPath('created_by_user.id', $this->admin->id)
+            ->assertJsonPath('created_by_user.name', $this->admin->name);
     }
 
     public function test_purchase_stock_movement(): void
@@ -165,5 +168,49 @@ class StockMovementTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('stock_after', $this->product->stock_quantity + 20);
+    }
+
+    public function test_sale_stock_movement_attributes_logged_in_user(): void
+    {
+        $unitPrice = (float) $this->product->unit_price;
+
+        $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/sales', [
+                'items' => [
+                    [
+                        'product_id' => $this->product->id,
+                        'quantity' => 2,
+                        'unit_price' => $unitPrice,
+                    ],
+                ],
+                'subtotal' => $unitPrice * 2,
+                'tax_total' => 0,
+                'discount_amount' => 0,
+                'total_amount' => $unitPrice * 2,
+                'amount_paid' => $unitPrice * 2,
+                'payment_method' => 'cash',
+                'sale_date' => now()->toDateTimeString(),
+            ])
+            ->assertStatus(201);
+
+        $movement = StockMovement::query()
+            ->where('product_id', $this->product->id)
+            ->where('type', 'sale')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($movement);
+        $this->assertSame($this->admin->id, $movement->created_by);
+        $this->assertNotNull($movement->sale_item_id);
+
+        $history = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson("/api/v1/products/{$this->product->id}/stock-movements");
+
+        $history->assertStatus(200);
+        $row = collect($history->json('data'))->firstWhere('id', $movement->id);
+        $this->assertNotNull($row);
+        $this->assertSame($this->admin->id, $row['created_by']);
+        $this->assertSame($this->admin->id, $row['created_by_user']['id'] ?? $row['created_by_user']['data']['id'] ?? null);
+        $this->assertSame($this->admin->name, $row['created_by_user']['name'] ?? $row['created_by_user']['data']['name'] ?? null);
     }
 }

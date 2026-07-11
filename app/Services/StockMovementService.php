@@ -29,6 +29,9 @@ class StockMovementService implements StockMovementServiceInterface
     {
         return DB::transaction(function () use ($businessId, $data) {
             $data['business_id'] = $businessId;
+            if (empty($data['created_by']) && auth()->id()) {
+                $data['created_by'] = auth()->id();
+            }
 
             $movement = $this->stockMovementRepository->create($data);
 
@@ -38,7 +41,7 @@ class StockMovementService implements StockMovementServiceInterface
                 $product->save();
             }
 
-            return $movement;
+            return $movement->fresh(['createdBy', 'product']);
         });
     }
 

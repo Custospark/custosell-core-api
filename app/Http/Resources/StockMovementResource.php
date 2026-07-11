@@ -22,7 +22,10 @@ class StockMovementResource extends JsonResource
             'reference' => $this->reference,
             'notes' => $this->notes,
             'created_by' => $this->created_by,
-            'created_by_user' => new UserResource($this->whenLoaded('createdBy')),
+            'created_by_user' => $this->when(
+                $this->relationLoaded('createdBy') && $this->createdBy !== null,
+                fn () => new UserResource($this->createdBy),
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

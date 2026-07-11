@@ -59,7 +59,7 @@ class ProductImportService
         return $spreadsheet;
     }
 
-    public function import(int $businessId, string $filePath): array
+    public function import(int $businessId, string $filePath, ?int $actorUserId = null): array
     {
         $reader = IOFactory::createReaderForFile($filePath);
         $reader->setReadDataOnly(true);
@@ -127,6 +127,7 @@ class ProductImportService
                             'stock_before' => 0,
                             'stock_after' => $stockQty,
                             'notes' => 'Initial stock from import',
+                            'created_by' => $actorUserId ?? auth()->id(),
                         ]);
 
                         $product->stock_quantity = $stockQty;

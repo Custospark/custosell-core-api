@@ -81,7 +81,7 @@ class SaleController extends Controller
             'items.*.id' => ['required', 'integer', 'exists:sale_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.amount' => ['nullable', 'numeric', 'min:0'],
-        ]));
+        ]), $request->user()->id);
         return new SaleResource($sale);
     }
 

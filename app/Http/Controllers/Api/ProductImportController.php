@@ -41,7 +41,11 @@ class ProductImportController extends Controller
 
         set_time_limit(600);
 
-        $results = $this->importService->import($businessId, $request->file('file')->getPathname());
+        $results = $this->importService->import(
+            $businessId,
+            $request->file('file')->getPathname(),
+            $request->user()->id,
+        );
 
         return response()->json($results);
     }

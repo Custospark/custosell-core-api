@@ -106,6 +106,9 @@ class SyncService implements SyncServiceInterface
             if (isset($payload['stock_movements'])) {
                 foreach ($payload['stock_movements'] as $movement) {
                     $movement['business_id'] = $businessId;
+                    if (empty($movement['created_by']) && auth()->id()) {
+                        $movement['created_by'] = auth()->id();
+                    }
                     StockMovement::create($movement);
                     $imported['stock_movements']++;
                 }

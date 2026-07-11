@@ -23,7 +23,7 @@ interface SaleServiceInterface
 
     public function getByShift(int $businessId, int $shiftId): Collection;
 
-    public function refund(int $id, array $data): Sale;
+    public function refund(int $id, array $data, ?int $actorUserId = null): Sale;
 
     public function getDaily(int $businessId, ?string $date = null): Collection;
 
