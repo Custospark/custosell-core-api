@@ -309,6 +309,23 @@ class SupplyChainTest extends TestCase
         $this->assertDatabaseMissing('purchase_orders', ['id' => $poId]);
     }
 
+    public function test_buyer_can_delete_cancelled_purchase_order(): void
+    {
+        $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [
+            'seller_business_id' => $this->seller->id,
+            'items' => [
+                ['product_id' => $this->listedProduct->id, 'quantity' => 1],
+            ],
+        ]);
+        $poId = $create->json('id');
+        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
+        $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/cancel")->assertStatus(200);
+
+        $this->asBuyer('DELETE', "/api/v1/purchase-orders/{$poId}")
+            ->assertStatus(204);
+        $this->assertDatabaseMissing('purchase_orders', ['id' => $poId]);
+    }
+
     public function test_cannot_delete_accepted_purchase_order(): void
     {
         $create = $this->asBuyer('POST', '/api/v1/purchase-orders', [

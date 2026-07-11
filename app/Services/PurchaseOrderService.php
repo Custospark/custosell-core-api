@@ -264,7 +264,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                         'status' => ['Only the buyer can delete a draft purchase order.'],
                     ]);
                 }
-            } elseif ($po->status === PurchaseOrder::STATUS_REJECTED) {
+            } elseif (in_array($po->status, [PurchaseOrder::STATUS_REJECTED, PurchaseOrder::STATUS_CANCELLED], true)) {
                 if (! $isBuyer && ! $isSeller) {
                     throw ValidationException::withMessages([
                         'status' => ['You cannot delete this purchase order.'],
@@ -272,7 +272,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 }
             } else {
                 throw ValidationException::withMessages([
-                    'status' => ['Only draft or rejected purchase orders can be deleted.'],
+                    'status' => ['Only draft, rejected, or cancelled purchase orders can be deleted.'],
                 ]);
             }
 
