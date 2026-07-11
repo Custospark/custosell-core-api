@@ -109,3 +109,24 @@
 **Tests:** `tests/Feature/SupplyChainTest.php`
 
 **Frontend ADR:** `Frontend/docs/adr/2026-07-11-inventory-supply-chain-b2b.md`
+
+---
+
+## ADR-008: URA EFRIS fiscalization (v1)
+
+**Date:** 2026-07-12  
+**Status:** Accepted (config + procedures; API client follows)  
+
+**Context:** Ugandan VAT businesses need EFRIS e-receipts/e-invoices without breaking offline POS or forcing every country onto URA.
+
+**Decision:**
+- Uganda-first (`EFRIS_COUNTRY=UG`); country-configurable later
+- Direct URA **API** only in v1 (no hardware EFD)
+- Fiscalize **both** POS sales and sales invoices
+- Offline: **sync later** (never block checkout waiting for URA)
+- Master switch `EFRIS_ENABLED` (default `false`) gates all EFRIS behaviour
+- Credentials in `.env`; procedures in Frontend `docs/compliance/efris-setup.md`
+
+**Config:** `config/efris.php` · **Env template:** `.env.example` (EFRIS section)
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-12-efris-fiscalization.md`
