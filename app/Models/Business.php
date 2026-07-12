@@ -170,4 +170,15 @@ class Business extends Model
     {
         return (bool) $this->is_open_for_supply;
     }
+
+    public function storefrontRatings(): HasMany
+    {
+        return $this->hasMany(BusinessStorefrontRating::class);
+    }
+
+    /** Eager-load with a user_id constraint for the signed-in viewer. */
+    public function myStorefrontRating(): HasOne
+    {
+        return $this->hasOne(BusinessStorefrontRating::class);
+    }
 }

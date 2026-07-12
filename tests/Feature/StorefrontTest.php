@@ -231,6 +231,21 @@ class StorefrontTest extends TestCase
         ])->assertUnauthorized();
     }
 
+    public function test_authenticated_buyer_can_rate_shop(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/ratings', [
+                'rating' => 5,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.rating_avg', 5)
+            ->assertJsonPath('data.rating_count', 1)
+            ->assertJsonPath('data.my_rating', 5);
+    }
+
     public function test_slug_available_endpoint(): void
     {
         $this->withToken($this->token)

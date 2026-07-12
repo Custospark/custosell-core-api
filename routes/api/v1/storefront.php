@@ -11,6 +11,9 @@ Route::prefix('storefront')->group(function () {
         ->middleware('auth:sanctum');
     Route::get('/{slug}', [StorefrontController::class, 'show'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::get('/{slug}/products', [StorefrontController::class, 'products'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
+    Route::post('/{slug}/ratings', [StorefrontController::class, 'rateShop'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::post('/{slug}/products/{product}/ratings', [StorefrontController::class, 'rateProduct'])
         ->middleware(['auth:sanctum', 'throttle:60,1'])
         ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')

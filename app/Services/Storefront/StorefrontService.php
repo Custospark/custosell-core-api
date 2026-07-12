@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Storefront;
 
 use App\Models\Business;
+use App\Models\BusinessStorefrontRating;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
@@ -39,8 +40,15 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    public function publicShopPayload(Business $business): array
+    public function publicShopPayload(Business $business, ?int $viewerUserId = null): array
     {
+        $avg = $business->storefront_ratings_avg_rating;
+        $count = (int) ($business->storefront_ratings_count ?? 0);
+        $my = null;
+        if ($viewerUserId && $business->relationLoaded('myStorefrontRating')) {
+            $my = $business->myStorefrontRating?->rating;
+        }
+
         return [
             'name' => $business->name,
             'slug' => $business->slug,
@@ -53,10 +61,13 @@ class StorefrontService
             'business_phone' => $business->business_phone ?? $business->phone,
             'business_email' => $business->business_email ?? $business->email,
             'currency' => $business->currency ?? 'UGX',
+            'rating_avg' => $count > 0 ? round((float) $avg, 1) : 0,
+            'rating_count' => $count,
+            'my_rating' => $my !== null ? (int) $my : null,
         ];
     }
 
-    public function discoverShops(?string $q, int $perPage = 24): LengthAwarePaginator
+    public function discoverShops(?string $q, int $perPage = 24, ?int $viewerUserId = null): LengthAwarePaginator
     {
         $query = Business::query()
             ->where('storefront_enabled', true)
@@ -71,6 +82,8 @@ class StorefrontService
                     ->orWhere('slug', 'like', $term);
             });
         }
+
+        $this->withShopStorefrontRatingAggregates($query, $viewerUserId);
 
         return $query
             ->orderBy('name')
@@ -101,7 +114,7 @@ class StorefrontService
             });
         }
 
-        $this->withStorefrontRatingAggregates($query, $viewerUserId);
+        $this->withProductStorefrontRatingAggregates($query, $viewerUserId);
 
         return $query
             ->with(['category:id,name', 'business:id,name,slug,logo_path,city,currency,storefront_enabled'])
@@ -153,7 +166,7 @@ class StorefrontService
             });
         }
 
-        $this->withStorefrontRatingAggregates($query, $viewerUserId);
+        $this->withProductStorefrontRatingAggregates($query, $viewerUserId);
 
         return $query->orderBy('name')->get();
     }
@@ -191,10 +204,45 @@ class StorefrontService
         );
 
         $fresh = Product::query()->whereKey($product->id);
-        $this->withStorefrontRatingAggregates($fresh, $userId);
+        $this->withProductStorefrontRatingAggregates($fresh, $userId);
         $product = $fresh->firstOrFail();
 
         return $this->publicProductPayload($product, $userId);
+    }
+
+    /**
+     * Upsert a 1–5 star rating for a public storefront shop (Sanctum buyer).
+     *
+     * @return array<string, mixed>
+     */
+    public function rateShop(string $slug, int $userId, int $rating): array
+    {
+        if ($rating < 1 || $rating > 5) {
+            throw ValidationException::withMessages([
+                'rating' => ['Choose a rating from 1 to 5 stars.'],
+            ]);
+        }
+
+        $business = $this->findEnabledShop($slug);
+
+        BusinessStorefrontRating::query()->updateOrCreate(
+            ['business_id' => $business->id, 'user_id' => $userId],
+            ['rating' => $rating],
+        );
+
+        $fresh = Business::query()->whereKey($business->id);
+        $this->withShopStorefrontRatingAggregates($fresh, $userId);
+        $business = $fresh->firstOrFail();
+
+        return $this->publicShopPayload($business, $userId);
+    }
+
+    public function shopWithRatings(int $businessId, ?int $viewerUserId = null): Business
+    {
+        $query = Business::query()->whereKey($businessId);
+        $this->withShopStorefrontRatingAggregates($query, $viewerUserId);
+
+        return $query->firstOrFail();
     }
 
     /**
@@ -340,7 +388,20 @@ class StorefrontService
         ];
     }
 
-    private function withStorefrontRatingAggregates(Builder $query, ?int $viewerUserId): void
+    private function withProductStorefrontRatingAggregates(Builder $query, ?int $viewerUserId): void
+    {
+        $query
+            ->withAvg('storefrontRatings', 'rating')
+            ->withCount('storefrontRatings');
+
+        if ($viewerUserId !== null && $viewerUserId > 0) {
+            $query->with([
+                'myStorefrontRating' => fn ($q) => $q->where('user_id', $viewerUserId),
+            ]);
+        }
+    }
+
+    private function withShopStorefrontRatingAggregates(Builder $query, ?int $viewerUserId): void
     {
         $query
             ->withAvg('storefrontRatings', 'rating')

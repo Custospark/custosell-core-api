@@ -19,7 +19,12 @@ class StorefrontController
 
     public function myOrders(Request $request): JsonResponse
     {
-        $userId = (int) Auth::id();
+        $user = $request->user() ?? $request->user('sanctum');
+        $userId = (int) ($user?->id ?? 0);
+        if ($userId < 1) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
         $paginator = $this->storefront->myOrders(
             $userId,
             $request->query('status'),
@@ -44,13 +49,16 @@ class StorefrontController
 
     public function shops(Request $request): JsonResponse
     {
+        $viewerId = Auth::guard('sanctum')->id();
+        $viewer = $viewerId ? (int) $viewerId : null;
         $paginator = $this->storefront->discoverShops(
             $request->query('q'),
             (int) $request->query('per_page', 24),
+            $viewer,
         );
 
         $data = collect($paginator->items())->map(
-            fn ($business) => $this->storefront->publicShopPayload($business)
+            fn ($business) => $this->storefront->publicShopPayload($business, $viewer)
         )->values();
 
         return response()->json([
@@ -99,9 +107,12 @@ class StorefrontController
 
     public function show(string $slug): JsonResponse
     {
+        $viewerId = Auth::guard('sanctum')->id();
+        $viewer = $viewerId ? (int) $viewerId : null;
         $business = $this->storefront->findEnabledShop($slug);
+        $shop = $this->storefront->shopWithRatings((int) $business->id, $viewer);
 
-        return response()->json($this->storefront->publicShopPayload($business));
+        return response()->json($this->storefront->publicShopPayload($shop, $viewer));
     }
 
     public function products(Request $request, string $slug): JsonResponse
@@ -110,10 +121,11 @@ class StorefrontController
         $viewerId = Auth::guard('sanctum')->id();
         $viewer = $viewerId ? (int) $viewerId : null;
         $products = $this->storefront->shopProducts($business, $request->query('category'), $viewer);
+        $shop = $this->storefront->shopWithRatings((int) $business->id, $viewer);
 
         return response()->json([
             'data' => $products->map(fn ($p) => $this->storefront->publicProductPayload($p, $viewer))->values(),
-            'shop' => $this->storefront->publicShopPayload($business),
+            'shop' => $this->storefront->publicShopPayload($shop, $viewer),
         ]);
     }
 
@@ -136,10 +148,28 @@ class StorefrontController
         ]);
     }
 
+    public function rateShop(Request $request, string $slug): JsonResponse
+    {
+        $validated = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+        ]);
+
+        $payload = $this->storefront->rateShop(
+            $slug,
+            (int) Auth::id(),
+            (int) $validated['rating'],
+        );
+
+        return response()->json([
+            'message' => 'Thanks for rating this shop!',
+            'data' => $payload,
+        ]);
+    }
+
     public function placeOrder(StorefrontPlaceOrderRequest $request, string $slug): JsonResponse
     {
         $payload = $request->validated();
-        $buyer = $request->user('sanctum');
+        $buyer = $request->user() ?? $request->user('sanctum');
         if ($buyer) {
             $payload['storefront_buyer_user_id'] = (int) $buyer->id;
         }
