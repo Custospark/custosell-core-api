@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ReportMetricsService
 {
-    public const BRAND_TAGLINE = 'Sell More. Track All. Grow Fast.';
+    public const BRAND_TAGLINE = 'Your Business Operating System';
 
     public const BRAND_FOOTER = 'Powered by Custosell · A product of Custospark Company Ltd';
 

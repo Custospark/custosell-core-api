@@ -96,18 +96,18 @@
 </head>
 <body>
     <div class="card">
-        <div class="logo">Custosell</div>
-        <div class="tagline">Faster Sales. Smarter Business.</div>
+        <div class="logo">{{ config('brand.name', 'Custosell') }}</div>
+        <div class="tagline">{{ config('brand.tagline', 'Your Business Operating System') }}</div>
         <div class="badge">
             <span class="status-dot"></span>
             API Operational
         </div>
         <h1>Backend API</h1>
         <p>
-            This is the Custosell API server. The frontend application is hosted separately.
+            This is the {{ config('brand.name', 'Custosell') }} API server. The frontend application is hosted separately.
             Head over to the main application to get started.
         </p>
-        <a href="https://custosell.com" class="btn" target="_blank" rel="noopener noreferrer">
+        <a href="{{ config('brand.url', 'https://www.custosell.com') }}" class="btn" target="_blank" rel="noopener noreferrer">
             Go to Custosell.com
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -115,7 +115,7 @@
         </a>
         <div class="footer">
             &copy; {{ date('Y') }}
-            <a href="https://custospark.com" target="_blank" rel="noopener noreferrer">Custospark Company Ltd</a>
+            <a href="{{ config('brand.company_url', 'https://www.custospark.com') }}" target="_blank" rel="noopener noreferrer">{{ config('brand.company_name', 'Custospark Company Ltd') }}</a>
         </div>
     </div>
 </body>

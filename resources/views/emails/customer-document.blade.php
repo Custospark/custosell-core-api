@@ -141,15 +141,15 @@
         </div>
 
         <div class="custosell-promo">
-            Powered by <a href="https://www.custosell.com" target="_blank" rel="noopener noreferrer">Custosell</a>
-            &mdash; business management software for growing teams.<br>
-            <span style="color:#64748b;">Sales, invoices, projects, and customer relationships &mdash; in one place.</span>
+            Powered by <a href="{{ config('brand.url') }}" target="_blank" rel="noopener noreferrer">{{ config('brand.name') }}</a>
+            &mdash; {{ config('brand.tagline') }}.<br>
+            <span style="color:#64748b;">{{ config('brand.supporting_line') }}</span>
         </div>
 
         <div class="email-footer">
-            This email was delivered on behalf of {{ $businessName }} using Custosell,
-            a product of <a href="https://www.custospark.com">Custospark Company Ltd</a>.<br>
-            &copy; {{ now()->year }} Custospark Company Ltd. All rights reserved.
+            This email was delivered on behalf of {{ $businessName }} using {{ config('brand.name') }},
+            a product of <a href="{{ config('brand.company_url') }}">{{ config('brand.company_name') }}</a>.<br>
+            &copy; {{ now()->year }} {{ config('brand.company_name') }}. All rights reserved.
         </div>
     </div>
 </body>

@@ -137,11 +137,11 @@
             @endif
 
             <div class="brand-section">
-                <div class="brand-name">Custosell</div>
-                <div class="tagline">Sell More. Track All. Grow Fast.</div>
+                <div class="brand-name">{{ config('brand.name') }}</div>
+                <div class="tagline">{{ config('brand.tagline') }}</div>
                 <div class="parent-brand">
                     a product of
-                    <a href="https://www.custospark.com">Custospark Company Ltd</a>
+                    <a href="{{ config('brand.company_url') }}">{{ config('brand.company_name') }}</a>
                 </div>
             </div>
 
@@ -185,14 +185,14 @@
         <div class="email-footer">
             <div class="footer-message">
                 You're receiving this because you have an account with<br>
-                <strong>Custosell</strong> &mdash; Sell More. Track All. Grow Fast.
+                <strong>{{ config('brand.name') }}</strong> &mdash; {{ config('brand.tagline') }}.
             </div>
             <div class="footer-attribution">
                 a product of
-                <a href="https://www.custospark.com">Custospark Company Ltd</a>
+                <a href="{{ config('brand.company_url') }}">{{ config('brand.company_name') }}</a>
             </div>
             <div class="copyright">
-                &copy; {{ now()->year }} Custospark Company Ltd. All rights reserved.
+                &copy; {{ now()->year }} {{ config('brand.company_name') }}. All rights reserved.
             </div>
         </div>
 

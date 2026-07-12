@@ -273,7 +273,7 @@
   <div class="footer">
     @if($business->receipt_footer)<p>{{ $business->receipt_footer }}</p>@endif
     <p class="brand-tagline">
-      <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSELL_URL }}">{{ $brandTagline ?? 'Sell More. Track All. Grow Fast.' }}</a>
+      <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSELL_URL }}">{{ $brandTagline ?? config('brand.tagline') }}</a>
     </p>
     <p class="brand-footer">
       Powered by <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSELL_URL }}">Custosell</a>
