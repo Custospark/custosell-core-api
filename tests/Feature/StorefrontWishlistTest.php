@@ -184,6 +184,24 @@ class StorefrontWishlistTest extends TestCase
         $this->assertDatabaseMissing('product_wishlists', ['id' => $wish->id]);
     }
 
+    public function test_buyer_can_remove_wishlist_item_by_product_id(): void
+    {
+        ProductWishlist::create([
+            'user_id' => $this->buyer->id,
+            'product_id' => $this->product->id,
+        ]);
+
+        $this->withToken($this->buyerToken)
+            ->deleteJson('/api/v1/storefront/wishlist/by-product/'.$this->product->id)
+            ->assertOk()
+            ->assertJson(['message' => 'Removed from wishlist']);
+
+        $this->assertDatabaseMissing('product_wishlists', [
+            'user_id' => $this->buyer->id,
+            'product_id' => $this->product->id,
+        ]);
+    }
+
     public function test_cannot_remove_others_wishlist_item(): void
     {
         $wish = ProductWishlist::create([

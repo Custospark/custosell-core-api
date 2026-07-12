@@ -282,6 +282,18 @@ class StorefrontController
         return response()->json(['message' => 'Removed from wishlist']);
     }
 
+    public function removeFromWishlistByProduct(Request $request, int $product): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $deleted = $this->wishlist->removeByProduct($userId, $product);
+
+        if (!$deleted) {
+            return response()->json(['message' => 'Wishlist item not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Removed from wishlist']);
+    }
+
     public function placeOrder(StorefrontPlaceOrderRequest $request, string $slug): JsonResponse
     {
         $payload = $request->validated();

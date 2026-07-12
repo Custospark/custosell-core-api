@@ -29,6 +29,9 @@ Route::prefix('storefront')->group(function () {
         ->middleware('auth:sanctum');
     Route::post('/wishlist', [StorefrontController::class, 'addToWishlist'])
         ->middleware(['auth:sanctum', 'throttle:60,1']);
+    Route::delete('/wishlist/by-product/{product}', [StorefrontController::class, 'removeFromWishlistByProduct'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->whereNumber('product');
     Route::delete('/wishlist/{wishlist}', [StorefrontController::class, 'removeFromWishlist'])
         ->middleware(['auth:sanctum', 'throttle:60,1'])
         ->whereNumber('wishlist');
