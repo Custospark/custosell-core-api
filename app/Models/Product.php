@@ -27,6 +27,7 @@ class Product extends Model
         'sku',
         'barcode',
         'unit_price',
+        'discount_percent',
         'wholesale_price',
         'cost_price',
         'stock_quantity',
@@ -49,6 +50,7 @@ class Product extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
             'wholesale_price' => 'decimal:2',
             'cost_price' => 'decimal:2',
             'stock_quantity' => 'integer',
@@ -79,6 +81,28 @@ class Product extends Model
     public function supplyUnitPrice(): float
     {
         return (float) ($this->supply_price ?? $this->unit_price);
+    }
+
+    /** True when a sale discount % is set and greater than zero. */
+    public function hasDiscount(): bool
+    {
+        return (float) ($this->discount_percent ?? 0) > 0;
+    }
+
+    /**
+     * Storefront / sale unit price: regular unit_price with discount_percent applied.
+     * POS New Sale still uses raw unit_price until till discount UI ships.
+     */
+    public function effectiveUnitPrice(): float
+    {
+        $regular = (float) $this->unit_price;
+        if (! $this->hasDiscount()) {
+            return round($regular, 2);
+        }
+
+        $pct = min(100.0, max(0.0, (float) $this->discount_percent));
+
+        return round($regular * (1 - ($pct / 100)), 2);
     }
 
     public function isService(): bool

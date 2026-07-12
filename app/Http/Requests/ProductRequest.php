@@ -32,6 +32,7 @@ class ProductRequest extends BaseFormRequest
             'barcode' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', 'string', 'max:50'],
             'unit_price' => ['required', 'numeric', 'min:0'],
+            'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'wholesale_price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'stock_quantity' => ['integer', 'min:0'],
@@ -53,6 +54,10 @@ class ProductRequest extends BaseFormRequest
                 'stock_quantity' => 0,
             ]);
         }
+
+        if ($this->has('discount_percent') && $this->input('discount_percent') === '') {
+            $this->merge(['discount_percent' => null]);
+        }
     }
 
     public function messages(): array
@@ -65,6 +70,9 @@ class ProductRequest extends BaseFormRequest
             'unit_price.required' => 'Please enter the unit price.',
             'unit_price.numeric' => 'The unit price must be a number.',
             'unit_price.min' => 'The unit price must be 0 or more.',
+            'discount_percent.numeric' => 'The sale discount must be a number.',
+            'discount_percent.min' => 'The sale discount must be 0 or more.',
+            'discount_percent.max' => 'The sale discount must not exceed 100.',
             'wholesale_price.numeric' => 'The wholesale price must be a number.',
             'wholesale_price.min' => 'The wholesale price must be 0 or more.',
             'cost_price.numeric' => 'The cost price must be a number.',

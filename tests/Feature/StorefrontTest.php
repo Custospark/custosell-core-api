@@ -99,6 +99,43 @@ class StorefrontTest extends TestCase
         $this->assertNotContains('Hidden Item', $names);
     }
 
+    public function test_storefront_catalog_and_order_use_product_discount(): void
+    {
+        $this->listed->update(['discount_percent' => 20]);
+
+        $discover = $this->getJson('/api/v1/storefront/discover');
+        $discover->assertOk();
+        $row = collect($discover->json('data'))->firstWhere('id', $this->listed->id);
+        $this->assertNotNull($row);
+        $this->assertEquals(15000, (float) $row['unit_price']);
+        $this->assertEquals(20, (float) $row['discount_percent']);
+        $this->assertEquals(12000, (float) $row['sale_price']);
+        $this->assertEquals(15000, (float) $row['compare_at_price']);
+
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $place = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Sale Shopper',
+                'customer_phone' => '+256700000088',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 2],
+                ],
+            ]);
+
+        $place->assertCreated();
+        $this->assertEquals(24000.0, (float) $place->json('total_amount'));
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(24000.0, (float) $order->total_amount);
+        $line = $order->items()->first();
+        $this->assertNotNull($line);
+        $this->assertEquals(12000.0, (float) $line->unit_price);
+        $this->assertEquals(24000.0, (float) $line->subtotal);
+    }
+
     public function test_shops_lists_enabled_shop_even_without_listed_products(): void
     {
         $emptyEnabled = Business::factory()->create([
@@ -123,6 +160,17 @@ class StorefrontTest extends TestCase
         $this->assertContains($emptyEnabled->slug, $slugs);
         $this->assertNotContains($disabled->slug, $slugs);
         $this->assertArrayHasKey('meta', $res->json());
+    }
+
+    public function test_shops_search_matches_slug_with_or_without_at(): void
+    {
+        $bySlug = $this->getJson('/api/v1/storefront/shops?q=devine-mercy-restaurant');
+        $bySlug->assertOk();
+        $this->assertContains('devine-mercy-restaurant', collect($bySlug->json('data'))->pluck('slug')->all());
+
+        $byAt = $this->getJson('/api/v1/storefront/shops?q=%40devine-mercy');
+        $byAt->assertOk();
+        $this->assertContains('devine-mercy-restaurant', collect($byAt->json('data'))->pluck('slug')->all());
     }
 
     public function test_guest_cannot_place_storefront_order(): void

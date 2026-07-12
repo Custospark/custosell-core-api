@@ -74,12 +74,16 @@ class StorefrontService
             ->where('status', 'active');
 
         if ($q !== null && trim($q) !== '') {
-            $term = '%'.trim($q).'%';
-            $query->where(function (Builder $b) use ($term) {
+            // Discover invites "@username" — strip so slug LIKE matches.
+            $normalized = ltrim(trim($q), '@');
+            $term = '%'.$normalized.'%';
+            $slugTerm = '%'.StorefrontSlug::normalize($normalized).'%';
+            $query->where(function (Builder $b) use ($term, $slugTerm) {
                 $b->where('name', 'like', $term)
                     ->orWhere('city', 'like', $term)
                     ->orWhere('description', 'like', $term)
-                    ->orWhere('slug', 'like', $term);
+                    ->orWhere('slug', 'like', $term)
+                    ->orWhere('slug', 'like', $slugTerm);
             });
         }
 
@@ -295,7 +299,7 @@ class StorefrontService
                 ]);
             }
 
-            $unit = (float) $product->unit_price;
+            $unit = $product->effectiveUnitPrice();
             $normalized[] = [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -464,11 +468,17 @@ class StorefrontService
         $inStock = $isService || $stockQuantity > 0;
         $availability = $isService ? 'always' : ($inStock ? 'in_stock' : 'out');
 
+        $onSale = $product->hasDiscount();
+        $salePrice = $onSale ? $product->effectiveUnitPrice() : null;
+
         return [
             'id' => $product->id,
             'name' => $product->name,
             'description' => $product->description,
             'unit_price' => $product->unit_price,
+            'discount_percent' => $onSale ? (float) $product->discount_percent : null,
+            'sale_price' => $salePrice,
+            'compare_at_price' => $onSale ? (float) $product->unit_price : null,
             'unit' => $product->unit,
             'image_path' => $product->image_path,
             'type' => $type,
