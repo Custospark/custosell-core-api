@@ -16,6 +16,8 @@ class StorefrontPlaceOrderRequest extends BaseFormRequest
         return [
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_phone' => ['required', 'string', 'max:40'],
+            'delivery_address' => ['nullable', 'string', 'max:1000'],
+            'delivery_city' => ['nullable', 'string', 'max:120'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.product_id' => ['required', 'integer', 'min:1'],

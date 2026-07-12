@@ -181,3 +181,19 @@
 - FE persists last contact in localStorage and shows Eye → order items modal on My Orders
 
 **Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-buyer-phone-and-order-eye.md`
+
+---
+
+## ADR-012: Storefront polish gaps
+
+**Date:** 2026-07-12  
+**Status:** Accepted  
+
+**Context:** Discover needed category filters, stock signals, buyer cancel/delete, delivery address, and buyer notify on fulfill.
+
+**Decision:**
+- Buyer cancel/delete on my-orders; stock fields + place-order stock check; delivery_address/city on orders
+- Notify buyer (email + in-app) when storefront order completed/invoiced
+- FE: categories, Online filter, product detail, self-hosted QR, Public shop logo
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-polish-gaps.md`

@@ -10,6 +10,7 @@ use App\Models\Sale;
 use App\Models\Shift;
 use App\Models\User;
 use App\Services\Contracts\OrderServiceInterface;
+use App\Services\Notification\NotificationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,7 @@ class OrderService implements OrderServiceInterface
 
     public function __construct(
         protected CustomerContactService $customerContactService,
+        protected NotificationService $notificationService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -137,6 +139,8 @@ class OrderService implements OrderServiceInterface
                 'source' => self::SOURCE_STOREFRONT,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'],
+                'delivery_address' => $data['delivery_address'] ?? null,
+                'delivery_city' => $data['delivery_city'] ?? null,
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'discount_amount' => $totals['discount_amount'],
@@ -260,6 +264,13 @@ class OrderService implements OrderServiceInterface
         $order->sale_id = $saleId;
         $order->save();
 
+        $this->notifyStorefrontBuyer(
+            $order,
+            'Your order was fulfilled',
+            'The shop fulfilled your order '.$order->order_number.'.',
+            'storefront_order_completed',
+        );
+
         return $order;
     }
 
@@ -281,7 +292,51 @@ class OrderService implements OrderServiceInterface
                 $order->sale_id = $saleId;
             }
             $order->save();
+
+            $this->notifyStorefrontBuyer(
+                $order,
+                'Your order was invoiced',
+                'The shop invoiced your order '.$order->order_number.'.',
+                'storefront_order_invoiced',
+            );
         }
+    }
+
+    protected function notifyStorefrontBuyer(Order $order, string $title, string $body, string $type): void
+    {
+        if ($order->source !== self::SOURCE_STOREFRONT) {
+            return;
+        }
+
+        $buyerId = (int) ($order->storefront_buyer_user_id ?? 0);
+        if ($buyerId < 1) {
+            return;
+        }
+
+        $buyer = User::query()->find($buyerId);
+        if (!$buyer) {
+            return;
+        }
+
+        $ctaUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/')
+            .'/#/discover/my-orders';
+
+        $this->notificationService->sendToUser(
+            $buyer,
+            $title,
+            '<p>'.e($body).'</p>',
+            'storefront_order',
+            'both',
+            (int) $order->business_id,
+            $type,
+            [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+            ],
+            $ctaUrl,
+            'View my orders',
+        );
     }
 
     /**

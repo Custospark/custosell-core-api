@@ -27,6 +27,8 @@ class Order extends Model
         'customer_name',
         'source',
         'customer_phone',
+        'delivery_address',
+        'delivery_city',
         'subtotal',
         'tax_total',
         'discount_amount',

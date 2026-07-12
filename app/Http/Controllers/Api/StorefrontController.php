@@ -8,17 +8,22 @@ use App\Http\Requests\StorefrontPlaceOrderRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\SaleResource;
+use App\Services\InvoicePdfBuilder;
+use App\Services\ReportExportService;
 use App\Services\Storefront\StorefrontBuyerDocumentService;
 use App\Services\Storefront\StorefrontService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class StorefrontController
 {
     public function __construct(
         private readonly StorefrontService $storefront,
         private readonly StorefrontBuyerDocumentService $buyerDocuments,
+        private readonly InvoicePdfBuilder $invoicePdfBuilder,
+        private readonly ReportExportService $export,
     ) {}
 
     public function myOrders(Request $request): JsonResponse
@@ -65,6 +70,49 @@ class StorefrontController
         $invoice = $this->buyerDocuments->invoiceForBuyer($userId, $order);
 
         return response()->json(['data' => new InvoiceResource($invoice)]);
+    }
+
+    /** B2C buyer — shop-letterhead invoice PDF (same builder as seller download). */
+    public function myOrderInvoicePdf(Request $request, int $order): Response
+    {
+        $userId = $this->requireBuyerId($request);
+        $invoice = $this->buyerDocuments->invoiceForBuyer($userId, $order);
+        $invoice->loadMissing(['business', 'customer', 'items.product']);
+
+        $issuer = $invoice->business;
+        if (!$issuer) {
+            abort(404, 'Invoice is not available yet.');
+        }
+
+        $pdfConfig = $this->invoicePdfBuilder->build($invoice, $issuer);
+
+        return $this->export->downloadPdf(
+            $pdfConfig['view'],
+            $pdfConfig['data'],
+            $pdfConfig['filename'],
+            $pdfConfig['orientation'],
+        );
+    }
+
+    public function cancelMyOrder(Request $request, int $order): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $cancelled = $this->storefront->cancelBuyerOrder($userId, $order);
+
+        return response()->json([
+            'message' => 'Order cancelled.',
+            'data' => $this->storefront->buyerOrderPayload($cancelled),
+        ]);
+    }
+
+    public function deleteMyOrder(Request $request, int $order): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $this->storefront->deleteBuyerOrder($userId, $order);
+
+        return response()->json([
+            'message' => 'Order deleted.',
+        ]);
     }
 
     private function requireBuyerId(Request $request): int

@@ -66,6 +66,8 @@ class StorefrontTest extends TestCase
             'name' => 'Chicken Plate',
             'unit_price' => 15000,
             'is_active' => true,
+            'type' => Product::TYPE_PRODUCT,
+            'stock_quantity' => 25,
             'listed_for_storefront' => true,
             'storefront_listed_at' => now(),
         ]);
@@ -338,5 +340,244 @@ class StorefrontTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$buyerToken)
             ->getJson('/api/v1/storefront/my-orders/'.$order->id.'/sale')
             ->assertNotFound();
+    }
+
+    public function test_buyer_sale_and_invoice_letterhead_use_shop_business_name(): void
+    {
+        $buyer = User::factory()->create([
+            'is_active' => true,
+            'business_id' => null,
+            'email' => 'buyer-docs@example.com',
+            'phone' => '+256700000077',
+        ]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Doc Buyer',
+                'customer_phone' => '+256700000077',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+
+        $sale = \App\Models\Sale::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'order_id' => $order->id,
+            'customer_id' => $order->customer_id,
+            'receipt_number' => 'SF-RCPT-1',
+            'subtotal' => 15000,
+            'tax_total' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 15000,
+            'amount_paid' => 15000,
+            'payment_method' => 'cash',
+            'payment_status' => 'paid',
+            'sale_date' => now(),
+        ]);
+
+        \App\Models\SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_id' => $this->listed->id,
+            'product_name' => $this->listed->name,
+            'product_price' => 15000,
+            'quantity' => 1,
+            'unit_price' => 15000,
+            'unit_cost' => 0,
+            'subtotal' => 15000,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+        ]);
+
+        $order->update(['status' => Order::STATUS_COMPLETED]);
+
+        $saleRes = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->getJson('/api/v1/storefront/my-orders/'.$order->id.'/sale')
+            ->assertOk();
+
+        $saleBusinessName = $saleRes->json('data.business.name') ?? $saleRes->json('business.name');
+        $this->assertSame($this->business->name, $saleBusinessName);
+        $this->assertNotSame('Custosell', $saleBusinessName);
+
+        $invoice = \App\Models\Invoice::create([
+            'business_id' => $this->business->id,
+            'invoice_number' => 'SF-INV-1',
+            'customer_id' => $order->customer_id,
+            'sale_id' => $sale->id,
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(7)->toDateString(),
+            'status' => 'sent',
+            'subtotal' => 15000,
+            'tax_total' => 0,
+            'total_amount' => 15000,
+            'amount_paid' => 0,
+            'created_by' => $this->owner->id,
+        ]);
+
+        \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $this->listed->id,
+            'description' => $this->listed->name,
+            'quantity' => 1,
+            'unit_price' => 15000,
+            'subtotal' => 15000,
+        ]);
+
+        $invRes = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->getJson('/api/v1/storefront/my-orders/'.$order->id.'/invoice')
+            ->assertOk();
+
+        $this->assertSame('received', $invRes->json('data.direction') ?? $invRes->json('direction'));
+        $sellerName = $invRes->json('data.seller_business.name') ?? $invRes->json('seller_business.name');
+        $partyName = $invRes->json('data.party_name') ?? $invRes->json('party_name');
+        $this->assertSame($this->business->name, $sellerName);
+        $this->assertSame($this->business->name, $partyName);
+        $this->assertNotSame('Custosell', $sellerName);
+        $this->assertNotSame('Doc Buyer', $partyName);
+
+        $pdfRes = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->get('/api/v1/storefront/my-orders/'.$order->id.'/invoice/pdf');
+        $pdfRes->assertOk();
+        $this->assertStringContainsString('pdf', strtolower((string) $pdfRes->headers->get('content-type')));
+
+        $stranger = User::factory()->create([
+            'is_active' => true,
+            'business_id' => null,
+            'email' => 'stranger-docs@example.com',
+        ]);
+        $this->actingAs($stranger, 'sanctum')
+            ->get('/api/v1/storefront/my-orders/'.$order->id.'/invoice/pdf')
+            ->assertNotFound();
+        $this->actingAs($stranger, 'sanctum')
+            ->getJson('/api/v1/storefront/my-orders/'.$order->id.'/invoice')
+            ->assertNotFound();
+    }
+
+    public function test_discover_products_include_stock_fields(): void
+    {
+        $res = $this->getJson('/api/v1/storefront/discover');
+        $res->assertOk();
+
+        $item = collect($res->json('data'))->firstWhere('name', 'Chicken Plate');
+        $this->assertNotNull($item);
+        $this->assertSame(25, (int) $item['stock_quantity']);
+        $this->assertTrue($item['in_stock']);
+        $this->assertSame('in_stock', $item['availability']);
+    }
+
+    public function test_place_order_fails_when_out_of_stock(): void
+    {
+        $this->listed->update(['stock_quantity' => 0]);
+
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Amina',
+                'customer_phone' => '+256700000001',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.quantity']);
+    }
+
+    public function test_buyer_can_cancel_open_order(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer User',
+                'customer_phone' => '+256700000099',
+                'delivery_address' => 'Plot 5 Jinja Road',
+                'delivery_city' => 'Kampala',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertSame('Plot 5 Jinja Road', $order->delivery_address);
+        $this->assertSame('Kampala', $order->delivery_city);
+
+        $res = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/my-orders/'.$order->id.'/cancel');
+
+        $res->assertOk()
+            ->assertJsonPath('data.status', Order::STATUS_CANCELLED)
+            ->assertJsonPath('data.delivery_address', 'Plot 5 Jinja Road')
+            ->assertJsonPath('data.delivery_city', 'Kampala');
+
+        $this->assertSame(Order::STATUS_CANCELLED, $order->fresh()->status);
+    }
+
+    public function test_buyer_cannot_cancel_completed_order(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer User',
+                'customer_phone' => '+256700000099',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+        $order->update(['status' => Order::STATUS_COMPLETED]);
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/my-orders/'.$order->id.'/cancel')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_buyer_can_delete_cancelled_order(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer User',
+                'customer_phone' => '+256700000099',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/my-orders/'.$order->id.'/cancel')
+            ->assertOk();
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->deleteJson('/api/v1/storefront/my-orders/'.$order->id)
+            ->assertOk();
+
+        $this->assertSoftDeleted('orders', ['id' => $order->id]);
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->getJson('/api/v1/storefront/my-orders')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 }

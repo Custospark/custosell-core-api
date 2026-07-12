@@ -104,8 +104,14 @@ class InvoiceResource extends JsonResource
 
     protected function resolveDirection(Request $request): string
     {
-        $businessId = (int) ($request->user()?->business_id ?? 0);
+        $user = $request->user();
+        $businessId = (int) ($user?->business_id ?? 0);
         if ($businessId > 0 && (int) $this->buyer_business_id === $businessId && (int) $this->business_id !== $businessId) {
+            return 'received';
+        }
+
+        // B2C Discover shopper (no business) viewing a shop invoice via storefront my-orders.
+        if ($user && $businessId === 0 && (int) $this->business_id > 0) {
             return 'received';
         }
 

@@ -282,6 +282,19 @@ class StorefrontService
                 ]);
             }
 
+            $isService = $product->isService();
+            $stockQty = (int) ($product->stock_quantity ?? 0);
+
+            if (!$isService && $qty > $stockQty) {
+                throw ValidationException::withMessages([
+                    "items.{$i}.quantity" => [
+                        $stockQty < 1
+                            ? 'This item is out of stock.'
+                            : "Only {$stockQty} left in stock.",
+                    ],
+                ]);
+            }
+
             $unit = (float) $product->unit_price;
             $normalized[] = [
                 'product_id' => $product->id,
@@ -298,6 +311,12 @@ class StorefrontService
         return $this->orderService->createFromStorefront($business, $ownerId, [
             'customer_name' => trim((string) $payload['customer_name']),
             'customer_phone' => trim((string) $payload['customer_phone']),
+            'delivery_address' => isset($payload['delivery_address'])
+                ? trim((string) $payload['delivery_address']) ?: null
+                : null,
+            'delivery_city' => isset($payload['delivery_city'])
+                ? trim((string) $payload['delivery_city']) ?: null
+                : null,
             'notes' => isset($payload['notes']) ? trim((string) $payload['notes']) : null,
             'items' => $normalized,
             'storefront_buyer_user_id' => $payload['storefront_buyer_user_id'] ?? null,
@@ -365,6 +384,8 @@ class StorefrontService
             'items' => $items,
             'customer_name' => $order->customer_name,
             'customer_phone' => $order->customer_phone,
+            'delivery_address' => $order->delivery_address,
+            'delivery_city' => $order->delivery_city,
             'notes' => $order->notes,
             'created_at' => $order->created_at?->toISOString(),
             'shop_name' => $business?->name,
@@ -387,6 +408,46 @@ class StorefrontService
             ->first();
     }
 
+    public function cancelBuyerOrder(int $buyerUserId, int $orderId): Order
+    {
+        $order = $this->findBuyerOrder($buyerUserId, $orderId);
+        if (!$order) {
+            abort(404, 'Order not found.');
+        }
+
+        if (!$order->isOpen()) {
+            throw ValidationException::withMessages([
+                'status' => ['Only open orders can be cancelled.'],
+            ]);
+        }
+
+        $order->status = Order::STATUS_CANCELLED;
+        $order->save();
+
+        return $order->fresh([
+            'business:id,name,slug,currency',
+            'items',
+            'sale:id,order_id,receipt_number,payment_status',
+            'sale.linkedInvoice:id,sale_id,invoice_number',
+        ]) ?? $order;
+    }
+
+    public function deleteBuyerOrder(int $buyerUserId, int $orderId): void
+    {
+        $order = $this->findBuyerOrder($buyerUserId, $orderId);
+        if (!$order) {
+            abort(404, 'Order not found.');
+        }
+
+        if ($order->status !== Order::STATUS_CANCELLED) {
+            throw ValidationException::withMessages([
+                'status' => ['Only cancelled orders can be deleted.'],
+            ]);
+        }
+
+        $order->delete();
+    }
+
     /** @return array<string, mixed> */
     public function publicProductPayload(Product $product, ?int $viewerUserId = null): array
     {
@@ -397,6 +458,12 @@ class StorefrontService
             $my = $product->myStorefrontRating?->rating;
         }
 
+        $type = $product->type ?? Product::TYPE_PRODUCT;
+        $stockQuantity = (int) ($product->stock_quantity ?? 0);
+        $isService = $type === Product::TYPE_SERVICE;
+        $inStock = $isService || $stockQuantity > 0;
+        $availability = $isService ? 'always' : ($inStock ? 'in_stock' : 'out');
+
         return [
             'id' => $product->id,
             'name' => $product->name,
@@ -404,7 +471,10 @@ class StorefrontService
             'unit_price' => $product->unit_price,
             'unit' => $product->unit,
             'image_path' => $product->image_path,
-            'type' => $product->type ?? 'product',
+            'type' => $type,
+            'stock_quantity' => $stockQuantity,
+            'in_stock' => $inStock,
+            'availability' => $availability,
             'rating_avg' => $count > 0 ? round((float) $avg, 1) : 0,
             'rating_count' => $count,
             'my_rating' => $my !== null ? (int) $my : null,

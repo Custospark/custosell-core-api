@@ -18,6 +18,8 @@ class OrderResource extends JsonResource
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'customer_name' => $this->customer_name,
             'customer_phone' => $this->customer_phone,
+            'delivery_address' => $this->delivery_address,
+            'delivery_city' => $this->delivery_city,
             'shift_id' => $this->shift_id,
             'order_number' => $this->order_number,
             'status' => $this->status,

@@ -15,6 +15,15 @@ Route::prefix('storefront')->group(function () {
     Route::get('/my-orders/{order}/invoice', [StorefrontController::class, 'myOrderInvoice'])
         ->middleware('auth:sanctum')
         ->whereNumber('order');
+    Route::get('/my-orders/{order}/invoice/pdf', [StorefrontController::class, 'myOrderInvoicePdf'])
+        ->middleware('auth:sanctum')
+        ->whereNumber('order');
+    Route::post('/my-orders/{order}/cancel', [StorefrontController::class, 'cancelMyOrder'])
+        ->middleware('auth:sanctum')
+        ->whereNumber('order');
+    Route::delete('/my-orders/{order}', [StorefrontController::class, 'deleteMyOrder'])
+        ->middleware('auth:sanctum')
+        ->whereNumber('order');
     Route::get('/{slug}', [StorefrontController::class, 'show'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::get('/{slug}/products', [StorefrontController::class, 'products'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::post('/{slug}/ratings', [StorefrontController::class, 'rateShop'])
