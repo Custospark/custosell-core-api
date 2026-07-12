@@ -24,6 +24,8 @@ class Order extends Model
         'order_number',
         'status',
         'customer_name',
+        'source',
+        'customer_phone',
         'subtotal',
         'tax_total',
         'discount_amount',

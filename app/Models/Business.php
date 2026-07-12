@@ -73,6 +73,7 @@ class Business extends Model
         'trial_ends_at',
         'is_open_for_supply',
         'supply_headline',
+        'storefront_enabled',
         'primary_intent',
         'secondary_intent',
         'intent_completed_at',
@@ -89,6 +90,7 @@ class Business extends Model
             'default_vat_rate' => 'decimal:2',
             'prices_include_tax' => 'boolean',
             'is_open_for_supply' => 'boolean',
+            'storefront_enabled' => 'boolean',
         ];
     }
 

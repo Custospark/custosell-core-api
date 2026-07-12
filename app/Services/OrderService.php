@@ -15,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrderService implements OrderServiceInterface
 {
+    public const SOURCE_POS = 'pos';
+
+    public const SOURCE_STOREFRONT = 'storefront';
+
     public function getAll(int $businessId, array $filters = []): Collection
     {
         $query = Order::query()
@@ -27,11 +31,16 @@ class OrderService implements OrderServiceInterface
             $query->where('status', $filters['status']);
         }
 
+        if (!empty($filters['source'])) {
+            $query->where('source', $filters['source']);
+        }
+
         if (!empty($filters['q'])) {
             $q = trim((string) $filters['q']);
             $query->where(function ($builder) use ($q) {
                 $builder->where('order_number', 'like', "%{$q}%")
                     ->orWhere('customer_name', 'like', "%{$q}%")
+                    ->orWhere('customer_phone', 'like', "%{$q}%")
                     ->orWhere('notes', 'like', "%{$q}%");
             });
         }
@@ -58,12 +67,51 @@ class OrderService implements OrderServiceInterface
                 'shift_id' => $this->resolveShiftId($businessId, $userId, $data['shift_id'] ?? null),
                 'order_number' => $this->generateOrderNumber($business),
                 'status' => Order::STATUS_OPEN,
+                'source' => self::SOURCE_POS,
                 'customer_name' => $data['customer_name'] ?? null,
+                'customer_phone' => $data['customer_phone'] ?? null,
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'discount_amount' => $totals['discount_amount'],
                 'total_amount' => $totals['total_amount'],
                 'notes' => $data['notes'] ?? null,
+                'held_at' => now(),
+            ]);
+
+            $this->replaceItems($order, $lines);
+
+            return $order->load(['items', 'customer', 'user', 'sale']);
+        });
+    }
+
+    public function createFromStorefront(Business $business, int $ownerUserId, array $data): Order
+    {
+        return DB::transaction(function () use ($business, $ownerUserId, $data) {
+            $lines = $data['items'] ?? [];
+            if (!is_array($lines) || count($lines) < 1) {
+                throw ValidationException::withMessages([
+                    'items' => ['An order must include at least one item.'],
+                ]);
+            }
+
+            $totals = $this->sumLines($lines, 0, 0);
+            $notes = $data['notes'] ?? null;
+
+            $order = Order::create([
+                'business_id' => $business->id,
+                'user_id' => $ownerUserId,
+                'customer_id' => null,
+                'shift_id' => null,
+                'order_number' => $this->generateOrderNumber($business),
+                'status' => Order::STATUS_OPEN,
+                'source' => self::SOURCE_STOREFRONT,
+                'customer_name' => $data['customer_name'],
+                'customer_phone' => $data['customer_phone'],
+                'subtotal' => $totals['subtotal'],
+                'tax_total' => $totals['tax_total'],
+                'discount_amount' => $totals['discount_amount'],
+                'total_amount' => $totals['total_amount'],
+                'notes' => $notes,
                 'held_at' => now(),
             ]);
 

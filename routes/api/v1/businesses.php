@@ -8,6 +8,8 @@ Route::post('/businesses/register', [BusinessController::class, 'store']);
 Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group(function () {
     Route::get('/businesses/mine', [BusinessController::class, 'mine']);
     Route::put('/businesses/profile', [BusinessController::class, 'updateProfile']);
+    Route::get('/businesses/slug-available', [BusinessController::class, 'slugAvailable']);
+    Route::patch('/businesses/storefront-profile', [BusinessController::class, 'updateStorefrontProfile']);
     Route::get('/businesses/{id}', [BusinessController::class, 'show']);
     Route::put('/businesses/{id}', [BusinessController::class, 'update']);
     Route::get('/businesses/settings', [BusinessController::class, 'settings']);

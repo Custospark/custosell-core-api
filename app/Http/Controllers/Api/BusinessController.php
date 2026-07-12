@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BusinessRegisterRequest;
 use App\Http\Requests\BusinessRequest;
+use App\Http\Requests\BusinessStorefrontProfileRequest;
 use App\Http\Requests\BusinessSupplyProfileRequest;
 use App\Http\Resources\BusinessResource;
 use App\Services\Contracts\BusinessServiceInterface;
@@ -108,5 +109,26 @@ class BusinessController extends Controller
         $business = $this->businessService->updateSupplyProfile($business->id, $request->validated());
 
         return new BusinessResource($business);
+    }
+
+    public function updateStorefrontProfile(BusinessStorefrontProfileRequest $request): BusinessResource
+    {
+        $business = $this->businessService->getForUser($request->user());
+        if (! $business) {
+            abort(404, 'Business not found');
+        }
+
+        $business = $this->businessService->updateStorefrontProfile($business->id, $request->validated());
+
+        return new BusinessResource($business);
+    }
+
+    public function slugAvailable(Request $request): JsonResponse
+    {
+        $business = $this->businessService->getForUser($request->user());
+        $slug = (string) $request->query('slug', '');
+        $result = $this->businessService->checkSlugAvailability($slug, $business?->id);
+
+        return response()->json($result);
     }
 }

@@ -34,6 +34,9 @@ class ProductResource extends JsonResource
             'supply_price' => $this->supply_price,
             'supply_min_qty' => $this->supply_min_qty,
             'listed_at' => $this->listed_at?->toISOString(),
+            'listed_for_storefront' => (bool) ($this->listed_for_storefront ?? false),
+            'image_path' => $this->image_path,
+            'storefront_listed_at' => $this->storefront_listed_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

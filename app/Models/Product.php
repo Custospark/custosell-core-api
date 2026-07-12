@@ -39,6 +39,9 @@ class Product extends Model
         'supply_price',
         'supply_min_qty',
         'listed_at',
+        'listed_for_storefront',
+        'image_path',
+        'storefront_listed_at',
     ];
 
     protected function casts(): array
@@ -56,6 +59,8 @@ class Product extends Model
             'supply_price' => 'decimal:2',
             'supply_min_qty' => 'integer',
             'listed_at' => 'datetime',
+            'listed_for_storefront' => 'boolean',
+            'storefront_listed_at' => 'datetime',
         ];
     }
 

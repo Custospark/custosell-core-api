@@ -98,4 +98,24 @@ class ProductService implements ProductServiceInterface
 
         return $product;
     }
+
+    public function updateStorefrontListing(int $id, int $businessId, array $data): Product
+    {
+        $product = Product::where('business_id', $businessId)->findOrFail($id);
+        $listed = (bool) ($data['listed_for_storefront'] ?? false);
+        $product->listed_for_storefront = $listed;
+        $product->storefront_listed_at = $listed ? ($product->storefront_listed_at ?? now()) : null;
+        $product->save();
+
+        return $product;
+    }
+
+    public function updateImage(int $id, int $businessId, string $imagePath): Product
+    {
+        $product = Product::where('business_id', $businessId)->findOrFail($id);
+        $product->image_path = $imagePath;
+        $product->save();
+
+        return $product;
+    }
 }

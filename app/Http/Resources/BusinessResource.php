@@ -45,6 +45,7 @@ class BusinessResource extends JsonResource
             'logo_path' => $this->logo_path,
             'is_open_for_supply' => (bool) $this->is_open_for_supply,
             'supply_headline' => $this->supply_headline,
+            'storefront_enabled' => (bool) ($this->storefront_enabled ?? false),
             'status' => $this->status,
             'trial_ends_at' => $this->trial_ends_at,
             'subscription' => $this->whenLoaded('subscription'),

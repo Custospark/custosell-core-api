@@ -19,7 +19,7 @@ class OrderController extends Controller
     public function index(Request $request): OrderCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['status', 'q']);
+        $filters = $request->only(['status', 'q', 'source']);
 
         return new OrderCollection($this->orderService->getAll($businessId, $filters));
     }

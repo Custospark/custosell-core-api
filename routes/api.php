@@ -43,4 +43,5 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/hr.php';
     require __DIR__ . '/api/v1/forecasting.php';
     require __DIR__ . '/api/v1/efris.php';
+    require __DIR__ . '/api/v1/storefront.php';
 });

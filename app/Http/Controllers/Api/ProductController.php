@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\ProductStorefrontListingRequest;
 use App\Http\Requests\ProductSupplyListingRequest;
 use App\Http\Resources\ProductCollection;
 use App\Http\Resources\ProductResource;
@@ -13,6 +14,7 @@ use App\Services\Contracts\StockMovementServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -74,6 +76,37 @@ class ProductController extends Controller
     {
         $businessId = $request->user()->business_id;
         $product = $this->productService->updateSupplyListing($id, $businessId, $request->validated());
+
+        return new ProductResource($product);
+    }
+
+    public function updateStorefrontListing(ProductStorefrontListingRequest $request, int $id): ProductResource
+    {
+        $businessId = $request->user()->business_id;
+        $product = $this->productService->updateStorefrontListing($id, $businessId, $request->validated());
+
+        return new ProductResource($product);
+    }
+
+    public function uploadImage(Request $request, int $id): ProductResource
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+        ]);
+
+        $businessId = (int) $request->user()->business_id;
+        $product = $this->productService->getById($id);
+        if (!$product || (int) $product->business_id !== $businessId) {
+            abort(404, 'Product not found');
+        }
+
+        if ($product->image_path) {
+            $old = ltrim(str_replace('/storage/', '', $product->image_path), '/');
+            Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('image')->store('product-images', 'public');
+        $product = $this->productService->updateImage($id, $businessId, '/storage/'.$path);
 
         return new ProductResource($product);
     }
