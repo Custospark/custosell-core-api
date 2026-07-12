@@ -272,6 +272,12 @@ class StorefrontTest extends TestCase
             ->assertJsonPath('data.rating_count', 1)
             ->assertJsonPath('data.my_rating', 5);
 
+        $this->assertDatabaseHas('product_storefront_ratings', [
+            'product_id' => $this->listed->id,
+            'user_id' => $buyer->id,
+            'rating' => 5,
+        ]);
+
         $this->withHeader('Authorization', 'Bearer '.$buyerToken)
             ->postJson('/api/v1/storefront/devine-mercy-restaurant/products/'.$this->listed->id.'/ratings', [
                 'rating' => 4,
@@ -302,6 +308,12 @@ class StorefrontTest extends TestCase
             ->assertJsonPath('data.rating_avg', 5)
             ->assertJsonPath('data.rating_count', 1)
             ->assertJsonPath('data.my_rating', 5);
+
+        $this->assertDatabaseHas('business_storefront_ratings', [
+            'business_id' => $this->business->id,
+            'user_id' => $buyer->id,
+            'rating' => 5,
+        ]);
     }
 
     public function test_slug_available_endpoint(): void

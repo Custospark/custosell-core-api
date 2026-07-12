@@ -213,6 +213,7 @@ class StorefrontController
 
     public function rateProduct(Request $request, string $slug, int $product): JsonResponse
     {
+        $userId = $this->requireBuyerId($request);
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ]);
@@ -220,7 +221,7 @@ class StorefrontController
         $payload = $this->storefront->rateProduct(
             $slug,
             $product,
-            (int) Auth::id(),
+            $userId,
             (int) $validated['rating'],
         );
 
@@ -232,13 +233,14 @@ class StorefrontController
 
     public function rateShop(Request $request, string $slug): JsonResponse
     {
+        $userId = $this->requireBuyerId($request);
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ]);
 
         $payload = $this->storefront->rateShop(
             $slug,
-            (int) Auth::id(),
+            $userId,
             (int) $validated['rating'],
         );
 
