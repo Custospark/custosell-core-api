@@ -123,27 +123,16 @@ class StorefrontTest extends TestCase
         $this->assertArrayHasKey('meta', $res->json());
     }
 
-    public function test_guest_can_place_storefront_order(): void
+    public function test_guest_cannot_place_storefront_order(): void
     {
-        $res = $this->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+        $this->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
             'customer_name' => 'Amina',
             'customer_phone' => '+256700000001',
             'notes' => 'Extra sauce',
             'items' => [
                 ['product_id' => $this->listed->id, 'quantity' => 2],
             ],
-        ]);
-
-        $res->assertCreated()
-            ->assertJsonPath('order.source', 'storefront')
-            ->assertJsonPath('order.customer_phone', '+256700000001');
-
-        $order = Order::query()->first();
-        $this->assertNotNull($order);
-        $this->assertSame('storefront', $order->source);
-        $this->assertSame($this->owner->id, $order->user_id);
-        $this->assertSame(Order::STATUS_OPEN, $order->status);
-        $this->assertNull($order->storefront_buyer_user_id);
+        ])->assertUnauthorized();
     }
 
     public function test_authenticated_buyer_sees_own_storefront_orders(): void
@@ -161,6 +150,10 @@ class StorefrontTest extends TestCase
             ])
             ->assertCreated();
 
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertSame($buyer->id, $order->storefront_buyer_user_id);
+
         $res = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
             ->getJson('/api/v1/storefront/my-orders');
 
@@ -172,13 +165,17 @@ class StorefrontTest extends TestCase
 
     public function test_rejects_unlisted_product_on_order(): void
     {
-        $this->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
-            'customer_name' => 'Amina',
-            'customer_phone' => '+256700000001',
-            'items' => [
-                ['product_id' => $this->unlisted->id, 'quantity' => 1],
-            ],
-        ])->assertStatus(422);
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Amina',
+                'customer_phone' => '+256700000001',
+                'items' => [
+                    ['product_id' => $this->unlisted->id, 'quantity' => 1],
+                ],
+            ])->assertStatus(422);
     }
 
     public function test_slug_available_endpoint(): void
