@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StorefrontPlaceOrderRequest;
+use App\Http\Requests\StorefrontWishlistRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\SaleResource;
@@ -12,6 +13,7 @@ use App\Services\InvoicePdfBuilder;
 use App\Services\ReportExportService;
 use App\Services\Storefront\StorefrontBuyerDocumentService;
 use App\Services\Storefront\StorefrontService;
+use App\Services\Storefront\WishlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +26,7 @@ class StorefrontController
         private readonly StorefrontBuyerDocumentService $buyerDocuments,
         private readonly InvoicePdfBuilder $invoicePdfBuilder,
         private readonly ReportExportService $export,
+        private readonly WishlistService $wishlist,
     ) {}
 
     public function myOrders(Request $request): JsonResponse
@@ -245,6 +248,40 @@ class StorefrontController
         ]);
     }
 
+    public function wishlist(Request $request): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+
+        return response()->json([
+            'data' => $this->wishlist->list($userId)->values(),
+            'count' => $this->wishlist->count($userId),
+        ]);
+    }
+
+    public function addToWishlist(StorefrontWishlistRequest $request): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $productId = (int) $request->validated()['product_id'];
+        $item = $this->wishlist->add($userId, $productId);
+
+        return response()->json([
+            'message' => 'Saved to wishlist',
+            'data' => $item,
+        ], 201);
+    }
+
+    public function removeFromWishlist(Request $request, int $wishlist): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $deleted = $this->wishlist->remove($userId, $wishlist);
+
+        if (!$deleted) {
+            return response()->json(['message' => 'Wishlist item not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Removed from wishlist']);
+    }
+
     public function placeOrder(StorefrontPlaceOrderRequest $request, string $slug): JsonResponse
     {
         $payload = $request->validated();
@@ -254,6 +291,15 @@ class StorefrontController
         }
 
         $order = $this->storefront->placeOrder($slug, $payload);
+
+        $buyerId = (int) ($payload['storefront_buyer_user_id'] ?? 0);
+        if ($buyerId > 0) {
+            $productIds = array_map(
+                fn ($item) => (int) ($item['product_id'] ?? 0),
+                $payload['items'] ?? [],
+            );
+            $this->wishlist->removeProducts($buyerId, $productIds);
+        }
 
         return response()->json([
             'message' => 'Order received. The shop will contact you shortly.',
