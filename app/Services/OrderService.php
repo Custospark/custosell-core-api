@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Shift;
+use App\Models\User;
 use App\Services\Contracts\OrderServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,10 @@ class OrderService implements OrderServiceInterface
     public const SOURCE_POS = 'pos';
 
     public const SOURCE_STOREFRONT = 'storefront';
+
+    public function __construct(
+        protected CustomerContactService $customerContactService,
+    ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
     {
@@ -97,13 +102,35 @@ class OrderService implements OrderServiceInterface
             $totals = $this->sumLines($lines, 0, 0);
             $notes = $data['notes'] ?? null;
 
+            $customerId = null;
+            $buyerId = isset($data['storefront_buyer_user_id'])
+                ? (int) $data['storefront_buyer_user_id']
+                : null;
+            if ($buyerId) {
+                $buyer = User::query()->find($buyerId);
+                if ($buyer) {
+                    $customer = $this->customerContactService->attachStorefrontBuyer(
+                        (int) $business->id,
+                        $buyer,
+                        (string) $data['customer_name'],
+                        (string) $data['customer_phone'],
+                    );
+                    $customerId = $customer->id;
+
+                    // Persist phone on the buyer User so reorders / other devices can reuse it.
+                    $phone = trim((string) ($data['customer_phone'] ?? ''));
+                    if ($phone !== '' && $phone !== (string) ($buyer->phone ?? '')) {
+                        $buyer->phone = $phone;
+                        $buyer->save();
+                    }
+                }
+            }
+
             $order = Order::create([
                 'business_id' => $business->id,
                 'user_id' => $ownerUserId,
-                'storefront_buyer_user_id' => isset($data['storefront_buyer_user_id'])
-                    ? (int) $data['storefront_buyer_user_id']
-                    : null,
-                'customer_id' => null,
+                'storefront_buyer_user_id' => $buyerId,
+                'customer_id' => $customerId,
                 'shift_id' => null,
                 'order_number' => $this->generateOrderNumber($business),
                 'status' => Order::STATUS_OPEN,

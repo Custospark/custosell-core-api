@@ -130,3 +130,54 @@
 **Config:** `config/efris.php` · **Env template:** `.env.example` (EFRIS section)
 
 **Frontend ADR:** `Frontend/docs/adr/2026-07-12-efris-fiscalization.md`
+
+---
+
+## ADR-009: Storefront buyer accounts → seller customers
+
+**Date:** 2026-07-12  
+**Status:** Accepted  
+
+**Context:** Discover shoppers need accounts without creating a business. Storefront orders tracked `storefront_buyer_user_id` but never created a seller `Customer`.
+
+**Decision:**
+- `POST /auth/register` with `account_type=storefront_buyer` → User `business_id=null`, `modules=[]`, no Shift
+- Login/register skip Shift when `business_id` is null
+- `customers.user_id` FK + unique `(business_id, user_id)`
+- `CustomerContactService::attachStorefrontBuyer` on storefront place-order sets `order.customer_id`
+
+**Tests:** `StorefrontTest` (buyer register + customer attach)
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-buyer-customer-accounts.md`
+
+---
+
+## ADR-010: B2C storefront buyer receipts & invoices
+
+**Date:** 2026-07-12  
+**Status:** Accepted  
+
+**Context:** Discover buyers need sale receipts / invoices after shops fulfill storefront orders, without business-scoped `/sales` or `/invoices` access.
+
+**Decision:**
+- Enrich `GET /storefront/my-orders` with `sale_id` / `invoice_id` / receipt fields
+- `GET /storefront/my-orders/{id}/sale` and `.../invoice` authorized by `storefront_buyer_user_id`
+- FE reuses `ReceiptPreviewModal` + `ViewInvoiceModal` (`role=storefront_buyer`)
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-buyer-receipts-invoices.md`
+
+---
+
+## ADR-011: Storefront buyer phone reuse + My Orders items
+
+**Date:** 2026-07-12  
+**Status:** Accepted  
+
+**Context:** Buyers retyped phone on every reorder; My Orders lacked a line-item preview before fulfillment.
+
+**Decision:**
+- On place-order, update buyer `User.phone` when a non-empty phone is submitted
+- `buyerOrderPayload` includes `items[]`, `customer_name`, `customer_phone`
+- FE persists last contact in localStorage and shows Eye → order items modal on My Orders
+
+**Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-buyer-phone-and-order-eye.md`

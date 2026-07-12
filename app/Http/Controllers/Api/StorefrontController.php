@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StorefrontPlaceOrderRequest;
+use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\SaleResource;
+use App\Services\Storefront\StorefrontBuyerDocumentService;
 use App\Services\Storefront\StorefrontService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +18,7 @@ class StorefrontController
 {
     public function __construct(
         private readonly StorefrontService $storefront,
+        private readonly StorefrontBuyerDocumentService $buyerDocuments,
     ) {}
 
     public function myOrders(Request $request): JsonResponse
@@ -45,6 +49,33 @@ class StorefrontController
                 'total' => $paginator->total(),
             ],
         ]);
+    }
+
+    public function myOrderSale(Request $request, int $order): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $sale = $this->buyerDocuments->saleForBuyer($userId, $order);
+
+        return response()->json(['data' => new SaleResource($sale)]);
+    }
+
+    public function myOrderInvoice(Request $request, int $order): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $invoice = $this->buyerDocuments->invoiceForBuyer($userId, $order);
+
+        return response()->json(['data' => new InvoiceResource($invoice)]);
+    }
+
+    private function requireBuyerId(Request $request): int
+    {
+        $user = $request->user() ?? $request->user('sanctum');
+        $userId = (int) ($user?->id ?? 0);
+        if ($userId < 1) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        return $userId;
     }
 
     public function shops(Request $request): JsonResponse

@@ -88,6 +88,7 @@ All list endpoints return Laravel pagination format:
 | password | string | Yes | min:6 |
 | password_confirmation | string | Yes | must match password |
 | phone | string | No | max:50 |
+| account_type | string | No | `storefront_buyer` — customer-only (`business_id` null, empty modules, no shift). Merchants use `POST /businesses/register`. |
 
 **Response (201):**
 ```json

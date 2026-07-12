@@ -9,6 +9,12 @@ Route::prefix('storefront')->group(function () {
     Route::get('/shops', [StorefrontController::class, 'shops']);
     Route::get('/my-orders', [StorefrontController::class, 'myOrders'])
         ->middleware('auth:sanctum');
+    Route::get('/my-orders/{order}/sale', [StorefrontController::class, 'myOrderSale'])
+        ->middleware('auth:sanctum')
+        ->whereNumber('order');
+    Route::get('/my-orders/{order}/invoice', [StorefrontController::class, 'myOrderInvoice'])
+        ->middleware('auth:sanctum')
+        ->whereNumber('order');
     Route::get('/{slug}', [StorefrontController::class, 'show'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::get('/{slug}/products', [StorefrontController::class, 'products'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::post('/{slug}/ratings', [StorefrontController::class, 'rateShop'])

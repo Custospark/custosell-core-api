@@ -312,7 +312,12 @@ class StorefrontService
     public function myOrders(int $buyerUserId, ?string $status, ?string $q, int $perPage = 24): LengthAwarePaginator
     {
         $query = Order::query()
-            ->with(['business:id,name,slug,currency', 'items'])
+            ->with([
+                'business:id,name,slug,currency',
+                'items',
+                'sale:id,order_id,receipt_number,payment_status',
+                'sale.linkedInvoice:id,sale_id,invoice_number',
+            ])
             ->where('source', 'storefront')
             ->where('storefront_buyer_user_id', $buyerUserId)
             ->orderByDesc('id');
@@ -337,19 +342,49 @@ class StorefrontService
     public function buyerOrderPayload(Order $order): array
     {
         $business = $order->business;
+        $sale = $order->relationLoaded('sale') ? $order->sale : null;
+        $invoice = $sale && $sale->relationLoaded('linkedInvoice') ? $sale->linkedInvoice : null;
+
+        $items = $order->relationLoaded('items')
+            ? $order->items->map(static fn ($item) => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'product_name' => $item->product_name,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => $item->unit_price,
+                'subtotal' => $item->subtotal,
+            ])->values()->all()
+            : [];
 
         return [
             'id' => $order->id,
             'order_number' => $order->order_number,
             'status' => $order->status,
             'total_amount' => $order->total_amount,
-            'items_count' => $order->items?->count() ?? 0,
+            'items_count' => count($items) > 0 ? count($items) : ($order->items?->count() ?? 0),
+            'items' => $items,
+            'customer_name' => $order->customer_name,
+            'customer_phone' => $order->customer_phone,
             'notes' => $order->notes,
             'created_at' => $order->created_at?->toISOString(),
             'shop_name' => $business?->name,
             'shop_slug' => $business?->slug,
             'currency' => $business?->currency ?? 'UGX',
+            'sale_id' => $sale?->id,
+            'receipt_number' => $sale?->receipt_number,
+            'payment_status' => $sale?->payment_status,
+            'invoice_id' => $invoice?->id,
+            'invoice_number' => $invoice?->invoice_number,
         ];
+    }
+
+    public function findBuyerOrder(int $buyerUserId, int $orderId): ?Order
+    {
+        return Order::query()
+            ->where('source', 'storefront')
+            ->where('storefront_buyer_user_id', $buyerUserId)
+            ->where('id', $orderId)
+            ->first();
     }
 
     /** @return array<string, mixed> */

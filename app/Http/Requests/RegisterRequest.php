@@ -19,11 +19,23 @@ class RegisterRequest extends BaseFormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'account_type' => ['sometimes', 'string', Rule::in(['storefront_buyer'])],
             'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('account_type') === 'storefront_buyer') {
+            $this->merge([
+                'business_id' => null,
+                'role_id' => null,
+                'modules' => [],
+            ]);
+        }
     }
 
     public function messages(): array

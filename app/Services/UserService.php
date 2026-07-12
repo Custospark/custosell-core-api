@@ -42,7 +42,14 @@ class UserService implements UserServiceInterface
     {
         $data['password'] = Hash::make($data['password']);
 
-        if (! array_key_exists('modules', $data) || $data['modules'] === null) {
+        $isStorefrontBuyer = ($data['account_type'] ?? null) === 'storefront_buyer';
+        unset($data['account_type']);
+
+        if ($isStorefrontBuyer) {
+            $data['business_id'] = null;
+            $data['role_id'] = null;
+            $data['modules'] = [];
+        } elseif (! array_key_exists('modules', $data) || $data['modules'] === null) {
             $data['modules'] = ModuleAccessService::BUSINESS_MODULES;
         }
 

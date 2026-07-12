@@ -29,14 +29,18 @@ class AuthController extends Controller
         $this->platformAdminService->assignIfEligible($user);
         $user->load(['business', 'role', 'roles']);
 
-        $activeShift = Shift::create([
-            'business_id' => $user->business_id,
-            'user_id' => $user->id,
-            'clock_in' => now(),
-            'status' => 'active',
-        ]);
+        if ($user->business_id) {
+            $activeShift = Shift::create([
+                'business_id' => $user->business_id,
+                'user_id' => $user->id,
+                'clock_in' => now(),
+                'status' => 'active',
+            ]);
+            $user->setRelation('activeShift', $activeShift);
+        } else {
+            $user->setRelation('activeShift', null);
+        }
 
-        $user->setRelation('activeShift', $activeShift);
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
@@ -73,23 +77,27 @@ class AuthController extends Controller
 
         $user->forceFill(['last_login_at' => now()])->save();
 
-        // Find active shift or create a new one
-        $activeShift = Shift::where('business_id', $user->business_id)
-            ->where('user_id', $user->id)
-            ->whereNull('clock_out')
-            ->where('status', 'active')
-            ->first();
+        if ($user->business_id) {
+            $activeShift = Shift::where('business_id', $user->business_id)
+                ->where('user_id', $user->id)
+                ->whereNull('clock_out')
+                ->where('status', 'active')
+                ->first();
 
-        if (!$activeShift) {
-            $activeShift = Shift::create([
-                'business_id' => $user->business_id,
-                'user_id' => $user->id,
-                'clock_in' => now(),
-                'status' => 'active',
-            ]);
+            if (!$activeShift) {
+                $activeShift = Shift::create([
+                    'business_id' => $user->business_id,
+                    'user_id' => $user->id,
+                    'clock_in' => now(),
+                    'status' => 'active',
+                ]);
+            }
+
+            $user->setRelation('activeShift', $activeShift);
+        } else {
+            $user->setRelation('activeShift', null);
         }
 
-        $user->setRelation('activeShift', $activeShift);
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([

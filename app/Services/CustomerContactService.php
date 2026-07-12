@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\User;
 use App\Services\Contracts\CustomerServiceInterface;
 use Illuminate\Support\Str;
 
@@ -61,6 +62,39 @@ class CustomerContactService
             'phone' => $phone,
             'email' => $email,
         ]);
+    }
+
+    /**
+     * Link a storefront buyer User as a Customer of the seller business (idempotent).
+     */
+    public function attachStorefrontBuyer(int $businessId, User $buyer, string $name, string $phone): Customer
+    {
+        $name = $this->normalize($name) ?: $this->normalize($buyer->name) ?: 'Customer';
+        $phone = $this->normalize($phone) ?: $this->normalize($buyer->phone);
+        $email = $this->normalizeEmail($buyer->email);
+
+        $linked = Customer::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $buyer->id)
+            ->first();
+
+        if ($linked) {
+            return $this->mergeContact($linked, $name, $email, $phone);
+        }
+
+        $customer = $this->resolve($businessId, [
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+        ]);
+
+        if ((int) ($customer->user_id ?? 0) !== (int) $buyer->id) {
+            $customer = $this->customerService->update($customer->id, [
+                'user_id' => $buyer->id,
+            ]);
+        }
+
+        return $customer;
     }
 
     private function mergeContact(Customer $customer, ?string $name, ?string $email, ?string $phone): Customer

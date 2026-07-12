@@ -161,6 +161,14 @@ class StorefrontTest extends TestCase
         $this->assertCount(1, $res->json('data'));
         $this->assertSame($this->business->slug, $res->json('data.0.shop_slug'));
         $this->assertSame($this->business->name, $res->json('data.0.shop_name'));
+        $this->assertSame('+256700000099', $res->json('data.0.customer_phone'));
+        $this->assertIsArray($res->json('data.0.items'));
+        $this->assertCount(1, $res->json('data.0.items'));
+        $this->assertSame($this->listed->name, $res->json('data.0.items.0.product_name'));
+        $this->assertSame(1, (int) $res->json('data.0.items.0.quantity'));
+
+        $buyer->refresh();
+        $this->assertSame('+256700000099', $buyer->phone);
     }
 
     public function test_rejects_unlisted_product_on_order(): void
@@ -257,5 +265,78 @@ class StorefrontTest extends TestCase
             ->getJson('/api/v1/businesses/slug-available?slug=devine-mercy-restaurant')
             ->assertOk()
             ->assertJsonPath('available', true); // same business ignored
+    }
+
+    public function test_storefront_buyer_register_has_no_business(): void
+    {
+        $res = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Discover Shopper',
+            'email' => 'shopper@example.com',
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'phone' => '+256700111222',
+            'account_type' => 'storefront_buyer',
+        ]);
+
+        $res->assertCreated();
+        $this->assertNull($res->json('user.data.business_id') ?? $res->json('user.business_id'));
+        $this->assertSame([], $res->json('user.data.modules') ?? $res->json('user.modules') ?? []);
+
+        $user = User::query()->where('email', 'shopper@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertNull($user->business_id);
+        $this->assertSame([], $user->modules ?? []);
+    }
+
+    public function test_storefront_order_attaches_buyer_as_customer(): void
+    {
+        $buyer = User::factory()->create([
+            'is_active' => true,
+            'business_id' => null,
+            'email' => 'buyer-customer@example.com',
+            'phone' => '+256700000088',
+        ]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer Customer',
+                'customer_phone' => '+256700000088',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $order = Order::query()->latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertNotNull($order->customer_id);
+        $this->assertSame($buyer->id, $order->storefront_buyer_user_id);
+
+        $customer = \App\Models\Customer::query()->find($order->customer_id);
+        $this->assertNotNull($customer);
+        $this->assertSame($this->business->id, $customer->business_id);
+        $this->assertSame($buyer->id, $customer->user_id);
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer Customer',
+                'customer_phone' => '+256700000088',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 2],
+                ],
+            ])
+            ->assertCreated();
+
+        $second = Order::query()->latest('id')->first();
+        $this->assertSame($customer->id, $second->customer_id);
+        $this->assertSame(1, \App\Models\Customer::query()
+            ->where('business_id', $this->business->id)
+            ->where('user_id', $buyer->id)
+            ->count());
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->getJson('/api/v1/storefront/my-orders/'.$order->id.'/sale')
+            ->assertNotFound();
     }
 }
