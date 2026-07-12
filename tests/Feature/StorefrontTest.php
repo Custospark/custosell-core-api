@@ -97,6 +97,32 @@ class StorefrontTest extends TestCase
         $this->assertNotContains('Hidden Item', $names);
     }
 
+    public function test_shops_lists_enabled_shop_even_without_listed_products(): void
+    {
+        $emptyEnabled = Business::factory()->create([
+            'name' => 'Empty Enabled Cafe',
+            'slug' => 'empty-enabled-cafe',
+            'status' => 'active',
+            'storefront_enabled' => true,
+        ]);
+
+        $disabled = Business::factory()->create([
+            'name' => 'Disabled Shop',
+            'slug' => 'disabled-shop',
+            'status' => 'active',
+            'storefront_enabled' => false,
+        ]);
+
+        $res = $this->getJson('/api/v1/storefront/shops');
+        $res->assertOk();
+
+        $slugs = collect($res->json('data'))->pluck('slug')->all();
+        $this->assertContains($this->business->slug, $slugs);
+        $this->assertContains($emptyEnabled->slug, $slugs);
+        $this->assertNotContains($disabled->slug, $slugs);
+        $this->assertArrayHasKey('meta', $res->json());
+    }
+
     public function test_guest_can_place_storefront_order(): void
     {
         $res = $this->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [

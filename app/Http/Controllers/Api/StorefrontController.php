@@ -16,6 +16,28 @@ class StorefrontController
         private readonly StorefrontService $storefront,
     ) {}
 
+    public function shops(Request $request): JsonResponse
+    {
+        $paginator = $this->storefront->discoverShops(
+            $request->query('q'),
+            (int) $request->query('per_page', 24),
+        );
+
+        $data = collect($paginator->items())->map(
+            fn ($business) => $this->storefront->publicShopPayload($business)
+        )->values();
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
+    }
+
     public function discover(Request $request): JsonResponse
     {
         $paginator = $this->storefront->discoverProducts(

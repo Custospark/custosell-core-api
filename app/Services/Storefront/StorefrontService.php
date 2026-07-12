@@ -52,6 +52,27 @@ class StorefrontService
         ];
     }
 
+    public function discoverShops(?string $q, int $perPage = 24): LengthAwarePaginator
+    {
+        $query = Business::query()
+            ->where('storefront_enabled', true)
+            ->where('status', 'active');
+
+        if ($q !== null && trim($q) !== '') {
+            $term = '%'.trim($q).'%';
+            $query->where(function (Builder $b) use ($term) {
+                $b->where('name', 'like', $term)
+                    ->orWhere('city', 'like', $term)
+                    ->orWhere('description', 'like', $term)
+                    ->orWhere('slug', 'like', $term);
+            });
+        }
+
+        return $query
+            ->orderBy('name')
+            ->paginate(min(48, max(1, $perPage)));
+    }
+
     public function discoverProducts(?string $q, ?string $category, int $perPage = 24): LengthAwarePaginator
     {
         $query = $this->listedProductsQuery();
