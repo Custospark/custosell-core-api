@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -108,5 +109,16 @@ class Product extends Model
     public function purchaseOrderItems(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function storefrontRatings(): HasMany
+    {
+        return $this->hasMany(ProductStorefrontRating::class);
+    }
+
+    /** Eager-load with a user_id constraint for the signed-in viewer. */
+    public function myStorefrontRating(): HasOne
+    {
+        return $this->hasOne(ProductStorefrontRating::class);
     }
 }

@@ -178,6 +178,59 @@ class StorefrontTest extends TestCase
             ])->assertStatus(422);
     }
 
+    public function test_shops_include_contact_fields(): void
+    {
+        $this->business->update([
+            'description' => 'Fresh meals daily',
+            'city' => 'Kampala',
+            'country' => 'Uganda',
+            'address' => 'Plot 1 Kampala Road',
+            'business_phone' => '+256700111222',
+            'business_email' => 'hello@devine.test',
+        ]);
+
+        $res = $this->getJson('/api/v1/storefront/shops');
+        $res->assertOk();
+        $shop = collect($res->json('data'))->firstWhere('slug', $this->business->slug);
+        $this->assertNotNull($shop);
+        $this->assertSame('Fresh meals daily', $shop['description']);
+        $this->assertSame('Plot 1 Kampala Road', $shop['address']);
+        $this->assertSame('+256700111222', $shop['business_phone']);
+        $this->assertSame('hello@devine.test', $shop['business_email']);
+    }
+
+    public function test_authenticated_buyer_can_rate_listed_product(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $res = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/products/'.$this->listed->id.'/ratings', [
+                'rating' => 5,
+            ]);
+
+        $res->assertOk()
+            ->assertJsonPath('data.rating_avg', 5)
+            ->assertJsonPath('data.rating_count', 1)
+            ->assertJsonPath('data.my_rating', 5);
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/products/'.$this->listed->id.'/ratings', [
+                'rating' => 4,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.rating_avg', 4)
+            ->assertJsonPath('data.rating_count', 1)
+            ->assertJsonPath('data.my_rating', 4);
+    }
+
+    public function test_guest_cannot_rate_product(): void
+    {
+        $this->postJson('/api/v1/storefront/devine-mercy-restaurant/products/'.$this->listed->id.'/ratings', [
+            'rating' => 5,
+        ])->assertUnauthorized();
+    }
+
     public function test_slug_available_endpoint(): void
     {
         $this->withToken($this->token)

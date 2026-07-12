@@ -66,14 +66,17 @@ class StorefrontController
 
     public function discover(Request $request): JsonResponse
     {
+        $viewerId = Auth::guard('sanctum')->id();
         $paginator = $this->storefront->discoverProducts(
             $request->query('q'),
             $request->query('category'),
             (int) $request->query('per_page', 24),
+            $viewerId ? (int) $viewerId : null,
         );
 
+        $viewer = $viewerId ? (int) $viewerId : null;
         $data = collect($paginator->items())->map(
-            fn ($product) => $this->storefront->publicProductPayload($product)
+            fn ($product) => $this->storefront->publicProductPayload($product, $viewer)
         )->values();
 
         return response()->json([
@@ -104,11 +107,32 @@ class StorefrontController
     public function products(Request $request, string $slug): JsonResponse
     {
         $business = $this->storefront->findEnabledShop($slug);
-        $products = $this->storefront->shopProducts($business, $request->query('category'));
+        $viewerId = Auth::guard('sanctum')->id();
+        $viewer = $viewerId ? (int) $viewerId : null;
+        $products = $this->storefront->shopProducts($business, $request->query('category'), $viewer);
 
         return response()->json([
-            'data' => $products->map(fn ($p) => $this->storefront->publicProductPayload($p))->values(),
+            'data' => $products->map(fn ($p) => $this->storefront->publicProductPayload($p, $viewer))->values(),
             'shop' => $this->storefront->publicShopPayload($business),
+        ]);
+    }
+
+    public function rateProduct(Request $request, string $slug, int $product): JsonResponse
+    {
+        $validated = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+        ]);
+
+        $payload = $this->storefront->rateProduct(
+            $slug,
+            $product,
+            (int) Auth::id(),
+            (int) $validated['rating'],
+        );
+
+        return response()->json([
+            'message' => 'Thanks for your rating!',
+            'data' => $payload,
         ]);
     }
 
