@@ -143,6 +143,31 @@ class StorefrontTest extends TestCase
         $this->assertSame('storefront', $order->source);
         $this->assertSame($this->owner->id, $order->user_id);
         $this->assertSame(Order::STATUS_OPEN, $order->status);
+        $this->assertNull($order->storefront_buyer_user_id);
+    }
+
+    public function test_authenticated_buyer_sees_own_storefront_orders(): void
+    {
+        $buyer = User::factory()->create(['is_active' => true]);
+        $buyerToken = $buyer->createToken('t')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->postJson('/api/v1/storefront/devine-mercy-restaurant/orders', [
+                'customer_name' => 'Buyer User',
+                'customer_phone' => '+256700000099',
+                'items' => [
+                    ['product_id' => $this->listed->id, 'quantity' => 1],
+                ],
+            ])
+            ->assertCreated();
+
+        $res = $this->withHeader('Authorization', 'Bearer '.$buyerToken)
+            ->getJson('/api/v1/storefront/my-orders');
+
+        $res->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame($this->business->slug, $res->json('data.0.shop_slug'));
+        $this->assertSame($this->business->name, $res->json('data.0.shop_name'));
     }
 
     public function test_rejects_unlisted_product_on_order(): void

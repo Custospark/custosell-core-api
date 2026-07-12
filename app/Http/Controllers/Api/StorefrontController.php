@@ -9,12 +9,38 @@ use App\Http\Resources\OrderResource;
 use App\Services\Storefront\StorefrontService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class StorefrontController
 {
     public function __construct(
         private readonly StorefrontService $storefront,
     ) {}
+
+    public function myOrders(Request $request): JsonResponse
+    {
+        $userId = (int) Auth::id();
+        $paginator = $this->storefront->myOrders(
+            $userId,
+            $request->query('status'),
+            $request->query('q'),
+            (int) $request->query('per_page', 24),
+        );
+
+        $data = collect($paginator->items())->map(
+            fn ($order) => $this->storefront->buyerOrderPayload($order)
+        )->values();
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
+    }
 
     public function shops(Request $request): JsonResponse
     {
@@ -88,7 +114,13 @@ class StorefrontController
 
     public function placeOrder(StorefrontPlaceOrderRequest $request, string $slug): JsonResponse
     {
-        $order = $this->storefront->placeOrder($slug, $request->validated());
+        $payload = $request->validated();
+        $buyer = $request->user('sanctum');
+        if ($buyer) {
+            $payload['storefront_buyer_user_id'] = (int) $buyer->id;
+        }
+
+        $order = $this->storefront->placeOrder($slug, $payload);
 
         return response()->json([
             'message' => 'Order received. The shop will contact you shortly.',

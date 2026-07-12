@@ -205,7 +205,56 @@ class StorefrontService
             'customer_phone' => trim((string) $payload['customer_phone']),
             'notes' => isset($payload['notes']) ? trim((string) $payload['notes']) : null,
             'items' => $normalized,
+            'storefront_buyer_user_id' => $payload['storefront_buyer_user_id'] ?? null,
         ]);
+    }
+
+    /**
+     * Orders the signed-in user placed as a storefront buyer (not the shop owner queue).
+     *
+     * @return LengthAwarePaginator<int, Order>
+     */
+    public function myOrders(int $buyerUserId, ?string $status, ?string $q, int $perPage = 24): LengthAwarePaginator
+    {
+        $query = Order::query()
+            ->with(['business:id,name,slug,currency', 'items'])
+            ->where('source', 'storefront')
+            ->where('storefront_buyer_user_id', $buyerUserId)
+            ->orderByDesc('id');
+
+        if ($status !== null && trim($status) !== '') {
+            $query->where('status', trim($status));
+        }
+
+        if ($q !== null && trim($q) !== '') {
+            $term = '%'.trim($q).'%';
+            $query->where(function (Builder $b) use ($term) {
+                $b->where('order_number', 'like', $term)
+                    ->orWhere('customer_name', 'like', $term)
+                    ->orWhereHas('business', fn (Builder $bb) => $bb->where('name', 'like', $term));
+            });
+        }
+
+        return $query->paginate(min(48, max(1, $perPage)));
+    }
+
+    /** @return array<string, mixed> */
+    public function buyerOrderPayload(Order $order): array
+    {
+        $business = $order->business;
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'total_amount' => $order->total_amount,
+            'items_count' => $order->items?->count() ?? 0,
+            'notes' => $order->notes,
+            'created_at' => $order->created_at?->toISOString(),
+            'shop_name' => $business?->name,
+            'shop_slug' => $business?->slug,
+            'currency' => $business?->currency ?? 'UGX',
+        ];
     }
 
     /** @return array<string, mixed> */

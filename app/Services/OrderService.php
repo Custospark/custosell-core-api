@@ -100,6 +100,9 @@ class OrderService implements OrderServiceInterface
             $order = Order::create([
                 'business_id' => $business->id,
                 'user_id' => $ownerUserId,
+                'storefront_buyer_user_id' => isset($data['storefront_buyer_user_id'])
+                    ? (int) $data['storefront_buyer_user_id']
+                    : null,
                 'customer_id' => null,
                 'shift_id' => null,
                 'order_number' => $this->generateOrderNumber($business),
