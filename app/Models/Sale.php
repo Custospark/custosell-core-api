@@ -33,6 +33,14 @@ class Sale extends Model
         'sale_date',
         'email_sent_count',
         'last_emailed_at',
+        'fiscal_status',
+        'fiscal_fdn',
+        'fiscal_qr',
+        'fiscal_verification_code',
+        'fiscal_payload',
+        'fiscal_response',
+        'fiscalized_at',
+        'fiscal_last_error',
     ];
 
     protected function casts(): array
@@ -48,6 +56,9 @@ class Sale extends Model
             'sale_date' => 'datetime',
             'email_sent_count' => 'integer',
             'last_emailed_at' => 'datetime',
+            'fiscal_payload' => 'array',
+            'fiscal_response' => 'array',
+            'fiscalized_at' => 'datetime',
         ];
     }
 

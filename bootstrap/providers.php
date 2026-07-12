@@ -15,6 +15,7 @@ use App\Providers\PurchaseOrderServiceProvider;
 use App\Providers\AccountingServiceProvider;
 use App\Providers\EstimateServiceProvider;
 use App\Providers\EventServiceProvider;
+use App\Providers\EfrisServiceProvider;
 use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
 use App\Providers\SaleItemServiceProvider;
@@ -54,4 +55,5 @@ return [
     DocumentServiceProvider::class,
     EstimateServiceProvider::class,
     EventServiceProvider::class,
+    EfrisServiceProvider::class,
 ];

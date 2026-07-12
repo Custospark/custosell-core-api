@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 use App\Events\SaleCreatedForAccounting;
 use App\Events\SaleRefundedForAccounting;
+use App\Services\Efris\EfrisServiceInterface;
 use App\Services\PaymentService;
 
 class SaleService implements SaleServiceInterface
@@ -25,6 +26,7 @@ class SaleService implements SaleServiceInterface
         protected TaxEngine $taxEngine,
         protected PaymentService $paymentService,
         protected OrderServiceInterface $orderService,
+        protected EfrisServiceInterface $efrisService,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -172,6 +174,9 @@ class SaleService implements SaleServiceInterface
                     dispatchAccounting: !$isFullyPaid,
                 );
             }
+
+            // EFRIS: never blocks checkout — sync attempt or queue when offline/fail.
+            $sale = $this->efrisService->fiscalizeSale($sale->fresh() ?? $sale);
 
             return $sale->load(['saleItems', 'business', 'user', 'payments']);
         });

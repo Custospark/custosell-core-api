@@ -10,6 +10,7 @@ use App\Models\Sale;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\Contracts\OrderServiceInterface;
+use App\Services\Efris\EfrisServiceInterface;
 use App\Services\PaymentService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class InvoiceService implements InvoiceServiceInterface
         protected InvoiceRepositoryInterface $invoiceRepository,
         protected PaymentService $paymentService,
         protected OrderServiceInterface $orderService,
+        protected EfrisServiceInterface $efrisService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -271,6 +273,9 @@ class InvoiceService implements InvoiceServiceInterface
         ]);
 
         event(new InvoiceSentForAccounting($invoice));
+
+        // EFRIS: never blocks send — sync attempt or queue when offline/fail.
+        $invoice = $this->efrisService->fiscalizeInvoice($invoice->fresh() ?? $invoice);
 
         return $invoice->load(['customer', 'createdBy', 'items.product', 'payments']);
     }

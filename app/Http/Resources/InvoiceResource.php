@@ -54,6 +54,12 @@ class InvoiceResource extends JsonResource
             'created_by' => $this->created_by,
             'created_by_user' => new UserResource($this->whenLoaded('createdBy')),
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),
+            'fiscal_status' => $this->fiscal_status ?? 'none',
+            'fiscal_fdn' => $this->fiscal_fdn,
+            'fiscal_qr' => $this->fiscal_qr,
+            'fiscal_verification_code' => $this->fiscal_verification_code,
+            'fiscalized_at' => $this->fiscalized_at?->toISOString(),
+            'fiscal_last_error' => $this->fiscal_last_error,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

@@ -31,6 +31,14 @@ class Invoice extends Model
         'email_sent_count',
         'last_emailed_at',
         'created_by',
+        'fiscal_status',
+        'fiscal_fdn',
+        'fiscal_qr',
+        'fiscal_verification_code',
+        'fiscal_payload',
+        'fiscal_response',
+        'fiscalized_at',
+        'fiscal_last_error',
     ];
 
     protected function casts(): array
@@ -44,6 +52,9 @@ class Invoice extends Model
             'amount_paid' => 'decimal:2',
             'email_sent_count' => 'integer',
             'last_emailed_at' => 'datetime',
+            'fiscal_payload' => 'array',
+            'fiscal_response' => 'array',
+            'fiscalized_at' => 'datetime',
         ];
     }
 

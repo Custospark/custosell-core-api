@@ -40,6 +40,12 @@ class SaleResource extends JsonResource
             'sale_date' => $this->sale_date?->toISOString(),
             'sale_items' => SaleItemResource::collection($this->whenLoaded('saleItems')),
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
+            'fiscal_status' => $this->fiscal_status ?? 'none',
+            'fiscal_fdn' => $this->fiscal_fdn,
+            'fiscal_qr' => $this->fiscal_qr,
+            'fiscal_verification_code' => $this->fiscal_verification_code,
+            'fiscalized_at' => $this->fiscalized_at?->toISOString(),
+            'fiscal_last_error' => $this->fiscal_last_error,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
