@@ -168,7 +168,7 @@ class HrEmployeeController extends Controller
             'employee_number' => ['sometimes', 'string', 'max:64'],
             'first_name' => ['sometimes', 'string', 'max:120'],
             'last_name' => ['sometimes', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255'],
+            // Email/password are immutable via HR profile update — use create-account / attach / detach.
             'phone' => ['nullable', 'string', 'max:64'],
             'department_id' => ['nullable', 'integer'],
             'position_id' => ['nullable', 'integer'],
