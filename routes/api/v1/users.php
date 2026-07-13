@@ -18,5 +18,8 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group(function () {
+    Route::get('users/lookup', [UserController::class, 'lookup']);
+    Route::post('users/attach', [UserController::class, 'attach']);
+    Route::post('users/{user}/detach', [UserController::class, 'detach']);
     Route::apiResource('users', UserController::class);
 });

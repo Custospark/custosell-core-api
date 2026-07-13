@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AttachUserRequest;
 use App\Http\Requests\ProfileRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -10,18 +11,55 @@ use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\ModuleAccessService;
+use App\Services\StaffMembershipService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     public function __construct(
         protected UserServiceInterface $userService,
         protected ModuleAccessService $moduleAccess,
+        protected StaffMembershipService $staffMembership,
     ) {}
+
+    public function lookup(Request $request): JsonResponse
+    {
+        $email = trim((string) $request->query('email', ''));
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'email' => 'Enter a valid email address.',
+            ]);
+        }
+
+        $result = $this->staffMembership->lookupByEmail($email, $request->user());
+
+        return response()->json(['data' => $result]);
+    }
+
+    public function attach(AttachUserRequest $request): UserResource
+    {
+        $user = $this->staffMembership->attachStaff($request->user(), $request->validated());
+
+        return new UserResource($user);
+    }
+
+    public function detach(Request $request, int $user): JsonResponse
+    {
+        $detached = $this->staffMembership->detachStaff($request->user(), $user);
+
+        return response()->json([
+            'data' => [
+                'id' => $detached->id,
+                'email' => $detached->email,
+                'detached' => true,
+            ],
+        ]);
+    }
 
     public function index(Request $request): UserCollection
     {
@@ -107,7 +145,10 @@ class UserController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $this->userService->delete($id, $request->user()->business_id, $request->user()->id);
-        return response()->json(null, 204);
+        unset($request, $id);
+
+        return response()->json([
+            'message' => 'Staff accounts cannot be deleted. Detach them from this organization instead.',
+        ], 422);
     }
 }

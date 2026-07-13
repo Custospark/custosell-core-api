@@ -290,7 +290,11 @@ class HrModuleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.user_id', null);
 
-        $this->assertSoftDeleted('users', ['id' => $userId]);
+        $this->assertDatabaseHas('users', [
+            'id' => $userId,
+            'business_id' => null,
+            'deleted_at' => null,
+        ]);
         $this->assertDatabaseHas('hr_employees', [
             'id' => $employee['id'],
             'user_id' => null,

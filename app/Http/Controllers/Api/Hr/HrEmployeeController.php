@@ -135,14 +135,14 @@ class HrEmployeeController extends Controller
 
     public function createAccount(Request $request, int $id): JsonResponse
     {
-        $validated = $request->validate($this->accountRules());
+        $validated = $request->validate($this->accountRules(allowExistingEmail: true));
 
         $accountData = [
             'name' => $validated['account_name']
                 ?? trim(($request->input('first_name', '').' '.$request->input('last_name', ''))),
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
-            'password' => $validated['password'],
+            'password' => $validated['password'] ?? null,
             'role_id' => $validated['role_id'] ?? null,
             'modules' => $validated['modules'] ?? [],
         ];
@@ -270,12 +270,18 @@ class HrEmployeeController extends Controller
     /**
      * @return array<string, mixed>
      */
-    protected function accountRules(): array
+    protected function accountRules(bool $allowExistingEmail = false): array
     {
+        $emailRules = ['required', 'string', 'email', 'max:255'];
+        if (! $allowExistingEmail) {
+            $emailRules[] = 'unique:users,email';
+        }
+
         return [
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'email' => $emailRules,
+            // Required when creating a brand-new login; attach path may omit (service enforces).
+            'password' => [$allowExistingEmail ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+            'role_id' => ['required', 'integer', 'exists:roles,id'],
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
             'phone' => ['nullable', 'string', 'max:64'],

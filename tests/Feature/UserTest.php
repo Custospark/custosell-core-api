@@ -152,13 +152,131 @@ class UserTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function test_delete_staff(): void
+    public function test_delete_staff_rejected_use_detach(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->deleteJson("/api/v1/users/{$this->staff->id}");
 
-        $response->assertStatus(204);
-        $this->assertSoftDeleted('users', ['id' => $this->staff->id]);
+        $response->assertStatus(422);
+        $this->assertDatabaseHas('users', [
+            'id' => $this->staff->id,
+            'deleted_at' => null,
+            'business_id' => $this->business->id,
+        ]);
+    }
+
+    public function test_detach_staff_clears_membership_keeps_login(): void
+    {
+        $this->staff->tokens()->delete();
+        $this->staff->createToken('staff');
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson("/api/v1/users/{$this->staff->id}/detach");
+
+        $response->assertOk()
+            ->assertJsonPath('data.detached', true)
+            ->assertJsonPath('data.id', $this->staff->id);
+
+        $this->staff->refresh();
+        $this->assertNull($this->staff->business_id);
+        $this->assertNull($this->staff->role_id);
+        $this->assertSame([], $this->staff->modules ?? []);
+        $this->assertNull($this->staff->deleted_at);
+        $this->assertTrue((bool) $this->staff->is_active);
+        $this->assertSame(0, $this->staff->tokens()->count());
+    }
+
+    public function test_lookup_and_attach_unattached_user(): void
+    {
+        $free = User::factory()->create([
+            'email' => 'free.attach@example.com',
+            'business_id' => null,
+            'role_id' => null,
+            'modules' => [],
+            'is_active' => true,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson('/api/v1/users/lookup?email=free.attach@example.com')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'unattached')
+            ->assertJsonPath('data.user.id', $free->id);
+
+        $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/users/attach', [
+                'email' => 'free.attach@example.com',
+                'role_id' => $this->staff->role_id,
+                'modules' => ['sales'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.email', 'free.attach@example.com')
+            ->assertJsonPath('data.business_id', $this->business->id);
+
+        $free->refresh();
+        $this->assertSame($this->business->id, $free->business_id);
+        $this->assertContains('sales', $free->modules ?? []);
+    }
+
+    public function test_attach_rejects_other_business_email(): void
+    {
+        $otherOwner = User::factory()->create(['is_active' => true]);
+        $otherBusiness = Business::factory()->create([
+            'owner_id' => $otherOwner->id,
+            'currency' => 'UGX',
+            'status' => 'active',
+        ]);
+        $otherOwner->business_id = $otherBusiness->id;
+        $otherOwner->save();
+
+        $taken = User::factory()->create([
+            'email' => 'taken.elsewhere@example.com',
+            'business_id' => $otherBusiness->id,
+            'is_active' => true,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson('/api/v1/users/lookup?email=taken.elsewhere@example.com')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'other_business');
+
+        $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/users/attach', [
+                'email' => $taken->email,
+                'role_id' => $this->staff->role_id,
+                'modules' => ['sales'],
+            ])
+            ->assertStatus(409);
+    }
+
+    public function test_update_staff_rejects_is_active(): void
+    {
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/users/{$this->staff->id}", [
+                'name' => $this->staff->name,
+                'email' => $this->staff->email,
+                'phone' => $this->staff->phone,
+                'role_id' => $this->staff->role_id,
+                'is_active' => false,
+            ]);
+
+        // is_active stripped from request rules — if present as unexpected, may be ignored;
+        // force via service by sending only when validated. Without rule, Laravel strips unknown.
+        // Explicitly assert staff stays active when client tries deactivate via modules-only path.
+        $this->staff->refresh();
+        $this->assertTrue((bool) $this->staff->is_active);
+
+        // Direct service rejection when is_active in validated data:
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        app(\App\Services\Contracts\UserServiceInterface::class)->update(
+            $this->staff->id,
+            $this->business->id,
+            $this->admin->id,
+            [
+                'name' => $this->staff->name,
+                'email' => $this->staff->email,
+                'is_active' => false,
+            ],
+        );
     }
 
     public function test_update_staff_allows_preserved_admin_role(): void
@@ -169,7 +287,6 @@ class UserTest extends TestCase
                 'email' => $this->admin->email,
                 'phone' => '+256700000002',
                 'role_id' => $this->admin->role_id,
-                'is_active' => true,
             ]);
 
         $response->assertStatus(200)
@@ -187,7 +304,6 @@ class UserTest extends TestCase
                 'email' => $this->admin->email,
                 'phone' => '+256700000003',
                 'role_id' => null,
-                'is_active' => true,
             ]);
 
         $response->assertStatus(200)
@@ -215,7 +331,6 @@ class UserTest extends TestCase
                 'email' => $this->staff->email,
                 'phone' => $this->staff->phone,
                 'role_id' => $otherRole->id,
-                'is_active' => true,
             ]);
 
         $response->assertStatus(422)
@@ -230,33 +345,33 @@ class UserTest extends TestCase
                 'email' => $this->admin->email,
                 'phone' => $this->admin->phone,
                 'role_id' => $this->staff->role_id,
-                'is_active' => true,
             ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['role_id']);
     }
 
-    public function test_cannot_delete_self(): void
+    public function test_cannot_detach_self(): void
     {
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
-            ->deleteJson("/api/v1/users/{$this->admin->id}");
+            ->postJson("/api/v1/users/{$this->admin->id}/detach");
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['user']);
     }
 
-    public function test_cannot_delete_business_owner(): void
+    public function test_cannot_detach_business_owner(): void
     {
         $manager = User::factory()->create([
             'business_id' => $this->business->id,
             'role_id' => $this->staff->role_id,
             'is_active' => true,
+            'modules' => ['settings'],
         ]);
         $managerToken = $manager->createToken('manager')->plainTextToken;
 
         $response = $this->withHeader('Authorization', "Bearer $managerToken")
-            ->deleteJson("/api/v1/users/{$this->admin->id}");
+            ->postJson("/api/v1/users/{$this->admin->id}/detach");
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['user']);

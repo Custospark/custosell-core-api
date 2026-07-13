@@ -131,12 +131,11 @@ class UserService implements UserServiceInterface
 
     public function delete(int $id, int $businessId, int $actorId): bool
     {
-        $user = $this->userRepository->findForBusiness($id, $businessId);
-        if (!$user) {
-            throw new NotFoundHttpException('User not found');
-        }
-        $this->validateDelete($user, $businessId, $actorId);
-        return $this->userRepository->delete($user);
+        // Business actors must detach staff from the organization — never delete accounts.
+        unset($id, $businessId, $actorId);
+        throw ValidationException::withMessages([
+            'user' => 'Staff accounts cannot be deleted. Detach them from this organization instead.',
+        ]);
     }
 
     public function clampStaffModulesAfterOwnerUpdate(User $owner): void
@@ -216,21 +215,15 @@ class UserService implements UserServiceInterface
 
     protected function validateActivationUpdate(User $user, int $businessId, int $actorId, array $data): void
     {
-        if (!array_key_exists('is_active', $data) || (bool) $data['is_active']) {
+        unset($user, $businessId, $actorId);
+
+        if (! array_key_exists('is_active', $data)) {
             return;
         }
 
-        if ($user->id === $actorId) {
-            throw ValidationException::withMessages([
-                'is_active' => 'You cannot deactivate your own account.',
-            ]);
-        }
-
-        if ($this->isBusinessOwner($user, $businessId)) {
-            throw ValidationException::withMessages([
-                'is_active' => 'The business owner account cannot be deactivated.',
-            ]);
-        }
+        throw ValidationException::withMessages([
+            'is_active' => 'Staff cannot be activated or deactivated from Settings. Detach them from this organization instead.',
+        ]);
     }
 
     protected function validateModulesUpdate(User $user, int $businessId, array &$data): void

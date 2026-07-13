@@ -7,9 +7,11 @@ namespace App\Services\Hr;
 use App\Models\Hr\HrEmployee;
 use App\Models\User;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\StaffMembershipService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class HrEmployeeService
 {
@@ -17,6 +19,7 @@ class HrEmployeeService
         protected HrOrgService $org,
         protected HrAuditService $audit,
         protected UserServiceInterface $users,
+        protected StaffMembershipService $staffMembership,
     ) {}
 
     public function list(int $businessId, array $filters = [], int $perPage = 50): LengthAwarePaginator
@@ -169,7 +172,9 @@ class HrEmployeeService
         int $actorUserId,
     ): HrEmployee {
         return DB::transaction(function () use ($businessId, $employeeData, $accountData, $actorUserId) {
-            $user = $this->users->createStaff($businessId, $accountData, false);
+            $actor = User::query()->findOrFail($actorUserId);
+            $accountData['skip_hr_mirror'] = true;
+            $user = $this->resolveStaffAccount($actor, $accountData);
 
             $employeeData['user_id'] = $user->id;
             if (empty($employeeData['email'])) {
@@ -184,7 +189,7 @@ class HrEmployeeService
     }
 
     /**
-     * Create a staff login for an existing HR employee and link it.
+     * Create or attach a staff login for an existing HR employee and link it.
      *
      * @param  array<string, mixed>  $accountData
      */
@@ -203,7 +208,9 @@ class HrEmployeeService
         }
 
         return DB::transaction(function () use ($businessId, $employee, $accountData, $actorUserId) {
-            $user = $this->users->createStaff($businessId, $accountData, false);
+            $actor = User::query()->findOrFail($actorUserId);
+            $accountData['link_employee_id'] = $employee->id;
+            $user = $this->resolveStaffAccount($actor, $accountData);
 
             $employee->user_id = $user->id;
             if (! $employee->email) {
@@ -223,7 +230,7 @@ class HrEmployeeService
     }
 
     /**
-     * Delete the linked staff login; HR employee remains with user_id cleared.
+     * Detach the linked staff login from the organization; HR employee remains with user_id cleared.
      */
     public function removeAccount(int $businessId, int $employeeId, int $actorUserId): HrEmployee
     {
@@ -231,19 +238,20 @@ class HrEmployeeService
 
         if (! $employee->user_id) {
             throw ValidationException::withMessages([
-                'user_id' => 'This employee does not have an app login to remove.',
+                'user_id' => 'This employee does not have an app login to detach.',
             ]);
         }
 
         $userId = (int) $employee->user_id;
+        $actor = User::query()->findOrFail($actorUserId);
 
-        return DB::transaction(function () use ($businessId, $employee, $userId, $actorUserId) {
+        return DB::transaction(function () use ($businessId, $employee, $userId, $actorUserId, $actor) {
             $employee->user_id = null;
             $employee->save();
 
-            $this->users->delete($userId, $businessId, $actorUserId);
+            $this->staffMembership->detachStaff($actor, $userId);
 
-            $this->audit->record($businessId, $actorUserId, 'employee.account_removed', 'hr_employee', $employee->id, [
+            $this->audit->record($businessId, $actorUserId, 'employee.account_detached', 'hr_employee', $employee->id, [
                 'user_id' => $userId,
             ]);
 
@@ -252,7 +260,7 @@ class HrEmployeeService
     }
 
     /**
-     * Soft-delete employee; optionally also delete their app login.
+     * Soft-delete employee; optionally also detach their app login from the organization.
      */
     public function delete(int $businessId, int $id, ?int $actorUserId = null, bool $removeAccount = false): void
     {
@@ -267,9 +275,54 @@ class HrEmployeeService
             $this->audit->record($businessId, $actorUserId, 'employee.deleted', 'hr_employee', $id);
 
             if ($removeAccount && $userId && $actorUserId) {
-                $this->users->delete($userId, $businessId, $actorUserId);
+                $actor = User::query()->findOrFail($actorUserId);
+                $this->staffMembership->detachStaff($actor, $userId);
             }
         });
+    }
+
+    /**
+     * Create a new staff login or attach an existing free / soft-deleted account.
+     *
+     * @param  array<string, mixed>  $accountData
+     */
+    protected function resolveStaffAccount(User $actor, array $accountData): User
+    {
+        $email = (string) ($accountData['email'] ?? '');
+        $lookup = $this->staffMembership->lookupByEmail($email, $actor);
+
+        return match ($lookup['status']) {
+            'available' => (function () use ($actor, $accountData) {
+                if (empty($accountData['password']) || strlen((string) $accountData['password']) < 6) {
+                    throw ValidationException::withMessages([
+                        'password' => 'Set a password of at least 6 characters for a new login.',
+                    ]);
+                }
+
+                return $this->users->createStaff((int) $actor->business_id, $accountData, false);
+            })(),
+            'unattached', 'soft_deleted' => $this->staffMembership->attachStaff($actor, [
+                'email' => $email,
+                'role_id' => (int) ($accountData['role_id'] ?? 0),
+                'modules' => $accountData['modules'] ?? [],
+                'name' => $accountData['name'] ?? null,
+                'phone' => $accountData['phone'] ?? null,
+                'link_employee_id' => $accountData['link_employee_id'] ?? null,
+                'skip_hr_mirror' => ! empty($accountData['skip_hr_mirror']),
+            ]),
+            'already_member' => throw ValidationException::withMessages([
+                'email' => 'This person is already on your staff list.',
+            ]),
+            'other_business' => throw new ConflictHttpException(
+                'This email is already used by someone on another organization. Ask them to detach there first, or use a different email.'
+            ),
+            'platform_inactive' => throw ValidationException::withMessages([
+                'email' => 'This account is deactivated by Custosell and cannot be attached.',
+            ]),
+            default => throw ValidationException::withMessages([
+                'email' => 'Unable to resolve this email for staff login.',
+            ]),
+        };
     }
 
     protected function assertOrgRefs(int $businessId, array $data): void
