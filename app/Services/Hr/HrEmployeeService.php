@@ -303,7 +303,7 @@ class HrEmployeeService
             })(),
             'unattached', 'soft_deleted' => $this->staffMembership->attachStaff($actor, [
                 'email' => $email,
-                'role_id' => (int) ($accountData['role_id'] ?? 0),
+                'role_id' => isset($accountData['role_id']) ? (int) $accountData['role_id'] : null,
                 'modules' => $accountData['modules'] ?? [],
                 'name' => $accountData['name'] ?? null,
                 'phone' => $accountData['phone'] ?? null,

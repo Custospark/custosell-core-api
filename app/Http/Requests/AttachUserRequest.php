@@ -18,7 +18,7 @@ class AttachUserRequest extends BaseFormRequest
     {
         return [
             'email' => ['required', 'string', 'email', 'max:255'],
-            'role_id' => ['required', 'integer'],
+            'role_id' => ['nullable', 'integer'],
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
             'name' => ['nullable', 'string', 'max:255'],
@@ -31,7 +31,6 @@ class AttachUserRequest extends BaseFormRequest
     {
         return [
             'email.required' => 'Enter an email address.',
-            'role_id.required' => 'Select a role before attaching this person.',
         ];
     }
 }

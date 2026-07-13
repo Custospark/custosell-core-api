@@ -90,14 +90,16 @@ class StaffMembershipService
         }
 
         $email = strtolower(trim((string) $data['email']));
-        $roleId = (int) ($data['role_id'] ?? 0);
-        if ($roleId <= 0) {
-            throw ValidationException::withMessages([
-                'role_id' => 'Select a role before attaching this person.',
-            ]);
+        $roleId = isset($data['role_id']) && $data['role_id'] !== null && $data['role_id'] !== ''
+            ? (int) $data['role_id']
+            : null;
+        if ($roleId !== null && $roleId <= 0) {
+            $roleId = null;
         }
 
-        $this->assertRoleAvailableForBusiness($businessId, $roleId);
+        if ($roleId !== null) {
+            $this->assertRoleAvailableForBusiness($businessId, $roleId);
+        }
 
         return DB::transaction(function () use ($actor, $businessId, $email, $roleId, $data) {
             $user = User::withTrashed()

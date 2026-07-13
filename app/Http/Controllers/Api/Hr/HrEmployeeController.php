@@ -281,7 +281,7 @@ class HrEmployeeController extends Controller
             'email' => $emailRules,
             // Required when creating a brand-new login; attach path may omit (service enforces).
             'password' => [$allowExistingEmail ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
             'phone' => ['nullable', 'string', 'max:64'],
