@@ -12,6 +12,7 @@ use App\Services\Contracts\UserServiceInterface;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -62,8 +63,12 @@ class UserController extends Controller
         $user = $request->user();
         $data = [];
 
-        $data['name'] = $request->input('name');
-        $data['email'] = $request->input('email');
+        if ($request->has('name')) {
+            $data['name'] = $request->input('name');
+        }
+        if ($request->has('email')) {
+            $data['email'] = $request->input('email');
+        }
         if ($request->has('phone')) {
             $data['phone'] = $request->input('phone');
         }
@@ -88,12 +93,14 @@ class UserController extends Controller
             $data['modules'] = $this->moduleAccess->normalizeOwnerModules($request->input('modules'));
         }
 
-        $user->update($data);
-        $user->load('business');
+        DB::transaction(function () use ($request, $user, $data): void {
+            $user->update($data);
+            $user->load('business');
 
-        if ($request->has('modules') && $this->moduleAccess->isBusinessOwner($user)) {
-            $this->userService->clampStaffModulesAfterOwnerUpdate($user);
-        }
+            if ($request->has('modules') && $this->moduleAccess->isBusinessOwner($user)) {
+                $this->userService->clampStaffModulesAfterOwnerUpdate($user);
+            }
+        });
 
         return new UserResource($user);
     }

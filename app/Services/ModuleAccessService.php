@@ -302,6 +302,70 @@ class ModuleAccessService
     }
 
     /**
+     * Modules shipped after the early Custocare / Custosell core POS set.
+     * Used to grant legacy owners access without re-forcing intentional core opt-outs
+     * (e.g. turning off inventory).
+     *
+     * @var list<string>
+     */
+    public const POST_CORE_CATALOG_MODULES = [
+        'accounting',
+        'pipeline',
+        'estimates',
+        'documents',
+        'hr',
+        'forecasting',
+    ];
+
+    /**
+     * Additive grant for legacy business owners: append any missing post-core
+     * BUSINESS_MODULES plus estimates_full / hr_full (signup parity). Does not
+     * re-enable core modules the owner already opted out of. Empty/null modules
+     * persist the full current catalog + full workspace flags.
+     */
+    public function grantMissingCatalogModulesToOwner(User $user): bool
+    {
+        if (! $this->isBusinessOwner($user)) {
+            return false;
+        }
+
+        $stored = is_array($user->modules) ? array_values($user->modules) : [];
+        $business = $this->storedBusinessModules($user);
+
+        if ($business === []) {
+            $merged = [
+                ...self::BUSINESS_MODULES,
+                self::ESTIMATES_FULL_SLUG,
+                self::HR_FULL_SLUG,
+            ];
+        } else {
+            $missingPostCore = array_values(array_diff(self::POST_CORE_CATALOG_MODULES, $business));
+            $merged = array_values(array_unique([
+                ...$stored,
+                ...$missingPostCore,
+                self::ESTIMATES_FULL_SLUG,
+                self::HR_FULL_SLUG,
+            ]));
+        }
+
+        $normalized = $this->normalizeOwnerModules($merged);
+
+        $before = $stored;
+        $after = $normalized;
+        sort($before);
+        sort($after);
+
+        if ($before === $after) {
+            return false;
+        }
+
+        $user->modules = $normalized;
+        $user->save();
+
+        return true;
+    }
+
+    /**
      * Maps legacy permission keys to the business module that grants them.
      * Staff module access is the source of truth — role permission flags are not enforced.
      */

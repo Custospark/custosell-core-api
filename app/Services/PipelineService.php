@@ -20,6 +20,7 @@ use App\Models\PipelineLeadAssignee;
 use App\Models\User;
 use App\Services\Pipeline\PipelineBoardActivityService;
 use App\Services\Pipeline\PipelineBoardAutomationService;
+use App\Services\Pipeline\PipelineBoardSeedService;
 use App\Services\Pipeline\PipelineCollaborationService;
 use App\Services\Pipeline\PipelineNotificationService;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,6 +36,7 @@ class PipelineService
         protected CustomerContactService $customerContactService,
         protected ProjectAccessService $projectAccess,
         protected PipelineNotificationService $pipelineNotifier,
+        protected PipelineBoardSeedService $boardSeed,
     ) {}
 
     /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
@@ -136,6 +138,7 @@ class PipelineService
                 'description' => 'Project board for ' . $project->name,
                 'visibility' => 'team',
                 'project_id' => $project->id,
+                'workspace' => 'estimates',
             ]);
 
             foreach (self::PROJECT_STAGES as $index => $stage) {
@@ -151,7 +154,9 @@ class PipelineService
                 ]);
             }
 
-            $this->seedDefaultLabels($businessId, $board->id);
+            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
+            $this->boardSeed->applyDefaultAppearance($board, (int) $board->id);
+            $this->boardSeed->seedGuidingCards($board, $user->id);
 
             return $board->load(['stages', 'creator']);
         });
@@ -204,7 +209,17 @@ class PipelineService
                 ]);
             }
 
-            $this->seedDefaultLabels($businessId, $board->id);
+            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
+
+            if (empty($data['background_type'])) {
+                $this->boardSeed->applyDefaultAppearance($board, (int) $board->id);
+            } elseif (empty($board->cover_color)) {
+                $appearance = $this->boardSeed->defaultAppearance((int) $board->id);
+                $board->cover_color = $appearance['cover_color'];
+                $board->save();
+            }
+
+            $this->boardSeed->seedGuidingCards($board, $userId);
 
             return $board->load(['stages', 'members.user', 'creator']);
         });
@@ -277,15 +292,7 @@ class PipelineService
 
     protected function seedDefaultLabels(int $businessId, int $boardId): void
     {
-        foreach (self::DEFAULT_LABELS as $index => $label) {
-            PipelineLabel::create([
-                'business_id' => $businessId,
-                'board_id' => $boardId,
-                'name' => $label['name'],
-                'color' => $label['color'],
-                'sort_order' => $index,
-            ]);
-        }
+        $this->boardSeed->seedDefaultLabels($businessId, $boardId);
     }
 
     public function listBoards(
