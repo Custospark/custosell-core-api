@@ -120,13 +120,40 @@ class BusinessService implements BusinessServiceInterface
 
     public function updateStorefrontProfile(int $id, array $data): Business
     {
+        $business = $this->businessRepository->find($id);
+        if (! $business) {
+            abort(404, 'Business not found');
+        }
+
+        $enabled = (bool) ($data['storefront_enabled'] ?? false);
         $payload = [
-            'storefront_enabled' => (bool) ($data['storefront_enabled'] ?? false),
+            'storefront_enabled' => $enabled,
         ];
 
-        if (array_key_exists('slug', $data) && $data['slug'] !== null && trim((string) $data['slug']) !== '') {
-            $check = $this->checkSlugAvailability((string) $data['slug'], $id);
-            if (!$check['available']) {
+        $incomingSlug = array_key_exists('slug', $data) && $data['slug'] !== null
+            ? trim((string) $data['slug'])
+            : '';
+
+        if ($incomingSlug !== '') {
+            $check = $this->checkSlugAvailability($incomingSlug, $id);
+            if (! $check['available']) {
+                throw ValidationException::withMessages([
+                    'slug' => [$check['reason'] ?? 'This shop username is not available.'],
+                ]);
+            }
+            $payload['slug'] = $check['slug'];
+        }
+
+        if ($enabled) {
+            $finalSlug = $payload['slug'] ?? $business->slug;
+            $finalSlug = is_string($finalSlug) ? trim($finalSlug) : '';
+            if ($finalSlug === '') {
+                throw ValidationException::withMessages([
+                    'slug' => ['Choose a shop username before enabling your public shop.'],
+                ]);
+            }
+            $check = $this->checkSlugAvailability($finalSlug, $id);
+            if (! $check['available']) {
                 throw ValidationException::withMessages([
                     'slug' => [$check['reason'] ?? 'This shop username is not available.'],
                 ]);

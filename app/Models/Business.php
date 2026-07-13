@@ -171,6 +171,37 @@ class Business extends Model
         return (bool) $this->is_open_for_supply;
     }
 
+    /**
+     * Public Discover / shop visibility — enabled shops whose status is not platform-blocked
+     * (same blocked list as EnsureBusinessActive: restricted / suspended).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopePublicStorefront($query)
+    {
+        $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+
+        return $query
+            ->where('storefront_enabled', true)
+            ->whereNotIn('status', $blocked);
+    }
+
+    /**
+     * Apply public storefront visibility when `businesses` is already joined.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>
+     */
+    public static function constrainJoinedPublicStorefront($query)
+    {
+        $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+
+        return $query
+            ->where('businesses.storefront_enabled', true)
+            ->whereNotIn('businesses.status', $blocked);
+    }
+
     public function storefrontRatings(): HasMany
     {
         return $this->hasMany(BusinessStorefrontRating::class);

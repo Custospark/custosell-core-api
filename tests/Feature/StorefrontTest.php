@@ -640,4 +640,63 @@ class StorefrontTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'data');
     }
+
+    public function test_shop_visible_for_active_and_hidden_when_suspended(): void
+    {
+        $this->getJson('/api/v1/storefront/devine-mercy-restaurant')
+            ->assertOk()
+            ->assertJsonPath('slug', 'devine-mercy-restaurant');
+
+        // SQLite test schema only allows active|suspended; production also has warning/notified
+        // which remain public via publicStorefront() (blocked list = restricted/suspended).
+        $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+        $this->assertContains('suspended', $blocked);
+        $this->assertContains('restricted', $blocked);
+        $this->assertNotContains('warning', $blocked);
+        $this->assertNotContains('notified', $blocked);
+
+        $this->business->update(['status' => 'suspended']);
+        $this->getJson('/api/v1/storefront/devine-mercy-restaurant')
+            ->assertNotFound();
+
+        $this->assertNull(
+            Business::query()->publicStorefront()->whereKey($this->business->id)->first()
+        );
+    }
+
+    public function test_enable_storefront_requires_slug(): void
+    {
+        \Illuminate\Support\Facades\DB::table('businesses')->where('id', $this->business->id)->update([
+            'slug' => '',
+            'storefront_enabled' => false,
+        ]);
+
+        $this->withToken($this->token)
+            ->patchJson('/api/v1/businesses/storefront-profile', [
+                'storefront_enabled' => true,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    public function test_enable_storefront_with_new_slug(): void
+    {
+        $this->business->update([
+            'storefront_enabled' => false,
+            'slug' => 'old-shop-name',
+        ]);
+
+        $this->withToken($this->token)
+            ->patchJson('/api/v1/businesses/storefront-profile', [
+                'storefront_enabled' => true,
+                'slug' => 'fresh-cafe-name',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.slug', 'fresh-cafe-name')
+            ->assertJsonPath('data.storefront_enabled', true);
+
+        $this->getJson('/api/v1/storefront/fresh-cafe-name')
+            ->assertOk()
+            ->assertJsonPath('slug', 'fresh-cafe-name');
+    }
 }
