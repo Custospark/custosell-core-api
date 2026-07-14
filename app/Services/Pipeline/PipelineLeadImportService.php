@@ -8,9 +8,12 @@ use App\Models\PipelineBoard;
 use App\Models\PipelineLead;
 use App\Models\User;
 use App\Services\PipelineService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -66,12 +69,18 @@ class PipelineLeadImportService
             '',
             '',
             '',
-            '',
+            '2026-12-31',
             '',
             'medium',
         ];
         foreach ($example as $i => $val) {
-            $sheet->setCellValue(chr(65 + $i).'2', $val);
+            $col = chr(65 + $i);
+            // Keep Due Date as text so Excel does not turn YYYY-MM-DD into a serial number.
+            if ($i === 7) {
+                $sheet->setCellValueExplicit($col.'2', (string) $val, DataType::TYPE_STRING);
+            } else {
+                $sheet->setCellValue($col.'2', $val);
+            }
         }
 
         $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
@@ -83,11 +92,13 @@ class PipelineLeadImportService
         $sheet->freezePane('A2');
 
         $stages = $board->stages()->orderBy('sort_order')->pluck('name')->all();
+        $hint = 'Due Date: use YYYY-MM-DD (or Excel date cells — both work).';
         if ($stages !== []) {
-            $sheet->setCellValue('A4', 'Available stages: '.implode(', ', $stages));
-            $sheet->mergeCells("A4:{$lastCol}4");
-            $sheet->getStyle('A4')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
+            $hint .= ' Available stages: '.implode(', ', $stages);
         }
+        $sheet->setCellValue('A4', $hint);
+        $sheet->mergeCells("A4:{$lastCol}4");
+        $sheet->getStyle('A4')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
 
         return $spreadsheet;
     }
@@ -111,9 +122,15 @@ class PipelineLeadImportService
             if ($this->isEmptyRow($row)) {
                 continue;
             }
-            // Skip helper rows like "Available stages: ..."
-            if (isset($row[0]) && is_string($row[0]) && str_starts_with(mb_strtolower(trim($row[0])), 'available stages:')) {
-                continue;
+            // Skip helper / legend rows.
+            if (isset($row[0]) && is_string($row[0])) {
+                $first = mb_strtolower(trim($row[0]));
+                if (
+                    str_starts_with($first, 'available stages:')
+                    || str_starts_with($first, 'due date:')
+                ) {
+                    continue;
+                }
             }
             $rowEntries[] = ['index' => $index, 'row' => $row];
         }
@@ -184,7 +201,7 @@ class PipelineLeadImportService
                         if (! array_key_exists($emailKey, $assigneeCache)) {
                             $assignee = User::query()
                                 ->where('business_id', $businessId)
-                                ->where('email', $data['assignee_email'])
+                                ->whereRaw('LOWER(email) = ?', [$emailKey])
                                 ->first();
                             $assigneeCache[$emailKey] = $assignee ? (int) $assignee->id : 0;
                         }
@@ -248,11 +265,83 @@ class PipelineLeadImportService
             'contact_name' => $this->nullableString($row[3] ?? null),
             'contact_email' => $this->nullableString($row[4] ?? null),
             'contact_phone' => $this->nullableString($row[5] ?? null),
-            'estimated_value' => $this->nullableString($row[6] ?? null),
-            'due_date' => $this->nullableString($row[7] ?? null),
+            'estimated_value' => $this->nullableNumeric($row[6] ?? null),
+            'due_date' => $this->normalizeDueDate($row[7] ?? null),
             'assignee_email' => $this->nullableString($row[8] ?? null),
             'priority' => $this->nullablePriority($row[9] ?? null),
         ];
+    }
+
+    /**
+     * Excel often stores dates as serial numbers or DateTime objects when cells are date-formatted.
+     * Normalize to YYYY-MM-DD before Laravel date validation (UTC calendar day — no TZ day-shift).
+     */
+    protected function normalizeDueDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_int($value) || is_float($value)) {
+            if ((float) $value <= 0) {
+                return null;
+            }
+
+            return $this->excelSerialToDateString((float) $value);
+        }
+
+        $trimmed = trim((string) $value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        // Numeric string that is an Excel serial (not an ISO date).
+        if (is_numeric($trimmed) && ! preg_match('/^\d{4}-\d{2}-\d{2}/', $trimmed)) {
+            return $this->excelSerialToDateString((float) $trimmed) ?? $trimmed;
+        }
+
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $trimmed, $m)) {
+            return $m[1];
+        }
+
+        try {
+            return Carbon::parse($trimmed)->toDateString();
+        } catch (\Throwable) {
+            return $trimmed;
+        }
+    }
+
+    protected function excelSerialToDateString(float $serial): ?string
+    {
+        try {
+            // UTC calendar day so app timezone does not shift Excel date serials.
+            return ExcelDate::excelToDateTimeObject($serial, 'UTC')->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    protected function nullableNumeric(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        $trimmed = trim((string) $value);
+        if ($trimmed === '') {
+            return null;
+        }
+        // Strip common currency formatting from exports.
+        $cleaned = str_replace([',', ' '], '', $trimmed);
+        $cleaned = preg_replace('/^[^\d.-]+/', '', $cleaned) ?? $cleaned;
+
+        return $cleaned === '' ? null : $cleaned;
     }
 
     protected function nullableString(mixed $value): ?string
