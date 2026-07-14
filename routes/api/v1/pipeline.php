@@ -9,9 +9,12 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/boards', [PipelineController::class, 'storeBoard']);
     Route::get('/pipeline/boards/{id}', [PipelineController::class, 'showBoard'])->whereNumber('id');
     Route::patch('/pipeline/boards/{id}', [PipelineController::class, 'updateBoard'])->whereNumber('id');
+    Route::delete('/pipeline/boards/{id}', [PipelineController::class, 'destroyBoard'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/kanban', [PipelineController::class, 'kanban'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/calendar', [PipelineController::class, 'calendar'])->whereNumber('id');
     Route::post('/pipeline/boards/{id}/background', [PipelineController::class, 'uploadBoardBackground'])->whereNumber('id');
+    Route::get('/pipeline/boards/{id}/import-template', [PipelineController::class, 'downloadLeadImportTemplate'])->whereNumber('id');
+    Route::post('/pipeline/boards/{id}/import', [PipelineController::class, 'importLeads'])->whereNumber('id');
 
     Route::post('/pipeline/boards/{boardId}/stages', [PipelineController::class, 'storeStage'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/stages/reorder', [PipelineController::class, 'reorderStages'])->whereNumber('boardId');

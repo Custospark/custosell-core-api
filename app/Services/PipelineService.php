@@ -365,6 +365,18 @@ class PipelineService
         return $board->fresh(['stages', 'members.user', 'creator']);
     }
 
+    public function deleteBoard(int $businessId, User $user, int $boardId): void
+    {
+        $board = $this->findBoardForBusiness($businessId, $boardId);
+        $this->assertCanManageBoard($user, $board);
+
+        if ($board->is_default) {
+            abort(422, 'The default board cannot be deleted.');
+        }
+
+        $board->delete();
+    }
+
     public function getKanban(int $businessId, User $user, int $boardId): PipelineBoard
     {
         $board = $this->findBoardForBusiness($businessId, $boardId);
@@ -1952,6 +1964,26 @@ class PipelineService
     {
         if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
             return 'manager';
+        }
+
+        if ($board->project_id) {
+            $project = Project::query()->find($board->project_id);
+            if ($project && (int) $project->created_by === (int) $user->id) {
+                return 'manager';
+            }
+
+            $projectMember = \App\Models\ProjectMember::query()
+                ->where('project_id', $board->project_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($projectMember) {
+                return $this->normalizeBoardMemberRole((string) $projectMember->role);
+            }
+        }
+
+        if ($board->visibility === 'team') {
+            return $this->userCanManageBoard($user, $board) ? 'manager' : 'contributor';
         }
 
         if ($board->visibility !== 'shared') {

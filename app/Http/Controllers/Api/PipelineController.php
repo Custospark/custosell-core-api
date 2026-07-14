@@ -19,6 +19,7 @@ use App\Services\Pipeline\PipelineBoardProgressService;
 use App\Services\Pipeline\PipelineBoardResourceService;
 use App\Services\Pipeline\PipelineBoardTemplateService;
 use App\Services\Pipeline\PipelineCollaborationService;
+use App\Services\Pipeline\PipelineLeadImportService;
 use App\Services\PipelineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class PipelineController extends Controller
         protected PipelineBoardAutomationService $boardAutomations,
         protected PipelineBoardTemplateService $boardTemplates,
         protected PipelineBoardProgressService $boardProgress,
+        protected PipelineLeadImportService $leadImport,
     ) {}
 
     public function boards(Request $request): JsonResponse
@@ -135,6 +137,63 @@ class PipelineController extends Controller
         );
 
         return new PipelineBoardResource($board);
+    }
+
+    public function destroyBoard(Request $request, int $id): JsonResponse
+    {
+        $this->pipelineService->deleteBoard(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+
+        return response()->json(['message' => 'Board deleted']);
+    }
+
+    public function downloadLeadImportTemplate(Request $request, int $id)
+    {
+        $board = $this->pipelineService->getBoard(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+        $this->pipelineService->ensureCanEditBoard($request->user(), $board);
+
+        $spreadsheet = $this->leadImport->generateTemplate($board);
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        $fileName = 'board-card-import-template.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function importLeads(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+        ]);
+
+        $board = $this->pipelineService->getBoard(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $id,
+        );
+        $this->pipelineService->ensureCanEditBoard($request->user(), $board);
+
+        set_time_limit(600);
+
+        $results = $this->leadImport->import(
+            (int) $request->user()->business_id,
+            $request->user(),
+            $board,
+            $request->file('file')->getPathname(),
+        );
+
+        return response()->json($results);
     }
 
     public function kanban(Request $request, int $id): PipelineBoardResource
