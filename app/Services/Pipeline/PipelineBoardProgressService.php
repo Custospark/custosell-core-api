@@ -1014,18 +1014,16 @@ class PipelineBoardProgressService
         $actual = $this->computeMetricValue($board, $target->metric_key, $viewStart, $viewEnd, $memberId);
         $expectedToDate = $this->decomposition->expectedToDate($expected, $sliceStart, $sliceEnd, now());
 
-        return [
-            'planning_level' => $planningLevel,
-            'period_start' => $sliceStart->toDateString(),
-            'period_end' => $sliceEnd->toDateString(),
-            'view_period_type' => $viewPeriodType,
-            'expected_value' => round($expected, 4),
-            'expected_to_date' => round($expectedToDate, 4),
-            'actual_value' => $actual,
-            'progress_percent' => $this->progressPercent($actual, $expected),
-            'pace_status' => $this->paceStatus($actual, $expected, $sliceStart, $sliceEnd, $target->metric_key),
-            'root_target_value' => (float) $target->target_value,
-        ];
+        return $this->periodSlicePayload(
+            $target,
+            $planningLevel,
+            $sliceStart,
+            $sliceEnd,
+            $viewPeriodType,
+            $expected,
+            $expectedToDate,
+            $actual,
+        );
     }
 
     /**
@@ -1048,8 +1046,8 @@ class PipelineBoardProgressService
                 continue;
             }
 
-            $rowDays = max(1, $rowStart->diffInDays($rowEnd) + 1);
-            $overlapDays = max(1, $overlapStart->diffInDays($overlapEnd) + 1);
+            $rowDays = max(1, $this->decomposition->inclusiveDays($rowStart, $rowEnd));
+            $overlapDays = max(1, $this->decomposition->inclusiveDays($overlapStart, $overlapEnd));
             $expected += (float) $row->expected_value * ($overlapDays / $rowDays);
         }
 
@@ -1074,8 +1072,8 @@ class PipelineBoardProgressService
 
         $sliceStart = $viewStart->gt($anchorStart) ? $viewStart->copy() : $anchorStart->copy();
         $sliceEnd = $viewEnd->lt($anchorEnd) ? $viewEnd->copy() : $anchorEnd->copy();
-        $totalDays = max(1, $anchorStart->diffInDays($anchorEnd) + 1);
-        $sliceDays = max(1, $sliceStart->diffInDays($sliceEnd) + 1);
+        $totalDays = max(1, $this->decomposition->inclusiveDays($anchorStart, $anchorEnd));
+        $sliceDays = max(1, $this->decomposition->inclusiveDays($sliceStart, $sliceEnd));
         $expected = (float) $target->target_value * ($sliceDays / $totalDays);
         $actual = $this->computeMetricValue($board, $target->metric_key, $viewStart, $viewEnd, $memberId);
         $expectedToDate = $this->decomposition->expectedToDate($expected, $sliceStart, $sliceEnd, now());
@@ -1083,6 +1081,29 @@ class PipelineBoardProgressService
             ? ($this->decomposition->viewPeriodToPlanningLevel($viewPeriodType) ?? 'month')
             : ($target->planning_level ?? 'month');
 
+        return $this->periodSlicePayload(
+            $target,
+            $planningLevel,
+            $sliceStart,
+            $sliceEnd,
+            $viewPeriodType,
+            $expected,
+            $expectedToDate,
+            $actual,
+        );
+    }
+
+    /** @return array<string, mixed> */
+    protected function periodSlicePayload(
+        PipelineBoardTarget $target,
+        string $planningLevel,
+        Carbon $sliceStart,
+        Carbon $sliceEnd,
+        ?string $viewPeriodType,
+        float $expected,
+        float $expectedToDate,
+        float $actual,
+    ): array {
         return [
             'planning_level' => $planningLevel,
             'period_start' => $sliceStart->toDateString(),
@@ -1090,6 +1111,7 @@ class PipelineBoardProgressService
             'view_period_type' => $viewPeriodType,
             'expected_value' => round($expected, 4),
             'expected_to_date' => round($expectedToDate, 4),
+            'horizon_expected_to_date' => $this->decomposition->horizonExpectedToDate($target),
             'actual_value' => $actual,
             'progress_percent' => $this->progressPercent($actual, $expected),
             'pace_status' => $this->paceStatus($actual, $expected, $sliceStart, $sliceEnd, $target->metric_key),

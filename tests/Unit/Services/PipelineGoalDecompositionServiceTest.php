@@ -144,4 +144,130 @@ class PipelineGoalDecompositionServiceTest extends TestCase
         $this->assertSame('2026-01-01', $start->toDateString());
         $this->assertSame('2026-12-31', $end->toDateString());
     }
+
+    public function test_default_anchor_bounds_for_decade_and_five_year_are_rolling(): void
+    {
+        $decadeStart = Carbon::parse($this->service->defaultAnchorStart('decade', 2026));
+        $decadeEnd = Carbon::parse($this->service->defaultAnchorEnd('decade', $decadeStart));
+        $this->assertSame('2026-01-01', $decadeStart->toDateString());
+        $this->assertSame('2035-12-31', $decadeEnd->toDateString());
+
+        $fiveStart = Carbon::parse($this->service->defaultAnchorStart('five_year', 2026));
+        $fiveEnd = Carbon::parse($this->service->defaultAnchorEnd('five_year', $fiveStart));
+        $this->assertSame('2026-01-01', $fiveStart->toDateString());
+        $this->assertSame('2030-12-31', $fiveEnd->toDateString());
+    }
+
+    public function test_preview_uses_day_weighted_shares_not_equal_buckets(): void
+    {
+        // Non-leap 2025: Jan=31, Feb=28 — equal buckets would assign identical month shares.
+        $preview = $this->service->preview($this->business->id, $this->board, [
+            'planning_level' => 'year',
+            'target_value' => 365,
+            'anchor_start' => '2025-01-01',
+            'anchor_end' => '2025-12-31',
+            'stage_ids' => [$this->stageId],
+            'decomposition_mode' => 'equal',
+        ]);
+
+        $months = collect($preview['nodes'])->where('planning_level', 'month')->values();
+        $jan = $months->first(fn (array $n) => $n['period_start'] === '2025-01-01');
+        $feb = $months->first(fn (array $n) => $n['period_start'] === '2025-02-01');
+
+        $this->assertNotNull($jan);
+        $this->assertNotNull($feb);
+        $this->assertEqualsWithDelta(31.0, (float) $jan['expected_value'], 0.01);
+        $this->assertEqualsWithDelta(28.0, (float) $feb['expected_value'], 0.01);
+        $this->assertNotEquals(
+            round((float) $jan['expected_value'], 4),
+            round((float) $feb['expected_value'], 4),
+        );
+    }
+
+    public function test_preview_cascades_from_parent_not_flat_root_division(): void
+    {
+        $preview = $this->service->preview($this->business->id, $this->board, [
+            'planning_level' => 'year',
+            'target_value' => 365,
+            'anchor_start' => '2025-01-01',
+            'anchor_end' => '2025-12-31',
+            'stage_ids' => [$this->stageId],
+            'decomposition_mode' => 'equal',
+        ]);
+
+        $q1 = collect($preview['nodes'])->first(
+            fn (array $n) => $n['planning_level'] === 'quarter' && $n['period_start'] === '2025-01-01',
+        );
+        $this->assertNotNull($q1);
+        // Q1 2025 = 31+28+31 = 90 days
+        $this->assertEqualsWithDelta(90.0, (float) $q1['expected_value'], 0.01);
+
+        $q1Months = collect($preview['nodes'])->filter(
+            fn (array $n) => $n['planning_level'] === 'month'
+                && $n['period_start'] >= '2025-01-01'
+                && $n['period_start'] <= '2025-03-01',
+        );
+        $this->assertEqualsWithDelta(
+            (float) $q1['expected_value'],
+            (float) $q1Months->sum('expected_value'),
+            0.05,
+        );
+    }
+
+    public function test_preview_nodes_include_cumulative_expected(): void
+    {
+        $preview = $this->service->preview($this->business->id, $this->board, [
+            'planning_level' => 'year',
+            'target_value' => 365,
+            'anchor_start' => '2025-01-01',
+            'anchor_end' => '2025-12-31',
+            'stage_ids' => [$this->stageId],
+            'decomposition_mode' => 'equal',
+        ]);
+
+        $jan = collect($preview['nodes'])->first(
+            fn (array $n) => $n['planning_level'] === 'month' && $n['period_start'] === '2025-01-01',
+        );
+        $this->assertNotNull($jan);
+        $this->assertArrayHasKey('cumulative_expected', $jan);
+        // Through Jan 31 = 31/365 * 365
+        $this->assertEqualsWithDelta(31.0, (float) $jan['cumulative_expected'], 0.01);
+
+        $year = collect($preview['nodes'])->first(
+            fn (array $n) => $n['planning_level'] === 'year',
+        );
+        $this->assertNotNull($year);
+        $this->assertEqualsWithDelta(365.0, (float) $year['cumulative_expected'], 0.01);
+    }
+
+    public function test_horizon_expected_to_date_only_for_long_horizon_levels(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2025-03-15'));
+
+        $yearTarget = new \App\Models\PipelineBoardTarget([
+            'planning_level' => 'year',
+            'target_value' => 365,
+            'anchor_start' => '2025-01-01',
+            'anchor_end' => '2025-12-31',
+            'period_start' => '2025-01-01',
+            'period_end' => '2025-12-31',
+        ]);
+
+        // Day-of-year for Mar 15 2025 = 31+28+15 = 74
+        $this->assertEqualsWithDelta(
+            74.0,
+            (float) $this->service->horizonExpectedToDate($yearTarget),
+            0.01,
+        );
+
+        $monthTarget = new \App\Models\PipelineBoardTarget([
+            'planning_level' => 'month',
+            'target_value' => 100,
+            'anchor_start' => '2025-03-01',
+            'anchor_end' => '2025-03-31',
+        ]);
+        $this->assertNull($this->service->horizonExpectedToDate($monthTarget));
+
+        Carbon::setTestNow();
+    }
 }

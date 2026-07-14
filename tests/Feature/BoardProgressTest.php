@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Business;
 use App\Models\PipelineBoardTarget;
 use App\Models\User;
+use Carbon\Carbon;
 use Database\Seeders\PlanSeeder;
 use Database\Seeders\SystemRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -226,6 +227,49 @@ class BoardProgressTest extends TestCase
         $this->assertSame(120.0, (float) $target['target_value']);
         $this->assertLessThan(120.0, (float) $target['period_slice']['expected_value']);
         $this->assertSame(120.0, (float) $target['period_slice']['root_target_value']);
+        $this->assertArrayHasKey('horizon_expected_to_date', $target['period_slice']);
+        $this->assertNotNull($target['period_slice']['horizon_expected_to_date']);
+
+        $anchorStart = Carbon::parse($target['anchor_start'] ?? now()->copy()->startOfYear()->toDateString())->startOfDay();
+        $anchorEnd = Carbon::parse($target['anchor_end'] ?? now()->copy()->endOfYear()->toDateString())->startOfDay();
+        $horizonDays = $anchorStart->diffInDays($anchorEnd) + 1;
+        $through = now()->copy()->startOfDay()->min($anchorEnd);
+        $elapsed = $anchorStart->diffInDays($through) + 1;
+        $expectedHorizon = 120.0 * ($elapsed / $horizonDays);
+        $this->assertEqualsWithDelta(
+            $expectedHorizon,
+            (float) $target['period_slice']['horizon_expected_to_date'],
+            0.05,
+        );
+    }
+
+    public function test_month_target_period_slice_omits_horizon_expected_to_date(): void
+    {
+        $create = $this->authPost("/api/v1/pipeline/boards/{$this->boardId}/targets", [
+            'type' => 'goal',
+            'title' => 'Monthly wins horizon null',
+            'metric_key' => 'cards_won',
+            'target_value' => 60,
+            'unit' => 'count',
+            'period_type' => 'month',
+            'planning_level' => 'month',
+            'scope' => 'board',
+            'stage_id' => $this->stageId,
+            'decomposition_mode' => 'equal',
+        ])->assertCreated();
+
+        $targetId = (int) $create->json('data.id');
+
+        $summary = $this->authGet("/api/v1/pipeline/boards/{$this->boardId}/progress/summary", [
+            'period' => 'month',
+            'stage_ids' => [$this->stageId],
+        ])->assertOk();
+
+        $targets = collect($summary->json('data.targets'));
+        $target = $targets->firstWhere('id', $targetId);
+        $this->assertNotNull($target);
+        $this->assertArrayHasKey('period_slice', $target);
+        $this->assertNull($target['period_slice']['horizon_expected_to_date'] ?? null);
     }
 
     public function test_month_target_day_view_prorates_expected_to_period_ratio(): void

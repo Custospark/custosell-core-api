@@ -9,9 +9,10 @@ use App\Models\PipelineBoardTarget;
 use App\Models\PipelineBoardTargetAllocation;
 use App\Models\PipelineBoardTargetEvent;
 use App\Models\User;
+use App\Services\Pipeline\Concerns\PipelineGoalDayWeighting;
+use App\Services\Pipeline\Concerns\PipelineGoalPeriodSlicing;
+use App\Services\Pipeline\Concerns\PipelineGoalSliceResolution;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 /** @phpstan-type PeriodSlice array{
@@ -21,6 +22,7 @@ use Illuminate\Validation\ValidationException;
  *     view_period_type: ?string,
  *     expected_value: float,
  *     expected_to_date: float,
+ *     horizon_expected_to_date: ?float,
  *     actual_value: float,
  *     progress_percent: float,
  *     pace_status: string,
@@ -30,7 +32,13 @@ use Illuminate\Validation\ValidationException;
 
 class PipelineGoalDecompositionService
 {
+    use PipelineGoalDayWeighting;
+    use PipelineGoalPeriodSlicing;
+    use PipelineGoalSliceResolution;
+
     public const PLANNING_LEVELS = ['decade', 'five_year', 'year', 'quarter', 'month', 'week', 'day'];
+
+    public const LONG_HORIZON_LEVELS = ['decade', 'five_year', 'year'];
 
     public function __construct(
         protected PipelineColumnMetricsService $columnMetrics,
@@ -105,15 +113,27 @@ class PipelineGoalDecompositionService
     public function allocationsForTarget(PipelineBoardTarget $target, ?Carbon $asOf = null): array
     {
         $asOf = $asOf ?? now();
+        $horizonStart = Carbon::parse($target->anchor_start ?? $target->period_start)->startOfDay();
+        $horizonEnd = Carbon::parse($target->anchor_end ?? $target->period_end)->startOfDay();
+        $horizonDays = max(1, $this->inclusiveDays($horizonStart, $horizonEnd));
+        $targetValue = (float) $target->target_value;
 
         return $target->allocations()
             ->orderBy('period_start')
             ->get()
-            ->map(function (PipelineBoardTargetAllocation $row) use ($asOf) {
+            ->map(function (PipelineBoardTargetAllocation $row) use (
+                $asOf,
+                $horizonStart,
+                $horizonEnd,
+                $horizonDays,
+                $targetValue,
+            ) {
+                $periodStart = Carbon::parse($row->period_start)->startOfDay();
+                $periodEnd = Carbon::parse($row->period_end)->endOfDay();
                 $expectedToDate = $this->expectedToDate(
                     (float) $row->expected_value,
-                    Carbon::parse($row->period_start)->startOfDay(),
-                    Carbon::parse($row->period_end)->endOfDay(),
+                    $periodStart,
+                    $periodEnd,
                     $asOf,
                 );
 
@@ -123,6 +143,13 @@ class PipelineGoalDecompositionService
                     'period_start' => $row->period_start?->toDateString(),
                     'period_end' => $row->period_end?->toDateString(),
                     'expected_value' => (float) $row->expected_value,
+                    'cumulative_expected' => $this->cumulativeExpectedThrough(
+                        $targetValue,
+                        $horizonStart,
+                        $horizonEnd,
+                        Carbon::parse($row->period_end),
+                        $horizonDays,
+                    ),
                     'expected_to_date' => round($expectedToDate, 4),
                     'actual_value' => (float) $row->actual_value,
                     'stage_id' => $row->stage_id ? (int) $row->stage_id : null,
@@ -144,123 +171,40 @@ class PipelineGoalDecompositionService
             return 0.0;
         }
 
-        $totalDays = max(1, $start->diffInDays($end) + 1);
-        $elapsed = max(0, min($totalDays, $start->diffInDays(min($asOf->copy()->endOfDay(), $end)) + 1));
+        $totalDays = max(1, $this->inclusiveDays($start, $end));
+        $clippedAsOf = min($asOf->copy()->endOfDay(), $end);
+        $elapsed = max(0, min($totalDays, $this->inclusiveDays($start, $clippedAsOf)));
 
         return ($expected / $totalDays) * $elapsed;
     }
 
-    public function viewPeriodToPlanningLevel(string $periodType): ?string
+    /**
+     * Day-weighted share of T from anchor_start through min(now, anchor_end).
+     * Only meaningful for decade / five_year / year; returns null otherwise.
+     */
+    public function horizonExpectedToDate(PipelineBoardTarget $target, ?Carbon $asOf = null): ?float
     {
-        return match ($periodType) {
-            'day' => 'day',
-            'week' => 'week',
-            'month' => 'month',
-            'quarter' => 'quarter',
-            'year' => 'year',
-            default => null,
-        };
-    }
-
-    /**
-     * Resolve allocation rows that represent the active view window for a target.
-     *
-     * @param  Collection<int, PipelineBoardTargetAllocation>  $allocations
-     * @return list<PipelineBoardTargetAllocation>
-     */
-    public function resolveSliceAllocations(
-        Collection $allocations,
-        Carbon $viewStart,
-        Carbon $viewEnd,
-        ?string $preferredLevel,
-        ?int $stageId,
-        ?int $memberUserId,
-    ): array {
-        $overlapping = $allocations->filter(function (PipelineBoardTargetAllocation $row) use (
-            $viewStart,
-            $viewEnd,
-            $stageId,
-            $memberUserId,
-        ) {
-            if ($stageId && $row->stage_id && (int) $row->stage_id !== $stageId) {
-                return false;
-            }
-
-            if ($memberUserId !== null) {
-                if ($row->member_user_id && (int) $row->member_user_id !== $memberUserId) {
-                    return false;
-                }
-            } elseif ($row->member_user_id) {
-                return false;
-            }
-
-            $periodStart = Carbon::parse($row->period_start)->startOfDay();
-            $periodEnd = Carbon::parse($row->period_end)->endOfDay();
-
-            return $periodStart->lte($viewEnd) && $periodEnd->gte($viewStart);
-        });
-
-        if ($overlapping->isEmpty()) {
-            return [];
+        if (! in_array($target->planning_level, self::LONG_HORIZON_LEVELS, true)) {
+            return null;
         }
 
-        if ($preferredLevel) {
-            $atLevel = $overlapping->where('planning_level', $preferredLevel)->values();
-            if ($atLevel->isNotEmpty()) {
-                return $atLevel->all();
-            }
+        $asOf = $asOf ?? now();
+        $anchorStart = Carbon::parse($target->anchor_start ?? $target->period_start)->startOfDay();
+        $anchorEnd = Carbon::parse($target->anchor_end ?? $target->period_end)->startOfDay();
+        $horizonDays = max(1, $this->inclusiveDays($anchorStart, $anchorEnd));
+        $through = $asOf->copy()->startOfDay()->min($anchorEnd);
+
+        if ($through->lt($anchorStart)) {
+            return 0.0;
         }
 
-        foreach (array_reverse(self::PLANNING_LEVELS) as $level) {
-            $atLevel = $overlapping->where('planning_level', $level)->values();
-            if ($atLevel->isNotEmpty()) {
-                return $atLevel->all();
-            }
-        }
-
-        return [];
-    }
-
-    /**
-     * Sum expected allocation for a custom or multi-row view by using daily nodes when present.
-     *
-     * @param  Collection<int, PipelineBoardTargetAllocation>  $allocations
-     */
-    public function sumDailyExpectedInView(
-        Collection $allocations,
-        Carbon $viewStart,
-        Carbon $viewEnd,
-        ?int $stageId,
-        ?int $memberUserId,
-    ): float {
-        $daily = $allocations->filter(function (PipelineBoardTargetAllocation $row) use (
-            $viewStart,
-            $viewEnd,
-            $stageId,
-            $memberUserId,
-        ) {
-            if ($row->planning_level !== 'day') {
-                return false;
-            }
-
-            if ($stageId && $row->stage_id && (int) $row->stage_id !== $stageId) {
-                return false;
-            }
-
-            if ($memberUserId !== null) {
-                if ($row->member_user_id && (int) $row->member_user_id !== $memberUserId) {
-                    return false;
-                }
-            } elseif ($row->member_user_id) {
-                return false;
-            }
-
-            $day = Carbon::parse($row->period_start)->startOfDay();
-
-            return $day->gte($viewStart->copy()->startOfDay()) && $day->lte($viewEnd->copy()->endOfDay());
-        });
-
-        return (float) $daily->sum('expected_value');
+        return $this->cumulativeExpectedThrough(
+            (float) $target->target_value,
+            $anchorStart,
+            $anchorEnd,
+            $through,
+            $horizonDays,
+        );
     }
 
     public function defaultAnchorStart(string $planningLevel, ?int $year = null): string
@@ -268,8 +212,8 @@ class PipelineGoalDecompositionService
         $year = $year ?? (int) now()->year;
 
         return match ($planningLevel) {
-            'decade' => Carbon::create(((int) floor($year / 10)) * 10, 1, 1)->toDateString(),
-            'five_year' => Carbon::create($year - ($year % 5), 1, 1)->toDateString(),
+            // Rolling horizons aligned with FE: Jan 1 of current year (not calendar decade / 5-year floors).
+            'decade', 'five_year' => Carbon::create($year, 1, 1)->toDateString(),
             'year' => Carbon::create($year, 1, 1)->toDateString(),
             'quarter' => now()->copy()->firstOfQuarter()->toDateString(),
             'month' => now()->copy()->startOfMonth()->toDateString(),
@@ -282,6 +226,7 @@ class PipelineGoalDecompositionService
     public function defaultAnchorEnd(string $planningLevel, Carbon $anchorStart): string
     {
         return match ($planningLevel) {
+            // decade: Dec 31 of year+9; five_year: Dec 31 of year+4
             'decade' => $anchorStart->copy()->addYears(10)->subDay()->toDateString(),
             'five_year' => $anchorStart->copy()->addYears(5)->subDay()->toDateString(),
             'year' => $anchorStart->copy()->endOfYear()->toDateString(),
@@ -304,7 +249,16 @@ class PipelineGoalDecompositionService
         return array_slice(self::PLANNING_LEVELS, $index + 1);
     }
 
-    /** @param  list<int>  $stageIds
+    /** Immediate next planning level under $planningLevel, or null at leaf. */
+    public function nextChildLevel(string $planningLevel): ?string
+    {
+        $children = $this->childLevelsBelow($planningLevel);
+
+        return $children[0] ?? null;
+    }
+
+    /**
+     * @param  list<int>  $stageIds
      * @param  list<int>  $memberIds
      * @return list<array<string, mixed>>
      */
@@ -318,34 +272,45 @@ class PipelineGoalDecompositionService
         array $memberIds,
         string $mode,
     ): array {
-        $levels = array_merge([$rootLevel], $this->childLevelsBelow($rootLevel));
         $stageWeights = $mode === 'equal'
             ? array_fill_keys($stageIds, 1 / max(1, count($stageIds)))
             : $this->columnMetrics->columnThroughputWeights($board, $stageIds);
 
-        $nodes = [];
-        $rootNodes = $this->periodSlices($rootLevel, $anchorStart, $anchorEnd);
-        $rootWeightSum = max(1, count($rootNodes));
-        $perRoot = $targetValue / $rootWeightSum;
+        $horizonStart = $anchorStart->copy()->startOfDay();
+        $horizonEnd = $anchorEnd->copy()->endOfDay();
+        $horizonDays = max(1, $this->inclusiveDays($horizonStart, $horizonEnd));
 
-        foreach ($rootNodes as $slice) {
+        $nodes = [];
+        $rootSlices = $this->periodSlices($rootLevel, $horizonStart, $horizonEnd);
+
+        foreach ($rootSlices as $slice) {
+            // Root: T × days(slice ∩ horizon) / days(horizon) — not equal bucket counts.
+            $rootTimeShare = $targetValue * $this->dayWeightedShare(
+                $slice['start'],
+                $slice['end'],
+                $horizonStart,
+                $horizonEnd,
+                $horizonDays,
+            );
+
             foreach ($stageIds as $stageId) {
-                $stageShare = $perRoot * ($stageWeights[$stageId] ?? (1 / max(1, count($stageIds))));
+                $stageShare = $rootTimeShare * ($stageWeights[$stageId] ?? (1 / max(1, count($stageIds))));
                 $memberShares = $this->distributeAmongMembers($stageShare, $memberIds);
 
                 foreach ($memberShares as $share) {
-                    $memberId = $share['member_id'];
-                    $value = $share['value'];
-                    $nodes[] = $this->nodePayload($rootLevel, $slice['start'], $slice['end'], $value, $stageId, $memberId);
-
-                    foreach ($this->childLevelsBelow($rootLevel) as $childLevel) {
-                        $childSlices = $this->periodSlices($childLevel, $slice['start'], $slice['end']);
-                        $childSum = max(1, count($childSlices));
-                        foreach ($childSlices as $child) {
-                            $childValue = $value / $childSum;
-                            $nodes[] = $this->nodePayload($childLevel, $child['start'], $child['end'], $childValue, $stageId, $memberId);
-                        }
-                    }
+                    $this->appendCascadeNodes(
+                        $nodes,
+                        $rootLevel,
+                        $slice['start'],
+                        $slice['end'],
+                        $share['value'],
+                        $stageId,
+                        $share['member_id'],
+                        $targetValue,
+                        $horizonStart,
+                        $horizonEnd,
+                        $horizonDays,
+                    );
                 }
             }
         }
@@ -353,50 +318,71 @@ class PipelineGoalDecompositionService
         return $nodes;
     }
 
-    /** @return list<array{start: Carbon, end: Carbon, label: string}> */
-    protected function periodSlices(string $level, Carbon $start, Carbon $end): array
-    {
-        $slices = [];
-        $cursor = $start->copy()->startOfDay();
+    /**
+     * Cascade year→quarter→month→week→day from parent (day-weighted), not flat root÷N.
+     *
+     * @param  list<array<string, mixed>>  $nodes
+     */
+    protected function appendCascadeNodes(
+        array &$nodes,
+        string $level,
+        Carbon $start,
+        Carbon $end,
+        float $parentShare,
+        int $stageId,
+        ?int $memberId,
+        float $rootTargetValue,
+        Carbon $horizonStart,
+        Carbon $horizonEnd,
+        int $horizonDays,
+    ): void {
+        $nodes[] = $this->nodePayload(
+            $level,
+            $start,
+            $end,
+            $parentShare,
+            $stageId,
+            $memberId,
+            $this->cumulativeExpectedThrough(
+                $rootTargetValue,
+                $horizonStart,
+                $horizonEnd,
+                $end,
+                $horizonDays,
+            ),
+        );
 
-        while ($cursor->lte($end)) {
-            $sliceEnd = match ($level) {
-                'decade' => $cursor->copy()->addYears(10)->subDay()->endOfDay(),
-                'five_year' => $cursor->copy()->addYears(5)->subDay()->endOfDay(),
-                'year' => $cursor->copy()->endOfYear(),
-                'quarter' => $cursor->copy()->lastOfQuarter()->endOfDay(),
-                'month' => $cursor->copy()->endOfMonth(),
-                'week' => $cursor->copy()->endOfWeek(),
-                'day' => $cursor->copy()->endOfDay(),
-                default => $cursor->copy()->endOfMonth(),
-            };
-            if ($sliceEnd->gt($end)) {
-                $sliceEnd = $end->copy()->endOfDay();
-            }
-
-            $label = match ($level) {
-                'quarter' => 'Q'.$cursor->quarter.' '.$cursor->year,
-                'month' => $cursor->format('M Y'),
-                'week' => 'W'.$cursor->isoWeek().' '.$cursor->year,
-                'day' => $cursor->toDateString(),
-                default => $cursor->year.($level === 'year' ? '' : ''),
-            };
-
-            $slices[] = ['start' => $cursor->copy(), 'end' => $sliceEnd, 'label' => $label];
-
-            $cursor = match ($level) {
-                'decade' => $cursor->copy()->addYears(10)->startOfDay(),
-                'five_year' => $cursor->copy()->addYears(5)->startOfDay(),
-                'year' => $cursor->copy()->addYear()->startOfYear(),
-                'quarter' => $cursor->copy()->addQuarter()->startOfQuarter(),
-                'month' => $cursor->copy()->addMonth()->startOfMonth(),
-                'week' => $cursor->copy()->addWeek()->startOfWeek(),
-                'day' => $cursor->copy()->addDay()->startOfDay(),
-                default => $cursor->copy()->addMonth()->startOfMonth(),
-            };
+        $childLevel = $this->nextChildLevel($level);
+        if ($childLevel === null || $parentShare <= 0) {
+            return;
         }
 
-        return $slices;
+        $parentDays = max(1, $this->inclusiveDays($start, $end));
+        $childSlices = $this->periodSlices($childLevel, $start, $end);
+
+        foreach ($childSlices as $child) {
+            $childShare = $parentShare * $this->dayWeightedShare(
+                $child['start'],
+                $child['end'],
+                $start,
+                $end,
+                $parentDays,
+            );
+
+            $this->appendCascadeNodes(
+                $nodes,
+                $childLevel,
+                $child['start'],
+                $child['end'],
+                $childShare,
+                $stageId,
+                $memberId,
+                $rootTargetValue,
+                $horizonStart,
+                $horizonEnd,
+                $horizonDays,
+            );
+        }
     }
 
     /** @return array<string, mixed> */
@@ -407,12 +393,14 @@ class PipelineGoalDecompositionService
         float $expected,
         int $stageId,
         ?int $memberId,
+        float $cumulativeExpected = 0.0,
     ): array {
         return [
             'planning_level' => $level,
             'period_start' => $start->toDateString(),
             'period_end' => $end->toDateString(),
             'expected_value' => round($expected, 4),
+            'cumulative_expected' => round($cumulativeExpected, 4),
             'stage_id' => $stageId,
             'member_user_id' => $memberId,
             'weight' => 100,
