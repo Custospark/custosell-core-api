@@ -183,13 +183,8 @@ class InvoiceService implements InvoiceServiceInterface
 
     public function canManagePayments(Invoice $invoice, int $businessId): bool
     {
-        if ((int) $invoice->business_id === $businessId) {
-            return true;
-        }
-
-        return $invoice->buyer_business_id
-            && (int) $invoice->buyer_business_id === $businessId
-            && $invoice->status !== 'draft';
+        // Seller-only: only the issuing business records invoice payments.
+        return $this->isOwnedByBusiness($invoice, $businessId);
     }
 
     public function update(int $id, array $data): Invoice

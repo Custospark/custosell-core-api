@@ -111,12 +111,7 @@ class UserService implements UserServiceInterface
 
         $updated = $this->userRepository->update($user, $data);
 
-        if (
-            array_key_exists('modules', $data)
-            && $this->isBusinessOwner($updated, $businessId)
-        ) {
-            $this->clampStaffModulesAfterOwnerUpdate($updated);
-        }
+        // Owner modules on self-update are personal visibility only — staff grants stay as assigned.
 
         if (
             array_key_exists('name', $data)
@@ -136,28 +131,6 @@ class UserService implements UserServiceInterface
         throw ValidationException::withMessages([
             'user' => 'Staff accounts cannot be deleted. Detach them from this organization instead.',
         ]);
-    }
-
-    public function clampStaffModulesAfterOwnerUpdate(User $owner): void
-    {
-        if (! $this->moduleAccess->isBusinessOwner($owner) || ! $owner->business_id) {
-            return;
-        }
-
-        $staff = User::query()
-            ->where('business_id', $owner->business_id)
-            ->whereKeyNot($owner->id)
-            ->get();
-
-        foreach ($staff as $member) {
-            $clamped = $this->moduleAccess->clampStaffModulesToOwnerCatalog(
-                $this->moduleAccess->storedStaffModules($member),
-                $owner,
-            );
-            if ($clamped !== $this->moduleAccess->storedStaffModules($member)) {
-                $member->update(['modules' => $clamped]);
-            }
-        }
     }
 
     public function countByBusiness(int $businessId): int

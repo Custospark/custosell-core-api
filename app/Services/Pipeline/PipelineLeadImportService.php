@@ -62,15 +62,15 @@ class PipelineLeadImportService
 
         $firstStage = $board->stages()->orderBy('sort_order')->value('name') ?? 'To Do';
         $example = [
-            'Example card',
+            'Follow up with Acme order',
             $firstStage,
-            'Optional notes (delete this example row)',
-            '',
-            '',
-            '',
-            '',
-            '2026-12-31',
-            '',
+            'Optional notes — delete this example row before importing',
+            'Jane Contact',
+            'jane.contact@example.com',
+            '+256700000000',
+            '150000',
+            '2026-07-14',
+            '', // Assignee Email optional — leave blank or use a team login email
             'medium',
         ];
         foreach ($example as $i => $val) {
@@ -92,10 +92,15 @@ class PipelineLeadImportService
         $sheet->freezePane('A2');
 
         $stages = $board->stages()->orderBy('sort_order')->pluck('name')->all();
-        $hint = 'Due Date: use YYYY-MM-DD (or Excel date cells — both work).';
+        $hint = 'Sample formats — Due Date: YYYY-MM-DD (example 2026-07-14; Excel date cells also work). '
+            .'Priority: low | medium | high | urgent. '
+            .'Estimated Value: numbers only (example 150000). '
+            .'Assignee Email and Contact Email are optional — leave blank if unassigned; '
+            .'if set, Assignee Email must match a team member login email on this business.';
         if ($stages !== []) {
-            $hint .= ' Available stages: '.implode(', ', $stages);
+            $hint .= ' Available stages: '.implode(', ', $stages).'.';
         }
+        $hint .= ' Delete the blue example row before import.';
         $sheet->setCellValue('A4', $hint);
         $sheet->mergeCells("A4:{$lastCol}4");
         $sheet->getStyle('A4')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
@@ -128,6 +133,7 @@ class PipelineLeadImportService
                 if (
                     str_starts_with($first, 'available stages:')
                     || str_starts_with($first, 'due date:')
+                    || str_starts_with($first, 'sample formats')
                 ) {
                     continue;
                 }

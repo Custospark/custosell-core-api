@@ -88,4 +88,38 @@ class ModuleAccessTest extends TestCase
 
         $list->assertStatus(200);
     }
+
+    public function test_owner_personal_module_toggle_does_not_revoke_staff_grants(): void
+    {
+        $owner = User::query()->findOrFail($this->business->owner_id);
+        $owner->forceFill([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['dashboard', 'sales', 'inventory', 'customers', 'settings'],
+        ])->save();
+
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['inventory', 'sales'],
+        ]);
+
+        $ownerToken = $owner->createToken('owner')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$ownerToken}")
+            ->putJson('/api/v1/auth/profile', [
+                'modules' => ['dashboard', 'sales', 'settings'],
+            ])
+            ->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            ['dashboard', 'sales', 'settings'],
+            $owner->fresh()->modules,
+        );
+        $this->assertEqualsCanonicalizing(
+            ['inventory', 'sales'],
+            $staff->fresh()->modules,
+            'Staff modules must survive owner personal Module Access saves.',
+        );
+    }
 }

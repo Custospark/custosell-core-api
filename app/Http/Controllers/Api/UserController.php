@@ -14,7 +14,6 @@ use App\Services\ModuleAccessService;
 use App\Services\StaffMembershipService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -131,14 +130,9 @@ class UserController extends Controller
             $data['modules'] = $this->moduleAccess->normalizeOwnerModules($request->input('modules'));
         }
 
-        DB::transaction(function () use ($request, $user, $data): void {
-            $user->update($data);
-            $user->load('business');
-
-            if ($request->has('modules') && $this->moduleAccess->isBusinessOwner($user)) {
-                $this->userService->clampStaffModulesAfterOwnerUpdate($user);
-            }
-        });
+        // Owner module toggles are personal workspace visibility only — never rewrite staff grants.
+        $user->update($data);
+        $user->load('business');
 
         return new UserResource($user);
     }
