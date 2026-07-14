@@ -184,7 +184,12 @@ class PipelineController extends Controller
         );
         $this->pipelineService->ensureCanEditBoard($request->user(), $board);
 
+        // Match product import: allow up to 10 minutes for large Excel files.
         set_time_limit(600);
+        if (function_exists('ini_set')) {
+            @ini_set('max_execution_time', '600');
+            @ini_set('memory_limit', '512M');
+        }
 
         $results = $this->leadImport->import(
             (int) $request->user()->business_id,

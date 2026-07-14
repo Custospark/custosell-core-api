@@ -756,11 +756,17 @@ class PipelineService
         return $query->orderByDesc('updated_at')->get();
     }
 
-    /** @param  array<string, mixed>  $data */
-    public function createLead(int $businessId, User $user, array $data): PipelineLead
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array{for_import?: bool, board?: PipelineBoard, position?: int}  $options
+     */
+    public function createLead(int $businessId, User $user, array $data, array $options = []): PipelineLead
     {
-        $board = $this->findBoardForBusiness($businessId, (int) $data['board_id']);
-        $this->assertCanEditBoard($user, $board);
+        $forImport = (bool) ($options['for_import'] ?? false);
+        $board = $options['board'] ?? $this->findBoardForBusiness($businessId, (int) $data['board_id']);
+        if (! ($options['board'] ?? null)) {
+            $this->assertCanEditBoard($user, $board);
+        }
 
         $stage = PipelineStage::query()
             ->where('board_id', $board->id)
@@ -768,9 +774,14 @@ class PipelineService
             ->where('id', (int) $data['stage_id'])
             ->firstOrFail();
 
-        $maxPosition = PipelineLead::query()
-            ->where('stage_id', $stage->id)
-            ->max('position');
+        if (isset($options['position'])) {
+            $position = (int) $options['position'];
+        } else {
+            $maxPosition = PipelineLead::query()
+                ->where('stage_id', $stage->id)
+                ->max('position');
+            $position = ($maxPosition ?? 0) + 1;
+        }
 
         $assigneeIds = $this->resolveAssigneeIds($data, $user);
 
@@ -791,7 +802,7 @@ class PipelineService
             'estimated_value' => $data['estimated_value'] ?? null,
             'currency' => $data['currency'] ?? 'UGX',
             'status' => 'open',
-            'position' => ($maxPosition ?? 0) + 1,
+            'position' => $position,
             'expected_close_date' => $data['expected_close_date'] ?? null,
             'due_date' => $data['due_date'] ?? $data['expected_close_date'] ?? null,
             'start_date' => $data['start_date'] ?? null,
@@ -807,7 +818,8 @@ class PipelineService
         }
 
         $newAssignees = $this->syncLeadAssignees($lead, $assigneeIds, $user->id);
-        if ($newAssignees !== []) {
+        // Bulk Excel import skips per-row notifications and history load (product-import style).
+        if (! $forImport && $newAssignees !== []) {
             $lead->load('board');
             $this->pipelineNotifier->notifyAssignees(
                 $lead,
@@ -818,9 +830,13 @@ class PipelineService
             );
         }
 
-        $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
+        if (! $forImport) {
+            $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
 
-        return $this->loadLeadWithHistory($lead);
+            return $this->loadLeadWithHistory($lead);
+        }
+
+        return $lead;
     }
 
     public function getLead(int $businessId, User $user, int $leadId): PipelineLead

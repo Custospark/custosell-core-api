@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Pipeline;
 
 use App\Models\PipelineBoard;
+use App\Models\PipelineLead;
 use App\Models\User;
 use App\Services\PipelineService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -16,6 +18,8 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PipelineLeadImportService
 {
+    protected const CHUNK_SIZE = 100;
+
     protected const HEADERS = [
         'Title*',
         'Stage*',
@@ -121,78 +125,112 @@ class PipelineLeadImportService
 
         $cardType = $board->project_id || $board->workspace === 'estimates' ? 'card' : 'lead';
 
-        foreach ($rowEntries as $entry) {
-            $excelRow = $entry['index'] + 2;
-            $mapped = $this->mapRow($entry['row']);
-            $validator = Validator::make($mapped, [
-                'title' => ['required', 'string', 'max:255'],
-                'stage' => ['required', 'string', 'max:120'],
-                'description' => ['nullable', 'string', 'max:5000'],
-                'contact_name' => ['nullable', 'string', 'max:255'],
-                'contact_email' => ['nullable', 'email', 'max:255'],
-                'contact_phone' => ['nullable', 'string', 'max:50'],
-                'estimated_value' => ['nullable', 'numeric', 'min:0'],
-                'due_date' => ['nullable', 'date'],
-                'assignee_email' => ['nullable', 'email', 'max:255'],
-                'priority' => ['nullable', 'in:low,medium,high,urgent'],
-            ]);
+        /** @var array<int, int> $nextPositionByStage */
+        $nextPositionByStage = [];
+        foreach (array_unique(array_values($stageMap)) as $stageId) {
+            $max = PipelineLead::query()->where('stage_id', $stageId)->max('position');
+            $nextPositionByStage[(int) $stageId] = (int) ($max ?? 0);
+        }
 
-            if ($validator->fails()) {
-                $results['errors'][] = ['row' => $excelRow, 'errors' => $validator->errors()->toArray()];
-                continue;
-            }
+        /** @var array<string, int> $assigneeCache email => user id */
+        $assigneeCache = [];
 
-            $data = $validator->validated();
-            $stageKey = mb_strtolower(trim($data['stage']));
-            if (! isset($stageMap[$stageKey])) {
-                $results['errors'][] = [
-                    'row' => $excelRow,
-                    'errors' => ['stage' => ['Stage "'.$data['stage'].'" was not found on this board.']],
-                ];
-                continue;
-            }
+        foreach (array_chunk($rowEntries, self::CHUNK_SIZE) as $chunk) {
+            DB::transaction(function () use (
+                $businessId,
+                $user,
+                $board,
+                $chunk,
+                $stageMap,
+                $cardType,
+                &$nextPositionByStage,
+                &$assigneeCache,
+                &$results,
+            ) {
+                foreach ($chunk as $entry) {
+                    $excelRow = $entry['index'] + 2;
+                    $mapped = $this->mapRow($entry['row']);
+                    $validator = Validator::make($mapped, [
+                        'title' => ['required', 'string', 'max:255'],
+                        'stage' => ['required', 'string', 'max:120'],
+                        'description' => ['nullable', 'string', 'max:5000'],
+                        'contact_name' => ['nullable', 'string', 'max:255'],
+                        'contact_email' => ['nullable', 'email', 'max:255'],
+                        'contact_phone' => ['nullable', 'string', 'max:50'],
+                        'estimated_value' => ['nullable', 'numeric', 'min:0'],
+                        'due_date' => ['nullable', 'date'],
+                        'assignee_email' => ['nullable', 'email', 'max:255'],
+                        'priority' => ['nullable', 'in:low,medium,high,urgent'],
+                    ]);
 
-            $assigneeIds = [];
-            if (! empty($data['assignee_email'])) {
-                $assignee = User::query()
-                    ->where('business_id', $businessId)
-                    ->where('email', $data['assignee_email'])
-                    ->first();
-                if (! $assignee) {
-                    $results['errors'][] = [
-                        'row' => $excelRow,
-                        'errors' => ['assignee_email' => ['No team member found with that email.']],
-                    ];
-                    continue;
+                    if ($validator->fails()) {
+                        $results['errors'][] = ['row' => $excelRow, 'errors' => $validator->errors()->toArray()];
+                        continue;
+                    }
+
+                    $data = $validator->validated();
+                    $stageKey = mb_strtolower(trim($data['stage']));
+                    if (! isset($stageMap[$stageKey])) {
+                        $results['errors'][] = [
+                            'row' => $excelRow,
+                            'errors' => ['stage' => ['Stage "'.$data['stage'].'" was not found on this board.']],
+                        ];
+                        continue;
+                    }
+
+                    $assigneeIds = [];
+                    if (! empty($data['assignee_email'])) {
+                        $emailKey = mb_strtolower(trim($data['assignee_email']));
+                        if (! array_key_exists($emailKey, $assigneeCache)) {
+                            $assignee = User::query()
+                                ->where('business_id', $businessId)
+                                ->where('email', $data['assignee_email'])
+                                ->first();
+                            $assigneeCache[$emailKey] = $assignee ? (int) $assignee->id : 0;
+                        }
+                        if ($assigneeCache[$emailKey] === 0) {
+                            $results['errors'][] = [
+                                'row' => $excelRow,
+                                'errors' => ['assignee_email' => ['No team member found with that email.']],
+                            ];
+                            continue;
+                        }
+                        $assigneeIds = [$assigneeCache[$emailKey]];
+                    }
+
+                    try {
+                        $stageId = $stageMap[$stageKey];
+                        $nextPositionByStage[$stageId] = ($nextPositionByStage[$stageId] ?? 0) + 1;
+                        $payload = [
+                            'board_id' => $board->id,
+                            'stage_id' => $stageId,
+                            'title' => $data['title'],
+                            'card_type' => $cardType,
+                            'description' => $data['description'] ?? null,
+                            'contact_name' => $data['contact_name'] ?? null,
+                            'contact_email' => $data['contact_email'] ?? null,
+                            'contact_phone' => $data['contact_phone'] ?? null,
+                            'estimated_value' => $data['estimated_value'] ?? null,
+                            'due_date' => $data['due_date'] ?? null,
+                            'priority' => $data['priority'] ?? null,
+                        ];
+                        if ($assigneeIds !== []) {
+                            $payload['assignee_ids'] = $assigneeIds;
+                        }
+                        $this->pipelineService->createLead($businessId, $user, $payload, [
+                            'for_import' => true,
+                            'board' => $board,
+                            'position' => $nextPositionByStage[$stageId],
+                        ]);
+                        $results['imported']++;
+                    } catch (\Throwable $e) {
+                        $results['errors'][] = [
+                            'row' => $excelRow,
+                            'errors' => ['title' => [$e->getMessage() ?: 'Could not import this row.']],
+                        ];
+                    }
                 }
-                $assigneeIds = [(int) $assignee->id];
-            }
-
-            try {
-                $payload = [
-                    'board_id' => $board->id,
-                    'stage_id' => $stageMap[$stageKey],
-                    'title' => $data['title'],
-                    'card_type' => $cardType,
-                    'description' => $data['description'] ?? null,
-                    'contact_name' => $data['contact_name'] ?? null,
-                    'contact_email' => $data['contact_email'] ?? null,
-                    'contact_phone' => $data['contact_phone'] ?? null,
-                    'estimated_value' => $data['estimated_value'] ?? null,
-                    'due_date' => $data['due_date'] ?? null,
-                    'priority' => $data['priority'] ?? null,
-                ];
-                if ($assigneeIds !== []) {
-                    $payload['assignee_ids'] = $assigneeIds;
-                }
-                $this->pipelineService->createLead($businessId, $user, $payload);
-                $results['imported']++;
-            } catch (\Throwable $e) {
-                $results['errors'][] = [
-                    'row' => $excelRow,
-                    'errors' => ['title' => [$e->getMessage() ?: 'Could not import this row.']],
-                ];
-            }
+            });
         }
 
         return $results;

@@ -39,7 +39,12 @@ class ProductImportController extends Controller
             return response()->json(['message' => 'No business associated with this user'], 400);
         }
 
+        // Long import window: FE axios timeout is 600_000 ms for this path.
         set_time_limit(600);
+        if (function_exists('ini_set')) {
+            @ini_set('max_execution_time', '600');
+            @ini_set('memory_limit', '512M');
+        }
 
         $results = $this->importService->import(
             $businessId,
