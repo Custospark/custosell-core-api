@@ -10,8 +10,10 @@ class PipelineAttachment extends Model
     protected $fillable = [
         'lead_id',
         'user_id',
+        'type',
         'file_name',
         'file_path',
+        'link_url',
         'mime_type',
         'file_size',
     ];

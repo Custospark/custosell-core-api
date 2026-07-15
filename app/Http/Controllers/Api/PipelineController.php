@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\PipelineAttachmentResource;
 use App\Http\Resources\PipelineBoardResource;
 use App\Http\Resources\PipelineChecklistItemResource;
 use App\Http\Resources\PipelineChecklistResource;
@@ -789,29 +788,6 @@ class PipelineController extends Controller
         $this->pipelineService->deleteChecklistItem((int) $request->user()->business_id, $request->user(), $id);
 
         return response()->json(['message' => 'Checklist item deleted']);
-    }
-
-    public function storeAttachment(Request $request, int $leadId): JsonResponse
-    {
-        $request->validate([
-            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,xlsx,txt,csv'],
-        ]);
-
-        $attachment = $this->pipelineService->addAttachment(
-            (int) $request->user()->business_id,
-            $request->user(),
-            $leadId,
-            $request->file('file'),
-        );
-
-        return (new PipelineAttachmentResource($attachment))->response()->setStatusCode(201);
-    }
-
-    public function destroyAttachment(Request $request, int $id): JsonResponse
-    {
-        $this->pipelineService->deleteAttachment((int) $request->user()->business_id, $request->user(), $id);
-
-        return response()->json(['message' => 'Attachment deleted']);
     }
 
     public function toggleActivityReaction(Request $request, int $id): JsonResponse

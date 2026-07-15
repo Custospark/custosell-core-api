@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\PipelineAttachment;
 use App\Models\PipelineBoard;
 use App\Models\PipelineBoardMember;
 use App\Models\PipelineChecklist;
@@ -24,9 +23,7 @@ use App\Services\Pipeline\PipelineBoardSeedService;
 use App\Services\Pipeline\PipelineCollaborationService;
 use App\Services\Pipeline\PipelineNotificationService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class PipelineService
@@ -1580,57 +1577,6 @@ class PipelineService
         ]);
     }
 
-    public function addAttachment(int $businessId, User $user, int $leadId, UploadedFile $file): PipelineAttachment
-    {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        $path = $file->store('pipeline-attachments', 'public');
-        $fileName = $file->getClientOriginalName();
-
-        $attachment = PipelineAttachment::create([
-            'lead_id' => $leadId,
-            'user_id' => $user->id,
-            'file_name' => $fileName,
-            'file_path' => $path,
-            'mime_type' => $file->getClientMimeType(),
-            'file_size' => $file->getSize(),
-        ]);
-
-        $this->recordActivity($lead, $user->id, 'system', "Attachment added: {$fileName}", [
-            'action' => 'attachment_added',
-            'file_name' => $fileName,
-        ]);
-
-        return $attachment;
-    }
-
-    public function deleteAttachment(int $businessId, User $user, int $attachmentId): void
-    {
-        $attachment = PipelineAttachment::query()
-            ->with('lead.board')
-            ->findOrFail($attachmentId);
-
-        if ((int) $attachment->lead->business_id !== $businessId) {
-            abort(404);
-        }
-
-        $this->assertCanEditBoard($user, $attachment->lead->board);
-
-        if ($attachment->file_path) {
-            Storage::disk('public')->delete($attachment->file_path);
-        }
-
-        $fileName = $attachment->file_name;
-        $lead = $attachment->lead;
-
-        $attachment->delete();
-
-        $this->recordActivity($lead, $user->id, 'system', "Attachment removed: {$fileName}", [
-            'action' => 'attachment_removed',
-            'file_name' => $fileName,
-        ]);
-    }
 
     /** @return list<string> */
     protected function leadDetailRelations(): array
@@ -1663,7 +1609,7 @@ class PipelineService
         return $lead;
     }
 
-    protected function recordActivity(
+    public function recordActivity(
         PipelineLead $lead,
         ?int $userId,
         string $type,
@@ -1842,7 +1788,7 @@ class PipelineService
             ->firstOrFail();
     }
 
-    protected function findLeadForBusiness(int $businessId, int $leadId): PipelineLead
+    public function findLeadForBusiness(int $businessId, int $leadId): PipelineLead
     {
         return PipelineLead::query()
             ->where('business_id', $businessId)
@@ -1892,7 +1838,7 @@ class PipelineService
         }
     }
 
-    protected function assertCanEditBoard(User $user, PipelineBoard $board): void
+    public function assertCanEditBoard(User $user, PipelineBoard $board): void
     {
         $this->assertCanViewBoard($user, $board);
 

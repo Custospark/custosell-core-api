@@ -50,8 +50,9 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::patch('/pipeline/checklist-items/{id}', [PipelineController::class, 'updateChecklistItem'])->whereNumber('id');
     Route::delete('/pipeline/checklist-items/{id}', [PipelineController::class, 'destroyChecklistItem'])->whereNumber('id');
 
-    Route::post('/pipeline/leads/{leadId}/attachments', [PipelineController::class, 'storeAttachment'])->whereNumber('leadId');
-    Route::delete('/pipeline/attachments/{id}', [PipelineController::class, 'destroyAttachment'])->whereNumber('id');
+    Route::post('/pipeline/leads/{leadId}/attachments', [App\Http\Controllers\Api\PipelineAttachmentController::class, 'store'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/attachments/link', [App\Http\Controllers\Api\PipelineAttachmentController::class, 'storeLink'])->whereNumber('leadId');
+    Route::delete('/pipeline/attachments/{id}', [App\Http\Controllers\Api\PipelineAttachmentController::class, 'destroy'])->whereNumber('id');
 
     Route::post('/pipeline/activities/{id}/reaction', [PipelineController::class, 'toggleActivityReaction'])->whereNumber('id');
     Route::get('/pipeline/boards/{boardId}/collaboration-summary', [PipelineController::class, 'boardCollaborationSummary'])->whereNumber('boardId');

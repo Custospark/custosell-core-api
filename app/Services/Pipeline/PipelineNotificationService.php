@@ -240,6 +240,46 @@ class PipelineNotificationService
         }
     }
 
+    /** @param  list<User>  $recipients */
+    public function notifyBoardMemberAdded(
+        PipelineBoard $board,
+        User $actor,
+        array $recipients,
+        ?string $customRole = null,
+    ): void {
+        foreach ($recipients as $recipient) {
+            if ((int) $recipient->id === (int) $actor->id) {
+                continue;
+            }
+
+            $roleLabel = match ($customRole) {
+                'viewer' => 'viewer',
+                'contributor' => 'contributor',
+                'manager' => 'manager',
+                default => 'team member',
+            };
+
+            $title = "You've been added to {$board->name}";
+            $body = $this->wrapBody(
+                '<p><strong>'.e($actor->name).'</strong> added you as a '
+                .e($roleLabel).' on <em>'.e($board->name).'</em>.</p>'
+                .$this->metaLine('Board', $board->name)
+                .$this->metaLine('Role', ucfirst($roleLabel)),
+            );
+
+            $this->dispatch(
+                $recipient,
+                $title,
+                $body,
+                'pipeline.board_member_added',
+                (int) $board->business_id,
+                ['board_id' => $board->id],
+                $this->boardCta($board),
+                'Open board',
+            );
+        }
+    }
+
     public function notifyReminder(User $recipient, PipelineLead $lead, PipelineBoard $board, ?string $message): void
     {
         $title = "Reminder: {$lead->title}";
