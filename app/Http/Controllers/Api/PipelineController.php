@@ -86,6 +86,7 @@ class PipelineController extends Controller
             'members' => ['nullable', 'array'],
             'members.*.user_id' => ['required_with:members', 'integer'],
             'members.*.role' => ['nullable', 'in:viewer,contributor,manager,editor'],
+            'members.*.send_notification' => ['nullable', 'boolean'],
             'workspace' => ['nullable', 'in:pipeline,estimates'],
         ]);
 
@@ -126,6 +127,7 @@ class PipelineController extends Controller
             'members' => ['nullable', 'array'],
             'members.*.user_id' => ['required_with:members', 'integer'],
             'members.*.role' => ['nullable', 'in:viewer,contributor,manager,editor'],
+            'members.*.send_notification' => ['nullable', 'boolean'],
         ]);
 
         $board = $this->pipelineService->updateBoard(

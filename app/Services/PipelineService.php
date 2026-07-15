@@ -187,10 +187,10 @@ class PipelineService
             $board = PipelineBoard::create($boardAttributes);
 
             if (!empty($data['member_ids']) && $board->visibility === 'shared') {
-                $this->syncBoardMembers($board, $data['member_ids']);
+                $this->syncBoardMembers($board, $data['member_ids'], $userId);
             }
             if (!empty($data['members']) && $board->visibility === 'shared') {
-                $this->syncBoardMembers($board, $data['members']);
+                $this->syncBoardMembers($board, $data['members'], $userId);
             }
 
             foreach ($stageTemplate as $index => $stage) {
@@ -222,14 +222,22 @@ class PipelineService
         });
     }
 
-    /** @param  list<int>|list<array{user_id: int, role?: string}>  $members */
-    public function syncBoardMembers(PipelineBoard $board, array $members): void
+    /** @param  list<int>|list<array{user_id: int, role?: string, send_notification?: bool}>  $members */
+    public function syncBoardMembers(PipelineBoard $board, array $members, ?int $actorUserId = null): void
     {
+        $existingUserIds = PipelineBoardMember::query()
+            ->where('board_id', $board->id)
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
         PipelineBoardMember::query()->where('board_id', $board->id)->delete();
 
         foreach ($members as $entry) {
             $userId = is_array($entry) ? (int) ($entry['user_id'] ?? 0) : (int) $entry;
             $role = is_array($entry) ? ($entry['role'] ?? 'contributor') : 'contributor';
+            $sendNotification = is_array($entry) && ($entry['send_notification'] ?? false);
+
             if ($userId === 0 || $userId === (int) $board->created_by) {
                 continue;
             }
@@ -242,6 +250,16 @@ class PipelineService
                 'user_id' => $userId,
                 'role' => $role,
             ]);
+
+            if ($sendNotification && $actorUserId && ! in_array($userId, $existingUserIds, true)) {
+                $recipient = User::find($userId);
+                if ($recipient) {
+                    $actor = User::find($actorUserId);
+                    if ($actor) {
+                        $this->pipelineNotifier->notifyBoardMemberAdded($board, $actor, [$recipient], $role);
+                    }
+                }
+            }
         }
     }
 
@@ -356,7 +374,7 @@ class PipelineService
         if ($board->visibility === 'shared' && (array_key_exists('member_ids', $data) || array_key_exists('members', $data))) {
             $this->assertCanManageBoard($user, $board);
             $members = $data['members'] ?? $data['member_ids'] ?? [];
-            $this->syncBoardMembers($board, $members);
+            $this->syncBoardMembers($board, $members, (int) $user->id);
         }
 
         return $board->fresh(['stages', 'members.user', 'creator']);
