@@ -336,9 +336,10 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'role' => ['nullable', 'string', 'in:viewer,contributor,manager'],
+            'send_notification' => ['nullable', 'boolean'],
         ]);
 
-        $member = $this->projectService->addMember($id, $validated);
+        $member = $this->projectService->addMember($id, $validated, (int) $request->user()->id);
 
         return response()->json(new ProjectMemberResource($member), 201);
     }

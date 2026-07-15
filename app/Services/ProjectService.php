@@ -348,7 +348,7 @@ class ProjectService implements ProjectServiceInterface
     }
 
     /** @param  array{user_id: int, role?: string}  $data */
-    public function addMember(int $projectId, array $data): \App\Models\ProjectMember
+    public function addMember(int $projectId, array $data, ?int $actorUserId = null): \App\Models\ProjectMember
     {
         $project = $this->projectRepository->find($projectId);
         if (!$project) {
@@ -366,6 +366,20 @@ class ProjectService implements ProjectServiceInterface
         );
 
         $this->syncProjectBoardMember($project, (int) $data['user_id'], $role);
+
+        if (!empty($data['send_notification']) && $actorUserId) {
+            $recipient = \App\Models\User::find((int) $data['user_id']);
+            $actor = \App\Models\User::find($actorUserId);
+            if ($recipient && $actor) {
+                $board = \App\Models\PipelineBoard::query()
+                    ->where('project_id', $project->id)
+                    ->first();
+                if ($board) {
+                    app(\App\Services\Pipeline\PipelineNotificationService::class)
+                        ->notifyBoardMemberAdded($board, $actor, [$recipient], $role);
+                }
+            }
+        }
 
         return $member->load('user');
     }
