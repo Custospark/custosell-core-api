@@ -13,6 +13,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/boards/{id}/duplicate', [PipelineController::class, 'duplicateBoard'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/kanban', [PipelineController::class, 'kanban'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/calendar', [PipelineController::class, 'calendar'])->whereNumber('id');
+    Route::get('/pipeline/calendar', [PipelineController::class, 'allBoardsCalendar']);
     Route::post('/pipeline/boards/{id}/background', [PipelineController::class, 'uploadBoardBackground'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/import-template', [PipelineController::class, 'downloadLeadImportTemplate'])->whereNumber('id');
     Route::post('/pipeline/boards/{id}/import', [PipelineController::class, 'importLeads'])->whereNumber('id');

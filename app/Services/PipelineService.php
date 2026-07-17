@@ -582,6 +582,80 @@ class PipelineService
             ->all();
     }
 
+    public function allBoardsCalendar(
+        int $businessId,
+        User $user,
+        int $year,
+        int $month,
+        string $dateField = 'due',
+        string $workspace = 'pipeline',
+    ): array {
+        $boards = $this->listBoards(
+            $businessId,
+            $user,
+            salesOnly: $workspace === 'pipeline',
+            estimatesWorkspace: $workspace === 'estimates',
+        );
+
+        $boardIds = $boards->pluck('id')->toArray();
+        if (empty($boardIds)) {
+            return [];
+        }
+
+        $start = sprintf('%04d-%02d-01', $year, $month);
+        $end = date('Y-m-t', strtotime($start));
+
+        $query = PipelineLead::query()
+            ->where('business_id', $businessId)
+            ->whereIn('board_id', $boardIds)
+            ->whereIn('status', ['open', 'won', 'lost'])
+            ->with(['stage:id,name,color', 'assignee:id,name,avatar', 'board:id,name']);
+
+        if ($dateField === 'start') {
+            $query->whereBetween('start_date', [$start, $end]);
+        } elseif ($dateField === 'close') {
+            $query->whereBetween('expected_close_date', [$start, $end]);
+        } elseif ($dateField === 'all') {
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                    ->orWhereBetween('due_date', [$start, $end])
+                    ->orWhereBetween('expected_close_date', [$start, $end]);
+            });
+        } else {
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('due_date', [$start, $end])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
+                    });
+            });
+        }
+
+        $leads = $query->get();
+        $byDate = [];
+
+        foreach ($leads as $lead) {
+            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
+            foreach ($entries as $entry) {
+                $formatted = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
+                $formatted['board'] = $lead->board ? [
+                    'id' => $lead->board->id,
+                    'name' => $lead->board->name,
+                ] : null;
+                $byDate[$entry['date']][] = $formatted;
+            }
+        }
+
+        ksort($byDate);
+
+        return collect($byDate)
+            ->map(fn ($group, $date) => [
+                'date' => $date,
+                'leads' => array_values($group),
+            ])
+            ->values()
+            ->all();
+    }
+
     /** @return list<array{date: string, kind: string}> */
     protected function calendarDateEntriesForLead(
         PipelineLead $lead,

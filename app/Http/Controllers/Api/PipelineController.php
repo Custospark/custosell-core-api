@@ -386,6 +386,27 @@ class PipelineController extends Controller
         return response()->json(['data' => $days]);
     }
 
+    public function allBoardsCalendar(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+            'date_field' => ['nullable', 'in:due,start,close,all'],
+            'workspace' => ['nullable', 'in:pipeline,estimates'],
+        ]);
+
+        $days = $this->pipelineService->allBoardsCalendar(
+            (int) $request->user()->business_id,
+            $request->user(),
+            (int) $validated['year'],
+            (int) $validated['month'],
+            $validated['date_field'] ?? 'due',
+            $validated['workspace'] ?? 'pipeline',
+        );
+
+        return response()->json(['data' => $days]);
+    }
+
     public function leads(Request $request): JsonResponse
     {
         $filters = $request->validate([
