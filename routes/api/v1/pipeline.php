@@ -122,4 +122,20 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::patch('/pipeline/meta-fields/{id}', [PipelineController::class, 'updateBoardMetaField'])->whereNumber('id');
     Route::delete('/pipeline/meta-fields/{id}', [PipelineController::class, 'destroyBoardMetaField'])->whereNumber('id');
     Route::match(['get', 'post'], '/pipeline/leads/{leadId}/meta-values', [PipelineController::class, 'syncLeadMetaValues'])->whereNumber('leadId');
+
+    Route::get('/pipeline/boards/{boardId}/booking-settings', [PipelineController::class, 'getBookingSettings'])->whereNumber('boardId');
+    Route::put('/pipeline/boards/{boardId}/booking-settings', [PipelineController::class, 'updateBookingSettings'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/booking-settings/regenerate-token', [PipelineController::class, 'regenerateBookingToken'])->whereNumber('boardId');
+    Route::post('/pipeline/leads/{leadId}/approve-booking', [PipelineController::class, 'approveBooking'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/complete-booking', [PipelineController::class, 'completeBooking'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/reject-booking', [PipelineController::class, 'rejectBooking'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/schedule-meeting', [PipelineController::class, 'scheduleMeeting'])->whereNumber('leadId');
+    Route::patch('/pipeline/meetings/{meetingId}', [PipelineController::class, 'updateMeeting'])->whereNumber('meetingId');
+    Route::delete('/pipeline/meetings/{meetingId}', [PipelineController::class, 'deleteMeeting'])->whereNumber('meetingId');
 });
+
+// Public booking routes (no auth)
+Route::get('/public/book/{token}', [App\Http\Controllers\Api\PublicBookingController::class, 'info']);
+Route::get('/public/book/{token}/slots', [App\Http\Controllers\Api\PublicBookingController::class, 'slots']);
+Route::post('/public/book/{token}', [App\Http\Controllers\Api\PublicBookingController::class, 'book']);
+Route::get('/public/book/{token}/check/{reference}', [App\Http\Controllers\Api\PublicBookingController::class, 'check']);

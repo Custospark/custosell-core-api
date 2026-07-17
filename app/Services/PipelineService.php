@@ -409,6 +409,7 @@ class PipelineService
                     'customer:id,name,email,phone',
                     'labels:id,name,color',
                     'checklists.items',
+                    'meetings',
                 ])
                 ->withCount('attachments')
                 ->withCount([
@@ -799,7 +800,7 @@ class PipelineService
 
         $query = PipelineLead::query()
             ->where('business_id', $businessId)
-            ->with(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone']);
+            ->with(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone', 'meetings']);
 
         if (!empty($filters['board_id'])) {
             $board = $this->findBoardForBusiness($businessId, (int) $filters['board_id']);
@@ -1694,6 +1695,7 @@ class PipelineService
             'labels:id,name,color',
             'checklists.items',
             'attachments.user:id,name',
+            'meetings',
         ];
     }
 

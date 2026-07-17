@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use App\Models\PipelineLeadMetaValue;
 
 class PipelineLead extends Model
@@ -43,7 +44,24 @@ class PipelineLead extends Model
         'lost_at',
         'converted_at',
         'lost_reason',
+        'booking_status',
+        'meeting_link',
+        'reference_code',
+        'rejection_reason',
+        'approved_at',
+        'rejected_at',
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $lead) {
+            if (!$lead->reference_code) {
+                $lead->reference_code = strtoupper(Str::random(6));
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -56,6 +74,8 @@ class PipelineLead extends Model
             'won_at' => 'datetime',
             'lost_at' => 'datetime',
             'converted_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 
@@ -144,5 +164,10 @@ class PipelineLead extends Model
     public function metaValues(): HasMany
     {
         return $this->hasMany(PipelineLeadMetaValue::class, 'lead_id');
+    }
+
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(PipelineLeadMeeting::class, 'lead_id')->orderBy('start_date');
     }
 }
