@@ -21,7 +21,7 @@ class PublicBookingController extends Controller
             ->where('enabled', true)
             ->with([
                 'board' => fn($q) => $q->select('id', 'name', 'business_id'),
-                'board.business' => fn($q) => $q->select('id', 'name'),
+                'board.business' => fn($q) => $q->select('id', 'name', 'logo_path'),
                 'targetStage' => fn($q) => $q->select('id', 'name'),
             ])
             ->first();
@@ -34,6 +34,7 @@ class PublicBookingController extends Controller
             'data' => [
                 'board_name' => $settings->board?->name,
                 'business_name' => $settings->board?->business?->name,
+                'logo_path' => $settings->board?->business?->logo_path,
                 'available_days' => $settings->available_days ?? [1, 2, 3, 4, 5],
                 'meeting_link' => $settings->meeting_link,
                 'start_time' => $settings->start_time,
