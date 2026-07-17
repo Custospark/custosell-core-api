@@ -10,6 +10,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::get('/pipeline/boards/{id}', [PipelineController::class, 'showBoard'])->whereNumber('id');
     Route::patch('/pipeline/boards/{id}', [PipelineController::class, 'updateBoard'])->whereNumber('id');
     Route::delete('/pipeline/boards/{id}', [PipelineController::class, 'destroyBoard'])->whereNumber('id');
+    Route::post('/pipeline/boards/{id}/duplicate', [PipelineController::class, 'duplicateBoard'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/kanban', [PipelineController::class, 'kanban'])->whereNumber('id');
     Route::get('/pipeline/boards/{id}/calendar', [PipelineController::class, 'calendar'])->whereNumber('id');
     Route::post('/pipeline/boards/{id}/background', [PipelineController::class, 'uploadBoardBackground'])->whereNumber('id');
@@ -110,4 +111,14 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/boards/{boardId}/targets', [PipelineController::class, 'storeBoardTarget'])->whereNumber('boardId');
     Route::patch('/pipeline/targets/{targetId}', [PipelineController::class, 'updateBoardTarget'])->whereNumber('targetId');
     Route::delete('/pipeline/targets/{targetId}', [PipelineController::class, 'destroyBoardTarget'])->whereNumber('targetId');
+
+    Route::get('/pipeline/leads/{lead}/links', [PipelineController::class, 'leadLinks'])->whereNumber('lead');
+    Route::post('/pipeline/leads/{lead}/links', [PipelineController::class, 'storeLeadLink'])->whereNumber('lead');
+    Route::delete('/pipeline/links/{id}', [PipelineController::class, 'destroyLeadLink'])->whereNumber('id');
+
+    Route::get('/pipeline/boards/{boardId}/meta-fields', [PipelineController::class, 'boardMetaFields'])->whereNumber('boardId');
+    Route::post('/pipeline/boards/{boardId}/meta-fields', [PipelineController::class, 'storeBoardMetaField'])->whereNumber('boardId');
+    Route::patch('/pipeline/meta-fields/{id}', [PipelineController::class, 'updateBoardMetaField'])->whereNumber('id');
+    Route::delete('/pipeline/meta-fields/{id}', [PipelineController::class, 'destroyBoardMetaField'])->whereNumber('id');
+    Route::match(['get', 'post'], '/pipeline/leads/{leadId}/meta-values', [PipelineController::class, 'syncLeadMetaValues'])->whereNumber('leadId');
 });

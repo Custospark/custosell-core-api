@@ -10,6 +10,7 @@ use App\Models\PipelineChecklist;
 use App\Models\PipelineChecklistItem;
 use App\Models\PipelineLead;
 use App\Models\PipelineLeadActivity;
+use App\Models\PipelineLeadLink;
 use App\Models\PipelineLabel;
 use App\Models\PipelineSource;
 use App\Models\PipelineStage;
@@ -566,7 +567,7 @@ class PipelineService
         foreach ($leads as $lead) {
             $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
             foreach ($entries as $entry) {
-                $byDate[$entry['date']][] = $this->formatCalendarLead($lead, $entry['kind']);
+                $byDate[$entry['date']][] = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
             }
         }
 
@@ -608,12 +609,20 @@ class PipelineService
             return $date >= $rangeStart && $date <= $rangeEnd;
         };
 
-        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($normalizeDate, $inRange): void {
-            $date = $normalizeDate($rawDate);
-            if (!$inRange($date)) {
+        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($inRange): void {
+            if ($rawDate === null) {
                 return;
             }
-            $entries[] = ['date' => $date, 'kind' => $kind];
+            $dateStr = $rawDate instanceof \Carbon\CarbonInterface
+                ? $rawDate->toDateString()
+                : substr((string) $rawDate, 0, 10);
+            if (!$inRange($dateStr)) {
+                return;
+            }
+            $timeStr = $rawDate instanceof \Carbon\CarbonInterface
+                ? $rawDate->format('H:i')
+                : null;
+            $entries[] = ['date' => $dateStr, 'time' => $timeStr, 'kind' => $kind];
         };
 
         if ($dateField === 'start') {
@@ -636,7 +645,7 @@ class PipelineService
     }
 
     /** @return array<string, mixed> */
-    protected function formatCalendarLead(PipelineLead $lead, string $dateKind): array
+    protected function formatCalendarLead(PipelineLead $lead, string $dateKind, ?string $time = null): array
     {
         return [
             'id' => $lead->id,
@@ -647,6 +656,7 @@ class PipelineService
             'status' => $lead->status,
             'priority' => $lead->priority,
             'date_kind' => $dateKind,
+            'time' => $time,
             'stage' => $lead->stage ? [
                 'id' => $lead->stage->id,
                 'name' => $lead->stage->name,
@@ -2107,5 +2117,125 @@ class PipelineService
         }
 
         return $toAdd;
+    }
+
+    public function createLeadLink(int $businessId, User $user, int $leadId, array $data): PipelineLeadLink
+    {
+        $lead = $this->findLeadForBusiness($businessId, $leadId);
+        $this->assertCanEditBoard($user, $lead->board);
+
+        if (!empty($data['linked_lead_id'])) {
+            $targetLead = $this->findLeadForBusiness($businessId, (int) $data['linked_lead_id']);
+        }
+
+        return PipelineLeadLink::create([
+            'lead_id' => $leadId,
+            'linked_lead_id' => $data['linked_lead_id'] ?? null,
+            'linked_board_id' => $data['linked_board_id'] ?? null,
+            'label' => $data['label'] ?? null,
+            'created_by' => $user->id,
+        ]);
+    }
+
+    public function deleteLeadLink(int $businessId, User $user, int $linkId): void
+    {
+        $link = PipelineLeadLink::query()
+            ->where('id', $linkId)
+            ->firstOrFail();
+
+        $lead = $this->findLeadForBusiness($businessId, $link->lead_id);
+        $this->assertCanEditBoard($user, $lead->board);
+
+        $link->delete();
+    }
+
+    public function duplicateBoard(int $businessId, User $user, int $boardId): PipelineBoard
+    {
+        $source = $this->getBoard($businessId, $user, $boardId);
+        $this->assertCanEditBoard($user, $source);
+
+        return DB::transaction(function () use ($businessId, $user, $source) {
+            $board = PipelineBoard::create([
+                'business_id' => $businessId,
+                'created_by' => $user->id,
+                'name' => 'Copy of ' . $source->name,
+                'description' => $source->description,
+                'visibility' => $source->visibility,
+                'cover_color' => $source->cover_color,
+                'background_type' => $source->background_type,
+                'background_value' => $source->background_value,
+                'workspace' => $source->workspace ?? 'pipeline',
+                'sort_order' => 0,
+            ]);
+
+            $stageIdMap = [];
+            foreach ($source->stages ?? [] as $index => $stage) {
+                $newStage = PipelineStage::create([
+                    'business_id' => $businessId,
+                    'board_id' => $board->id,
+                    'name' => $stage->name,
+                    'sort_order' => $index,
+                    'color' => $stage->color,
+                    'is_won' => $stage->is_won,
+                    'is_lost' => $stage->is_lost,
+                    'rotting_days' => $stage->rotting_days,
+                ]);
+                $stageIdMap[$stage->id] = $newStage->id;
+            }
+
+            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
+
+            if ($source->visibility === 'shared' && $source->members->isNotEmpty()) {
+                $memberIds = $source->members->pluck('user_id')->toArray();
+                if (!in_array($user->id, $memberIds)) {
+                    $memberIds[] = $user->id;
+                }
+                $this->syncBoardMembers($board, $memberIds, $user->id);
+            }
+
+            $sourceLeads = PipelineLead::query()
+                ->where('board_id', $source->id)
+                ->whereIn('status', ['open', 'won', 'lost', 'converted'])
+                ->with(['labels', 'assignees'])
+                ->get();
+
+            foreach ($sourceLeads as $lead) {
+                $newStageId = $stageIdMap[$lead->stage_id] ?? null;
+                if (!$newStageId) continue;
+
+                $newLead = PipelineLead::create([
+                    'business_id' => $businessId,
+                    'board_id' => $board->id,
+                    'stage_id' => $newStageId,
+                    'created_by' => $user->id,
+                    'assigned_to' => $lead->assigned_to,
+                    'title' => $lead->title,
+                    'card_type' => $lead->card_type,
+                    'description' => $lead->description,
+                    'contact_name' => $lead->contact_name,
+                    'contact_email' => $lead->contact_email,
+                    'contact_phone' => $lead->contact_phone,
+                    'estimated_value' => $lead->estimated_value,
+                    'currency' => $lead->currency,
+                    'status' => $lead->status,
+                    'position' => $lead->position,
+                    'priority' => $lead->priority,
+                    'due_date' => $lead->due_date,
+                    'expected_close_date' => $lead->expected_close_date,
+                    'start_date' => $lead->start_date,
+                    'background_color' => $lead->background_color,
+                ]);
+
+                if ($lead->labels->isNotEmpty()) {
+                    $newLead->labels()->sync($lead->labels->pluck('id')->toArray());
+                }
+
+                if ($lead->assignees->isNotEmpty()) {
+                    $newLead->assignees()->sync($lead->assignees->pluck('id')->toArray());
+                }
+            }
+
+            return $board->load(['stages', 'members.user', 'creator']);
+        });
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\PipelineLeadLinkResource;
 use App\Services\PipelineService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -55,9 +56,9 @@ class PipelineLeadResource extends JsonResource
             'currency' => $this->currency,
             'status' => $this->status,
             'position' => (float) $this->position,
-            'expected_close_date' => $this->expected_close_date?->toDateString(),
-            'due_date' => $this->due_date?->toDateString(),
-            'start_date' => $this->start_date?->toDateString(),
+            'expected_close_date' => $this->expected_close_date?->toISOString(),
+            'due_date' => $this->due_date?->toISOString(),
+            'start_date' => $this->start_date?->toISOString(),
             'priority' => $this->priority,
             'background_color' => $this->background_color,
             'won_at' => $this->won_at?->toISOString(),
@@ -106,6 +107,7 @@ class PipelineLeadResource extends JsonResource
             'checklists' => PipelineChecklistResource::collection($this->whenLoaded('checklists')),
             'attachments' => PipelineAttachmentResource::collection($this->whenLoaded('attachments')),
             'activities' => PipelineLeadActivityResource::collection($this->whenLoaded('activities')),
+            'links' => PipelineLeadLinkResource::collection($this->whenLoaded('links')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

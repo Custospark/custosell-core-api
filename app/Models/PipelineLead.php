@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\PipelineLeadMetaValue;
 
 class PipelineLead extends Model
 {
@@ -49,9 +50,9 @@ class PipelineLead extends Model
         return [
             'estimated_value' => 'decimal:2',
             'position' => 'decimal:4',
-            'expected_close_date' => 'date',
-            'due_date' => 'date',
-            'start_date' => 'date',
+            'expected_close_date' => 'datetime',
+            'due_date' => 'datetime',
+            'start_date' => 'datetime',
             'won_at' => 'datetime',
             'lost_at' => 'datetime',
             'converted_at' => 'datetime',
@@ -128,5 +129,20 @@ class PipelineLead extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(PipelineAttachment::class, 'lead_id')->orderByDesc('created_at');
+    }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(PipelineLeadLink::class, 'lead_id');
+    }
+
+    public function linkedFrom(): HasMany
+    {
+        return $this->hasMany(PipelineLeadLink::class, 'linked_lead_id');
+    }
+
+    public function metaValues(): HasMany
+    {
+        return $this->hasMany(PipelineLeadMetaValue::class, 'lead_id');
     }
 }
