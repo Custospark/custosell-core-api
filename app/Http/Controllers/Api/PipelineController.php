@@ -1976,10 +1976,36 @@ class PipelineController extends Controller
             return response()->json(['message' => 'Booking is not in pending state.'], 422);
         }
 
-        $lead->update([
+        $validated = $request->validate([
+            'meeting_link' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        if (empty($validated['meeting_link'] ?? null) && empty($validated['notes'] ?? null)) {
+            return response()->json([
+                'message' => 'A meeting link or meeting notes is required to approve this booking.',
+            ], 422);
+        }
+
+        $updateData = [
             'booking_status' => 'approved',
             'approved_at' => now(),
-        ]);
+        ];
+
+        if (array_key_exists('meeting_link', $validated)) {
+            $updateData['meeting_link'] = $validated['meeting_link'];
+        }
+
+        if (array_key_exists('notes', $validated) && $validated['notes'] !== null) {
+            $existingNotes = $lead->description;
+            $newNotes = 'Admin notes: ' . $validated['notes'];
+            $updateData['description'] = $existingNotes
+                ? $existingNotes . "\n\n" . $newNotes
+                : $newNotes;
+        }
+
+        $lead->update($updateData);
+        $lead->loadMissing('board');
 
         return response()->json([
             'message' => 'Booking approved',
