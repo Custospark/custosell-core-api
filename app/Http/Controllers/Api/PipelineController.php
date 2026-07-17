@@ -507,6 +507,7 @@ class PipelineController extends Controller
             'status' => ['nullable', 'in:open,won,lost'],
             'booking_status' => ['nullable', 'in:pending,approved,rejected,completed'],
             'meeting_link' => ['nullable', 'string', 'max:500'],
+            'is_pinned' => ['nullable', 'boolean'],
             'label_ids' => ['nullable', 'array'],
             'label_ids.*' => ['integer'],
         ]);

@@ -56,6 +56,7 @@ class PipelineLeadResource extends JsonResource
             'currency' => $this->currency,
             'status' => $this->status,
             'position' => (float) $this->position,
+            'is_pinned' => (bool) $this->is_pinned,
             'expected_close_date' => $this->expected_close_date?->toISOString(),
             'due_date' => $this->due_date?->toISOString(),
             'start_date' => $this->start_date?->toISOString(),

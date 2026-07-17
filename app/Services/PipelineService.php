@@ -418,7 +418,7 @@ class PipelineService
                 ->withCount([
                     'activities as history_count',
                 ])
-                ->orderBy('position'),
+                ->orderByRaw('is_pinned DESC, position ASC'),
             'members.user:id,name',
             'creator:id,name',
         ]);
@@ -965,7 +965,7 @@ class PipelineService
             'title', 'card_type', 'description', 'assigned_to', 'customer_id', 'source_id',
             'contact_name', 'contact_email', 'contact_phone', 'estimated_value',
             'currency', 'expected_close_date', 'due_date', 'start_date', 'priority',
-            'background_color', 'lost_reason', 'status',
+            'background_color', 'lost_reason', 'status', 'is_pinned',
         ] as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[$field] = $data[$field];

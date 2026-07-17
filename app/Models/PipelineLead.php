@@ -50,6 +50,7 @@ class PipelineLead extends Model
         'rejection_reason',
         'approved_at',
         'rejected_at',
+        'is_pinned',
     ];
 
     protected static function boot(): void
@@ -76,6 +77,7 @@ class PipelineLead extends Model
             'converted_at' => 'datetime',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'is_pinned' => 'boolean',
         ];
     }
 
