@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\Api\WallOfFameController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group(function () {
@@ -132,6 +133,11 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/leads/{leadId}/schedule-meeting', [PipelineController::class, 'scheduleMeeting'])->whereNumber('leadId');
     Route::patch('/pipeline/meetings/{meetingId}', [PipelineController::class, 'updateMeeting'])->whereNumber('meetingId');
     Route::delete('/pipeline/meetings/{meetingId}', [PipelineController::class, 'deleteMeeting'])->whereNumber('meetingId');
+
+    Route::get('/pipeline/wall-of-fame', [WallOfFameController::class, 'index']);
+    Route::post('/pipeline/wall-of-fame', [WallOfFameController::class, 'store']);
+    Route::patch('/pipeline/wall-of-fame/{wallPost}', [WallOfFameController::class, 'update']);
+    Route::delete('/pipeline/wall-of-fame/{wallPost}', [WallOfFameController::class, 'destroy']);
 });
 
 // Public booking routes (no auth)
