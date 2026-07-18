@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\BusinessAccountController;
 use App\Http\Controllers\Api\BusinessController;
+use App\Http\Controllers\Api\BusinessExportController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/businesses/register', [BusinessController::class, 'store']);
@@ -14,6 +16,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group
     Route::put('/businesses/{id}', [BusinessController::class, 'update']);
     Route::get('/businesses/settings', [BusinessController::class, 'settings']);
     Route::put('/businesses/settings', [BusinessController::class, 'updateSettings']);
+    Route::get('/businesses/export', [BusinessExportController::class, 'export']);
+    Route::delete('/businesses/account', [BusinessAccountController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->group(function () {
