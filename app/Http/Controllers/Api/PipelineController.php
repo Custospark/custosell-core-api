@@ -2071,6 +2071,32 @@ class PipelineController extends Controller
         ]);
     }
 
+    public function clearBooking(Request $request, int $leadId): JsonResponse
+    {
+        $businessId = (int) $request->user()->business_id;
+        $lead = PipelineLead::query()
+            ->where('business_id', $businessId)
+            ->where('id', $leadId)
+            ->firstOrFail();
+
+        $this->pipelineService->assertCanEditBoard($request->user(), $lead->board);
+
+        $lead->update([
+            'booking_status' => null,
+            'meeting_link' => null,
+            'start_date' => null,
+            'due_date' => null,
+            'rejection_reason' => null,
+            'rejected_at' => null,
+            'approved_at' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Booking cleared',
+            'data' => new PipelineLeadResource($lead),
+        ]);
+    }
+
     public function scheduleMeeting(Request $request, int $leadId): JsonResponse
     {
         $businessId = (int) $request->user()->business_id;

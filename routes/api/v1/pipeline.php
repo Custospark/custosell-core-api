@@ -130,6 +130,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group
     Route::post('/pipeline/leads/{leadId}/approve-booking', [PipelineController::class, 'approveBooking'])->whereNumber('leadId');
     Route::post('/pipeline/leads/{leadId}/complete-booking', [PipelineController::class, 'completeBooking'])->whereNumber('leadId');
     Route::post('/pipeline/leads/{leadId}/reject-booking', [PipelineController::class, 'rejectBooking'])->whereNumber('leadId');
+    Route::post('/pipeline/leads/{leadId}/clear-booking', [PipelineController::class, 'clearBooking'])->whereNumber('leadId');
     Route::post('/pipeline/leads/{leadId}/schedule-meeting', [PipelineController::class, 'scheduleMeeting'])->whereNumber('leadId');
     Route::patch('/pipeline/meetings/{meetingId}', [PipelineController::class, 'updateMeeting'])->whereNumber('meetingId');
     Route::delete('/pipeline/meetings/{meetingId}', [PipelineController::class, 'deleteMeeting'])->whereNumber('meetingId');
