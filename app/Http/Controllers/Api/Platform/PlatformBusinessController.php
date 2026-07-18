@@ -162,6 +162,19 @@ class PlatformBusinessController extends Controller
         ]);
     }
 
+    public function resetData(Request $request, int $id): JsonResponse
+    {
+        $business = Business::findOrFail($id);
+        $counts = $this->businessService->resetBusinessData($request->user(), $business);
+
+        return response()->json([
+            'message' => "Business \"{$business->name}\" (ID: {$business->id}) has been reset. Estimates, CRM (pipeline), and documents were preserved.",
+            'business_id' => $business->id,
+            'business_name' => $business->name,
+            'reset_counts' => $counts,
+        ]);
+    }
+
     public function notify(Request $request): JsonResponse
     {
         $intentions = implode(',', $this->businessService->notificationIntentions());

@@ -30,6 +30,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::post('/businesses/bulk-status', [PlatformBusinessController::class, 'bulkUpdateStatus']);
         Route::post('/businesses/notify', [PlatformBusinessController::class, 'notify']);
         Route::post('/businesses/reset-by-email', [PlatformBusinessController::class, 'resetByEmail']);
+        Route::post('/businesses/{id}/reset-data', [PlatformBusinessController::class, 'resetData']);
         Route::patch('/businesses/{id}/status', [PlatformBusinessController::class, 'updateStatus']);
         Route::delete('/businesses/{id}', [PlatformBusinessController::class, 'destroy']);
     });
