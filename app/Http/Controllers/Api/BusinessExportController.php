@@ -8,6 +8,7 @@ use App\Services\BusinessExportService;
 use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BusinessExportController extends Controller
 {
@@ -16,7 +17,7 @@ class BusinessExportController extends Controller
         protected ReportExportService $export,
     ) {}
 
-    public function export(Request $request): JsonResponse
+    public function export(Request $request): JsonResponse|Response
     {
         $request->validate([
             'format' => 'nullable|in:json,csv,xlsx',
