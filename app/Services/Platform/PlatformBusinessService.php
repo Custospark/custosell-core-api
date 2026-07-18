@@ -557,9 +557,19 @@ class PlatformBusinessService
                 ->where('business_id', $businessId)->delete();
 
             // ── 15. Accounting ────────────────────────────────────
-            // journal_entry_lines cascade from journal_entries
-            // depreciation_entries cascade from fixed_assets
-            // fixed_asset_assignments cascade from fixed_assets
+            // journal_entry_lines and depreciation_entries use RESTRICT
+            // (not cascade), so delete child rows first.
+            $counts['depreciation_entries'] = DB::table('depreciation_entries')
+                ->whereIn('asset_id', fn($q) => $q->select('id')->from('fixed_assets')->where('business_id', $businessId))
+                ->delete();
+            $counts['fixed_asset_assignments'] = DB::table('fixed_asset_assignments')
+                ->whereIn('asset_id', fn($q) => $q->select('id')->from('fixed_assets')->where('business_id', $businessId))
+                ->delete();
+
+            $counts['journal_entry_lines'] = DB::table('journal_entry_lines')
+                ->whereIn('entry_id', fn($q) => $q->select('id')->from('journal_entries')->where('business_id', $businessId))
+                ->delete();
+
             $counts['fixed_assets'] = DB::table('fixed_assets')
                 ->where('business_id', $businessId)->delete();
             $counts['journal_entries'] = DB::table('journal_entries')
@@ -572,8 +582,6 @@ class PlatformBusinessService
                 ->where('business_id', $businessId)->delete();
 
             // ── 16. Supplier / storefront ratings ────────────────
-            DB::table('business_supplier_list_entries')
-                ->where('business_id', $businessId)->delete();
             DB::table('business_storefront_ratings')
                 ->where('business_id', $businessId)->delete();
 
