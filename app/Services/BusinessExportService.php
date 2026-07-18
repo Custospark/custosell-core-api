@@ -44,7 +44,7 @@ class BusinessExportService
             'users' => $data['users'],
             'roles' => $data['roles'],
             'shifts' => $data['shifts'],
-            'stock_counts' => $data['stock_counts'],
+            'notifications' => $data['notifications'],
         ];
     }
 
