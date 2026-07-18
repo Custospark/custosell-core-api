@@ -106,7 +106,7 @@ class PublicBookingController extends Controller
         $settings = BoardBookingSetting::query()
             ->where('token', $token)
             ->where('enabled', true)
-            ->with('board')
+            ->with(['board' => fn($q) => $q->with('business')])
             ->first();
 
         if (!$settings) {
@@ -163,6 +163,9 @@ class PublicBookingController extends Controller
         $userMeetingLink = $validated['meeting_link'] ?? null;
         $description = $validated['notes'] ?? null;
 
+        $duration = (int) $settings->slot_duration;
+        $dueDateTime = (clone $dateTime)->addMinutes($duration);
+
         $lead = PipelineLead::create([
             'business_id' => $settings->board->business_id,
             'board_id' => $settings->board_id,
@@ -178,8 +181,8 @@ class PublicBookingController extends Controller
             'booking_status' => 'pending',
             'meeting_link' => $userMeetingLink ?: $settings->meeting_link,
             'start_date' => $dateTime,
-            'due_date' => $dateTime,
-            'currency' => 'UGX',
+            'due_date' => $dueDateTime,
+            'currency' => $settings->board->business->currency ?? 'UGX',
         ]);
 
         $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
