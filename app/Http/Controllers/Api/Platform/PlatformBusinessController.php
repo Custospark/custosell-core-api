@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business;
+use App\Models\User;
 use App\Services\Platform\PlatformBusinessService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -129,6 +130,35 @@ class PlatformBusinessController extends Controller
         return response()->json([
             'message' => "{$count} business(es) deleted.",
             'deleted' => $count,
+        ]);
+    }
+
+    public function resetByEmail(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $owner = User::where('email', $validated['email'])->first();
+
+        if (!$owner) {
+            return response()->json(['message' => 'No user found with that email.'], 404);
+        }
+
+        $business = Business::where('owner_id', $owner->id)->first();
+
+        if (!$business) {
+            return response()->json(['message' => 'That user does not own a business.'], 404);
+        }
+
+        $counts = $this->businessService->resetBusinessData($request->user(), $business);
+
+        return response()->json([
+            'message' => "Business \"{$business->name}\" (ID: {$business->id}) has been reset.",
+            'business_id' => $business->id,
+            'business_name' => $business->name,
+            'owner_email' => $owner->email,
+            'reset_counts' => $counts,
         ]);
     }
 

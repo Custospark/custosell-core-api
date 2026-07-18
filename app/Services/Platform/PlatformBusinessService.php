@@ -460,6 +460,147 @@ class PlatformBusinessService
         return $deleted;
     }
 
+    public function resetBusinessData(User $actor, Business $business): array
+    {
+        $businessId = $business->id;
+        $counts = [];
+
+        DB::transaction(function () use ($businessId, $actor, $business, &$counts): void {
+            // ── 1. Pipeline / CRM ──────────────────────────────────
+            $counts['pipeline_sources'] = DB::table('pipeline_sources')
+                ->where('business_id', $businessId)->delete();
+
+            // Deleting boards cascades to stages, leads, activities,
+            // meetings, links, members, polls, checklists, messages, etc.
+            $counts['pipeline_boards'] = DB::table('pipeline_boards')
+                ->where('business_id', $businessId)->delete();
+
+            // Remaining pipeline tables that only FK to business_id
+            foreach (['pipeline_board_templates', 'pipeline_labels', 'pipeline_reminders'] as $t) {
+                $counts[$t] = DB::table($t)->where('business_id', $businessId)->delete();
+            }
+
+            // ── 2. Estimates ──────────────────────────────────────
+            // estimate_line_items cascade from estimates
+            $counts['estimate_versions'] = DB::table('estimate_versions')
+                ->whereIn('estimate_id', fn($q) => $q->select('id')->from('estimates')->where('business_id', $businessId))
+                ->delete();
+            $counts['estimates'] = DB::table('estimates')
+                ->where('business_id', $businessId)->delete();
+            $counts['estimate_templates'] = DB::table('estimate_templates')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 3. Projects ───────────────────────────────────────
+            // project_tasks, project_members, project_cost_allocations cascade from projects
+            $counts['projects'] = DB::table('projects')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 4. Documents ──────────────────────────────────────
+            // document_cabinets -> folders -> documents cascade
+            $counts['document_cabinets'] = DB::table('document_cabinets')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 5. Invoices (before payments since payments reference invoices) ─
+            $counts['invoice_items'] = DB::table('invoice_items')
+                ->whereIn('invoice_id', fn($q) => $q->select('id')->from('invoices')->where('business_id', $businessId))
+                ->delete();
+            $counts['invoices'] = DB::table('invoices')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 6. Payments (polymorphic — clear by business_id) ──
+            $counts['payments'] = DB::table('payments')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 7. Orders ─────────────────────────────────────────
+            // order_items cascade from orders
+            $counts['orders'] = DB::table('orders')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 8. Sales ──────────────────────────────────────────
+            // sale_items cascade from sales
+            $counts['shifts'] = DB::table('shifts')
+                ->where('business_id', $businessId)->delete();
+            $counts['sales'] = DB::table('sales')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 9. Purchase orders (buyer + seller) ───────────────
+            $counts['purchase_order_items'] = DB::table('purchase_order_items')
+                ->whereIn('purchase_order_id', fn($q) => $q->select('id')->from('purchase_orders')
+                    ->where('buyer_business_id', $businessId)
+                    ->orWhere('seller_business_id', $businessId))
+                ->delete();
+            $counts['purchase_orders'] = DB::table('purchase_orders')
+                ->where('buyer_business_id', $businessId)
+                ->orWhere('seller_business_id', $businessId)
+                ->delete();
+
+            // ── 10. Stock movements ──────────────────────────────
+            $counts['stock_movements'] = DB::table('stock_movements')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 11. Products (cascades to wishlists, ratings) ────
+            $counts['products'] = DB::table('products')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 12. Categories ────────────────────────────────────
+            $counts['categories'] = DB::table('categories')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 13. Customers ────────────────────────────────────
+            $counts['customers'] = DB::table('customers')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 14. Expenses ─────────────────────────────────────
+            $counts['expenses'] = DB::table('expenses')
+                ->where('business_id', $businessId)->delete();
+            $counts['expense_categories'] = DB::table('expense_categories')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 15. Accounting ────────────────────────────────────
+            // journal_entry_lines cascade from journal_entries
+            // depreciation_entries cascade from fixed_assets
+            // fixed_asset_assignments cascade from fixed_assets
+            $counts['fixed_assets'] = DB::table('fixed_assets')
+                ->where('business_id', $businessId)->delete();
+            $counts['journal_entries'] = DB::table('journal_entries')
+                ->where('business_id', $businessId)->delete();
+            $counts['general_ledger'] = DB::table('general_ledger')
+                ->where('business_id', $businessId)->delete();
+            $counts['accounting_periods'] = DB::table('accounting_periods')
+                ->where('business_id', $businessId)->delete();
+            $counts['chart_of_accounts'] = DB::table('chart_of_accounts')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 16. Supplier / storefront ratings ────────────────
+            DB::table('business_supplier_list_entries')
+                ->where('business_id', $businessId)->delete();
+            DB::table('business_storefront_ratings')
+                ->where('business_id', $businessId)->delete();
+
+            // ── 17. Bookings ──────────────────────────────────────
+            DB::table('board_booking_settings')
+                ->whereIn('board_id', fn($q) => $q->select('id')->from('pipeline_boards')
+                    ->where('business_id', $businessId))
+                ->delete();
+            // board_wall_posts cascade from pipeline_boards
+
+            // ── 18. Notifications ─────────────────────────────────
+            DB::table('notifications')
+                ->where('business_id', $businessId)->delete();
+
+            $this->audit->log(
+                $actor,
+                'business.data_reset',
+                'business',
+                $businessId,
+                'Business data reset for fresh start',
+                ['reset_counts' => $counts],
+            );
+        });
+
+        return $counts;
+    }
+
     public function bulkDelete(User $actor, array $ids, string $reason): int
     {
         $count = 0;
