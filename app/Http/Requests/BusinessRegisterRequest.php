@@ -18,6 +18,14 @@ class BusinessRegisterRequest extends BaseFormRequest
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:50'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:businesses,slug'],
+            'privacy_consent' => ['accepted'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'privacy_consent.accepted' => 'You must agree to the Data & Privacy Policy to create an account.',
+        ]);
     }
 }

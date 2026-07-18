@@ -78,6 +78,8 @@ class Business extends Model
         'secondary_intent',
         'intent_completed_at',
         'intent_skipped_at',
+        'last_activity_at',
+        'dormant_notified_at',
     ];
 
     protected function casts(): array
@@ -87,6 +89,8 @@ class Business extends Model
             'status_changed_at' => 'datetime',
             'intent_completed_at' => 'datetime',
             'intent_skipped_at' => 'datetime',
+            'last_activity_at' => 'datetime',
+            'dormant_notified_at' => 'datetime',
             'default_vat_rate' => 'decimal:2',
             'prices_include_tax' => 'boolean',
             'is_open_for_supply' => 'boolean',

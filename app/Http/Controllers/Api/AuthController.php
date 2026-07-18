@@ -78,6 +78,10 @@ class AuthController extends Controller
         $user->forceFill(['last_login_at' => now()])->save();
 
         if ($user->business_id) {
+            $user->business?->forceFill(['last_activity_at' => now()])->save();
+        }
+
+        if ($user->business_id) {
             $activeShift = Shift::where('business_id', $user->business_id)
                 ->where('user_id', $user->id)
                 ->whereNull('clock_out')

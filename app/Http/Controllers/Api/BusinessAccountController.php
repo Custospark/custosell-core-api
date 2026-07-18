@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business;
+use App\Services\Platform\PlatformAuditService;
 use App\Services\Platform\PlatformBusinessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class BusinessAccountController extends Controller
 {
     public function __construct(
         protected PlatformBusinessService $platformBusinessService,
+        protected PlatformAuditService $audit,
     ) {}
 
     public function destroy(Request $request): JsonResponse
@@ -35,6 +37,11 @@ class BusinessAccountController extends Controller
         $this->platformBusinessService->resetBusinessData($user, $business);
         $business->delete();
         $user->currentAccessToken()->delete();
+
+        $this->audit->log($user, 'business.account_deleted', 'business', $business->id, 'Self-service account deletion by owner', [
+            'business_name' => $business->name,
+            'business_slug' => $business->slug,
+        ]);
 
         return response()->json([
             'message' => 'Your business account has been permanently deleted. All associated data has been cleared.',

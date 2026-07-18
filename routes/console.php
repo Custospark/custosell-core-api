@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('pipeline:dispatch-reminders')->everyMinute();
 Schedule::command('pipeline:record-progress-snapshots')->dailyAt('23:55');
+Schedule::command('businesses:clean-dormant')->dailyAt('03:00');
