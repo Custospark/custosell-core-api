@@ -123,16 +123,6 @@ class PublicBookingController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        if (empty($validated['meeting_link']) && empty($validated['notes'])) {
-            return response()->json([
-                'message' => 'Please provide a meeting link or meeting notes.',
-                'errors' => [
-                    'meeting_link' => ['Either a meeting link or meeting notes is required.'],
-                    'notes' => ['Either a meeting link or meeting notes is required.'],
-                ],
-            ], 422);
-        }
-
         $dateTimeStr = $validated['date'] . ' ' . $validated['time'] . ':00';
         $dateTime = Carbon::parse($dateTimeStr);
 
