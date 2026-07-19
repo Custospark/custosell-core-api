@@ -2126,6 +2126,34 @@ class PipelineController extends Controller
             ], 422);
         }
 
+        if (!empty($validated['start_date'])) {
+            $conflictBooking = PipelineLead::query()
+                ->where('board_id', $lead->board_id)
+                ->whereDate('start_date', $validated['start_date'])
+                ->whereNotNull('start_date')
+                ->whereNotIn('booking_status', ['rejected', 'completed'])
+                ->exists();
+
+            if ($conflictBooking) {
+                return response()->json([
+                    'message' => 'A booking already exists at this time on this board.',
+                ], 409);
+            }
+
+            $conflictMeeting = PipelineLeadMeeting::query()
+                ->whereHas('lead', fn ($q) => $q->where('board_id', $lead->board_id))
+                ->whereDate('start_date', $validated['start_date'])
+                ->whereNotNull('start_date')
+                ->where('status', '!=', 'cancelled')
+                ->exists();
+
+            if ($conflictMeeting) {
+                return response()->json([
+                    'message' => 'A meeting already exists at this time on this board.',
+                ], 409);
+            }
+        }
+
         $meeting = PipelineLeadMeeting::create([
             'lead_id' => $lead->id,
             'status' => 'scheduled',
@@ -2165,6 +2193,35 @@ class PipelineController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'status' => ['nullable', 'in:scheduled,completed,cancelled'],
         ]);
+
+        if (!empty($validated['start_date']) && $validated['start_date'] !== $meeting->start_date?->format('Y-m-d H:i:s')) {
+            $conflictBooking = PipelineLead::query()
+                ->where('board_id', $lead->board_id)
+                ->whereDate('start_date', $validated['start_date'])
+                ->whereNotNull('start_date')
+                ->whereNotIn('booking_status', ['rejected', 'completed'])
+                ->exists();
+
+            if ($conflictBooking) {
+                return response()->json([
+                    'message' => 'A booking already exists at this time on this board.',
+                ], 409);
+            }
+
+            $conflictMeeting = PipelineLeadMeeting::query()
+                ->whereHas('lead', fn ($q) => $q->where('board_id', $lead->board_id))
+                ->whereDate('start_date', $validated['start_date'])
+                ->whereNotNull('start_date')
+                ->where('id', '!=', $meeting->id)
+                ->where('status', '!=', 'cancelled')
+                ->exists();
+
+            if ($conflictMeeting) {
+                return response()->json([
+                    'message' => 'A meeting already exists at this time on this board.',
+                ], 409);
+            }
+        }
 
         $meeting->update($validated);
 

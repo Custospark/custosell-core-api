@@ -80,6 +80,17 @@ class PublicBookingController extends Controller
             ->map(fn ($d) => Carbon::parse($d)->format('H:i'))
             ->toArray();
 
+        $meetingTimes = PipelineLeadMeeting::query()
+            ->whereHas('lead', fn ($q) => $q->where('board_id', $settings->board_id))
+            ->whereDate('start_date', $date)
+            ->whereNotNull('start_date')
+            ->where('status', '!=', 'cancelled')
+            ->pluck('start_date')
+            ->map(fn ($d) => Carbon::parse($d)->format('H:i'))
+            ->toArray();
+
+        $takenTimes = array_unique(array_merge($bookedTimes, $meetingTimes));
+
         $slots = [];
         $takenSlots = [];
         $current = clone $start;
@@ -89,7 +100,7 @@ class PublicBookingController extends Controller
             $timeStr = $current->format('H:i');
             $endTime = (clone $current)->addMinutes($duration)->format('H:i');
             $entry = ['time' => $timeStr, 'end_time' => $endTime];
-            if (in_array($timeStr, $bookedTimes)) {
+            if (in_array($timeStr, $takenTimes)) {
                 $entry['available'] = false;
                 $takenSlots[] = $entry;
             } else {
@@ -147,6 +158,17 @@ class PublicBookingController extends Controller
 
         if ($existing) {
             return response()->json(['message' => 'This time slot is already booked.'], 409);
+        }
+
+        $existingMeeting = PipelineLeadMeeting::query()
+            ->whereHas('lead', fn ($q) => $q->where('board_id', $settings->board_id))
+            ->whereDate('start_date', $dateTime)
+            ->whereNotNull('start_date')
+            ->where('status', '!=', 'cancelled')
+            ->exists();
+
+        if ($existingMeeting) {
+            return response()->json(['message' => 'This time slot has a meeting scheduled.'], 409);
         }
 
         $stageId = $settings->target_stage_id;
