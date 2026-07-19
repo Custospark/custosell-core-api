@@ -695,7 +695,7 @@ class PipelineService
                 return;
             }
             $timeStr = $rawDate instanceof \Carbon\CarbonInterface
-                ? $rawDate->format('H:i')
+                ? $rawDate->toISOString()
                 : null;
             $entries[] = ['date' => $dateStr, 'time' => $timeStr, 'kind' => $kind];
         };

@@ -69,6 +69,7 @@ class PublicBookingController extends Controller
         $start = Carbon::parse($date . ' ' . $settings->start_time);
         $end = Carbon::parse($date . ' ' . $settings->end_time);
         $duration = (int) $settings->slot_duration;
+        $break = (int) ($settings->break_duration ?? 0);
 
         $bookedTimes = PipelineLead::query()
             ->where('board_id', $settings->board_id)
@@ -95,7 +96,7 @@ class PublicBookingController extends Controller
                 $entry['available'] = true;
                 $slots[] = $entry;
             }
-            $current->addMinutes($duration);
+            $current->addMinutes($duration + $break);
         }
 
         return response()->json(['data' => ['slots' => array_merge($slots, $takenSlots)]]);

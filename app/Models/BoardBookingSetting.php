@@ -20,6 +20,7 @@ class BoardBookingSetting extends Model
         'start_time',
         'end_time',
         'slot_duration',
+        'break_duration',
         'max_slots_per_day',
         'meeting_title_prefix',
         'meeting_link',
@@ -33,6 +34,7 @@ class BoardBookingSetting extends Model
             'enabled' => 'boolean',
             'available_days' => 'array',
             'slot_duration' => 'integer',
+            'break_duration' => 'integer',
             'max_slots_per_day' => 'integer',
         ];
     }

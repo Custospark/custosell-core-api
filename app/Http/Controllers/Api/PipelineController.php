@@ -1922,6 +1922,7 @@ class PipelineController extends Controller
             'start_time' => ['nullable', 'date_format:H:i'],
             'end_time' => ['nullable', 'date_format:H:i'],
             'slot_duration' => ['nullable', 'integer', 'min:15', 'max:240'],
+            'break_duration' => ['nullable', 'integer', 'min:0', 'max:60'],
             'max_slots_per_day' => ['nullable', 'integer', 'min:1', 'max:50'],
             'meeting_title_prefix' => ['nullable', 'string', 'max:120'],
             'target_stage_id' => ['nullable', 'integer'],
@@ -1942,6 +1943,7 @@ class PipelineController extends Controller
         if (isset($validated['start_time'])) $data['start_time'] = $validated['start_time'];
         if (isset($validated['end_time'])) $data['end_time'] = $validated['end_time'];
         if (isset($validated['slot_duration'])) $data['slot_duration'] = $validated['slot_duration'];
+        if (array_key_exists('break_duration', $validated)) $data['break_duration'] = $validated['break_duration'];
         if (isset($validated['max_slots_per_day'])) $data['max_slots_per_day'] = $validated['max_slots_per_day'];
         if (array_key_exists('meeting_title_prefix', $validated)) $data['meeting_title_prefix'] = $validated['meeting_title_prefix'];
         if (isset($validated['target_stage_id'])) $data['target_stage_id'] = $validated['target_stage_id'];
