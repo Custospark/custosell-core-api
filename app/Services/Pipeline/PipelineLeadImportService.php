@@ -60,7 +60,8 @@ class PipelineLeadImportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $firstStage = $board->stages()->orderBy('sort_order')->value('name') ?? 'To Do';
+        $stages = $board->stages()->orderBy('sort_order')->get();
+        $firstStage = $stages->first()->name ?? 'To Do';
         $example = [
             'Follow up with Acme order',
             $firstStage,
@@ -91,19 +92,54 @@ class PipelineLeadImportService
         ]);
         $sheet->freezePane('A2');
 
-        $stages = $board->stages()->orderBy('sort_order')->pluck('name')->all();
+        $stageNames = $stages->pluck('name')->all();
         $hint = 'Sample formats — Due Date: YYYY-MM-DD (example 2026-07-14; Excel date cells also work). '
             .'Priority: low | medium | high | urgent. '
             .'Estimated Value: numbers only (example 150000). '
             .'Assignee Email and Contact Email are optional — leave blank if unassigned; '
             .'if set, Assignee Email must match a team member login email on this business.';
-        if ($stages !== []) {
-            $hint .= ' Available stages: '.implode(', ', $stages).'.';
+        if ($stageNames !== []) {
+            $hint .= ' See the "Stages Reference" sheet below for all valid stage names.';
         }
         $hint .= ' Delete the blue example row before import.';
         $sheet->setCellValue('A4', $hint);
         $sheet->mergeCells("A4:{$lastCol}4");
         $sheet->getStyle('A4')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
+
+        // --- Stages Reference Sheet ---
+
+        if ($stages->isNotEmpty()) {
+            $stageSheet = $spreadsheet->createSheet();
+            $stageSheet->setTitle('Stages Reference');
+
+            $stageHeaders = ['Stage Name', 'Color', 'Marks Won', 'Marks Lost', 'Order'];
+            $stageBold = [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F46E5']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ];
+            $stageLastCol = chr(65 + count($stageHeaders) - 1);
+            $stageSheet->getStyle("A1:{$stageLastCol}1")->applyFromArray($stageBold);
+
+            foreach ($stageHeaders as $i => $header) {
+                $col = chr(65 + $i);
+                $stageSheet->setCellValue($col.'1', $header);
+                $stageSheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            $stageSheet->setCellValue('A3', 'Enter the exact stage name from this list into the "Stage*" column on the Cards sheet.');
+            $stageSheet->mergeCells("A3:{$stageLastCol}3");
+            $stageSheet->getStyle('A3')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
+
+            foreach ($stages as $index => $stage) {
+                $row = 5 + $index;
+                $stageSheet->setCellValue("A{$row}", $stage->name);
+                $stageSheet->setCellValue("B{$row}", $stage->color ?? '—');
+                $stageSheet->setCellValue("C{$row}", $stage->is_won ? 'Yes' : '—');
+                $stageSheet->setCellValue("D{$row}", $stage->is_lost ? 'Yes' : '—');
+                $stageSheet->setCellValue("E{$row}", $stage->sort_order);
+            }
+        }
 
         return $spreadsheet;
     }
@@ -196,7 +232,7 @@ class PipelineLeadImportService
                     if (! isset($stageMap[$stageKey])) {
                         $results['errors'][] = [
                             'row' => $excelRow,
-                            'errors' => ['stage' => ['Stage "'.$data['stage'].'" was not found on this board.']],
+                            'errors' => ['stage' => ['Stage "'.$data['stage'].'" was not found. Check the "Stages Reference" sheet in the template for all valid stage names.']],
                         ];
                         continue;
                     }
