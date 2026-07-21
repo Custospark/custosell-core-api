@@ -237,3 +237,195 @@
 - [x] Liskov Substitution - Any impl can replace interface
 - [x] Interface Segregation - Split repo/service interfaces
 - [x] Dependency Inversion - Providers bind interfaces, never concretions
+
+---
+
+## Plan (Updated) - 2026-07-21 12:00:00
+
+### New Billing Fields
+- `price_monthly_usd`: decimal(10,2) - USD monthly price
+- `price_yearly_usd`: decimal(10,2) - USD yearly price (nullable)
+- `onboarding_fee_ugx`: decimal(14,2) - UGX one-time onboarding fee
+- `onboarding_fee_usd`: decimal(10,2) - USD one-time onboarding fee
+- `trial_days`: tinyint - trial period in days (default 14)
+- `billing_cycle`: varchar(20) - 'monthly', 'yearly', or 'both'
+- `is_popular`: boolean - highlight recommended plan
+- `metadata`: json - additional plan config
+
+### Files Generated/Updated
+- [x] Migration: `database/migrations/2026_07_21_000001_add_billing_fields_to_plans_table.php`
+- [x] Model: `app/Models/Plan.php` (updated)
+- [x] Seeder: `database/seeders/PlanSeeder.php` (updated with Essential/Professional/Enterprise)
+
+### Seeded Plans
+| Plan | UGX/mo | USD/mo | UGX/yr | USD/yr | Onboarding UGX | Onboarding USD | Trial |
+|------|--------|--------|--------|--------|----------------|----------------|-------|
+| Essential | 75,000 | 20 | 750,000 | 200 | 150,000 | 40 | 14 days |
+| Professional | 200,000 | 54 | 2,000,000 | 540 | 350,000 | 95 | 14 days |
+| Enterprise | 500,000 | 135 | 5,000,000 | 1,350 | 750,000 | 200 | 7 days |
+
+---
+
+## Subscription (Updated) - 2026-07-21 12:00:00
+
+### New Lifecycle Fields
+- `billing_cycle`: varchar(20) - 'monthly' or 'yearly'
+- `next_billing_date`: datetime - when next payment is due
+- `grace_period_ends_at`: datetime - payment grace window (7 days after past_due)
+- `suspended_at`: datetime - when access was suspended
+- `approved_at`: datetime - when trial/past_due was activated
+- `approved_by_user_id`: FK -> users (nullable)
+- `onboarding_fee_paid`: boolean - whether onboarding fee was paid
+- `notes`: text - internal notes
+- `metadata`: json - includes cancel_at_period_end flag
+- `deleted_at`: soft deletes
+
+### Statuses (SubscriptionStatus Enum)
+- `trial`, `active`, `past_due`, `suspended`, `cancelled`, `expired`
+
+### Subscription Service
+- `subscribe()` - creates trial or past_due
+- `activateSubscription()` - activates from trial/past_due
+- `renewSubscription()` - renews active subscription
+- `markPastDue()` - marks active as past_due with 7-day grace
+- `suspend()` - suspends past_due or active
+- `cancel()` - immediate (ends now) or period-end (cancel_at_period_end flag)
+- `hasAccess()` - checks trial/active/past_due-within-grace
+
+### Files Generated/Updated
+- [x] Migration: `database/migrations/2026_07_21_000002_add_billing_lifecycle_to_subscriptions_table.php`
+- [x] Model: `app/Models/Subscription.php` (updated)
+- [x] Repository Interface: `app/Repositories/Contracts/SubscriptionRepositoryInterface.php`
+- [x] Repository: `app/Repositories/Eloquent/SubscriptionRepository.php`
+- [x] Service Interface: `app/Services/Contracts/SubscriptionServiceInterface.php`
+- [x] Service: `app/Services/SubscriptionService.php` (rewritten)
+- [x] Provider: `app/Providers/BillingServiceProvider.php`
+- [x] Provider registered in: `bootstrap/providers.php`
+
+### API Endpoints (Subscription)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/subscriptions` | List all subscriptions |
+| GET | `/api/v1/subscriptions/current` | Get business subscription |
+| POST | `/api/v1/subscriptions/subscribe` | Subscribe to a plan |
+| POST | `/api/v1/subscriptions/{id}/cancel` | Cancel subscription |
+| GET | `/api/v1/subscriptions/access` | Check access |
+
+---
+
+## BillingPayment - 2026-07-21 12:00:00
+
+### Fields
+- `id`: bigIncrements - Primary key
+- `business_id`: FK -> businesses (cascade)
+- `subscription_id`: FK -> subscriptions (set null)
+- `amount`: decimal(14,2) - payment amount
+- `currency`: varchar(3) - UGX or USD
+- `method`: varchar(50) - 'gateway', 'manual', 'mobile_money', etc.
+- `payment_type`: varchar(50) - 'subscription', 'onboarding', 'renewal'
+- `status`: varchar(20) - PaymentStatus enum values
+- `transaction_reference`: varchar(255) - our reference
+- `gateway_name`: varchar(50) - e.g. 'pesapal'
+- `gateway_transaction_id`: varchar(255) - gateway reference
+- `gateway_request`: json - raw request sent
+- `gateway_response`: json - raw response from gateway
+- `paid_at`: timestamp - when payment completed
+- `approved_at`: timestamp - admin approval
+- `approved_by_user_id`: FK -> users (set null)
+- `rejection_reason`: text - failure reason
+- `metadata`: json - additional data
+- timestamps
+
+### Statuses (PaymentStatus Enum)
+- `pending`, `completed`, `failed`, `refunded`, `cancelled`
+
+### Files Generated
+- [x] Migration: `database/migrations/2026_07_21_000003_create_payments_table.php`
+- [x] Model: `app/Models/BillingPayment.php`
+- [x] Repository Interface: `app/Repositories/Contracts/PaymentRepositoryInterface.php`
+- [x] Repository: `app/Repositories/Eloquent/PaymentRepository.php`
+- [x] Service Interface: `app/Services/Contracts/PaymentServiceInterface.php`
+- [x] Service: `app/Services/Billing/PaymentService.php`
+- [x] Request: `app/Http/Requests/Billing/InitiatePaymentRequest.php`
+- [x] Resource: `app/Http/Resources/Billing/PaymentResource.php`
+- [x] Collection: `app/Http/Resources/Billing/PaymentCollection.php`
+- [x] Controller: `app/Http/Controllers/Api/Billing/PaymentController.php`
+- [x] API Routes: `routes/api/v1/billing.php`
+- [x] Registered in: `routes/api.php`
+
+### API Endpoints (Billing Payments)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/billing/payments` | List payments |
+| POST | `/api/v1/billing/payments/initiate` | Initiate gateway payment |
+| GET | `/api/v1/billing/gateway/{gateway}/callback` | Gateway callback |
+| POST | `/api/v1/billing/gateway/{gateway}/webhook` | Gateway webhook |
+
+---
+
+## SubscriptionScheduledChange - 2026-07-21 12:00:00
+
+### Fields
+- `id`: bigIncrements - Primary key
+- `subscription_id`: FK -> subscriptions (cascade)
+- `business_id`: FK -> businesses (cascade)
+- `change_type`: varchar(32) - ScheduledChangeType: 'downgrade', 'cancel'
+- `from_plan_id`: FK -> plans (set null)
+- `to_plan_id`: FK -> plans (set null)
+- `effective_at`: timestamp - when change takes effect
+- `status`: varchar(16) - ScheduledChangeStatus: 'pending', 'processed', 'failed'
+- `proration_amount`: decimal(14,2) - prorated credit/debit
+- `requested_by_user_id`: FK -> users (set null)
+- `metadata`: json
+- timestamps
+
+### Files Generated
+- [x] Migration: `database/migrations/2026_07_21_000004_create_subscription_scheduled_changes_table.php`
+- [x] Model: `app/Models/SubscriptionScheduledChange.php`
+- [x] Repository Interface: `app/Repositories/Contracts/SubscriptionScheduledChangeRepositoryInterface.php`
+- [x] Repository: `app/Repositories/Eloquent/SubscriptionScheduledChangeRepository.php`
+- [x] Service Interface: `app/Services/Contracts/SubscriptionScheduledChangeServiceInterface.php`
+- [x] Service: `app/Services/Billing/SubscriptionScheduledChangeService.php`
+- [x] Provider: `app/Providers/BillingServiceProvider.php`
+
+---
+
+## Payment Gateway Infrastructure - 2026-07-21 12:00:00
+
+### Architecture
+- **Strategy pattern** with gateway-agnostic interface
+- `PaymentGatewayInterface` — contract all gateways implement
+- `GatewayManager` — registry + singleton driver resolver
+- `GatewayService` — orchestration: initiate, webhook, callback
+- `PesaPalGateway` — PesaPal v3 driver (sandbox + production)
+
+### Files Generated
+- [x] Interface: `app/Services/Payment/Contracts/PaymentGatewayInterface.php`
+- [x] Manager: `app/Services/Payment/GatewayManager.php`
+- [x] Service: `app/Services/Payment/GatewayService.php`
+- [x] Gateway: `app/Services/Payment/Gateways/PesaPalGateway.php`
+- [x] Exception: `app/Services/Payment/Gateways/Exceptions/GatewayException.php`
+- [x] Config: `config/pesapal.php`
+- [x] Provider: `app/Providers/PaymentGatewayServiceProvider.php`
+- [x] Provider registered in: `bootstrap/providers.php`
+
+### Provider Bindings (BillingServiceProvider)
+- `PaymentRepositoryInterface` → `PaymentRepository`
+- `PaymentServiceInterface` → `Billing\PaymentService`
+- `SubscriptionScheduledChangeRepositoryInterface` → `SubscriptionScheduledChangeRepository`
+- `SubscriptionScheduledChangeServiceInterface` → `SubscriptionScheduledChangeService`
+- Singleton: `SubscriptionProrationCalculator`
+- Singleton: `PaymentQuoteService`
+
+### Provider Bindings (PaymentGatewayServiceProvider)
+- `GatewayManager` → singleton
+- `GatewayService` → singleton
+
+### Test Results (2026-07-21)
+- Unit tests (SubscriptionLifecycleTest): 15/15 ✅
+- Feature tests (SubscriptionBillingTest): 22/22 ✅
+- Vera Fast: ✅ (php -l on 61 files + logic rules)
+- Vera Extended: ✅ (migrate --pretend all 4 migrations)
+- Total: 38 tests, 115 assertions, 0 failures
+
+---

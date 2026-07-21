@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'business.owner' => \App\Http\Middleware\EnsureBusinessOwner::class,
             'estimates.workspace' => \App\Http\Middleware\EnsureEstimatesWorkspaceAccess::class,
             'hr.full' => \App\Http\Middleware\EnsureHrFullAccess::class,
+            'subscription.active' => \App\Http\Middleware\EnsureActiveSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

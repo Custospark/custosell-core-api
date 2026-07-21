@@ -28,6 +28,11 @@ class PlanService implements PlanServiceInterface
         return $this->planRepository->getActive();
     }
 
+    public function getBySlug(string $slug): ?Plan
+    {
+        return $this->planRepository->findBySlug($slug);
+    }
+
     public function create(array $data): Plan
     {
         return $this->planRepository->create($data);

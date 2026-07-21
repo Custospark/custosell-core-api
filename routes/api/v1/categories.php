@@ -3,6 +3,6 @@
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:inventory'])->group(function () {
     Route::apiResource('categories', CategoryController::class);
 });

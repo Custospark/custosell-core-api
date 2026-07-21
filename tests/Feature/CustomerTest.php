@@ -70,6 +70,7 @@ class CustomerTest extends TestCase
         $this->staff->role_id = $staffRole->id;
         $this->staff->save();
         $this->staffToken = $this->staff->createToken('staff')->plainTextToken;
+        $this->setUpSubscription();
     }
 
     public function test_list_customers(): void
@@ -95,8 +96,8 @@ class CustomerTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'phone', 'business_id'])
-            ->assertJsonPath('name', 'John Doe');
+            ->assertJsonStructure(['data' => ['id', 'name', 'phone', 'business_id']])
+            ->assertJsonPath('data.name', 'John Doe');
     }
 
     public function test_create_duplicate_phone_returns_422(): void
@@ -113,7 +114,7 @@ class CustomerTest extends TestCase
                 'phone' => '+256700000001',
             ]);
 
-        $response->assertStatus(500);
+        $response->assertStatus(422);
     }
 
     public function test_update_customer(): void

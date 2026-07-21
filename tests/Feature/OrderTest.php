@@ -50,6 +50,7 @@ class OrderTest extends TestCase
             'stock_quantity' => 50,
             'unit_price' => 1000,
         ]);
+        $this->setUpSubscription();
     }
 
     protected function authJson(string $method, string $uri, array $data = [])

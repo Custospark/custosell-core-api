@@ -13,6 +13,8 @@ interface PlanServiceInterface
 
     public function getActive(): Collection;
 
+    public function getBySlug(string $slug): ?Plan;
+
     public function create(array $data): Plan;
 
     public function update(int $id, array $data): Plan;

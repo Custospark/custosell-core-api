@@ -72,7 +72,7 @@ class SubscriptionTest extends TestCase
         $this->staff->save();
         $this->staffToken = $this->staff->createToken('staff')->plainTextToken;
 
-        $this->plan = Plan::where('slug', 'free')->first();
+        $this->plan = Plan::where('slug', 'essential')->first();
     }
 
     public function test_get_current_subscription(): void

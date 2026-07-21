@@ -86,20 +86,20 @@ class PlanTest extends TestCase
 
         $response->assertStatus(200);
         $names = collect($response->json('data'))->pluck('name')->toArray();
-        $this->assertContains('Free', $names);
-        $this->assertContains('Pro', $names);
-        $this->assertContains('Premium', $names);
+        $this->assertContains('Essential', $names);
+        $this->assertContains('Professional', $names);
+        $this->assertContains('Enterprise', $names);
     }
 
     public function test_get_single_plan(): void
     {
-        $plan = Plan::where('slug', 'free')->first();
+        $plan = Plan::where('slug', 'essential')->first();
 
         $response = $this->getJson("/api/v1/plans/{$plan->id}");
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly', 'features', 'limits']])
-            ->assertJsonPath('data.name', 'Free');
+            ->assertJsonPath('data.name', 'Essential');
     }
 
     public function test_get_non_existent_plan_returns_404(): void
@@ -112,8 +112,8 @@ class PlanTest extends TestCase
     public function test_create_plan(): void
     {
         $response = $this->postJson('/api/v1/plans', [
-            'name' => 'Enterprise',
-            'slug' => 'enterprise',
+            'name' => 'Enterprise Plus',
+            'slug' => 'enterprise-plus',
             'description' => 'For large businesses',
             'price_monthly' => 500000,
             'price_yearly' => 5000000,
@@ -125,7 +125,7 @@ class PlanTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure(['id', 'name', 'slug', 'price_monthly'])
-            ->assertJsonPath('name', 'Enterprise');
+            ->assertJsonPath('name', 'Enterprise Plus');
     }
 
     public function test_create_plan_missing_name_returns_422(): void
@@ -147,47 +147,45 @@ class PlanTest extends TestCase
             'name' => 'First Plan',
             'slug' => 'duplicate-slug',
             'price_monthly' => 1000,
-            'features' => [],
-            'limits' => [],
+            'features' => ['sales' => true],
+            'limits' => ['max_products' => 100],
         ]);
 
         $response = $this->postJson('/api/v1/plans', [
             'name' => 'Second Plan',
             'slug' => 'duplicate-slug',
             'price_monthly' => 2000,
-            'features' => [],
-            'limits' => [],
+            'features' => ['sales' => true],
+            'limits' => ['max_products' => 100],
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['features']);
-
-        $this->assertArrayNotHasKey('slug', $response->json('errors'));
+            ->assertJsonValidationErrors(['slug']);
     }
 
     public function test_update_plan(): void
     {
-        $plan = Plan::where('slug', 'free')->first();
+        $plan = Plan::where('slug', 'essential')->first();
 
         $response = $this->putJson("/api/v1/plans/{$plan->id}", [
-            'name' => 'Free Updated',
-            'slug' => 'free',
+            'name' => 'Essential Updated',
+            'slug' => 'essential',
             'price_monthly' => 0,
             'features' => ['expenses' => false, 'shift_tracking' => false, 'discounts' => true, 'refunds' => false, 'export_data' => false],
             'limits' => ['staff_users' => 2, 'products' => 100, 'monthly_sales' => 200, 'customers' => 100, 'categories' => 10],
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Free Updated');
+            ->assertJsonPath('data.name', 'Essential Updated');
     }
 
     public function test_update_plan_price(): void
     {
-        $plan = Plan::where('slug', 'pro')->first();
+        $plan = Plan::where('slug', 'professional')->first();
 
         $response = $this->putJson("/api/v1/plans/{$plan->id}", [
-            'name' => 'Pro',
-            'slug' => 'pro',
+            'name' => 'Professional',
+            'slug' => 'professional',
             'price_monthly' => 50000,
             'price_yearly' => 500000,
             'features' => ['expenses' => true, 'shift_tracking' => true, 'discounts' => true, 'refunds' => true, 'export_data' => false],
@@ -200,7 +198,7 @@ class PlanTest extends TestCase
 
     public function test_delete_plan(): void
     {
-        $plan = Plan::where('slug', 'premium')->first();
+        $plan = Plan::where('slug', 'enterprise')->first();
 
         $response = $this->deleteJson("/api/v1/plans/{$plan->id}");
 
@@ -217,7 +215,7 @@ class PlanTest extends TestCase
 
     public function test_plan_features_is_array_not_string(): void
     {
-        $plan = Plan::where('slug', 'free')->first();
+        $plan = Plan::where('slug', 'essential')->first();
 
         $this->assertIsArray($plan->features);
         $this->assertIsArray($plan->limits);

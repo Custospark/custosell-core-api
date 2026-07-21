@@ -13,6 +13,8 @@ use App\Providers\OrderServiceProvider;
 use App\Providers\PlanServiceProvider;
 use App\Providers\PurchaseOrderServiceProvider;
 use App\Providers\AccountingServiceProvider;
+use App\Providers\BillingServiceProvider;
+use App\Providers\PaymentGatewayServiceProvider;
 use App\Providers\EstimateServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\EfrisServiceProvider;
@@ -52,6 +54,8 @@ return [
     InvoiceServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
+    BillingServiceProvider::class,
+    PaymentGatewayServiceProvider::class,
     PipelineServiceProvider::class,
     DocumentServiceProvider::class,
     EstimateServiceProvider::class,

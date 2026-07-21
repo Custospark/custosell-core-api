@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\SaleController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:sales'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales'])->group(function () {
     Route::get('/sales/daily', [SaleController::class, 'daily']);
     Route::get('/sales/by-shift/{shiftId}', [SaleController::class, 'byShift']);
     Route::post('/sales/batch', [SaleController::class, 'batch']);

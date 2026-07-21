@@ -5,11 +5,11 @@ use App\Http\Controllers\Api\ProductImportController;
 use Illuminate\Support\Facades\Route;
 
 /** POS catalog — sales staff need active products without full inventory module access. */
-Route::middleware(['auth:sanctum', 'business.active', 'module:sales,inventory'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales,inventory'])->group(function () {
     Route::get('/products/active', [ProductController::class, 'active']);
 });
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:inventory'])->group(function () {
     Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
     Route::get('/products/import-template', [ProductImportController::class, 'downloadTemplate']);
     Route::post('/products/import', [ProductImportController::class, 'import']);

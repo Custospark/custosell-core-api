@@ -70,6 +70,7 @@ class CategoryTest extends TestCase
         $this->staff->role_id = $staffRole->id;
         $this->staff->save();
         $this->staffToken = $this->staff->createToken('staff')->plainTextToken;
+        $this->setUpSubscription();
     }
 
     public function test_list_categories(): void

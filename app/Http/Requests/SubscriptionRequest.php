@@ -15,6 +15,7 @@ class SubscriptionRequest extends BaseFormRequest
             'business_id' => ['required', 'integer', 'exists:businesses,id'],
             'plan_id' => ['required', 'integer', 'exists:plans,id'],
             'status' => ['required', 'string', 'in:active,trialing,cancelled,expired'],
+            'billing_cycle' => ['nullable', 'string', 'in:monthly,yearly'],
             'starts_at' => ['required', 'date'],
             'trial_ends_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date'],

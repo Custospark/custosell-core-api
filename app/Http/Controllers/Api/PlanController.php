@@ -41,6 +41,11 @@ class PlanController extends Controller
         return new PlanResource($plan);
     }
 
+    public function active(): PlanCollection
+    {
+        return new PlanCollection($this->planService->getActive());
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $this->planService->delete($id);

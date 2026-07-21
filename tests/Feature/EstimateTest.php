@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Estimate;
 use App\Models\EstimateVersion;
 use App\Models\User;
+use App\Services\ModuleAccessService;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\SeedsAccounting;
@@ -28,7 +29,10 @@ class EstimateTest extends TestCase
         parent::setUp();
         $this->seed(PlanSeeder::class);
 
-        $this->user = User::factory()->create(['is_active' => true]);
+        $this->user = User::factory()->create([
+            'is_active' => true,
+            'modules' => [ModuleAccessService::ESTIMATES_FULL_SLUG],
+        ]);
         $this->token = $this->user->createToken('owner')->plainTextToken;
 
         $this->business = Business::factory()->create([

@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:sales'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales'])->group(function () {
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::post('/invoices', [InvoiceController::class, 'store']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show'])->whereNumber('id');

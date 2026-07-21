@@ -20,4 +20,16 @@ interface SubscriptionRepositoryInterface
     public function delete(Subscription $subscription): bool;
 
     public function getActive(): Collection;
+
+    public function getPendingGracePeriod(): Collection;
+
+    public function getGraceExpired(): Collection;
+
+    public function getTrialExpired(): Collection;
+
+    public function getCancelAtPeriodEnd(): Collection;
+
+    public function getRenewable(): Collection;
+
+    public function getPastDueExpired(): Collection;
 }

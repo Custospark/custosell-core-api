@@ -14,12 +14,16 @@ return new class extends Migration
             $table->string('link_url', 2048)->nullable()->after('file_size');
         });
 
-        DB::statement('ALTER TABLE pipeline_attachments MODIFY file_path VARCHAR(500) NULL');
+        Schema::table('pipeline_attachments', function (Blueprint $table) {
+            $table->string('file_path', 500)->nullable()->change();
+        });
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE pipeline_attachments MODIFY file_path VARCHAR(500) NOT NULL');
+        Schema::table('pipeline_attachments', function (Blueprint $table) {
+            $table->string('file_path', 500)->nullable(false)->change();
+        });
         Schema::table('pipeline_attachments', function (Blueprint $table) {
             $table->dropColumn(['type', 'link_url']);
         });

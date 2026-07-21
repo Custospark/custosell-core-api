@@ -76,6 +76,7 @@ class StockMovementTest extends TestCase
             'business_id' => $this->business->id,
             'stock_quantity' => 10,
         ]);
+        $this->setUpSubscription();
     }
 
     public function test_list_stock_movements_for_product(): void

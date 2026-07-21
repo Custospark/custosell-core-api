@@ -27,6 +27,7 @@ class ModuleAccessTest extends TestCase
             'currency' => 'UGX',
             'status' => 'active',
         ]);
+        $this->setUpSubscription();
     }
 
     public function test_module_access_not_role_permissions_governs_api_access(): void

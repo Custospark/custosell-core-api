@@ -29,6 +29,8 @@ class DashboardTest extends TestCase
         ]);
         $user->forceFill(['business_id' => $business->id])->save();
 
+        $this->ensureSubscription($business->id);
+
         $sale = Sale::create([
             'business_id' => $business->id,
             'user_id' => $user->id,
