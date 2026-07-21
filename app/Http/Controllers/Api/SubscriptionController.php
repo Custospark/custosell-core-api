@@ -62,12 +62,14 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'plan_id' => ['required', 'integer', 'exists:plans,id'],
             'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
+            'referral_code' => ['sometimes', 'string', 'max:64'],
         ]);
 
         $subscription = $this->subscriptionService->subscribe(
             $request->user()->business_id,
             $validated['plan_id'],
-            $validated['billing_cycle'] ?? 'monthly'
+            $validated['billing_cycle'] ?? 'monthly',
+            $validated['referral_code'] ?? null
         );
 
         return response()->json(new SubscriptionResource($subscription), 201);

@@ -429,3 +429,112 @@
 - Total: 38 tests, 115 assertions, 0 failures
 
 ---
+
+## Referral Code - 2026-07-21 14:00:00
+
+### Fields
+- id: bigIncrements - Primary key
+- owner_type: varchar(32) - business, sales_rep, campaign
+- owner_business_id: unsignedBigInteger - nullable, FK→businesses(id)
+- owner_user_id: unsignedBigInteger - nullable, FK→users(id)
+- code: varchar(64) - unique
+- discount_type: varchar(20) - percentage, flat_amount, free_month
+- discount_value: decimal(14,2) - nullable
+- discount_duration_months: tinyint unsigned - default 1
+- reward_type: varchar(20) - default free_month
+- reward_value: decimal(14,2) - nullable
+- max_uses: int unsigned - nullable
+- used_count: int unsigned - default 0
+- is_active: boolean - default true
+- expires_at: datetime - nullable
+- timestamps
+
+### Files Generated
+- [x] Migration: `database/migrations/2026_07_21_125052_create_referral_codes_table.php`
+- [x] Migration: `database/migrations/2026_07_21_125054_create_sales_reps_table.php`
+- [x] Migration: `database/migrations/2026_07_21_125056_create_referrals_table.php`
+- [x] Model: `app/Models/ReferralCode.php`
+- [x] Model: `app/Models/SalesRep.php`
+- [x] Model: `app/Models/Referral.php`
+- [x] Repository Interface: `app/Repositories/Contracts/ReferralCodeRepositoryInterface.php`
+- [x] Repository Interface: `app/Repositories/Contracts/SalesRepRepositoryInterface.php`
+- [x] Repository Interface: `app/Repositories/Contracts/ReferralRepositoryInterface.php`
+- [x] Repository: `app/Repositories/Eloquent/ReferralCodeRepository.php`
+- [x] Repository: `app/Repositories/Eloquent/SalesRepRepository.php`
+- [x] Repository: `app/Repositories/Eloquent/ReferralRepository.php`
+- [x] Service Interface: `app/Services/Contracts/ReferralCodeServiceInterface.php`
+- [x] Service Interface: `app/Services/Contracts/SalesRepServiceInterface.php`
+- [x] Service Interface: `app/Services/Contracts/ReferralServiceInterface.php`
+- [x] Service: `app/Services/ReferralCodeService.php`
+- [x] Service: `app/Services/SalesRepService.php`
+- [x] Service: `app/Services/ReferralService.php`
+- [x] Request: `app/Http/Requests/ReferralCodeRequest.php`
+- [x] Request: `app/Http/Requests/SalesRepRequest.php`
+- [x] Resource: `app/Http/Resources/ReferralCodeResource.php`
+- [x] Resource: `app/Http/Resources/SalesRepResource.php`
+- [x] Resource: `app/Http/Resources/ReferralResource.php`
+- [x] Collection: `app/Http/Resources/ReferralCodeCollection.php`
+- [x] Collection: `app/Http/Resources/SalesRepCollection.php`
+- [x] Collection: `app/Http/Resources/ReferralCollection.php`
+- [x] Controller: `app/Http/Controllers/Api/ReferralCodeController.php`
+- [x] Controller: `app/Http/Controllers/Api/SalesRepController.php`
+- [x] Controller: `app/Http/Controllers/Api/ReferralController.php`
+- [x] API Routes: `routes/api/v1/referral-codes.php`
+- [x] API Routes: `routes/api/v1/sales-reps.php`
+- [x] API Routes: `routes/api/v1/referrals.php`
+- [x] Registered in: `routes/api.php`
+- [x] Provider: `app/Providers/ReferralServiceProvider.php` + registered in `bootstrap/providers.php`
+
+### Enums Created
+- `App\Enums\Billing\DiscountType`: percentage, flat_amount, free_month
+- `App\Enums\Billing\RewardType`: percentage, flat_amount, free_month
+- `App\Enums\Billing\ReferralStatus`: pending, active, rewarded
+- `App\Enums\Billing\CommissionType`: percentage, flat
+- `App\Enums\Billing\ReferralCodeOwnerType`: business, sales_rep, campaign
+
+### Provider Bindings
+- `ReferralCodeRepositoryInterface` → `ReferralCodeRepository`
+- `SalesRepRepositoryInterface` → `SalesRepRepository`
+- `ReferralRepositoryInterface` → `ReferralRepository`
+- `ReferralCodeServiceInterface` → `ReferralCodeService`
+- `SalesRepServiceInterface` → `SalesRepService`
+- `ReferralServiceInterface` → `ReferralService`
+
+### API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/referral-codes` | List all |
+| GET | `/api/v1/referral-codes/{id}` | Get one |
+| POST | `/api/v1/referral-codes` | Create |
+| PUT | `/api/v1/referral-codes/{id}` | Update |
+| DELETE | `/api/v1/referral-codes/{id}` | Delete |
+| GET | `/api/v1/sales-reps` | List all |
+| GET | `/api/v1/sales-reps/{id}` | Get one |
+| POST | `/api/v1/sales-reps` | Create |
+| PUT | `/api/v1/sales-reps/{id}` | Update |
+| DELETE | `/api/v1/sales-reps/{id}` | Delete |
+| GET | `/api/v1/referrals` | List all |
+| GET | `/api/v1/referrals/{id}` | Get one |
+| GET | `/api/v1/referrals/business/{businessId}` | By business |
+| GET | `/api/v1/referrals/code/{codeId}` | By code |
+
+### Subscription Integration
+- `SubscriptionService::subscribe()` accepts optional `referral_code` parameter
+- `SubscriptionController::subscribe()` accepts `referral_code` in request payload
+- On valid referral code: creates Referral with status=pending, increments code usage
+
+### Test Results
+- Unit tests (ReferralCodeTest): 5/5 ✅
+- Unit tests (ReferralTest): 5/5 ✅
+- Feature tests (ReferralBillingTest): 2/2 ✅
+- Total: 12 tests, 29 assertions, 0 failures
+- Vera Fast: ✅ (php -l on 46 files + logic rules)
+
+### SOLID Compliance Checklist
+- [x] Single Responsibility
+- [x] Open/Closed
+- [x] Liskov Substitution
+- [x] Interface Segregation
+- [x] Dependency Inversion
+
+---

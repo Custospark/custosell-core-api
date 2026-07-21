@@ -19,6 +19,7 @@ use App\Providers\EstimateServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\EfrisServiceProvider;
 use App\Providers\StorefrontServiceProvider;
+use App\Providers\ReferralServiceProvider;
 use App\Providers\ProductServiceProvider;
 use App\Providers\RoleServiceProvider;
 use App\Providers\SaleItemServiceProvider;
@@ -57,6 +58,7 @@ return [
     BillingServiceProvider::class,
     PaymentGatewayServiceProvider::class,
     PipelineServiceProvider::class,
+    ReferralServiceProvider::class,
     DocumentServiceProvider::class,
     EstimateServiceProvider::class,
     EventServiceProvider::class,

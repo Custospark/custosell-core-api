@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PlanRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
+use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -18,6 +19,7 @@ class SubscriptionService implements SubscriptionServiceInterface
     public function __construct(
         protected SubscriptionRepositoryInterface $subscriptionRepository,
         protected PlanRepositoryInterface $planRepository,
+        protected ReferralServiceInterface $referralService,
     ) {}
 
     public function getAll(): Collection
@@ -63,7 +65,7 @@ class SubscriptionService implements SubscriptionServiceInterface
         return $this->subscriptionRepository->getActive();
     }
 
-    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly'): Subscription
+    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null): Subscription
     {
         $plan = $this->planRepository->find($planId);
         if (!$plan) {
@@ -94,7 +96,13 @@ class SubscriptionService implements SubscriptionServiceInterface
             $data['trial_used'] = true;
         }
 
-        return $this->subscriptionRepository->create($data);
+        $subscription = $this->subscriptionRepository->create($data);
+
+        if ($referralCode) {
+            $this->referralService->processReferral($referralCode, $subscription->id, $businessId);
+        }
+
+        return $subscription;
     }
 
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription
