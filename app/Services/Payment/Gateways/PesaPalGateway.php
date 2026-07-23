@@ -62,9 +62,14 @@ class PesaPalGateway implements PaymentGatewayInterface
         $data = $response->json() ?? [];
 
         if (!$response->successful() || empty($data['redirect_url'])) {
-            Log::error('[PesaPal] Order submission failed', ['response' => $data]);
+            Log::error('[PesaPal] Order submission failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'data' => $data,
+            ]);
+            $errorMsg = $data['error'] ?? $data['message'] ?? $data['error_message'] ?? "HTTP {$response->status()}";
             throw new GatewayException(
-                'PesaPal order submission failed: ' . ($data['message'] ?? "HTTP {$response->status()}"),
+                "PesaPal order submission failed: {$errorMsg}",
                 'pesapal',
                 $data
             );
@@ -175,17 +180,31 @@ class PesaPalGateway implements PaymentGatewayInterface
                 ]);
 
             $data = $response->json() ?? [];
+            $rawBody = $response->body();
 
-            if (!$response->successful() || empty($data['token'])) {
-                throw new GatewayException(
-                    'PesaPal token request failed: ' . ($data['message'] ?? "HTTP {$response->status()}"),
-                    'pesapal',
-                    $data
-                );
+            if ($response->successful() && !empty($data['token'])) {
+                Log::debug('[PesaPal] Access token refreshed.');
+                return $data['token'];
             }
 
-            Log::debug('[PesaPal] Access token refreshed.');
-            return $data['token'];
+            Log::error('[PesaPal] Token request failed', [
+                'status' => $response->status(),
+                'body' => $rawBody,
+                'data' => $data,
+            ]);
+
+            $errorMsg = $data['error'] ?? $data['message'] ?? $data['error_message'] ?? '';
+            $detail = $errorMsg ?: "HTTP {$response->status()}";
+
+            if (!$response->successful()) {
+                $detail = "HTTP {$response->status()}";
+            }
+
+            throw new GatewayException(
+                "PesaPal token request failed: {$detail}",
+                'pesapal',
+                $data
+            );
         });
     }
 
