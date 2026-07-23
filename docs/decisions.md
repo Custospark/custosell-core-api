@@ -197,3 +197,33 @@
 - FE: categories, Online filter, product detail, self-hosted QR, Public shop logo
 
 **Frontend ADR:** `Frontend/docs/adr/2026-07-12-storefront-polish-gaps.md`
+
+---
+
+## ADR-013: Tabbed subscription settings with decision matrix
+
+**Date:** 2026-07-23  
+**Status:** Accepted  
+
+**Context:** The subscription settings page showed a dead-end "No active subscription" when the user had no subscription record, and rendered everything in a single scroll. Users needed a clearer experience with plan selection, payment history, and change history in separate tabs, plus context-aware action buttons (Subscribe / Upgrade / Downgrade Now / Schedule Downgrade).
+
+**Decision:**
+- Three-tab layout: **Plans**, **Payments**, **History**
+- Plans tab reuses the existing plan card visual style with a decision matrix:
+  - No subscription → **Subscribe** (navigates to `/onboarding`)
+  - Current plan → **Current Plan** badge
+  - Higher sort_order → **Upgrade** (immediate, POST `/subscriptions/{id}/upgrade`)
+  - Lower sort_order → **Downgrade** → inline choice: **Downgrade Now** (immediate) / **Schedule Downgrade** (end of period)
+- Backend: downgrade endpoint accepts optional `effective` param (`immediate`|`end_of_period`), matching the upgrade endpoint pattern
+- Backend: new `GET /subscriptions/{id}/changes` endpoint returns scheduled change history
+- Frontend: `useUpgrade`, `useDowngrade`, `useSubscriptionChanges` hooks; `DOWNGRADE(id)` and `CHANGES(id)` endpoint constants
+
+**API:**
+- `POST /subscriptions/{id}/downgrade { to_plan_id, effective? }`
+- `GET /subscriptions/{id}/changes`
+
+**Consequences:**
+- Single scroll page replaced with focused tabbed layout (457 lines, under 500 limit)
+- Consistent UX: same card styling as PlanCards but with context-aware action buttons
+- Downgrade now offers both immediate and end-of-period options
+- Payment history and change history moved to their own tabs, reducing cognitive load
