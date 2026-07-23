@@ -146,6 +146,7 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validate([
             'to_plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'effective' => ['sometimes', 'string', 'in:immediate,end_of_period'],
         ]);
 
         $subscription = $this->subscriptionService->getById($id);
@@ -158,9 +159,18 @@ class SubscriptionController extends Controller
         }
 
         $toPlanId = (int) $validated['to_plan_id'];
-        $change = $this->scheduledChangeService->schedulePlanChange(
-            $subscription->id, $toPlanId, 'downgrade'
-        );
+        $effective = $validated['effective'] ?? 'end_of_period';
+
+        if ($effective === 'immediate') {
+            $change = $this->scheduledChangeService->schedulePlanChange(
+                $subscription->id, $toPlanId, 'downgrade'
+            );
+            $this->subscriptionService->update($subscription->id, ['plan_id' => $toPlanId]);
+        } else {
+            $change = $this->scheduledChangeService->schedulePlanChange(
+                $subscription->id, $toPlanId, 'downgrade'
+            );
+        }
 
         $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId);
 
@@ -168,6 +178,21 @@ class SubscriptionController extends Controller
             'scheduled_change' => $change->toArray(),
             'proration' => $quote,
         ]);
+    }
+
+    public function changes(int $id): JsonResponse
+    {
+        $subscription = $this->subscriptionService->getById($id);
+        if (!$subscription) {
+            abort(404, 'Subscription not found');
+        }
+
+        $changes = $subscription->scheduledChanges()
+            ->with(['fromPlan', 'toPlan', 'requestedBy'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json(['data' => $changes->toArray()]);
     }
 
     public function checkAccess(Request $request): JsonResponse

@@ -10,6 +10,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('subscriptions/{id}/reactivate', [SubscriptionController::class, 'reactivate'])->name('subscriptions.reactivate');
     Route::post('subscriptions/{id}/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscriptions.upgrade');
     Route::post('subscriptions/{id}/downgrade', [SubscriptionController::class, 'downgrade'])->name('subscriptions.downgrade');
+    Route::get('subscriptions/{id}/changes', [SubscriptionController::class, 'changes'])->name('subscriptions.changes');
     Route::get('subscriptions/access', [SubscriptionController::class, 'checkAccess'])->name('subscriptions.access');
 
     Route::apiResource('subscriptions', SubscriptionController::class);
