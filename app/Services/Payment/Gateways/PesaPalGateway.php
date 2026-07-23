@@ -38,6 +38,11 @@ class PesaPalGateway implements PaymentGatewayInterface
         return config('pesapal.bypass', false) === true;
     }
 
+    private function forgetTokenCache(): void
+    {
+        Cache::forget('pesapal_token_' . config('pesapal.environment'));
+    }
+
     public function initiate(array $payload): array
     {
         if ($this->isBypassMode()) {
@@ -57,10 +62,24 @@ class PesaPalGateway implements PaymentGatewayInterface
             ];
         }
 
-        $accessToken = $this->getAccessToken();
-        $merchantRef = 'CUSTO-' . $payload['payment_id'] . '-' . now()->format('YmdHis');
+        return $this->initiateWithRetry($payload);
+    }
 
-        $ipnId = $this->ipnId ?: $this->registerIpn($accessToken);
+    private function initiateWithRetry(array $payload, bool $isRetry = false): array
+    {
+        $merchantRef = 'CUSTO-' . $payload['payment_id'] . '-' . now()->format('YmdHis');
+        $accessToken = $this->getAccessToken();
+
+        try {
+            $ipnId = $this->ipnId ?: $this->registerIpn($accessToken);
+        } catch (GatewayException $e) {
+            if ($this->isHttpStatus($e, 401) && !$isRetry) {
+                Log::warning('[PesaPal] IPN registration got 401 — retrying with fresh token');
+                $this->forgetTokenCache();
+                return $this->initiateWithRetry($payload, true);
+            }
+            throw $e;
+        }
 
         $body = [
             'id' => $merchantRef,
@@ -87,6 +106,12 @@ class PesaPalGateway implements PaymentGatewayInterface
         $data = $response->json() ?? [];
 
         if (!$response->successful() || empty($data['redirect_url'])) {
+            if ($response->status() === 401 && !$isRetry) {
+                Log::warning('[PesaPal] Order submission got 401 — retrying with fresh token');
+                $this->forgetTokenCache();
+                return $this->initiateWithRetry($payload, true);
+            }
+
             Log::error('[PesaPal] Order submission failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -127,6 +152,11 @@ class PesaPalGateway implements PaymentGatewayInterface
             'message' => 'Redirecting to PesaPal payment page.',
             'raw_response' => $data,
         ];
+    }
+
+    private function isHttpStatus(GatewayException $e, int $status): bool
+    {
+        return str_contains($e->getMessage(), "HTTP {$status}");
     }
 
     public function verify(string $transactionId): array
