@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\Contracts\BusinessRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\BusinessServiceInterface;
+use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\ModuleAccessService;
 use App\Services\Platform\PlatformAdminService;
 use App\Support\StorefrontSlug;
@@ -22,6 +23,7 @@ class BusinessService implements BusinessServiceInterface
         protected UserRepositoryInterface $userRepository,
         protected PlatformAdminService $platformAdminService,
         protected ModuleAccessService $moduleAccess,
+        protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
     public function getById(int $id): ?Business
@@ -86,6 +88,17 @@ class BusinessService implements BusinessServiceInterface
             $user->save();
 
             $this->platformAdminService->assignIfEligible($user);
+
+            $planId = (int) ($businessData['plan_id'] ?? 0);
+            $billingCycle = $businessData['billing_cycle'] ?? 'monthly';
+
+            $this->subscriptionService->subscribe(
+                $business->id,
+                $planId,
+                $billingCycle,
+                null,
+                true
+            );
 
             return $business;
         });

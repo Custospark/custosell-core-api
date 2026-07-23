@@ -538,3 +538,66 @@
 - [x] Dependency Inversion
 
 ---
+
+## Onboarding Payment Flow — 2026-07-22 20:00:00
+
+### User Journey
+```
+Register (name/email/password + plan_id) 
+  → Subscription created as PAST_DUE, onboarding_fee_paid = false
+  → Redirect to payment page
+  → Pay onboarding fee via PesaPal STK push
+  → IPN/callback → autoApprove → Subscription becomes TRIAL (or ACTIVE if no trial)
+  → Full dashboard access
+```
+
+### Key Decisions
+- **Onboarding fee is mandatory** before any app access
+- **`EnsureActiveSubscription` middleware** naturally blocks `past_due` status — no additional route guards needed
+- **No new subscription status** added — reuses existing `past_due` → `trial`/`active` lifecycle
+- **Sandbox keys** for dev, production keys saved as `PESAPAL_PRODUCTION_*`
+
+### Files Changed
+
+**Backend (7 files):**
+- [x] `app/Http/Requests/BusinessRegisterRequest.php` — Added `plan_id` (required, exists:plans), `billing_cycle` (sometimes, in:monthly,yearly)
+- [x] `app/Services/BusinessService.php` — Injected `SubscriptionServiceInterface`, calls `subscribe()` after business creation with `skipTrial=true`
+- [x] `app/Services/Contracts/SubscriptionServiceInterface.php` — Added `$skipTrial` param to `subscribe()`, added `activateAfterOnboarding()`
+- [x] `app/Services/SubscriptionService.php` — Modified `subscribe()` to accept `$skipTrial`, added `activateAfterOnboarding()` method (transitions PAST_DUE → TRIAL/ACTIVE, sets `onboarding_fee_paid = true`)
+- [x] `app/Services/Payment/GatewayService.php` — Split `autoApprove` match: `onboarding` → `activateAfterOnboarding()`, `subscription` → `activateSubscription()`
+- [x] `app/Http/Controllers/Api/AuthController.php` — Load `business.subscription` in `login()` and `me()`
+- [x] `app/Http/Resources/UserResource.php` — Added `subscription` object to business payload in auth response
+
+**Test files (2 files fixed):**
+- [x] `tests/Feature/BusinessTest.php` — Added `plan_id` + `privacy_consent` to registration payloads
+- [x] `tests/Feature/PlatformTest.php` — Added `PlanSeeder` to setUp, added `plan_id` + `privacy_consent` to registration payload
+
+### Subscription State Transitions (Onboarding Flow)
+| Step | Status | Onboarding Fee Paid | Notes |
+|------|--------|---------------------|-------|
+| Register + select plan | `past_due` | false | Skipped trial, blocked by middleware |
+| Onboarding fee paid, plan has trial_days | `trial` | true | `trial_ends_at` = now + plan.trial_days |
+| Onboarding fee paid, no trial | `active` | true | Full access immediately |
+| Trial expired | `expired` | true | Normal lifecycle |
+
+### Test Results
+- SubscriptionLifecycleTest: 15/15 ✅
+- SubscriptionBillingTest: 22/22 ✅
+- SubscriptionTest: 5/5 ✅
+- Referral tests: 12/12 ✅
+- Payment tests: 2/2 ✅
+- **Total billing/subscription tests: 54/54, 157 assertions**
+
+### Env Configuration (Sandbox for Dev)
+```
+PESAPAL_ENVIRONMENT=sandbox
+PESAPAL_ENABLED=true
+PESAPAL_CONSUMER_KEY=<sandbox-key>
+PESAPAL_CONSUMER_SECRET=<sandbox-secret>
+PESAPAL_PRODUCTION_CONSUMER_KEY=<production-key>  // for reference
+PESAPAL_PRODUCTION_CONSUMER_SECRET=<production-secret>
+```
+
+---
+
+

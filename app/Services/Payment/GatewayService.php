@@ -217,7 +217,9 @@ class GatewayService
                 : $payment->payment_type;
 
             match ($paymentType) {
-                'onboarding',
+                'onboarding' => $this->subscriptionService->activateAfterOnboarding(
+                    $payment->subscription
+                ),
                 'subscription' => $this->subscriptionService->activateSubscription(
                     $payment->subscription, $payment, null
                 ),

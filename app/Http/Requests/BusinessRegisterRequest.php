@@ -19,6 +19,8 @@ class BusinessRegisterRequest extends BaseFormRequest
             'phone' => ['nullable', 'string', 'max:50'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:businesses,slug'],
             'privacy_consent' => ['accepted'],
+            'plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
         ];
     }
 

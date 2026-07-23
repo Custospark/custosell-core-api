@@ -15,7 +15,7 @@ interface SubscriptionServiceInterface
     public function delete(int $id): bool;
     public function getActive(): Collection;
 
-    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null): Subscription;
+    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null, bool $skipTrial = false): Subscription;
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription;
     public function renewSubscription(Subscription $subscription, $payment = null): Subscription;
     public function markPastDue(Subscription $subscription): Subscription;
@@ -23,6 +23,7 @@ interface SubscriptionServiceInterface
     public function cancel(int $id, bool $immediate = false): Subscription;
     public function cancelImmediately(int $id): Subscription;
     public function reactivate(Subscription $subscription): Subscription;
+    public function activateAfterOnboarding(Subscription $subscription): Subscription;
     public function hasAccess(int $businessId): bool;
 
     public function processRenewals(): int;

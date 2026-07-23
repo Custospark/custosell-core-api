@@ -14,4 +14,5 @@ return [
 
     'enabled' => env('PESAPAL_ENABLED', false),
     'token_cache_ttl' => env('PESAPAL_TOKEN_CACHE_TTL', 3300),
+    'ipn_id' => env('PESAPAL_IPN_ID'),
 ];

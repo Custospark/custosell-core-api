@@ -65,7 +65,7 @@ class SubscriptionService implements SubscriptionServiceInterface
         return $this->subscriptionRepository->getActive();
     }
 
-    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null): Subscription
+    public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null, bool $skipTrial = false): Subscription
     {
         $plan = $this->planRepository->find($planId);
         if (!$plan) {
@@ -87,13 +87,16 @@ class SubscriptionService implements SubscriptionServiceInterface
             'starts_at' => $now,
             'trial_ends_at' => null,
             'next_billing_date' => $now->copy()->addMonth(),
+            'onboarding_fee_paid' => false,
         ];
 
-        $trialDays = (int) ($plan->trial_days ?? 0);
-        if ($trialDays > 0) {
-            $data['status'] = SubscriptionStatus::TRIAL;
-            $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
-            $data['trial_used'] = true;
+        if (!$skipTrial) {
+            $trialDays = (int) ($plan->trial_days ?? 0);
+            if ($trialDays > 0) {
+                $data['status'] = SubscriptionStatus::TRIAL;
+                $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
+                $data['trial_used'] = true;
+            }
         }
 
         $subscription = $this->subscriptionRepository->create($data);
@@ -212,6 +215,41 @@ class SubscriptionService implements SubscriptionServiceInterface
             ];
 
             return $this->subscriptionRepository->update($subscription, $data);
+        });
+    }
+
+    public function activateAfterOnboarding(Subscription $subscription): Subscription
+    {
+        if ($subscription->status !== SubscriptionStatus::PAST_DUE) {
+            throw new \RuntimeException(
+                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only past_due subscriptions can be activated after onboarding payment."
+            );
+        }
+
+        return DB::transaction(function () use ($subscription) {
+            $now = Carbon::now();
+            $plan = $subscription->plan;
+            $trialDays = (int) ($plan?->trial_days ?? 0);
+
+            $data = [
+                'onboarding_fee_paid' => true,
+            ];
+
+            if ($trialDays > 0 && !$subscription->trial_used) {
+                $data['status'] = SubscriptionStatus::TRIAL;
+                $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
+                $data['trial_used'] = true;
+                $data['next_billing_date'] = $now->copy()->addDays($trialDays);
+                $data['approved_at'] = $now;
+            } else {
+                $data['status'] = SubscriptionStatus::ACTIVE;
+                $data['approved_at'] = $now;
+                $data['next_billing_date'] = $now->copy()->addMonth();
+            }
+
+            $this->subscriptionRepository->update($subscription, $data);
+
+            return $subscription->fresh();
         });
     }
 

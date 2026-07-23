@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\PlatformNotificationDispatch;
 use App\Models\User;
+use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +16,7 @@ class PlatformTest extends TestCase
     {
         parent::setUp();
         $this->artisan('migrate', ['--force' => true]);
+        $this->seed(PlanSeeder::class);
     }
 
     public function test_platform_overview_requires_platform_permission(): void
@@ -126,6 +128,8 @@ class PlatformTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'currency' => 'UGX',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ])->assertCreated();
 
         $user = User::where('email', 'founder@custospark.com')->first();

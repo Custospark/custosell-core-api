@@ -80,6 +80,8 @@ class BusinessTest extends TestCase
             'email' => 'owner@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ]);
 
         $response->assertStatus(201)
@@ -95,6 +97,8 @@ class BusinessTest extends TestCase
             'email' => 'owner@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ])->assertStatus(201);
 
         $response = $this->postJson('/api/v1/businesses/register', [
@@ -103,6 +107,8 @@ class BusinessTest extends TestCase
             'email' => 'owner@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ]);
 
         $response->assertStatus(422)
@@ -115,6 +121,8 @@ class BusinessTest extends TestCase
             'email' => 'owner@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ]);
 
         $response->assertStatus(422)
@@ -177,6 +185,8 @@ class BusinessTest extends TestCase
             'email' => 'another@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ]);
 
         $response->assertStatus(201);
@@ -195,6 +205,8 @@ class BusinessTest extends TestCase
             'email' => 'currency@shop.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
         ]);
 
         $response->assertStatus(201)

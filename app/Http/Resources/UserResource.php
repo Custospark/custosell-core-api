@@ -64,6 +64,19 @@ class UserResource extends JsonResource
                     'primary_intent' => $this->business?->primary_intent,
                     'secondary_intent' => $this->business?->secondary_intent,
                     'created_at' => $this->business?->created_at,
+                    'subscription' => $this->when(
+                        $this->business?->relationLoaded('subscription') && $this->business->subscription,
+                        fn () => [
+                            'id' => $this->business->subscription->id,
+                            'plan_id' => $this->business->subscription->plan_id,
+                            'status' => $this->business->subscription->status?->value ?? $this->business->subscription->status,
+                            'billing_cycle' => $this->business->subscription->billing_cycle,
+                            'starts_at' => $this->business->subscription->starts_at,
+                            'trial_ends_at' => $this->business->subscription->trial_ends_at,
+                            'next_billing_date' => $this->business->subscription->next_billing_date,
+                            'onboarding_fee_paid' => (bool) ($this->business->subscription->onboarding_fee_paid ?? false),
+                        ]
+                    ),
                 ];
             }),
             'modules' => $this->modules ?? [],
