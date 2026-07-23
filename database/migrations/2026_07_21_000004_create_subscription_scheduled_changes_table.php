@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('subscription_scheduled_changes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('subscription_id');
+            $table->unsignedInteger('subscription_id');
             $table->unsignedBigInteger('business_id');
             $table->string('change_type', 32);
-            $table->unsignedBigInteger('from_plan_id')->nullable();
-            $table->unsignedBigInteger('to_plan_id')->nullable();
+            $table->unsignedInteger('from_plan_id')->nullable();
+            $table->unsignedInteger('to_plan_id')->nullable();
             $table->timestamp('effective_at');
             $table->string('status', 16)->default('pending');
             $table->decimal('proration_amount', 14, 2)->nullable();

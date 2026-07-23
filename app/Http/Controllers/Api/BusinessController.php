@@ -47,7 +47,9 @@ class BusinessController extends Controller
         ];
         $businessData = $request->except(['password', 'password_confirmation', 'owner_name']);
         $business = $this->businessService->register($userData, $businessData);
-        $business->load('subscription.plan');
+        if ($request->has('plan_id')) {
+            $business->load('subscription.plan');
+        }
         return response()->json(new BusinessResource($business), 201);
     }
 

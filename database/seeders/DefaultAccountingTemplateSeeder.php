@@ -86,7 +86,7 @@ class DefaultAccountingTemplateSeeder extends Seeder
         $businesses = Business::all();
 
         if ($businesses->isEmpty()) {
-            $this->seedForBusiness(1, $accounts);
+            $this->command?->info('No businesses found — skipping chart-of-accounts seeding.');
             return;
         }
 

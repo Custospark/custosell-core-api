@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('billing_payments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('business_id');
-            $table->unsignedBigInteger('subscription_id')->nullable();
+            $table->unsignedInteger('subscription_id')->nullable();
             $table->decimal('amount', 14, 2);
             $table->string('currency', 3)->default('UGX');
             $table->string('method', 50)->nullable();

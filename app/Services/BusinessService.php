@@ -89,16 +89,17 @@ class BusinessService implements BusinessServiceInterface
 
             $this->platformAdminService->assignIfEligible($user);
 
-            $planId = (int) ($businessData['plan_id'] ?? 0);
-            $billingCycle = $businessData['billing_cycle'] ?? 'monthly';
-
-            $this->subscriptionService->subscribe(
-                $business->id,
-                $planId,
-                $billingCycle,
-                null,
-                true
-            );
+            if (isset($businessData['plan_id'])) {
+                $planId = (int) $businessData['plan_id'];
+                $billingCycle = $businessData['billing_cycle'] ?? 'monthly';
+                $this->subscriptionService->subscribe(
+                    $business->id,
+                    $planId,
+                    $billingCycle,
+                    null,
+                    true
+                );
+            }
 
             return $business;
         });
