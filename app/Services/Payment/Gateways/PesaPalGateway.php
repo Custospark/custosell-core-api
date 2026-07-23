@@ -191,13 +191,19 @@ class PesaPalGateway implements PaymentGatewayInterface
             default => 'pending',
         };
 
+        $message = match ($status) {
+            'successful' => 'Payment completed successfully.',
+            'failed' => $data['payment_status_description'] ?? 'Transaction was not completed.',
+            'pending' => 'Payment is still pending. Please complete the payment and try again.',
+        };
+
         return [
             'success' => $status === 'successful',
             'status' => $status,
             'gateway_txn_id' => $transactionId,
             'amount' => (float) ($data['amount'] ?? 0),
             'currency' => $data['currency'] ?? '',
-            'message' => $data['payment_status_description'] ?? $status,
+            'message' => $message,
             'raw_response' => $data,
         ];
     }
