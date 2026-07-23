@@ -61,7 +61,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $user->load(['business.subscription', 'role', 'roles']);
+        $user->load(['business.subscription.plan', 'role', 'roles']);
 
         if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
             $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
@@ -144,7 +144,7 @@ class AuthController extends Controller
 
     public function me(Request $request): UserResource
     {
-        $user = $request->user()->load(['role', 'business.subscription', 'roles']);
+        $user = $request->user()->load(['role', 'business.subscription.plan', 'roles']);
 
         $activeShift = Shift::where('business_id', $user->business_id)
             ->where('user_id', $user->id)
