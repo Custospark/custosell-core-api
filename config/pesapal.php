@@ -3,8 +3,12 @@
 return [
     'environment' => env('PESAPAL_ENVIRONMENT', 'sandbox'),
 
-    'consumer_key' => env('PESAPAL_CONSUMER_KEY'),
-    'consumer_secret' => env('PESAPAL_CONSUMER_SECRET'),
+    'consumer_key' => env('PESAPAL_ENVIRONMENT') === 'production'
+        ? env('PESAPAL_PRODUCTION_CONSUMER_KEY')
+        : env('PESAPAL_SANDBOX_CONSUMER_KEY'),
+    'consumer_secret' => env('PESAPAL_ENVIRONMENT') === 'production'
+        ? env('PESAPAL_PRODUCTION_CONSUMER_SECRET')
+        : env('PESAPAL_SANDBOX_CONSUMER_SECRET'),
 
     'base_url_sandbox' => 'https://cybqa.pesapal.com/pesapalv3',
     'base_url_production' => 'https://pay.pesapal.com/v3',
