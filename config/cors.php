@@ -19,10 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
+    'allowed_origins' => array_filter([
         env('FRONTEND_URL'),
         'null',
-    ],
+    ]),
 
     'allowed_origins_patterns' => [
         '/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/',

@@ -600,4 +600,118 @@ PESAPAL_PRODUCTION_CONSUMER_SECRET=<production-secret>
 
 ---
 
+## Onboarding Payment Flow - 2026-07-23
+
+### Overview
+When a user registers a new business, they must select a plan (Free/Pro/Premium) and pay a one-time onboarding fee before accessing the dashboard. The subscription is created in `past_due` status. After successful payment via PesaPal, it transitions to `trial` (if plan has trial_days) or `active`.
+
+### Flow
+1. User fills registration form + selects plan on `/register`
+2. `POST /businesses/register` with `plan_id` + `billing_cycle`
+3. BE creates business + subscription (`past_due`, `onboarding_fee_paid=false`)
+4. Auto-login redirects to `/register/payment` (via `onboarding_fee_paid` check)
+5. PaymentPage shows plan summary + phone number
+6. User clicks "Pay Onboarding Fee" → `POST /billing/payments/initiate` with `{ gateway_name: "pesapal", amount, currency: "UGX", payment_type: "onboarding", phone }`
+7. BE creates pending `BillingPayment`, calls PesaPal SubmitOrderRequest with phone → STK push to user
+8. User enters PIN on phone → PesaPal calls IPN `/billing/gateway/pesapal/ipn`
+9. BE verifies via `GetTransactionStatus`, calls `autoApprove` → `activateAfterOnboarding()`
+10. Subscription transitions: `past_due` → `trial` (if `trial_days > 0`) or `active`
+11. FE polls `GET /billing/payments/{id}` every 3s until `status=completed`
+12. On completion: redirect to dashboard
+
+### BE Changes
+- `BusinessRegisterRequest` — requires `plan_id`, optional `billing_cycle`
+- `BusinessService::register()` — skips trial for new registrations (calls `subscribe()` with `skipTrial=true`)
+- `SubscriptionService::subscribe()` — accepts `$skipTrial` param; when true, sets status to `past_due`
+- `SubscriptionService::activateAfterOnboarding()` — transitions `past_due` to `trial`/`active`; sets `onboarding_fee_paid=true`
+- `GatewayService::autoApprove()` — routes `onboarding` payment type to `activateAfterOnboarding()`
+- `AuthController::login()` + `me()` — loads `business.subscription`
+- `UserResource` — inline `subscription` object with `plan_id`, `status`, `billing_cycle`, `onboarding_fee_paid`
+- `InitiatePaymentRequest` — added optional `phone` field
+- `PaymentController` — passes `phone_number` to gateway init
+
+### FE Changes
+- `shared/types/index.ts` — `Plan`/`Subscription` interfaces updated
+- `AccountTypes.ts` — `BusinessRegisterRequest` gains `plan_id`, `billing_cycle`
+- `authSlice.ts` — `BusinessInfo` gains `subscription: SubscriptionInfo`
+- `AccountQueries.ts` — onboarding redirect + `useInitiateOnboardingPayment()` + `useBillingPayment()`
+- `moduleAccess.ts` — `getDefaultRoute` checks `onboarding_fee_paid` before dashboard
+- New: `shared/components/plans/PlanCards.tsx` — plan card grid + `useActivePlans()` hook
+- New: `modules/auth/PaymentPage.tsx` — payment page with STK push + polling
+- Updated: `modules/auth/RegisterPage.tsx` — plan selection step
+- Updated: `modules/landing/PricingPage.tsx` — live plan display
+- Updated: `routes/index.tsx` — lazy import + route for PaymentPage
+- Updated: `endpoints.ts` — `BILLING` endpoints added
+
+### API Endpoints Used
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/v1/businesses/register` | Register business + subscription |
+| POST | `/api/v1/auth/login` | Auto-login after registration |
+| GET | `/api/v1/plans/active` | Fetch active plans |
+| POST | `/api/v1/billing/payments/initiate` | Initiate onboarding payment |
+| GET | `/api/v1/billing/payments/{id}` | Poll payment status |
+
+### Test Results
+- Vera Fast: ✅ php -l + logic passed
+- FE tsc: ✅ Zero errors
+
+---
+
+## Pricing & Subscription Pages Overhaul - 2026-07-23
+
+### DB Fix
+- Migration `2026_07_21_000001_add_billing_fields_to_plans_table` was pending — ran it
+- `PlanSeeder` ran successfully → 3 plans seeded (Essential, Professional, Enterprise)
+- Root cause: plans table was missing 8 columns (`price_monthly_usd`, `price_yearly_usd`, `onboarding_fee_ugx`, `onboarding_fee_usd`, `trial_days`, `billing_cycle`, `is_popular`, `metadata`)
+
+### Three Pricing Contexts
+
+| Context | Route | Component | Auth | Purpose |
+|---------|-------|-----------|------|---------|
+| Public | `/pricing` | `PricingPage.tsx` | No | Plan cards with features, limits, CTA to register |
+| Post-registration | `/register/payment` | `PaymentPage.tsx` | Yes | Plan summary, STK push payment |
+| In-app | `/settings/subscription` | `SubscriptionSettingsPage.tsx` | Yes (owner) | Current plan, limits, upgrade/downgrade, payment history |
+
+### New/Updated Files
+- `shared/components/plans/PlanCards.tsx` — Added `FEATURE_CATALOG` (14 feature keys → label + description), `LIMIT_LABELS`, limits display, feature descriptions
+- `modules/settings/SubscriptionSettingsPage.tsx` — Full rewrite: plan info, status badge, limits with progress bars, upgrade/downgrade grid, payment history
+- `modules/platform/PlatformManagePlansPage.tsx` — New: card view of all plans with features, limits, pricing
+- `modules/platform/PlatformManageSubscriptionsPage.tsx` — New: table view of all business subscriptions with status, billing info
+- `shared/components/layout/sidebarNavGroups.ts` — Added "Billing & Subscription" to Settings nav (owner-only), added "Manage Plans" + "Manage Subscriptions" to Platform nav
+- `app/routes/constants/shared.paths.ts` — Added `PLATFORM.PLANS`, `PLATFORM.SUBSCRIPTIONS`
+- `app/routes/index.tsx` — Uncommented subscription route, added platform plan/subscription routes
+- `modules/landing/PricingPage.tsx` — Updated with live plan data
+
+### Plan Feature Catalog
+| Feature | Essential | Professional | Enterprise |
+|---------|-----------|-------------|------------|
+| Dashboard & Analytics | ✅ | ✅ | ✅ |
+| Point of Sale | ✅ | ✅ | ✅ |
+| Inventory Management | ✅ | ✅ | ✅ |
+| Customer Management | ✅ | ✅ | ✅ |
+| Expense Tracking | ✅ | ✅ | ✅ |
+| Invoicing | — | ✅ | ✅ |
+| Sales Pipeline | — | ✅ | ✅ |
+| Estimates & Projects | — | ✅ | ✅ |
+| Online Storefront | — | ✅ | ✅ |
+| Supply Marketplace | — | ✅ | ✅ |
+| Document Management | — | ✅ | ✅ |
+| Full Accounting | — | — | ✅ |
+| HR & Payroll | — | — | ✅ |
+| Forecasting & Budgets | — | — | ✅ |
+
+### Plan Limits
+| Limit | Essential | Professional | Enterprise |
+|-------|-----------|-------------|------------|
+| Staff accounts | 3 | 20 | ∞ |
+| Products | 500 | 5,000 | ∞ |
+| Business locations | 1 | 1 | 5 |
+
+### Test Results
+- Vera Fast: ✅ php -l + logic passed
+- FE tsc: ✅ Zero errors
+
+---
+
 

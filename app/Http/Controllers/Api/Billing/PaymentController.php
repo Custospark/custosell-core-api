@@ -64,6 +64,7 @@ class PaymentController extends Controller
                     'payment_type' => $validated['payment_type'],
                     'email' => $request->user()->email,
                     'customer_name' => $request->user()->name,
+                    'phone_number' => $validated['phone'] ?? $request->user()->phone ?? '',
                     'metadata' => $validated['metadata'] ?? null,
                 ]
             );
