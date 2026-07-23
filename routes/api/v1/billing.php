@@ -8,6 +8,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('billing')->group
     Route::get('payments', [PaymentController::class, 'index'])->name('billing.payments.index');
     Route::get('payments/{id}', [PaymentController::class, 'show'])->name('billing.payments.show');
     Route::post('payments/initiate', [PaymentController::class, 'initiateGateway'])->name('billing.payments.initiate');
+    Route::post('payments/{id}/confirm', [PaymentController::class, 'confirm'])->name('billing.payments.confirm');
 });
 
 Route::prefix('billing/gateway')->group(function () {

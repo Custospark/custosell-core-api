@@ -30,8 +30,33 @@ class PesaPalGateway implements PaymentGatewayInterface
         $this->ipnId = (string) ($cfg['ipn_id'] ?? '');
     }
 
+    private function isBypassMode(): bool
+    {
+        if (app()->environment('production')) {
+            return false;
+        }
+        return config('pesapal.bypass', false) === true;
+    }
+
     public function initiate(array $payload): array
     {
+        if ($this->isBypassMode()) {
+            $merchantRef = 'CUSTO-' . $payload['payment_id'] . '-' . now()->format('YmdHis');
+            Log::info('[PesaPal] Bypass mode — payment auto-approved', [
+                'payment_id' => $payload['payment_id'],
+                'reference' => $merchantRef,
+            ]);
+            return [
+                'success' => true,
+                'gateway_ref' => $merchantRef,
+                'gateway_txn_id' => 'BYPASS-' . $payload['payment_id'],
+                'redirect_url' => null,
+                'type' => 'bypass',
+                'message' => 'Payment bypassed (development mode).',
+                'raw_response' => ['bypass' => true],
+            ];
+        }
+
         $accessToken = $this->getAccessToken();
         $merchantRef = 'CUSTO-' . $payload['payment_id'] . '-' . now()->format('YmdHis');
 
@@ -67,9 +92,22 @@ class PesaPalGateway implements PaymentGatewayInterface
                 'body' => $response->body(),
                 'data' => $data,
             ]);
-            $errorMsg = $data['error'] ?? $data['message'] ?? $data['error_message'] ?? "HTTP {$response->status()}";
+            $errorMsg = null;
+            foreach (['error', 'message', 'error_message'] as $key) {
+                $val = $data[$key] ?? null;
+                if (is_string($val) && $val !== '') { $errorMsg = $val; break; }
+                if (is_array($val)) {
+                    foreach (['message', 'error', 'description'] as $sub) {
+                        if (isset($val[$sub]) && is_string($val[$sub]) && $val[$sub] !== '') {
+                            $errorMsg = $val[$sub]; break 2;
+                        }
+                    }
+                    $errorMsg = json_encode($val); break;
+                }
+            }
+            $detail = $errorMsg ?? "HTTP {$response->status()}";
             throw new GatewayException(
-                "PesaPal order submission failed: {$errorMsg}",
+                "PesaPal order submission failed: {$detail}",
                 'pesapal',
                 $data
             );
@@ -93,6 +131,18 @@ class PesaPalGateway implements PaymentGatewayInterface
 
     public function verify(string $transactionId): array
     {
+        if ($this->isBypassMode()) {
+            return [
+                'success' => true,
+                'status' => 'successful',
+                'gateway_txn_id' => $transactionId,
+                'amount' => 0,
+                'currency' => '',
+                'message' => 'Bypass mode — auto-verified.',
+                'raw_response' => ['bypass' => true],
+            ];
+        }
+
         $accessToken = $this->getAccessToken();
 
         $response = Http::withToken($accessToken)
@@ -160,6 +210,9 @@ class PesaPalGateway implements PaymentGatewayInterface
 
     public function isEnabled(): bool
     {
+        if ($this->isBypassMode()) {
+            return true;
+        }
         return config('pesapal.enabled', false) === true
             && !empty($this->consumerKey)
             && !empty($this->consumerSecret);
@@ -193,12 +246,21 @@ class PesaPalGateway implements PaymentGatewayInterface
                 'data' => $data,
             ]);
 
-            $errorMsg = $data['error'] ?? $data['message'] ?? $data['error_message'] ?? '';
-            $detail = $errorMsg ?: "HTTP {$response->status()}";
-
-            if (!$response->successful()) {
-                $detail = "HTTP {$response->status()}";
+            $errorMsg = null;
+            foreach (['error', 'message', 'error_message'] as $key) {
+                $val = $data[$key] ?? null;
+                if (is_string($val) && $val !== '') { $errorMsg = $val; break; }
+                if (is_array($val)) {
+                    foreach (['message', 'error', 'description'] as $sub) {
+                        if (isset($val[$sub]) && is_string($val[$sub]) && $val[$sub] !== '') {
+                            $errorMsg = $val[$sub]; break 2;
+                        }
+                    }
+                    $errorMsg = json_encode($val); break;
+                }
             }
+
+            $detail = $errorMsg ?? "HTTP {$response->status()} (no token in response — check PesaPal credentials)";
 
             throw new GatewayException(
                 "PesaPal token request failed: {$detail}",

@@ -42,6 +42,23 @@ class PaymentController extends Controller
         return new PaymentResource($payment);
     }
 
+    public function confirm(int $id, Request $request): JsonResponse
+    {
+        $payment = $this->paymentService->getById($id);
+
+        if (!$payment) {
+            return response()->json(['success' => false, 'message' => 'Payment not found.'], 404);
+        }
+
+        if ($payment->business_id !== $request->user()->business_id) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        $result = $this->gatewayService->confirmPayment($id);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
     public function initiateGateway(InitiatePaymentRequest $request): JsonResponse
     {
         $validated = $request->validated();

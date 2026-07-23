@@ -13,6 +13,7 @@ return [
     'ipn_url' => env('PESAPAL_IPN_URL', 'http://localhost:8000/api/v1/billing/gateway/pesapal/ipn'),
 
     'enabled' => env('PESAPAL_ENABLED', false),
+    'bypass' => env('PESAPAL_BYPASS', false),
     'token_cache_ttl' => env('PESAPAL_TOKEN_CACHE_TTL', 3300),
     'ipn_id' => env('PESAPAL_IPN_ID'),
 ];

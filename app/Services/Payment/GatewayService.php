@@ -71,6 +71,33 @@ class GatewayService
                 ],
             ]);
 
+            if ($result['type'] === 'bypass') {
+                DB::transaction(function () use ($payment, $result) {
+                    $this->paymentRepo->update($payment, [
+                        'status' => 'completed',
+                        'paid_at' => now(),
+                        'approved_at' => now(),
+                        'gateway_transaction_id' => $result['gateway_txn_id'],
+                        'transaction_reference' => $result['gateway_ref'],
+                        'gateway_response' => ['initiation' => $result['raw_response'] ?? []],
+                    ]);
+                    $payment->refresh();
+                    $this->subscriptionService->activateAfterOnboarding($payment->subscription);
+                });
+                Log::info('[GatewayService] Payment auto-approved (bypass)', [
+                    'payment_id' => $payment->id,
+                ]);
+                return [
+                    'success' => true,
+                    'payment_id' => $payment->id,
+                    'gateway' => $gatewayName,
+                    'type' => 'bypass',
+                    'redirect_url' => null,
+                    'reference' => $result['gateway_ref'],
+                    'message' => 'Payment bypassed (development mode).',
+                ];
+            }
+
             Log::info('[GatewayService] Payment initiated', [
                 'payment_id' => $payment->id,
                 'gateway' => $gatewayName,
@@ -236,6 +263,41 @@ class GatewayService
                 'business_id' => $payment->business_id,
             ]);
         });
+    }
+
+    public function confirmPayment(int $paymentId): array
+    {
+        $payment = $this->paymentRepo->find($paymentId);
+
+        if (!$payment) {
+            return ['success' => false, 'message' => 'Payment not found.', 'payment_id' => null];
+        }
+
+        if (!$payment->isPending()) {
+            $status = $payment->status instanceof \App\Enums\Billing\PaymentStatus
+                ? $payment->status->value
+                : $payment->status;
+            return ['success' => true, 'message' => "Payment already {$status}.", 'payment_id' => $payment->id];
+        }
+
+        $driver = $this->gatewayManager->driver($payment->gateway_name);
+        $verification = $driver->verify($payment->gateway_transaction_id);
+
+        if (!$verification['success'] || $verification['status'] !== 'successful') {
+            return [
+                'success' => false,
+                'message' => 'Payment not yet confirmed: ' . ($verification['message'] ?? 'status ' . $verification['status']),
+                'payment_id' => $payment->id,
+            ];
+        }
+
+        $this->autoApprove($payment, ['gateway_txn_id' => $payment->gateway_transaction_id], $verification);
+
+        return [
+            'success' => true,
+            'message' => 'Payment confirmed. Subscription activated.',
+            'payment_id' => $payment->id,
+        ];
     }
 
     private function resolvePaymentFromWebhook(array $webhookData): ?BillingPayment
