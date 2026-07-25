@@ -16,6 +16,16 @@ class SalesRepRequest extends BaseFormRequest
                 'commission_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
                 'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
                 'is_active' => ['sometimes', 'boolean'],
+                'phone' => ['sometimes', 'string', 'max:50'],
+                'region' => ['sometimes', 'string', 'max:100'],
+                'payment_method' => ['sometimes', 'nullable', 'string', 'in:mobile_money,bank'],
+                'mobile_money_provider' => ['sometimes', 'nullable', 'string', 'max:50'],
+                'mobile_money_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+                'mobile_money_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'bank_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'bank_branch' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'bank_account_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'bank_account_number' => ['sometimes', 'nullable', 'string', 'max:100'],
             ];
         }
 
@@ -25,6 +35,16 @@ class SalesRepRequest extends BaseFormRequest
             'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
             'is_active' => ['sometimes', 'boolean'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'region' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'payment_method' => ['sometimes', 'nullable', 'string', 'in:mobile_money,bank'],
+            'mobile_money_provider' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'mobile_money_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'mobile_money_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bank_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bank_branch' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bank_account_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bank_account_number' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 }

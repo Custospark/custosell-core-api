@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SalesRepPayoutRequest;
 use App\Http\Requests\SalesRepRequest;
 use App\Http\Resources\SalesRepCollection;
 use App\Http\Resources\SalesRepResource;
@@ -10,6 +11,7 @@ use App\Services\Contracts\SalesRepServiceInterface;
 use App\Services\Contracts\ReferralServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use RuntimeException;
 
 class SalesRepController extends Controller
@@ -101,5 +103,85 @@ class SalesRepController extends Controller
         } catch (RuntimeException $e) {
             abort(422, $e->getMessage());
         }
+    }
+
+    public function payouts(int $id): JsonResponse
+    {
+        try {
+            $payouts = $this->salesRepService->getPayouts($id);
+            return response()->json(['data' => $payouts]);
+        } catch (RuntimeException $e) {
+            abort(404, $e->getMessage());
+        }
+    }
+
+    public function recordPayout(SalesRepPayoutRequest $request, int $id): JsonResponse
+    {
+        try {
+            $payout = $this->salesRepService->recordPayout(
+                $id,
+                $request->validated(),
+                $request->user()->id
+            );
+            return response()->json($payout, 201);
+        } catch (RuntimeException $e) {
+            abort(422, $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate(): JsonResponse
+    {
+        try {
+            $filePath = $this->salesRepService->generateTemplate();
+            return response()->download($filePath, 'sales-rep-import-template.xlsx')->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            abort(500, 'Failed to generate template');
+        }
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+        ]);
+
+        $file = $request->file('file');
+        set_time_limit(600);
+        ini_set('memory_limit', '512M');
+
+        try {
+            $rows = $this->parseSpreadsheet($file->getPathname());
+            $result = $this->salesRepService->import($rows);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            abort(422, 'Failed to process file: ' . $e->getMessage());
+        }
+    }
+
+    protected function parseSpreadsheet(string $path): array
+    {
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        $data = $sheet->toArray();
+
+        if (empty($data) || count($data) < 2) {
+            return [];
+        }
+
+        $headers = array_map('trim', $data[0]);
+        $rows = [];
+        for ($i = 1; $i < count($data); $i++) {
+            $row = $data[$i];
+            if (empty(array_filter($row))) continue;
+            $mapped = [];
+            foreach ($headers as $colIndex => $header) {
+                $mapped[$header] = $row[$colIndex] ?? '';
+            }
+            $rows[] = $mapped;
+        }
+
+        return $rows;
     }
 }
