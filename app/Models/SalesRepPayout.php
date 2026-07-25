@@ -12,6 +12,7 @@ class SalesRepPayout extends Model
         'amount',
         'payment_method',
         'notes',
+        'attachments',
         'paid_at',
         'paid_by',
     ];
@@ -20,6 +21,7 @@ class SalesRepPayout extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'attachments' => 'array',
             'paid_at' => 'datetime',
         ];
     }

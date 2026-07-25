@@ -13,7 +13,9 @@ use App\Repositories\Contracts\SalesRepRepositoryInterface;
 use App\Services\Contracts\ReferralCodeServiceInterface;
 use App\Services\Contracts\SalesRepServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -163,11 +165,27 @@ class SalesRepService implements SalesRepServiceInterface
             throw new \RuntimeException('SalesRep not found');
         }
 
+        $attachments = [];
+        if (isset($data['attachments']) && is_array($data['attachments'])) {
+            foreach ($data['attachments'] as $file) {
+                if ($file instanceof UploadedFile) {
+                    $path = $file->store('payout-attachments', 'public');
+                    $attachments[] = [
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ];
+                }
+            }
+        }
+
         return SalesRepPayout::create([
             'sales_rep_id' => $id,
             'amount' => $data['amount'],
             'payment_method' => $data['payment_method'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'attachments' => !empty($attachments) ? $attachments : null,
             'paid_at' => $data['paid_at'] ?? now(),
             'paid_by' => $paidByUserId,
         ]);

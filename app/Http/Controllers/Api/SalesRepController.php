@@ -129,7 +129,7 @@ class SalesRepController extends Controller
         }
     }
 
-    public function downloadTemplate(): JsonResponse
+    public function downloadTemplate()
     {
         try {
             $filePath = $this->salesRepService->generateTemplate();

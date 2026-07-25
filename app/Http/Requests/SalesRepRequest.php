@@ -13,7 +13,7 @@ class SalesRepRequest extends BaseFormRequest
     {
         if ($this->isMethod('put') || $this->isMethod('patch')) {
             return [
-                'commission_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+                'commission_rate' => ['sometimes', 'numeric', 'min:0'],
                 'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
                 'is_active' => ['sometimes', 'boolean'],
                 'phone' => ['sometimes', 'string', 'max:50'],
@@ -32,7 +32,7 @@ class SalesRepRequest extends BaseFormRequest
         return [
             'email' => ['required', 'email'],
             'name' => ['sometimes', 'string', 'max:255'],
-            'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'commission_rate' => ['required', 'numeric', 'min:0'],
             'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
             'is_active' => ['sometimes', 'boolean'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:50'],

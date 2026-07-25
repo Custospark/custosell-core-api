@@ -16,6 +16,8 @@ class SalesRepPayoutRequest extends BaseFormRequest
             'payment_method' => ['sometimes', 'nullable', 'string', 'max:30'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'paid_at' => ['sometimes', 'date'],
+            'attachments' => ['sometimes', 'array', 'max:5'],
+            'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:5120'],
         ];
     }
 }
