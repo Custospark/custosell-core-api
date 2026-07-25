@@ -60,6 +60,7 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | Shift Management | Clock-in/out, shift totals |
 | Dashboard & Basic Reports | KPI overview, sales charts |
 | Receipt Printing & PDF | Thermal + PDF receipts |
+| Storefront / E-commerce | Public shop, customer orders, wishlist, QR sharing |
 | Offline-First | POS, customers, products, expenses work offline |
 | **Staff/Users** | **Up to 3** |
 | **Businesses/Locations** | **1** |

@@ -128,6 +128,11 @@ class ModuleAccessService
             return false;
         }
 
+        // Plan-level gating: check if the user's subscription plan includes this module feature
+        if (! $this->planAllowsModule($user, $module)) {
+            return false;
+        }
+
         // Sales and Customers are base modules — every business user needs them
         // regardless of stored module permissions. The Staff modules UI controls
         // navigation visibility, but the backend never blocks these.
@@ -153,6 +158,49 @@ class ModuleAccessService
         }
 
         return in_array($module, $modules, true);
+    }
+
+    /**
+     * Check whether the user's subscription plan has the given module as a feature.
+     * Platform admins, users without a business, and users without a subscription
+     * are not subject to plan-level gating.
+     */
+    private function planAllowsModule(User $user, string $module): bool
+    {
+        // Settings is always available regardless of plan
+        if ($module === 'settings') {
+            return true;
+        }
+
+        if (! $user->business_id) {
+            return true;
+        }
+
+        $business = $user->business;
+
+        if (! $business) {
+            return true;
+        }
+
+        $subscription = $business->subscription;
+
+        if (! $subscription) {
+            return true;
+        }
+
+        $plan = $subscription->plan;
+
+        if (! $plan) {
+            return true;
+        }
+
+        $features = $plan->features;
+
+        if (! is_array($features)) {
+            return true;
+        }
+
+        return isset($features[$module]) && $features[$module] === true;
     }
 
     /** @param  list<string>|null  $modules */

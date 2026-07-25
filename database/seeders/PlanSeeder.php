@@ -9,7 +9,7 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
-        Plan::firstOrCreate(['slug' => 'essential'], [
+        Plan::updateOrCreate(['slug' => 'essential'], [
             'name' => 'Essential',
             'slug' => 'essential',
             'description' => 'Basic POS features for small businesses just getting started.',
@@ -19,7 +19,7 @@ class PlanSeeder extends Seeder
             'price_yearly_usd' => 200,
             'onboarding_fee_ugx' => 150000,
             'onboarding_fee_usd' => 40,
-            'trial_days' => 14,
+            'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => false,
             'features' => [
@@ -28,6 +28,7 @@ class PlanSeeder extends Seeder
                 'inventory' => true,
                 'expenses' => true,
                 'dashboard' => true,
+                'storefront' => true,
             ],
             'limits' => [
                 'max_staff' => 3,
@@ -38,7 +39,7 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::firstOrCreate(['slug' => 'professional'], [
+        Plan::updateOrCreate(['slug' => 'professional'], [
             'name' => 'Professional',
             'slug' => 'professional',
             'description' => 'Full-featured POS for growing businesses with advanced tools.',
@@ -48,7 +49,7 @@ class PlanSeeder extends Seeder
             'price_yearly_usd' => 540,
             'onboarding_fee_ugx' => 350000,
             'onboarding_fee_usd' => 95,
-            'trial_days' => 14,
+            'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => true,
             'features' => [
@@ -57,10 +58,9 @@ class PlanSeeder extends Seeder
                 'inventory' => true,
                 'expenses' => true,
                 'dashboard' => true,
+                'storefront' => true,
                 'pipeline' => true,
                 'estimates' => true,
-                'invoices' => true,
-                'storefront' => true,
                 'documents' => true,
                 'marketplace' => true,
             ],
@@ -73,7 +73,7 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::firstOrCreate(['slug' => 'enterprise'], [
+        Plan::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Enterprise',
             'slug' => 'enterprise',
             'description' => 'Unlimited everything for large organizations and multi-branch operations.',
@@ -83,7 +83,7 @@ class PlanSeeder extends Seeder
             'price_yearly_usd' => 1350,
             'onboarding_fee_ugx' => 750000,
             'onboarding_fee_usd' => 200,
-            'trial_days' => 7,
+            'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => false,
             'features' => [
@@ -92,10 +92,9 @@ class PlanSeeder extends Seeder
                 'inventory' => true,
                 'expenses' => true,
                 'dashboard' => true,
+                'storefront' => true,
                 'pipeline' => true,
                 'estimates' => true,
-                'invoices' => true,
-                'storefront' => true,
                 'documents' => true,
                 'accounting' => true,
                 'hr' => true,

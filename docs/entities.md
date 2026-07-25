@@ -691,10 +691,9 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 | Inventory Management | ✅ | ✅ | ✅ |
 | Customer Management | ✅ | ✅ | ✅ |
 | Expense Tracking | ✅ | ✅ | ✅ |
-| Invoicing | — | ✅ | ✅ |
+| Online Storefront | ✅ | ✅ | ✅ |
 | Sales Pipeline | — | ✅ | ✅ |
 | Estimates & Projects | — | ✅ | ✅ |
-| Online Storefront | — | ✅ | ✅ |
 | Supply Marketplace | — | ✅ | ✅ |
 | Document Management | — | ✅ | ✅ |
 | Full Accounting | — | — | ✅ |

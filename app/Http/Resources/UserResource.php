@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\PlanResource;
+use App\Models\Plan;
 use App\Services\OnboardingService;
 use App\Services\Platform\PlatformAdminService;
 use App\Services\ProjectAccessService;
@@ -71,6 +73,7 @@ class UserResource extends JsonResource
                                 'plan_id' => $this->business->subscription->plan_id,
                                 'plan_name' => $this->business->subscription->plan?->name,
                                 'plan_slug' => $this->business->subscription->plan?->slug,
+                                'plan_features' => $this->business->subscription->plan?->features,
                                 'status' => $this->business->subscription->status?->value ?? $this->business->subscription->status,
                                 'billing_cycle' => $this->business->subscription->billing_cycle,
                                 'starts_at' => $this->business->subscription->starts_at,
@@ -95,6 +98,9 @@ class UserResource extends JsonResource
             ] : null),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'active_plans' => PlanResource::collection(
+                Plan::active()->orderBy('sort_order')->get(),
+            ),
         ];
     }
 }
