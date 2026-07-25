@@ -439,7 +439,7 @@ class PlatformBusinessService
                 'sales_deleted' => $salesDeleted,
             ]);
 
-            $business->delete();
+            $business->forceDelete();
         });
     }
 

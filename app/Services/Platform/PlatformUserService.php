@@ -48,7 +48,7 @@ class PlatformUserService
             'name' => $target->name,
         ]);
 
-        $target->delete();
+        $target->forceDelete();
     }
 
     /**
