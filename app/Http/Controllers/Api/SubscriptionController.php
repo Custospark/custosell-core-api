@@ -42,10 +42,14 @@ class SubscriptionController extends Controller
         return response()->json(new SubscriptionResource($subscription), 201);
     }
 
-    public function update(SubscriptionRequest $request, int $id): SubscriptionResource
+    public function update(SubscriptionRequest $request, int $id): JsonResponse
     {
-        $subscription = $this->subscriptionService->update($id, $request->validated());
-        return new SubscriptionResource($subscription);
+        try {
+            $subscription = $this->subscriptionService->update($id, $request->validated());
+            return response()->json(new SubscriptionResource($subscription));
+        } catch (\RuntimeException $e) {
+            abort(404, 'Subscription not found');
+        }
     }
 
     public function current(Request $request): SubscriptionResource
@@ -65,14 +69,18 @@ class SubscriptionController extends Controller
             'referral_code' => ['sometimes', 'string', 'max:64'],
         ]);
 
-        $subscription = $this->subscriptionService->subscribe(
-            $request->user()->business_id,
-            $validated['plan_id'],
-            $validated['billing_cycle'] ?? 'monthly',
-            $validated['referral_code'] ?? null
-        );
+        try {
+            $subscription = $this->subscriptionService->subscribe(
+                $request->user()->business_id,
+                $validated['plan_id'],
+                $validated['billing_cycle'] ?? 'monthly',
+                $validated['referral_code'] ?? null
+            );
 
-        return response()->json(new SubscriptionResource($subscription), 201);
+            return response()->json(new SubscriptionResource($subscription), 201);
+        } catch (\RuntimeException $e) {
+            abort(422, $e->getMessage());
+        }
     }
 
     public function cancelPlan(Request $request, int $id): JsonResponse
@@ -203,7 +211,11 @@ class SubscriptionController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $this->subscriptionService->delete($id);
-        return response()->json(null, 204);
+        try {
+            $this->subscriptionService->delete($id);
+            return response()->json(null, 204);
+        } catch (\RuntimeException $e) {
+            abort(404, 'Subscription not found');
+        }
     }
 }

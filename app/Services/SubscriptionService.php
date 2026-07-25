@@ -39,6 +39,15 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function create(array $data): Subscription
     {
+        $planId = $data['plan_id'] ?? null;
+        if ($planId) {
+            $plan = $this->planRepository->find($planId);
+            if ($plan) {
+                $data['price_monthly'] = $plan->price_monthly;
+                $data['price_yearly'] = $plan->price_yearly;
+                $data['onboarding_fee_ugx'] = $plan->onboarding_fee_ugx;
+            }
+        }
         return $this->subscriptionRepository->create($data);
     }
 
@@ -82,6 +91,9 @@ class SubscriptionService implements SubscriptionServiceInterface
         $data = [
             'business_id' => $businessId,
             'plan_id' => $planId,
+            'price_monthly' => $plan->price_monthly,
+            'price_yearly' => $plan->price_yearly,
+            'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
             'billing_cycle' => $billingCycle,
             'status' => SubscriptionStatus::PAST_DUE,
             'starts_at' => $now,

@@ -35,10 +35,14 @@ class PlanController extends Controller
         return response()->json(new PlanResource($plan), 201);
     }
 
-    public function update(PlanRequest $request, int $id): PlanResource
+    public function update(PlanRequest $request, int $id): JsonResponse
     {
-        $plan = $this->planService->update($id, $request->validated());
-        return new PlanResource($plan);
+        try {
+            $plan = $this->planService->update($id, $request->validated());
+            return response()->json(new PlanResource($plan));
+        } catch (\RuntimeException $e) {
+            abort(404, 'Plan not found');
+        }
     }
 
     public function active(): PlanCollection
@@ -48,7 +52,11 @@ class PlanController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $this->planService->delete($id);
-        return response()->json(null, 204);
+        try {
+            $this->planService->delete($id);
+            return response()->json(null, 204);
+        } catch (\RuntimeException $e) {
+            abort(404, 'Plan not found');
+        }
     }
 }
