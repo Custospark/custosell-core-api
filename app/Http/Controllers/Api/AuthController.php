@@ -27,7 +27,7 @@ class AuthController extends Controller
     {
         $user = $this->userService->register($request->validated());
         $this->platformAdminService->assignIfEligible($user);
-        $user->load(['business', 'role', 'roles']);
+        $user->load(['business.subscription.plan', 'role', 'roles']);
 
         if ($user->business_id) {
             $activeShift = Shift::create([

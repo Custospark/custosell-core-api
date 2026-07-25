@@ -35,7 +35,7 @@ class BusinessController extends Controller
             abort(404, 'No business found for this user');
         }
 
-        return new BusinessResource($business);
+        return new BusinessResource($business->loadMissing('subscription.plan'));
     }
 
     public function store(BusinessRegisterRequest $request): JsonResponse

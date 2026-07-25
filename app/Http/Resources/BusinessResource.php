@@ -48,7 +48,14 @@ class BusinessResource extends JsonResource
             'storefront_enabled' => (bool) ($this->storefront_enabled ?? false),
             'status' => $this->status,
             'trial_ends_at' => $this->trial_ends_at,
-            'subscription' => $this->whenLoaded('subscription'),
+            'subscription' => $this->whenLoaded('subscription', function () {
+                return [
+                    ...$this->subscription->toArray(),
+                    'plan_name' => $this->subscription->plan?->name,
+                    'plan_slug' => $this->subscription->plan?->slug,
+                    'plan_features' => $this->subscription->plan?->features,
+                ];
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
