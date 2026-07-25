@@ -39,7 +39,7 @@ class OnboardingController extends Controller
 
         return response()->json([
             'data' => $payload,
-            'user' => new UserResource($user->fresh(['business', 'role', 'roles'])),
+            'user' => new UserResource($user->fresh(['business.subscription.plan', 'role', 'roles'])),
         ]);
     }
 }
