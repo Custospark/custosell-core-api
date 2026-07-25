@@ -66,7 +66,7 @@ class Referral extends Model
 
     public function scopeUnpaid($query)
     {
-        return $query->where('status', ReferralStatus::REWARDED)
+        return $query->where('status', ReferralStatus::ACTIVE)
                      ->where('reward_paid', false);
     }
 }

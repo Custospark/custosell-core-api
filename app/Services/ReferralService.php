@@ -112,19 +112,13 @@ class ReferralService implements ReferralServiceInterface
                 DiscountType::FREE_MONTH => $monthlyPrice,
             };
 
-            $rewardAmount = match ($referralCode->reward_type) {
-                RewardType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
-                RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                RewardType::FREE_MONTH => $monthlyPrice,
-            };
-
             $referral = $this->referralRepository->create([
                 'referral_code_id' => $referralCode->id,
                 'subscription_id' => $subscriptionId,
                 'referred_business_id' => $businessId,
                 'status' => ReferralStatus::PENDING,
                 'discount_applied' => $discountApplied,
-                'reward_amount' => $rewardAmount,
+                'reward_amount' => 0,
             ]);
 
             $referralCode->markUsed();
@@ -146,14 +140,27 @@ class ReferralService implements ReferralServiceInterface
                 'converted_at' => Carbon::now(),
             ];
 
-            // If the referral code belongs to a sales rep, calculate commission
             $referralCode = $referral->referralCode;
-            if ($referralCode && $referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
+            if (!$referralCode) {
+                throw new \RuntimeException('Referral code not found');
+            }
+
+            $subscription = $referral->subscription;
+            $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
+
+            // Calculate reward for the referrer (business-owned codes)
+            $rewardAmount = match ($referralCode->reward_type) {
+                RewardType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
+                RewardType::FREE_MONTH => $monthlyPrice,
+                default => 0,
+            };
+            $updateData['reward_amount'] = $rewardAmount;
+
+            // Calculate commission for sales reps
+            if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
-                    $subscription = $referral->subscription;
-                    $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
-
                     $commissionEarned = match ($salesRep->commission_type) {
                         CommissionType::PERCENTAGE => round($monthlyPrice * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
