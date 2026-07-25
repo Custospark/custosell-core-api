@@ -16,6 +16,8 @@ class Referral extends Model
         'discount_applied',
         'reward_amount',
         'reward_paid',
+        'commission_earned',
+        'commission_paid',
         'converted_at',
     ];
 
@@ -25,6 +27,8 @@ class Referral extends Model
             'discount_applied' => 'decimal:14,2',
             'reward_amount' => 'decimal:14,2',
             'reward_paid' => 'boolean',
+            'commission_earned' => 'decimal:14,2',
+            'commission_paid' => 'boolean',
             'converted_at' => 'datetime',
             'status' => ReferralStatus::class,
         ];

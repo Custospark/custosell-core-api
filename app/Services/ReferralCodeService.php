@@ -62,9 +62,13 @@ class ReferralCodeService implements ReferralCodeServiceInterface
 
     public function generateCode(string $prefix = ''): string
     {
-        $code = strtolower(substr(md5(uniqid()), 0, 4));
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $code = '';
+        for ($i = 0; $i < 6; $i++) {
+            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        }
         if (!empty($prefix)) {
-            return $prefix . '-' . $code;
+            return strtoupper($prefix) . '-' . $code;
         }
         return $code;
     }

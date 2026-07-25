@@ -48,4 +48,9 @@ class ReferralCodeRepository implements ReferralCodeRepositoryInterface
     {
         return ReferralCode::where('code', $code)->active()->valid()->first();
     }
+
+    public function findByOwnerUser(int $userId): ?ReferralCode
+    {
+        return ReferralCode::where('owner_user_id', $userId)->first();
+    }
 }

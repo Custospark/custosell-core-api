@@ -7,13 +7,16 @@ use App\Http\Requests\SalesRepRequest;
 use App\Http\Resources\SalesRepCollection;
 use App\Http\Resources\SalesRepResource;
 use App\Services\Contracts\SalesRepServiceInterface;
+use App\Services\Contracts\ReferralServiceInterface;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 
 class SalesRepController extends Controller
 {
     public function __construct(
         protected SalesRepServiceInterface $salesRepService,
+        protected ReferralServiceInterface $referralService,
     ) {}
 
     public function index(): SalesRepCollection
@@ -53,6 +56,50 @@ class SalesRepController extends Controller
             return response()->json(['message' => 'Deleted'], 200);
         } catch (RuntimeException $e) {
             abort(404, $e->getMessage());
+        }
+    }
+
+    public function earningsIndex(): JsonResponse
+    {
+        try {
+            $salesReps = $this->salesRepService->getWithEarnings();
+            return response()->json(['data' => $salesReps]);
+        } catch (RuntimeException $e) {
+            abort(422, $e->getMessage());
+        }
+    }
+
+    public function earnings(int $id): JsonResponse
+    {
+        try {
+            $earnings = $this->salesRepService->getEarnings($id);
+            return response()->json($earnings);
+        } catch (RuntimeException $e) {
+            abort(404, $e->getMessage());
+        }
+    }
+
+    public function myEarnings(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(401, 'Unauthenticated');
+        }
+
+        try {
+            $salesRep = $this->salesRepService->getByUser($user->id);
+            if (!$salesRep) {
+                return response()->json([
+                    'message' => 'You are not a sales representative',
+                    'is_sales_rep' => false,
+                ]);
+            }
+
+            $earnings = $this->salesRepService->getEarnings($salesRep->id);
+            $earnings['is_sales_rep'] = true;
+            return response()->json($earnings);
+        } catch (RuntimeException $e) {
+            abort(422, $e->getMessage());
         }
     }
 }

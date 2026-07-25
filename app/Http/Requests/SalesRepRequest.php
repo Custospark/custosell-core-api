@@ -11,8 +11,17 @@ class SalesRepRequest extends BaseFormRequest
 
     public function rules(): array
     {
+        if ($this->isMethod('put') || $this->isMethod('patch')) {
+            return [
+                'commission_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+                'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
+                'is_active' => ['sometimes', 'boolean'],
+            ];
+        }
+
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id', 'unique:sales_reps,user_id'],
+            'email' => ['required', 'email'],
+            'name' => ['sometimes', 'string', 'max:255'],
             'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
             'is_active' => ['sometimes', 'boolean'],

@@ -14,4 +14,6 @@ interface SalesRepServiceInterface
     public function update(int $id, array $data): SalesRep;
     public function delete(int $id): bool;
     public function getActive(): Collection;
+    public function getWithEarnings(): Collection;
+    public function getEarnings(int $id): array;
 }

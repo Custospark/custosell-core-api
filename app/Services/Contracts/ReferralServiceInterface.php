@@ -19,4 +19,6 @@ interface ReferralServiceInterface
     public function processReferral(string $code, int $subscriptionId, int $businessId): Referral;
     public function markActive(int $id): Referral;
     public function markRewarded(int $id): Referral;
+    public function activateForSubscription(int $subscriptionId): void;
+    public function getEarningsByUser(int $userId): array;
 }

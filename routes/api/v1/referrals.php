@@ -9,5 +9,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
         Route::get('{id}', [ReferralController::class, 'show']);
         Route::get('business/{businessId}', [ReferralController::class, 'byBusiness']);
         Route::get('code/{codeId}', [ReferralController::class, 'byCode']);
+        Route::get('/earnings/me', [ReferralController::class, 'myEarnings']);
+        Route::post('/apply', [ReferralController::class, 'apply']);
     });
 });

@@ -22,4 +22,6 @@ interface ReferralCodeRepositoryInterface
     public function getActive(): Collection;
 
     public function findValidByCode(string $code): ?ReferralCode;
+
+    public function findByOwnerUser(int $userId): ?ReferralCode;
 }

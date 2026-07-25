@@ -2,11 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\Billing\DiscountType;
+use App\Enums\Billing\ReferralCodeOwnerType;
+use App\Enums\Billing\RewardType;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Contracts\BusinessRepositoryInterface;
+use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\BusinessServiceInterface;
+use App\Services\Contracts\ReferralCodeServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\ModuleAccessService;
 use App\Services\Platform\PlatformAdminService;
@@ -24,6 +29,8 @@ class BusinessService implements BusinessServiceInterface
         protected PlatformAdminService $platformAdminService,
         protected ModuleAccessService $moduleAccess,
         protected SubscriptionServiceInterface $subscriptionService,
+        protected ReferralCodeServiceInterface $referralCodeService,
+        protected ReferralCodeRepositoryInterface $referralCodeRepository,
     ) {}
 
     public function getById(int $id): ?Business
@@ -68,6 +75,18 @@ class BusinessService implements BusinessServiceInterface
         return DB::transaction(function () use ($userData, $businessData) {
             $userData['password'] = Hash::make($userData['password']);
             $user = $this->userRepository->create($userData);
+
+            // Auto-create a referral code for the new user
+            $hasCode = $this->referralCodeRepository->findByOwnerUser($user->id);
+            if (!$hasCode) {
+                $this->referralCodeService->create([
+                    'owner_type' => ReferralCodeOwnerType::BUSINESS,
+                    'owner_user_id' => $user->id,
+                    'discount_type' => DiscountType::PERCENTAGE,
+                    'discount_value' => 10,
+                    'reward_type' => RewardType::FREE_MONTH,
+                ]);
+            }
 
             $businessData['owner_id'] = $user->id;
             $baseSlug = $businessData['slug'] ?? Str::slug($businessData['name']);

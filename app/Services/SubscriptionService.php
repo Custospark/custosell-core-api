@@ -139,7 +139,12 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'grace_period_ends_at' => null,
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+
+            // Activate any pending referral linked to this subscription
+            $this->referralService->activateForSubscription($subscription->id);
+
+            return $updated;
         });
     }
 
@@ -260,6 +265,9 @@ class SubscriptionService implements SubscriptionServiceInterface
             }
 
             $this->subscriptionRepository->update($subscription, $data);
+
+            // Activate any pending referral linked to this subscription
+            $this->referralService->activateForSubscription($subscription->id);
 
             return $subscription->fresh();
         });

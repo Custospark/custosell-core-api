@@ -2,8 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\Billing\CommissionType;
+use App\Enums\Billing\DiscountType;
+use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\ReferralStatus;
+use App\Enums\Billing\RewardType;
 use App\Models\Referral;
+use App\Models\ReferralCode;
+use App\Models\SalesRep;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\ReferralRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
@@ -81,17 +87,44 @@ class ReferralService implements ReferralServiceInterface
                 throw new \RuntimeException('Referral code is invalid or expired');
             }
 
+            // Prevent a business from using its own owner's referral code
+            $subscription = $this->subscriptionRepository->find($subscriptionId);
+            if ($subscription && $referralCode->owner_user_id) {
+                $business = $subscription->business;
+                if ($business && $business->owner_id === $referralCode->owner_user_id) {
+                    throw new \RuntimeException('You cannot use your own referral code');
+                }
+            }
+
+            // One-time use per business
             $existing = $this->referralRepository->findByCode($referralCode->id)
                 ->first(fn ($r) => $r->referred_business_id === $businessId);
             if ($existing) {
                 throw new \RuntimeException('This business has already used this referral code');
             }
 
+            // Calculate discount and reward based on subscription price
+            $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
+
+            $discountApplied = match ($referralCode->discount_type) {
+                DiscountType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
+                DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
+                DiscountType::FREE_MONTH => $monthlyPrice,
+            };
+
+            $rewardAmount = match ($referralCode->reward_type) {
+                RewardType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
+                RewardType::FREE_MONTH => $monthlyPrice,
+            };
+
             $referral = $this->referralRepository->create([
                 'referral_code_id' => $referralCode->id,
                 'subscription_id' => $subscriptionId,
                 'referred_business_id' => $businessId,
                 'status' => ReferralStatus::PENDING,
+                'discount_applied' => $discountApplied,
+                'reward_amount' => $rewardAmount,
             ]);
 
             $referralCode->markUsed();
@@ -108,10 +141,29 @@ class ReferralService implements ReferralServiceInterface
                 throw new \RuntimeException('Referral not found');
             }
 
-            return $this->referralRepository->update($referral, [
+            $updateData = [
                 'status' => ReferralStatus::ACTIVE,
                 'converted_at' => Carbon::now(),
-            ]);
+            ];
+
+            // If the referral code belongs to a sales rep, calculate commission
+            $referralCode = $referral->referralCode;
+            if ($referralCode && $referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
+                $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
+                if ($salesRep && $salesRep->is_active) {
+                    $subscription = $referral->subscription;
+                    $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
+
+                    $commissionEarned = match ($salesRep->commission_type) {
+                        CommissionType::PERCENTAGE => round($monthlyPrice * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
+                        CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
+                    };
+
+                    $updateData['commission_earned'] = $commissionEarned;
+                }
+            }
+
+            return $this->referralRepository->update($referral, $updateData);
         });
     }
 
@@ -128,5 +180,58 @@ class ReferralService implements ReferralServiceInterface
                 'reward_paid' => true,
             ]);
         });
+    }
+
+    public function activateForSubscription(int $subscriptionId): void
+    {
+        $referral = $this->referralRepository->findBySubscription($subscriptionId);
+        if ($referral && $referral->status === ReferralStatus::PENDING) {
+            $this->markActive($referral->id);
+        }
+    }
+
+    public function getEarningsByUser(int $userId): array
+    {
+        // Check if this user is a sales rep first
+        $salesRep = SalesRep::where('user_id', $userId)->with('referralCode')->first();
+        $userCode = $salesRep?->referralCode
+            ?? ReferralCode::where('owner_user_id', $userId)->first();
+
+        if (!$userCode) {
+            return [
+                'referral_code' => null,
+                'is_sales_rep' => false,
+                'total_earned' => 0,
+                'pending_rewards' => 0,
+                'rewarded_amount' => 0,
+                'commission_earned' => 0,
+                'commission_pending' => 0,
+                'commission_paid' => 0,
+                'total_referrals' => 0,
+                'active_referrals' => 0,
+                'referrals' => [],
+            ];
+        }
+
+        $referrals = Referral::where('referral_code_id', $userCode->id)
+            ->with('referredBusiness')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return [
+            'referral_code' => $userCode->code,
+            'is_sales_rep' => $salesRep !== null,
+            'commission_rate' => $salesRep?->commission_rate,
+            'commission_type' => $salesRep?->commission_type,
+            'total_earned' => (float) $referrals->sum('reward_amount'),
+            'pending_rewards' => (float) $referrals->where('status', ReferralStatus::ACTIVE)->where('reward_paid', false)->sum('reward_amount'),
+            'rewarded_amount' => (float) $referrals->where('status', ReferralStatus::REWARDED)->sum('reward_amount'),
+            'commission_earned' => (float) $referrals->sum('commission_earned'),
+            'commission_pending' => (float) $referrals->where('commission_paid', false)->sum('commission_earned'),
+            'commission_paid' => (float) $referrals->where('commission_paid', true)->sum('commission_earned'),
+            'total_referrals' => $referrals->count(),
+            'active_referrals' => $referrals->where('status', ReferralStatus::ACTIVE)->count(),
+            'referrals' => $referrals->toArray(),
+        ];
     }
 }
