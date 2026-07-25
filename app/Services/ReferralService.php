@@ -218,6 +218,9 @@ class ReferralService implements ReferralServiceInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $totalCommission = (float) $referrals->sum('commission_earned');
+        $paidCommission = $salesRep ? (float) $salesRep->payouts()->sum('amount') : 0;
+
         return [
             'referral_code' => $userCode->code,
             'is_sales_rep' => $salesRep !== null,
@@ -226,9 +229,9 @@ class ReferralService implements ReferralServiceInterface
             'total_earned' => (float) $referrals->sum('reward_amount'),
             'pending_rewards' => (float) $referrals->where('status', ReferralStatus::ACTIVE)->where('reward_paid', false)->sum('reward_amount'),
             'rewarded_amount' => (float) $referrals->where('status', ReferralStatus::REWARDED)->sum('reward_amount'),
-            'commission_earned' => (float) $referrals->sum('commission_earned'),
-            'commission_pending' => (float) $referrals->where('commission_paid', false)->sum('commission_earned'),
-            'commission_paid' => (float) $referrals->where('commission_paid', true)->sum('commission_earned'),
+            'commission_earned' => $totalCommission,
+            'commission_pending' => round(max(0, $totalCommission - $paidCommission), 2),
+            'commission_paid' => $paidCommission,
             'total_referrals' => $referrals->count(),
             'active_referrals' => $referrals->where('status', ReferralStatus::ACTIVE)->count(),
             'referrals' => $referrals->toArray(),

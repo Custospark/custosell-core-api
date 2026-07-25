@@ -19,7 +19,7 @@ class SalesRepPayout extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:14,2',
+            'amount' => 'decimal:2',
             'paid_at' => 'datetime',
         ];
     }

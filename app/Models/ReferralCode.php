@@ -30,8 +30,8 @@ class ReferralCode extends Model
     protected function casts(): array
     {
         return [
-            'discount_value' => 'decimal:14,2',
-            'reward_value' => 'decimal:14,2',
+            'discount_value' => 'decimal:2',
+            'reward_value' => 'decimal:2',
             'discount_duration_months' => 'integer',
             'max_uses' => 'integer',
             'used_count' => 'integer',

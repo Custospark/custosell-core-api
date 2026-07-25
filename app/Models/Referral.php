@@ -24,10 +24,10 @@ class Referral extends Model
     protected function casts(): array
     {
         return [
-            'discount_applied' => 'decimal:14,2',
-            'reward_amount' => 'decimal:14,2',
+            'discount_applied' => 'decimal:2',
+            'reward_amount' => 'decimal:2',
             'reward_paid' => 'boolean',
-            'commission_earned' => 'decimal:14,2',
+            'commission_earned' => 'decimal:2',
             'commission_paid' => 'boolean',
             'converted_at' => 'datetime',
             'status' => ReferralStatus::class,

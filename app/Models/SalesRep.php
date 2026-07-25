@@ -30,7 +30,7 @@ class SalesRep extends Model
     protected function casts(): array
     {
         return [
-            'commission_rate' => 'decimal:5,2',
+            'commission_rate' => 'decimal:2',
             'is_active' => 'boolean',
             'commission_type' => CommissionType::class,
         ];
