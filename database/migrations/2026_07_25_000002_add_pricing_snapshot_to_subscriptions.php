@@ -16,13 +16,27 @@ return new class extends Migration
         });
 
         // Backfill existing subscriptions with their plan's current prices
-        DB::statement('
-            UPDATE subscriptions s
-            JOIN plans p ON p.id = s.plan_id
-            SET s.price_monthly = p.price_monthly,
-                s.price_yearly = p.price_yearly,
-                s.onboarding_fee_ugx = p.onboarding_fee_ugx
-        ');
+        $driver = Schema::getConnection()->getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement('
+                UPDATE subscriptions s
+                JOIN plans p ON p.id = s.plan_id
+                SET s.price_monthly = p.price_monthly,
+                    s.price_yearly = p.price_yearly,
+                    s.onboarding_fee_ugx = p.onboarding_fee_ugx
+            ');
+        } else {
+            $plans = DB::table('plans')->get(['id', 'price_monthly', 'price_yearly', 'onboarding_fee_ugx']);
+            foreach ($plans as $plan) {
+                DB::table('subscriptions')
+                    ->where('plan_id', $plan->id)
+                    ->update([
+                        'price_monthly' => $plan->price_monthly,
+                        'price_yearly' => $plan->price_yearly,
+                        'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
+                    ]);
+            }
+        }
     }
 
     public function down(): void
