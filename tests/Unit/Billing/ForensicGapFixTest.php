@@ -392,4 +392,42 @@ class ForensicGapFixTest extends TestCase
         $this->assertSame('upgrade', $payment->metadata['action']);
         $this->assertSame(99, $payment->metadata['to_plan_id']);
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  EXPIRED acceptance — activateSubscription and activateAfterOnboarding
+    // ════════════════════════════════════════════════════════════════════
+
+    public function test_activate_subscription_accepts_expired_status(): void
+    {
+        $subscription = Subscription::create([
+            'business_id' => $this->business->id,
+            'plan_id' => $this->trialPlan->id,
+            'status' => SubscriptionStatus::EXPIRED,
+            'billing_cycle' => 'monthly',
+            'starts_at' => now()->subMonths(2),
+            'ends_at' => now()->subMonth(),
+        ]);
+
+        $activated = $this->subscriptionService->activateSubscription($subscription);
+
+        $this->assertSame(SubscriptionStatus::ACTIVE, $activated->status);
+    }
+
+    public function test_activate_after_onboarding_accepts_expired_status(): void
+    {
+        $subscription = Subscription::create([
+            'business_id' => $this->business->id,
+            'plan_id' => $this->noTrialPlan->id,
+            'status' => SubscriptionStatus::EXPIRED,
+            'billing_cycle' => 'monthly',
+            'starts_at' => now()->subMonths(2),
+            'ends_at' => now()->subMonth(),
+            'onboarding_fee_paid' => false,
+        ]);
+
+        $activated = $this->subscriptionService->activateAfterOnboarding($subscription);
+
+        $this->assertSame(SubscriptionStatus::ACTIVE, $activated->status);
+        $this->assertTrue($activated->onboarding_fee_paid);
+    }
 }

@@ -127,9 +127,9 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription
     {
-        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE], true)) {
+        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE, SubscriptionStatus::EXPIRED], true)) {
             throw new \RuntimeException(
-                "Cannot activate subscription with status '{$subscription->status->value}'. Only trial or past_due subscriptions can be activated."
+                "Cannot activate subscription with status '{$subscription->status->value}'. Only trial, past_due or expired subscriptions can be activated."
             );
         }
 
@@ -261,9 +261,9 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function activateAfterOnboarding(Subscription $subscription): Subscription
     {
-        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE], true)) {
+        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE, SubscriptionStatus::EXPIRED], true)) {
             throw new \RuntimeException(
-                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only trial or past_due subscriptions can be activated after onboarding payment."
+                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only trial, past_due or expired subscriptions can be activated after onboarding payment."
             );
         }
 
