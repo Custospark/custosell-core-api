@@ -54,6 +54,8 @@ class SubscriptionController extends Controller
 
     public function current(Request $request): SubscriptionResource
     {
+        $this->scheduledChangeService->applyPendingChanges();
+
         $subscription = $this->subscriptionService->getByBusiness($request->user()->business_id);
         if (!$subscription) {
             abort(404, 'No active subscription found for this business.');
@@ -210,6 +212,8 @@ class SubscriptionController extends Controller
 
     public function changes(int $id): JsonResponse
     {
+        $this->scheduledChangeService->applyPendingChanges();
+
         $subscription = $this->subscriptionService->getById($id);
         if (!$subscription) {
             abort(404, 'Subscription not found');
@@ -227,6 +231,22 @@ class SubscriptionController extends Controller
     {
         $hasAccess = $this->subscriptionService->hasAccess($request->user()->business_id);
         return response()->json(['has_access' => $hasAccess]);
+    }
+
+    public function cancelScheduledChange(Request $request, int $id): JsonResponse
+    {
+        $subscription = $this->subscriptionService->getById($id);
+        if (!$subscription) {
+            abort(404, 'Subscription not found');
+        }
+
+        if ($subscription->business_id !== $request->user()->business_id) {
+            abort(403);
+        }
+
+        $this->scheduledChangeService->cancelPendingChange($subscription->id);
+
+        return response()->json(['message' => 'Scheduled change cancelled']);
     }
 
     public function destroy(int $id): JsonResponse

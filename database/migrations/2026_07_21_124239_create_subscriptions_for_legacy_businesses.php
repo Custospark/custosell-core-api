@@ -40,6 +40,7 @@ return new class extends Migration
                 'trial_ends_at' => $trialEnd,
                 'next_billing_date' => $nextBilling,
                 'trial_used' => true,
+                'onboarding_fee_paid' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

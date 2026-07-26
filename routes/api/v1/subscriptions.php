@@ -12,6 +12,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('subscriptions/{id}/downgrade', [SubscriptionController::class, 'downgrade'])->name('subscriptions.downgrade');
     Route::get('subscriptions/{id}/proration-quote', [SubscriptionController::class, 'prorationQuote'])->name('subscriptions.proration-quote');
     Route::get('subscriptions/{id}/changes', [SubscriptionController::class, 'changes'])->name('subscriptions.changes');
+    Route::post('subscriptions/{id}/cancel-change', [SubscriptionController::class, 'cancelScheduledChange'])->name('subscriptions.cancel-change');
     Route::get('subscriptions/access', [SubscriptionController::class, 'checkAccess'])->name('subscriptions.access');
 
     Route::apiResource('subscriptions', SubscriptionController::class);
