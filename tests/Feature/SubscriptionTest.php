@@ -136,17 +136,12 @@ class SubscriptionTest extends TestCase
         ]);
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
-            ->putJson("/api/v1/subscriptions/{$subscription->id}", [
-                'business_id' => $this->business->id,
-                'plan_id' => $this->plan->id,
-                'status' => 'cancelled',
-                'starts_at' => $subscription->starts_at->toDateTimeString(),
-                'cancelled_at' => now()->toDateTimeString(),
+            ->postJson("/api/v1/subscriptions/{$subscription->id}/cancel", [
+                'immediate' => true,
             ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'cancelled')
-            ->assertJsonPath('data.business_id', $this->business->id);
+            ->assertJsonPath('message', 'Subscription has been cancelled immediately.');
     }
 
     public function test_subscription_returns_all_subs(): void

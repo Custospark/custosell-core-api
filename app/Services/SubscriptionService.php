@@ -34,7 +34,12 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function getByBusiness(int $businessId): ?Subscription
     {
-        return $this->subscriptionRepository->findByBusiness($businessId);
+        $subscription = $this->subscriptionRepository->findByBusiness($businessId);
+        if ($subscription) {
+            $this->processDueTransitions($subscription);
+            $subscription = $this->subscriptionRepository->findByBusiness($businessId);
+        }
+        return $subscription;
     }
 
     public function create(array $data): Subscription
@@ -322,7 +327,46 @@ class SubscriptionService implements SubscriptionServiceInterface
             return false;
         }
 
-        return $subscription->hasAccess();
+        $this->processDueTransitions($subscription);
+
+        return $subscription->fresh()->hasAccess();
+    }
+
+    private function processDueTransitions(Subscription $subscription): void
+    {
+        $now = Carbon::now();
+
+        if ($subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isPast()) {
+            $this->subscriptionRepository->update($subscription, [
+                'status' => SubscriptionStatus::EXPIRED,
+                'ends_at' => $now,
+            ]);
+            return;
+        }
+
+        if ($subscription->status === SubscriptionStatus::ACTIVE && $subscription->cancel_at_period_end && $subscription->next_billing_date?->isPast()) {
+            $this->subscriptionRepository->update($subscription, [
+                'status' => SubscriptionStatus::CANCELLED,
+                'cancelled_at' => $now,
+                'ends_at' => $now,
+            ]);
+            return;
+        }
+
+        if ($subscription->status === SubscriptionStatus::ACTIVE && !$subscription->cancel_at_period_end && $subscription->next_billing_date?->isPast()) {
+            try {
+                $this->markPastDue($subscription);
+            } catch (\RuntimeException) {
+            }
+            return;
+        }
+
+        if ($subscription->status === SubscriptionStatus::PAST_DUE && $subscription->grace_period_ends_at?->isPast()) {
+            try {
+                $this->suspend($subscription);
+            } catch (\RuntimeException) {
+            }
+        }
     }
 
     public function processRenewals(): int

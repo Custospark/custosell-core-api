@@ -291,7 +291,7 @@ class SalesRepService implements SalesRepServiceInterface
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Sales Reps');
 
-        $headers = ['Name*', 'Email*', 'Phone', 'Region', 'Commission Rate*', 'Commission Type'];
+        $headers = ['Name', 'Email', 'Phone', 'Region', 'Commission Rate', 'Commission Type'];
         $lastCol = chr(65 + count($headers) - 1);
 
         $bold = [
