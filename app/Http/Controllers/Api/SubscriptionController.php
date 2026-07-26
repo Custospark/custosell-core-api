@@ -188,6 +188,26 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    public function prorationQuote(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'to_plan_id' => ['required', 'integer', 'exists:plans,id'],
+        ]);
+
+        $subscription = $this->subscriptionService->getById($id);
+        if (!$subscription) {
+            abort(404, 'Subscription not found');
+        }
+
+        if ($subscription->business_id !== $request->user()->business_id) {
+            abort(403);
+        }
+
+        $quote = $this->paymentQuoteService->getQuote($subscription, (int) $validated['to_plan_id']);
+
+        return response()->json(['data' => $quote]);
+    }
+
     public function changes(int $id): JsonResponse
     {
         $subscription = $this->subscriptionService->getById($id);

@@ -11,7 +11,9 @@ class SubscriptionProrationCalculator
     {
         $now = Carbon::now()->startOfDay();
         $periodEnd = $nextBillingDate->copy()->startOfDay();
-        $periodStart = $now->copy()->subMonth()->startOfDay();
+        $periodStart = $billingCycle === 'yearly'
+            ? $periodEnd->copy()->subYear()->startOfDay()
+            : $periodEnd->copy()->subMonth()->startOfDay();
 
         $daysInPeriod = max(1, (int) $periodStart->diffInDays($periodEnd));
         $daysRemaining = $periodEnd->lte($now)
