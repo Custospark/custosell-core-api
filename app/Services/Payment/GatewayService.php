@@ -34,6 +34,9 @@ class GatewayService
             );
         }
 
+        // Validate amount against expected subscription prices
+        $this->validatePaymentAmount($subscription, $data);
+
         // H5: Idempotency check — return existing payment if same key used
         $idempotencyKey = $data['idempotency_key'] ?? null;
         if ($idempotencyKey) {
@@ -373,6 +376,55 @@ class GatewayService
             'message' => 'Payment confirmed. Subscription activated.',
             'payment_id' => $payment->id,
         ];
+    }
+
+    private function validatePaymentAmount(Subscription $subscription, array $data): void
+    {
+        $paymentType = $data['payment_type'] ?? 'subscription';
+        $amount = (float) ($data['amount'] ?? 0);
+        $currency = strtoupper($data['currency'] ?? 'USD');
+        $tolerance = 0.50;
+
+        $expectedUsd = match ($paymentType) {
+            'onboarding' => (float) ($subscription->onboarding_fee_usd ?? 0),
+            'subscription' => $subscription->billing_cycle === 'yearly'
+                ? (float) ($subscription->price_yearly_usd ?? 0)
+                : (float) ($subscription->price_monthly_usd ?? 0),
+            'renewal' => $subscription->billing_cycle === 'yearly'
+                ? (float) ($subscription->price_yearly_usd ?? 0)
+                : (float) ($subscription->price_monthly_usd ?? 0),
+            'upgrade_proration' => $amount,
+            default => $amount,
+        };
+
+        if ($paymentType === 'upgrade_proration') {
+            return;
+        }
+
+        if ($currency === 'USD') {
+            $expected = $expectedUsd;
+        } elseif ($currency === 'UGX') {
+            $expected = match ($paymentType) {
+                'onboarding' => (float) ($subscription->onboarding_fee_ugx ?? 0),
+                default => $subscription->billing_cycle === 'yearly'
+                    ? (float) ($subscription->price_yearly ?? 0)
+                    : (float) ($subscription->price_monthly ?? 0),
+            };
+            $tolerance = max(50, $expected * 0.01);
+        } else {
+            $rate = app(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class)
+                ->getExchangeRate('USD', $currency);
+            $expected = $rate ? round($expectedUsd * $rate, 2) : $expectedUsd;
+            $tolerance = max(50, $expected * 0.02);
+        }
+
+        if ($expected > 0 && abs($amount - $expected) > $tolerance) {
+            throw new GatewayException(
+                "Payment amount {$currency} {$amount} does not match expected amount {$currency} {$expected} for {$paymentType}.",
+                $data['gateway_name'] ?? 'unknown',
+                ['payment_type' => $paymentType, 'expected' => $expected, 'received' => $amount, 'currency' => $currency]
+            );
+        }
     }
 
     private function resolvePaymentFromWebhook(array $webhookData): ?BillingPayment
