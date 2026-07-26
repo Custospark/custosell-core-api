@@ -28,6 +28,7 @@ use App\Providers\ShiftServiceProvider;
 use App\Providers\StockMovementServiceProvider;
 use App\Providers\SubscriptionServiceProvider;
 use App\Providers\DocumentServiceProvider;
+use App\Providers\CurrencyServiceProvider;
 use App\Providers\PipelineServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
@@ -59,6 +60,7 @@ return [
     PaymentGatewayServiceProvider::class,
     PipelineServiceProvider::class,
     ReferralServiceProvider::class,
+    CurrencyServiceProvider::class,
     DocumentServiceProvider::class,
     EstimateServiceProvider::class,
     EventServiceProvider::class,

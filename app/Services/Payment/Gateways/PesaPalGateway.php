@@ -81,6 +81,7 @@ class PesaPalGateway implements PaymentGatewayInterface
             throw $e;
         }
 
+        $countryCode = $payload['country_code'] ?? 'UG';
         $body = [
             'id' => $merchantRef,
             'currency' => strtoupper($payload['currency']),
@@ -92,7 +93,7 @@ class PesaPalGateway implements PaymentGatewayInterface
             'billing_address' => [
                 'email_address' => $payload['email'] ?? 'noreply@custosell.com',
                 'phone_number' => $payload['phone_number'] ?? '',
-                'country_code' => 'UG',
+                'country_code' => $countryCode,
                 'first_name' => $payload['customer_name'] ?? 'Custosell Customer',
                 'last_name' => '',
             ],

@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Models\BillingPayment;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
+use App\Repositories\Contracts\SubscriptionScheduledChangeRepositoryInterface;
 use App\Services\Contracts\PaymentServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
@@ -19,6 +20,7 @@ class GatewayService
         private readonly PaymentRepositoryInterface $paymentRepo,
         private readonly PaymentServiceInterface $paymentService,
         private readonly SubscriptionServiceInterface $subscriptionService,
+        private readonly SubscriptionScheduledChangeRepositoryInterface $scheduledChangeRepo,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
@@ -68,6 +70,8 @@ class GatewayService
 
         $plan = $subscription->plan;
         $ourRef = "CUSTOSELL-{$payment->id}-" . now()->format('YmdHis');
+        $business = $subscription->business;
+        $countryCode = $business?->country ? mb_substr($business->country, 0, 2) : 'UG';
 
         $driverPayload = [
             'amount' => $data['amount'],
@@ -79,6 +83,7 @@ class GatewayService
             'description' => 'Custosell subscription — ' . ($plan?->name ?? 'Plan'),
             'payment_id' => $payment->id,
             'subscription_id' => $subscription->id,
+            'country_code' => $countryCode,
         ];
 
         try {
@@ -282,7 +287,25 @@ class GatewayService
             return;
         }
 
-        $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+        DB::transaction(function () use ($payment, $subscription, $toPlanId) {
+            $this->scheduledChangeRepo->create([
+                'subscription_id' => $subscription->id,
+                'business_id' => $subscription->business_id,
+                'change_type' => 'upgrade',
+                'from_plan_id' => $subscription->plan_id,
+                'to_plan_id' => $toPlanId,
+                'effective_at' => now(),
+                'status' => 'applied',
+                'proration_amount' => $payment->amount,
+                'metadata' => [
+                    'source' => 'payment_webhook',
+                    'payment_id' => $payment->id,
+                ],
+            ]);
+
+            $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+        });
+
         Log::info('[GatewayService] Upgrade completed via payment', [
             'payment_id' => $payment->id,
             'subscription_id' => $subscription->id,

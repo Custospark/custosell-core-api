@@ -51,6 +51,9 @@ class SubscriptionService implements SubscriptionServiceInterface
                 $data['price_monthly'] = $plan->price_monthly;
                 $data['price_yearly'] = $plan->price_yearly;
                 $data['onboarding_fee_ugx'] = $plan->onboarding_fee_ugx;
+                $data['price_monthly_usd'] = $plan->price_monthly_usd;
+                $data['price_yearly_usd'] = $plan->price_yearly_usd;
+                $data['onboarding_fee_usd'] = $plan->onboarding_fee_usd;
             }
         }
         return $this->subscriptionRepository->create($data);
@@ -99,6 +102,9 @@ class SubscriptionService implements SubscriptionServiceInterface
             'price_monthly' => $plan->price_monthly,
             'price_yearly' => $plan->price_yearly,
             'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
+            'price_monthly_usd' => $plan->price_monthly_usd,
+            'price_yearly_usd' => $plan->price_yearly_usd,
+            'onboarding_fee_usd' => $plan->onboarding_fee_usd,
             'billing_cycle' => $billingCycle,
             'status' => SubscriptionStatus::PAST_DUE,
             'starts_at' => $now,
@@ -166,6 +172,9 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'price_monthly' => $plan->price_monthly,
                 'price_yearly' => $plan->price_yearly,
                 'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
+                'price_monthly_usd' => $plan->price_monthly_usd,
+                'price_yearly_usd' => $plan->price_yearly_usd,
+                'onboarding_fee_usd' => $plan->onboarding_fee_usd,
             ];
 
             return $this->subscriptionRepository->update($subscription, $data);
@@ -261,9 +270,9 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function activateAfterOnboarding(Subscription $subscription): Subscription
     {
-        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE, SubscriptionStatus::EXPIRED], true)) {
+        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE, SubscriptionStatus::EXPIRED, SubscriptionStatus::SUSPENDED], true)) {
             throw new \RuntimeException(
-                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only trial, past_due or expired subscriptions can be activated after onboarding payment."
+                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only trial, past_due, expired, or suspended subscriptions can be activated after onboarding payment."
             );
         }
 
