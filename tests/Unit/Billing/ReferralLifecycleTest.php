@@ -132,7 +132,7 @@ class ReferralLifecycleTest extends TestCase
         $activated = $this->referralService->markActive($referral->id);
 
         $this->assertEquals(ReferralStatus::ACTIVE, $activated->status);
-        $this->assertEquals(5000, (float) $activated->reward_amount, '5% of 100000 = 5000');
+        $this->assertEquals(1.00, (float) $activated->reward_amount, '5% of $20 = $1.00');
         $this->assertNotNull($activated->converted_at);
     }
 
@@ -181,7 +181,7 @@ class ReferralLifecycleTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(100000, (float) $activated->reward_amount, 'free_month reward = monthly price');
+        $this->assertEquals(20.00, (float) $activated->reward_amount, 'free_month reward = monthly USD price');
     }
 
     // ─── Scenario 3: markActive (payment confirmed) — SALES_REP codes ───
@@ -216,8 +216,8 @@ class ReferralLifecycleTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(10000, (float) $activated->commission_earned, '10% of 100000 = 10000');
-        $this->assertEquals(5000, (float) $activated->reward_amount, '5% reward = 5000');
+        $this->assertEquals(2.00, (float) $activated->commission_earned, '10% of $20 = $2.00');
+        $this->assertEquals(1.00, (float) $activated->reward_amount, '5% of $20 = $1.00');
     }
 
     public function test_mark_active_calculates_commission_for_sales_rep_flat(): void
@@ -285,7 +285,7 @@ class ReferralLifecycleTest extends TestCase
         $activated = $this->referralService->markActive($referral->id);
 
         $this->assertNull($activated->commission_earned, 'inactive sales rep should not earn commission');
-        $this->assertEquals(5000, (float) $activated->reward_amount, 'reward still calculated for referrer');
+        $this->assertEquals(1.00, (float) $activated->reward_amount, 'reward still calculated for referrer');
     }
 
     // ─── Scenario 4: activateForSubscription triggers markActive ───

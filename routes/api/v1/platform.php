@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Platform\PlatformGuideFeedbackController;
 use App\Http\Controllers\Api\Platform\PlatformGuideTutorialController;
 use App\Http\Controllers\Api\Platform\PlatformNotificationDispatchController;
 use App\Http\Controllers\Api\Platform\PlatformOverviewController;
+use App\Http\Controllers\Api\Platform\PlatformReferralCodeController;
 use App\Http\Controllers\Api\Platform\PlatformRoleController;
 use App\Http\Controllers\Api\Platform\PlatformUserController;
 use Illuminate\Support\Facades\Route;
@@ -90,5 +91,14 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::get('/', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'index']);
         Route::get('pending-payouts', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'pendingPayouts']);
         Route::post('{creditId}/payout', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'recordPayout']);
+    });
+
+    Route::middleware(['platform:platform.businesses.manage'])->prefix('referral-codes')->group(function () {
+        Route::get('/', [PlatformReferralCodeController::class, 'index']);
+        Route::post('/', [PlatformReferralCodeController::class, 'store']);
+        Route::get('{id}', [PlatformReferralCodeController::class, 'show']);
+        Route::put('{id}', [PlatformReferralCodeController::class, 'update']);
+        Route::delete('{id}', [PlatformReferralCodeController::class, 'destroy']);
+        Route::get('{id}/usage', [PlatformReferralCodeController::class, 'usage']);
     });
 });

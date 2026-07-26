@@ -13,6 +13,7 @@ use App\Models\SalesRep;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\ReferralRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
+use App\Models\BillingCredit;
 use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\CreditService;
 use Illuminate\Database\Eloquent\Collection;
@@ -127,6 +128,19 @@ class ReferralService implements ReferralServiceInterface
                 'discount_applied' => $discountApplied,
                 'reward_amount' => 0,
             ]);
+
+            // Create a billing credit for the referred business so the discount is real
+            if ($discountApplied > 0) {
+                $totalDiscount = $discountApplied * max(1, (int) ($referralCode->discount_duration_months ?? 1));
+                BillingCredit::create([
+                    'owner_type' => 'business',
+                    'owner_id' => $businessId,
+                    'referral_id' => $referral->id,
+                    'amount' => $totalDiscount,
+                    'amount_used' => 0,
+                    'status' => 'available',
+                ]);
+            }
 
             $referralCode->markUsed();
 

@@ -15,4 +15,5 @@ interface ReferralCodeServiceInterface
     public function delete(int $id): bool;
     public function getActive(): Collection;
     public function generateCode(string $prefix = ''): string;
+    public function generateCodeForUser(string $name): string;
 }

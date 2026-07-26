@@ -5,7 +5,13 @@ namespace App\Services;
 use App\Models\Business;
 use App\Models\Role;
 use App\Models\User;
+use App\Enums\Billing\DiscountType;
+use App\Enums\Billing\ReferralCodeOwnerType;
+use App\Enums\Billing\RewardType;
+use App\Models\ReferralCode;
+use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Services\Contracts\ReferralCodeServiceInterface;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\Hr\HrStaffMirrorService;
 use App\Services\ModuleAccessService;
@@ -21,6 +27,8 @@ class UserService implements UserServiceInterface
         protected UserRepositoryInterface $userRepository,
         protected ModuleAccessService $moduleAccess,
         protected HrStaffMirrorService $hrStaffMirror,
+        protected ReferralCodeServiceInterface $referralCodeService,
+        protected ReferralCodeRepositoryInterface $referralCodeRepository,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -82,6 +90,21 @@ class UserService implements UserServiceInterface
         }
 
         $user = $this->userRepository->create($data)->load('role');
+
+        // Auto-generate a referral code for this staff member
+        $existingCode = ReferralCode::where('owner_user_id', $user->id)->exists();
+        if (!$existingCode) {
+            $code = $this->referralCodeService->generateCodeForUser($user->name);
+            ReferralCode::create([
+                'code' => $code,
+                'owner_type' => ReferralCodeOwnerType::BUSINESS,
+                'owner_user_id' => $user->id,
+                'owner_business_id' => $businessId,
+                'discount_type' => DiscountType::PERCENTAGE,
+                'discount_value' => 10,
+                'reward_type' => RewardType::FREE_MONTH,
+            ]);
+        }
 
         if ($mirrorEmployee) {
             $this->hrStaffMirror->ensureEmployeeForUser($user, Auth::id());

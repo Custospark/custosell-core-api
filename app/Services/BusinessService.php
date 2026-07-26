@@ -79,7 +79,9 @@ class BusinessService implements BusinessServiceInterface
             // Auto-create a referral code for the new user
             $hasCode = $this->referralCodeRepository->findByOwnerUser($user->id);
             if (!$hasCode) {
+                $code = $this->referralCodeService->generateCodeForUser($user->name);
                 $this->referralCodeService->create([
+                    'code' => $code,
                     'owner_type' => ReferralCodeOwnerType::BUSINESS,
                     'owner_user_id' => $user->id,
                     'discount_type' => DiscountType::PERCENTAGE,
