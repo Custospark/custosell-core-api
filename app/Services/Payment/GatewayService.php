@@ -267,18 +267,27 @@ class GatewayService
         $metadata = $payment->metadata ?? [];
         $toPlanId = $metadata['to_plan_id'] ?? null;
 
-        if ($toPlanId) {
-            $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
-            Log::info('[GatewayService] Upgrade completed via payment', [
-                'payment_id' => $payment->id,
-                'subscription_id' => $subscription->id,
-                'to_plan_id' => $toPlanId,
-            ]);
-        } else {
+        if (!$toPlanId) {
             Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
                 'payment_id' => $payment->id,
             ]);
+            return;
         }
+
+        if ((int) $toPlanId === $subscription->plan_id) {
+            Log::info('[GatewayService] Upgrade skipped — already on target plan', [
+                'payment_id' => $payment->id,
+                'plan_id' => $subscription->plan_id,
+            ]);
+            return;
+        }
+
+        $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+        Log::info('[GatewayService] Upgrade completed via payment', [
+            'payment_id' => $payment->id,
+            'subscription_id' => $subscription->id,
+            'to_plan_id' => $toPlanId,
+        ]);
     }
 
     private function autoApprove(BillingPayment $payment, array $webhookData, array $verification): void
