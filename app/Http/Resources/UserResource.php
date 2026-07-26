@@ -75,6 +75,8 @@ class UserResource extends JsonResource
                                 'plan_name' => $this->business->subscription->plan?->name,
                                 'plan_slug' => $this->business->subscription->plan?->slug,
                                 'plan_features' => $this->business->subscription->plan?->features,
+                                'price_monthly' => $this->business->subscription->price_monthly,
+                                'price_yearly' => $this->business->subscription->price_yearly,
                                 'status' => $this->business->subscription->status?->value ?? $this->business->subscription->status,
                                 'billing_cycle' => $this->business->subscription->billing_cycle,
                                 'starts_at' => $this->business->subscription->starts_at,

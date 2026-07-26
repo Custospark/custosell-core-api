@@ -7,8 +7,13 @@ use Illuminate\Support\Carbon;
 
 class SubscriptionProrationCalculator
 {
-    public function calculateUpgradeCost(Plan $currentPlan, Plan $newPlan, Carbon $nextBillingDate, string $billingCycle = 'monthly'): array
-    {
+    public function calculateUpgradeCost(
+        Plan $currentPlan,
+        Plan $newPlan,
+        Carbon $nextBillingDate,
+        string $billingCycle = 'monthly',
+        ?array $subscriptionPrices = null,
+    ): array {
         $now = Carbon::now()->startOfDay();
         $periodEnd = $nextBillingDate->copy()->startOfDay();
         $periodStart = $billingCycle === 'yearly'
@@ -20,17 +25,19 @@ class SubscriptionProrationCalculator
             ? 0
             : (int) $now->diffInDays($periodEnd);
 
+        // Use snapshotted subscription prices for the current plan (what user actually paid)
         $oldPrice = $billingCycle === 'yearly'
-            ? (float) ($currentPlan->price_yearly ?? 0)
-            : (float) ($currentPlan->price_monthly ?? 0);
+            ? (float) ($subscriptionPrices['price_yearly'] ?? $currentPlan->price_yearly ?? 0)
+            : (float) ($subscriptionPrices['price_monthly'] ?? $currentPlan->price_monthly ?? 0);
 
+        // New plan always uses current plan prices
         $newPrice = $billingCycle === 'yearly'
             ? (float) ($newPlan->price_yearly ?? 0)
             : (float) ($newPlan->price_monthly ?? 0);
 
         $oldPriceUsd = $billingCycle === 'yearly'
-            ? (float) ($currentPlan->price_yearly_usd ?? 0)
-            : (float) ($currentPlan->price_monthly_usd ?? 0);
+            ? (float) ($subscriptionPrices['price_yearly_usd'] ?? $currentPlan->price_yearly_usd ?? 0)
+            : (float) ($subscriptionPrices['price_monthly_usd'] ?? $currentPlan->price_monthly_usd ?? 0);
 
         $newPriceUsd = $billingCycle === 'yearly'
             ? (float) ($newPlan->price_yearly_usd ?? 0)
