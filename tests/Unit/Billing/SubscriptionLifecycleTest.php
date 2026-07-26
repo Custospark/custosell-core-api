@@ -61,7 +61,7 @@ class SubscriptionLifecycleTest extends TestCase
         $this->assertTrue($subscription->status === SubscriptionStatus::TRIAL);
         $this->assertNotNull($subscription->trial_ends_at);
         $this->assertEquals(
-            $subscription->starts_at->copy()->addDays(14)->toDateString(),
+            $subscription->starts_at->copy()->addDays(30)->toDateString(),
             $subscription->trial_ends_at->toDateString()
         );
         $this->assertEquals($this->business->id, $subscription->business_id);

@@ -17,9 +17,12 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class SalesRepService implements SalesRepServiceInterface
@@ -90,11 +93,20 @@ class SalesRepService implements SalesRepServiceInterface
 
     public function delete(int $id): bool
     {
-        $salesRep = $this->salesRepRepository->find($id);
-        if (!$salesRep) {
-            throw new \RuntimeException('SalesRep not found');
-        }
-        return $this->salesRepRepository->delete($salesRep);
+        return DB::transaction(function () use ($id) {
+            $salesRep = $this->salesRepRepository->find($id);
+            if (!$salesRep) {
+                throw new \RuntimeException('SalesRep not found');
+            }
+
+            if ($salesRep->referralCode) {
+                $this->referralCodeService->update($salesRep->referralCode->id, [
+                    'is_active' => false,
+                ]);
+            }
+
+            return $this->salesRepRepository->delete($salesRep);
+        });
     }
 
     public function getActive(): Collection
@@ -197,54 +209,72 @@ class SalesRepService implements SalesRepServiceInterface
         $errors = [];
         $totalRows = count($rows);
 
-        $batch = [];
-        foreach ($rows as $index => $row) {
-            $rowNum = $index + 2;
-            $rowErrors = [];
-
-            $email = trim($row['Email'] ?? '');
-            $name = trim($row['Name'] ?? '');
-            $phone = trim($row['Phone'] ?? '');
-            $region = trim($row['Region'] ?? '');
-            $commissionRate = trim($row['Commission Rate'] ?? '');
-            $commissionType = trim($row['Commission Type'] ?? 'percentage');
-
-            if (empty($email)) {
-                $errors[] = ['row' => $rowNum, 'errors' => ['Email is required']];
-                continue;
-            }
-
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = ['row' => $rowNum, 'errors' => ['Invalid email format']];
-                continue;
-            }
-
-            if (empty($name)) {
-                $errors[] = ['row' => $rowNum, 'errors' => ['Name is required']];
-                continue;
-            }
-
-            if (!is_numeric($commissionRate) || (float) $commissionRate < 0) {
-                $errors[] = ['row' => $rowNum, 'errors' => ['Commission Rate must be a positive number']];
-                continue;
-            }
-
-            $batch[] = [
-                'email' => $email,
-                'name' => $name,
-                'phone' => $phone ?: null,
-                'region' => $region ?: null,
-                'commission_rate' => (float) $commissionRate,
-                'commission_type' => in_array($commissionType, ['percentage', 'flat']) ? $commissionType : 'percentage',
-            ];
+        $validRegions = ['Central', 'Eastern', 'Northern', 'Western', 'Kampala'];
+        $validCommissionTypes = ['percentage', 'flat'];
+        $regionMap = [];
+        foreach ($validRegions as $r) {
+            $regionMap[mb_strtolower(trim($r))] = $r;
         }
 
-        foreach ($batch as $row) {
+        $rowEntries = [];
+        foreach ($rows as $index => $row) {
+            $excelRow = $index + 2;
+
+            $mapped = [];
+            $mapped['name'] = isset($row['Name']) ? trim((string) $row['Name']) : '';
+            $mapped['email'] = isset($row['Email']) ? trim((string) $row['Email']) : '';
+            $mapped['phone'] = isset($row['Phone']) ? trim((string) $row['Phone']) : '';
+            $mapped['region'] = isset($row['Region']) ? trim((string) $row['Region']) : '';
+            $mapped['commission_rate'] = isset($row['Commission Rate']) ? trim((string) $row['Commission Rate']) : '';
+            $mapped['commission_type'] = isset($row['Commission Type']) ? trim((string) $row['Commission Type']) : '';
+
+            if (empty(array_filter($mapped, fn ($v) => $v !== ''))) {
+                continue;
+            }
+
+            $validator = Validator::make($mapped, [
+                'email' => ['required', 'email'],
+                'name' => ['required', 'string', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:50'],
+                'region' => ['nullable', 'string', 'max:100'],
+                'commission_rate' => ['required', 'numeric', 'min:0'],
+                'commission_type' => ['nullable', 'in:percentage,flat'],
+            ]);
+
+            if ($validator->fails()) {
+                $errors[] = ['row' => $excelRow, 'errors' => $validator->errors()->toArray()];
+                continue;
+            }
+
+            $data = $validator->validated();
+
+            $normalized = [
+                'email' => mb_strtolower(trim($data['email'])),
+                'name' => trim($data['name']),
+                'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
+                'region' => null,
+                'commission_rate' => (float) $data['commission_rate'],
+                'commission_type' => !empty($data['commission_type']) ? mb_strtolower(trim($data['commission_type'])) : 'percentage',
+            ];
+
+            $regionKey = !empty($data['region']) ? mb_strtolower(trim($data['region'])) : null;
+            if ($regionKey) {
+                $normalized['region'] = $regionMap[$regionKey] ?? ucfirst($regionKey);
+            }
+
+            if (!in_array($normalized['commission_type'], $validCommissionTypes, true)) {
+                $normalized['commission_type'] = 'percentage';
+            }
+
+            $rowEntries[] = ['row' => $excelRow, 'data' => $normalized];
+        }
+
+        foreach ($rowEntries as $entry) {
             try {
-                $this->create($row);
+                $this->create($entry['data']);
                 $imported++;
             } catch (\Exception $e) {
-                $errors[] = ['row' => 0, 'errors' => [$e->getMessage()]];
+                $errors[] = ['row' => $entry['row'], 'errors' => ['email' => [$e->getMessage()]]];
             }
         }
 
@@ -262,32 +292,83 @@ class SalesRepService implements SalesRepServiceInterface
         $sheet->setTitle('Sales Reps');
 
         $headers = ['Name*', 'Email*', 'Phone', 'Region', 'Commission Rate*', 'Commission Type'];
-        $col = 'A';
-        foreach ($headers as $header) {
+        $lastCol = chr(65 + count($headers) - 1);
+
+        $bold = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2563EB']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+        $sheet->getStyle("A1:{$lastCol}1")->applyFromArray($bold);
+
+        foreach ($headers as $i => $header) {
+            $col = chr(65 + $i);
             $sheet->setCellValue($col . '1', $header);
-            $col++;
-        }
-
-        $headerStyle = $sheet->getStyle('A1:' . chr(ord('A') + count($headers) - 1) . '1');
-        $headerStyle->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFFFF'));
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->setStartColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF2563EB'));
-        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        foreach (range('A', chr(ord('A') + count($headers) - 1)) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $sheet->setCellValue('A2', 'John Doe');
-        $sheet->setCellValue('B2', 'john@example.com');
-        $sheet->setCellValue('C2', '+256 700 000 000');
-        $sheet->setCellValue('D2', 'Central');
-        $sheet->setCellValue('E2', '10');
-        $sheet->setCellValue('F2', 'percentage');
+        $example = ['John Doe', 'john@example.com', '+256 700 000 000', 'Central', '10', 'percentage'];
+        foreach ($example as $i => $val) {
+            $col = chr(65 + $i);
+            if ($i === 4) {
+                $sheet->setCellValueExplicit($col.'2', (string) $val, DataType::TYPE_STRING);
+            } else {
+                $sheet->setCellValue($col.'2', $val);
+            }
+        }
 
-        $exampleStyle = $sheet->getStyle('A2:F2');
-        $exampleStyle->getFill()->setFillType(Fill::FILL_SOLID)->setStartColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFDCFCE7'));
-
+        $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DCFCE7']],
+        ]);
+        $sheet->getStyle("A3:{$lastCol}3")->applyFromArray([
+            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'E5E7EB']]],
+        ]);
         $sheet->freezePane('A2');
+
+        $hint = 'Commission Rate: flat value (e.g. 50000) or percentage number without % sign (e.g. 10). '
+            . 'Region: Central | Eastern | Northern | Western | Kampala (case-insensitive). '
+            . 'Commission Type: percentage | flat. '
+            . 'Delete the green example row before importing.';
+        $sheet->setCellValue("A4", $hint);
+        $sheet->mergeCells("A4:{$lastCol}4");
+        $sheet->getStyle('A4')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
+
+        // --- Reference Sheet ---
+
+        $refSheet = $spreadsheet->createSheet();
+        $refSheet->setTitle('Reference');
+
+        $refHeaders = ['Field', 'Valid Values', 'Notes'];
+        $refLastCol = chr(65 + count($refHeaders) - 1);
+        $refSheet->getStyle("A1:{$refLastCol}1")->applyFromArray($bold);
+
+        foreach ($refHeaders as $i => $header) {
+            $col = chr(65 + $i);
+            $refSheet->setCellValue($col . '1', $header);
+            $refSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $refData = [
+            ['Region', 'Central, Eastern, Northern, Western, Kampala', 'Case-insensitive; will be normalized on import.'],
+            ['Commission Type', 'percentage, flat', 'percentage = % of referral value; flat = fixed amount. Defaults to percentage.'],
+            ['Commission Rate', 'Up to you', 'For percentage: 0–100 (e.g. 10). For flat: any positive number (e.g. 50000).'],
+            ['Name', 'Any text', 'Required.'],
+            ['Email', 'Valid email', 'Required. If no user with this email exists, a new login will be auto-created.'],
+            ['Phone', 'Any text', 'Optional. Stored as-is.'],
+        ];
+
+        foreach ($refData as $rowIdx => $row) {
+            $r = $rowIdx + 3;
+            foreach ($row as $colIdx => $value) {
+                $c = chr(65 + $colIdx);
+                $refSheet->setCellValue("{$c}{$r}", $value);
+            }
+        }
+
+        $refSheet->getStyle('A3')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('6B7280'));
+        $refSheet->mergeCells('A3:C3');
+
+        $spreadsheet->setActiveSheetIndex(0);
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $filePath = tempnam(sys_get_temp_dir(), 'sales-rep-import-template');

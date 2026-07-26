@@ -131,7 +131,11 @@ class Subscription extends Model
             return true;
         }
 
-        return $this->ends_at?->isFuture() ?? false;
+        if ($this->ends_at === null) {
+            return true;
+        }
+
+        return $this->ends_at->isFuture();
     }
 
     public function isActive(): bool
