@@ -254,3 +254,7 @@ Registration → Free Trial (14 days) → Payment → Active
 5. Implement Pesapal payment integration
 6. Wire up frontend pricing page + subscription settings
 7. Launch Early Access with founder pricing
+
+
+
+when user is  making payment on the ui when they click on plan, we should show them deduction in busines credit like we do for proration for upgrades, something like that, also when user has no referal code in the referral drop down, we should show they, generate code, this normally happend when business registers users in their business/add users through the staff drawer form, the user added should be generated referral code autommatically, als we should have some sort of code standardization relating to user name  or times stamp, like standard practice/industry , though code shouldnt be too long as well. Also how about these things where we see people say scan the QR code to get a give n percentage off, and when businesses have referral codes do they actually get the discounts off? and also does admin/platform admin able to generate codes people can use to get bonuses of say 20,30% off like we see during festive days, and the likes?--we gotta be very accurate and address each concern a a to do list item---in everything we do lets make sure the bakend is in sync with frontend--and we gotta test everything to make sure nothing breaks and everything works as expected testing should be done using nature of date sent by the frontend.

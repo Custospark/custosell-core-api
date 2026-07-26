@@ -8,8 +8,6 @@ use App\Models\CreditApplication;
 use App\Models\Referral;
 use App\Models\Subscription;
 use App\Models\User;
-use App\Models\CreditApplication;
-use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
 use App\Services\Contracts\PaymentServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
