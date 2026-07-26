@@ -85,4 +85,10 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::delete('/feedback/{guideFeedback}', [PlatformGuideFeedbackController::class, 'destroy']);
         Route::post('/feedback/bulk-delete', [PlatformGuideFeedbackController::class, 'bulkDestroy']);
     });
+
+    Route::middleware(['platform:platform.businesses.manage'])->prefix('credits')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'index']);
+        Route::get('pending-payouts', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'pendingPayouts']);
+        Route::post('{creditId}/payout', [\App\Http\Controllers\Api\Platform\PlatformCreditController::class, 'recordPayout']);
+    });
 });

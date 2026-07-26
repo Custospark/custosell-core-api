@@ -15,13 +15,17 @@ use Illuminate\Support\Facades\Log;
 
 class GatewayService
 {
+    protected \App\Services\CreditService $creditService;
+
     public function __construct(
         private readonly GatewayManager $gatewayManager,
         private readonly PaymentRepositoryInterface $paymentRepo,
         private readonly PaymentServiceInterface $paymentService,
         private readonly SubscriptionServiceInterface $subscriptionService,
         private readonly SubscriptionScheduledChangeRepositoryInterface $scheduledChangeRepo,
-    ) {}
+    ) {
+        $this->creditService = app(\App\Services\CreditService::class);
+    }
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
     {
@@ -32,6 +36,27 @@ class GatewayService
                 "Gateway '{$gatewayName}' is not currently enabled.",
                 $gatewayName
             );
+        }
+
+        // Auto-apply available credit on renewal payments
+        $originalAmount = (float) ($data['amount'] ?? 0);
+        $creditUsed = 0;
+        if (($data['payment_type'] ?? '') === 'renewal') {
+            $result = $this->creditService->applyToRenewal($subscription, $originalAmount);
+            $creditUsed = $result['credit_used'];
+            if ($creditUsed > 0) {
+                $data['amount'] = $result['remaining'];
+                $data['metadata']['credit_applied'] = $creditUsed;
+                $data['metadata']['credit_application_ids'] = array_map(
+                    fn ($a) => $a->id, $result['applications']
+                );
+                $data['metadata']['original_amount'] = $originalAmount;
+            }
+        }
+
+        // If credit covers the full amount, skip gateway entirely
+        if (($data['payment_type'] ?? '') === 'renewal' && $data['amount'] <= 0) {
+            return $this->completeWithCredit($subscription, $gatewayName, $data);
         }
 
         // Validate amount against expected subscription prices
@@ -253,6 +278,20 @@ class GatewayService
         ];
     }
 
+    private function completeWithCredit(Subscription $subscription, string $gatewayName, array $data): array
+    {
+        return $this->creditService->completeRenewalWithCredit(
+            subscription: $subscription,
+            gatewayName: $gatewayName,
+            data: $data,
+            paymentService: $this->paymentService,
+            paymentRepo: $this->paymentRepo,
+            onPaymentCompleted: function ($payment) {
+                $this->handlePaymentType($payment);
+            }
+        );
+    }
+
     private function handlePaymentType(BillingPayment $payment): void
     {
         $paymentType = $payment->payment_type instanceof \App\Enums\Billing\PaymentType
@@ -382,6 +421,10 @@ class GatewayService
     {
         $paymentType = $data['payment_type'] ?? 'subscription';
         $amount = (float) ($data['amount'] ?? 0);
+        // Include credit-applied amount in validation so reduced amounts still pass
+        if (!empty($data['metadata']['credit_applied'])) {
+            $amount += (float) $data['metadata']['credit_applied'];
+        }
         $currency = strtoupper($data['currency'] ?? 'USD');
         $tolerance = 0.50;
 

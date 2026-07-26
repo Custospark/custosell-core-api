@@ -14,6 +14,7 @@ use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\ReferralRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
 use App\Services\Contracts\ReferralServiceInterface;
+use App\Services\CreditService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class ReferralService implements ReferralServiceInterface
         protected ReferralRepositoryInterface $referralRepository,
         protected ReferralCodeRepositoryInterface $referralCodeRepository,
         protected SubscriptionRepositoryInterface $subscriptionRepository,
+        protected CreditService $creditService,
     ) {}
 
     public function getAll(): Collection
@@ -161,6 +163,11 @@ class ReferralService implements ReferralServiceInterface
                 default => 0,
             };
             $updateData['reward_amount'] = $rewardAmount;
+
+            // Create billing credit from the reward
+            if ($rewardAmount > 0) {
+                $this->creditService->createFromReferral($referral, $rewardAmount);
+            }
 
             // Calculate commission for sales reps
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {

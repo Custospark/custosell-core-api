@@ -7,6 +7,7 @@ use App\Http\Resources\ReferralCollection;
 use App\Http\Resources\ReferralResource;
 use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
+use App\Services\CreditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -16,6 +17,7 @@ class ReferralController extends Controller
     public function __construct(
         protected ReferralServiceInterface $referralService,
         protected SubscriptionServiceInterface $subscriptionService,
+        protected CreditService $creditService,
     ) {}
 
     public function index(): ReferralCollection
@@ -59,6 +61,16 @@ class ReferralController extends Controller
 
         try {
             $earnings = $this->referralService->getEarningsByUser($user->id);
+            $business = $user->business;
+
+            $businessCredit = $business ? $this->creditService->getBusinessCredit($business->id) : 0;
+            $userCredit = $this->creditService->getUserCredit($user->id);
+
+            $earnings['available_credit'] = round($businessCredit + $userCredit, 2);
+            $earnings['business_credit'] = $businessCredit;
+            $earnings['user_credit'] = $userCredit;
+            $earnings['currency'] = 'USD';
+
             return response()->json($earnings);
         } catch (RuntimeException $e) {
             abort(422, $e->getMessage());
