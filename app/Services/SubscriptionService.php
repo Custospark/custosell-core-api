@@ -82,6 +82,11 @@ class SubscriptionService implements SubscriptionServiceInterface
         return $this->subscriptionRepository->getActive();
     }
 
+    private function nextBillingDate(Carbon $from, string $billingCycle): Carbon
+    {
+        return $billingCycle === 'yearly' ? $from->copy()->addYear() : $from->copy()->addMonth();
+    }
+
     public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null, bool $skipTrial = false): Subscription
     {
         $plan = $this->planRepository->find($planId);
@@ -109,7 +114,7 @@ class SubscriptionService implements SubscriptionServiceInterface
             'status' => SubscriptionStatus::PAST_DUE,
             'starts_at' => $now,
             'trial_ends_at' => null,
-            'next_billing_date' => $now->copy()->addMonth(),
+            'next_billing_date' => $this->nextBillingDate($now, $billingCycle),
             'onboarding_fee_paid' => false,
             'trial_used' => false,
         ];
@@ -146,7 +151,7 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'status' => SubscriptionStatus::ACTIVE,
                 'approved_at' => $now,
                 'approved_by_user_id' => $approvedBy,
-                'next_billing_date' => $now->copy()->addMonth(),
+                'next_billing_date' => $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly'),
                 'grace_period_ends_at' => null,
             ];
 
@@ -194,7 +199,7 @@ class SubscriptionService implements SubscriptionServiceInterface
 
             $data = [
                 'status' => SubscriptionStatus::ACTIVE,
-                'next_billing_date' => $now->copy()->addMonth(),
+                'next_billing_date' => $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly'),
                 'grace_period_ends_at' => null,
             ];
 
@@ -260,7 +265,7 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'status' => SubscriptionStatus::ACTIVE,
                 'suspended_at' => null,
                 'approved_at' => $now,
-                'next_billing_date' => $now->copy()->addMonth(),
+                'next_billing_date' => $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly'),
                 'grace_period_ends_at' => null,
             ];
 
@@ -304,7 +309,7 @@ class SubscriptionService implements SubscriptionServiceInterface
             } else {
                 $data['status'] = SubscriptionStatus::ACTIVE;
                 $data['approved_at'] = $now;
-                $data['next_billing_date'] = $now->copy()->addMonth();
+                $data['next_billing_date'] = $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly');
             }
 
             $this->subscriptionRepository->update($subscription, $data);
