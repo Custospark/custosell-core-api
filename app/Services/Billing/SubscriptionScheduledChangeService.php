@@ -138,6 +138,22 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
                         ? $change->change_type->value
                         : $change->change_type;
 
+                    $status = $subscription->status instanceof \App\Enums\Billing\SubscriptionStatus
+                        ? $subscription->status->value
+                        : $subscription->status;
+
+                    $isPlanChange = $changeType !== 'cancel';
+
+                    if ($isPlanChange && $status !== 'active') {
+                        Log::info('[SubscriptionScheduledChange] Skipped — subscription not active', [
+                            'change_id' => $change->id,
+                            'subscription_id' => $subscription->id,
+                            'status' => $status,
+                            'type' => $changeType,
+                        ]);
+                        return;
+                    }
+
                     if ($changeType === 'cancel') {
                         $this->subscriptionRepo->update($subscription, [
                             'status' => 'cancelled',
