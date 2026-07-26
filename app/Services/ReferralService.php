@@ -96,7 +96,12 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
-            // One-time use per business
+            // One-time use per business — no stacking across codes or resubscribes
+            if ($this->referralRepository->findByBusiness($businessId)->isNotEmpty()) {
+                throw new \RuntimeException('This business has already used a referral code');
+            }
+
+            // Same-code duplicate guard
             $existing = $this->referralRepository->findByCode($referralCode->id)
                 ->first(fn ($r) => $r->referred_business_id === $businessId);
             if ($existing) {
