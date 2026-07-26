@@ -37,7 +37,7 @@ class SubscriptionService implements SubscriptionServiceInterface
         $subscription = $this->subscriptionRepository->findByBusiness($businessId);
         if ($subscription) {
             $this->processDueTransitions($subscription);
-            $subscription = $this->subscriptionRepository->findByBusiness($businessId);
+            $subscription = $subscription->fresh();
         }
         return $subscription;
     }
@@ -105,6 +105,7 @@ class SubscriptionService implements SubscriptionServiceInterface
             'trial_ends_at' => null,
             'next_billing_date' => $now->copy()->addMonth(),
             'onboarding_fee_paid' => false,
+            'trial_used' => false,
         ];
 
         if (!$skipTrial) {
@@ -112,7 +113,6 @@ class SubscriptionService implements SubscriptionServiceInterface
             if ($trialDays > 0) {
                 $data['status'] = SubscriptionStatus::TRIAL;
                 $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
-                $data['trial_used'] = true;
             }
         }
 
@@ -150,6 +150,25 @@ class SubscriptionService implements SubscriptionServiceInterface
             $this->referralService->activateForSubscription($subscription->id);
 
             return $updated;
+        });
+    }
+
+    public function changePlan(Subscription $subscription, int $newPlanId): Subscription
+    {
+        $plan = $this->planRepository->find($newPlanId);
+        if (!$plan) {
+            throw new \RuntimeException('Plan not found');
+        }
+
+        return DB::transaction(function () use ($subscription, $plan) {
+            $data = [
+                'plan_id' => $plan->id,
+                'price_monthly' => $plan->price_monthly,
+                'price_yearly' => $plan->price_yearly,
+                'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
+            ];
+
+            return $this->subscriptionRepository->update($subscription, $data);
         });
     }
 
@@ -242,9 +261,9 @@ class SubscriptionService implements SubscriptionServiceInterface
 
     public function activateAfterOnboarding(Subscription $subscription): Subscription
     {
-        if ($subscription->status !== SubscriptionStatus::PAST_DUE) {
+        if (!in_array($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::PAST_DUE], true)) {
             throw new \RuntimeException(
-                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only past_due subscriptions can be activated after onboarding payment."
+                "Cannot activate after onboarding with status '{$subscription->status->value}'. Only trial or past_due subscriptions can be activated after onboarding payment."
             );
         }
 
@@ -257,6 +276,16 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'onboarding_fee_paid' => true,
             ];
 
+            // Already in TRIAL with a future trial_ends_at — just mark onboarding paid
+            if ($subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isFuture()) {
+                $this->subscriptionRepository->update($subscription, $data);
+
+                $this->referralService->activateForSubscription($subscription->id);
+
+                return $subscription->fresh();
+            }
+
+            // Past TRIAL (trial_ends_at is past or null) or PAST_DUE — decide next state
             if ($trialDays > 0 && !$subscription->trial_used) {
                 $data['status'] = SubscriptionStatus::TRIAL;
                 $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
@@ -336,10 +365,12 @@ class SubscriptionService implements SubscriptionServiceInterface
     {
         $now = Carbon::now();
 
+        // H2: TRIAL expired → PAST_DUE with 7-day grace period (never EXPIRED)
         if ($subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isPast()) {
             $this->subscriptionRepository->update($subscription, [
-                'status' => SubscriptionStatus::EXPIRED,
-                'ends_at' => $now,
+                'status' => SubscriptionStatus::PAST_DUE,
+                'grace_period_ends_at' => $now->copy()->addDays(7),
+                'grace_used' => true,
             ]);
             return;
         }
@@ -353,10 +384,18 @@ class SubscriptionService implements SubscriptionServiceInterface
             return;
         }
 
+        // H3: ACTIVE with past billing — if grace already used, go directly to SUSPENDED
         if ($subscription->status === SubscriptionStatus::ACTIVE && !$subscription->cancel_at_period_end && $subscription->next_billing_date?->isPast()) {
-            try {
-                $this->markPastDue($subscription);
-            } catch (\RuntimeException) {
+            if ($subscription->grace_used) {
+                $this->subscriptionRepository->update($subscription, [
+                    'status' => SubscriptionStatus::SUSPENDED,
+                    'suspended_at' => $now,
+                ]);
+            } else {
+                try {
+                    $this->markPastDue($subscription);
+                } catch (\RuntimeException) {
+                }
             }
             return;
         }
@@ -416,9 +455,11 @@ class SubscriptionService implements SubscriptionServiceInterface
         foreach ($expired as $subscription) {
             try {
                 DB::transaction(function () use ($subscription, &$count) {
+                    $now = Carbon::now();
                     $this->subscriptionRepository->update($subscription, [
-                        'status' => SubscriptionStatus::EXPIRED,
-                        'ends_at' => Carbon::now(),
+                        'status' => SubscriptionStatus::PAST_DUE,
+                        'grace_period_ends_at' => $now->copy()->addDays(7),
+                        'grace_used' => true,
                     ]);
                     $count++;
                 });

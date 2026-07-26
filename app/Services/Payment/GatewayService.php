@@ -32,6 +32,27 @@ class GatewayService
             );
         }
 
+        // H5: Idempotency check — return existing payment if same key used
+        $idempotencyKey = $data['idempotency_key'] ?? null;
+        if ($idempotencyKey) {
+            $existing = $this->paymentRepo->findByIdempotencyKey($idempotencyKey);
+            if ($existing) {
+                Log::info('[GatewayService] Duplicate payment prevented by idempotency key', [
+                    'idempotency_key' => $idempotencyKey,
+                    'existing_payment_id' => $existing->id,
+                ]);
+                return [
+                    'success' => true,
+                    'payment_id' => $existing->id,
+                    'gateway' => $gatewayName,
+                    'type' => 'existing',
+                    'redirect_url' => null,
+                    'reference' => $existing->transaction_reference,
+                    'message' => 'Payment already initiated.',
+                ];
+            }
+        }
+
         $payment = $this->paymentService->createPending([
             'subscription_id' => $subscription->id,
             'business_id' => $subscription->business_id,
@@ -42,6 +63,7 @@ class GatewayService
             'gateway_name' => $gatewayName,
             'paid_at' => null,
             'metadata' => $data['metadata'] ?? null,
+            'idempotency_key' => $idempotencyKey,
         ]);
 
         $plan = $subscription->plan;
@@ -82,7 +104,7 @@ class GatewayService
                         'gateway_response' => ['initiation' => $result['raw_response'] ?? []],
                     ]);
                     $payment->refresh();
-                    $this->subscriptionService->activateAfterOnboarding($payment->subscription);
+                    $this->handlePaymentType($payment);
                 });
                 Log::info('[GatewayService] Payment auto-approved (bypass)', [
                     'payment_id' => $payment->id,
@@ -223,6 +245,42 @@ class GatewayService
         ];
     }
 
+    private function handlePaymentType(BillingPayment $payment): void
+    {
+        $paymentType = $payment->payment_type instanceof \App\Enums\Billing\PaymentType
+            ? $payment->payment_type->value
+            : $payment->payment_type;
+
+        $subscription = $payment->subscription;
+
+        match ($paymentType) {
+            'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
+            'subscription' => $this->subscriptionService->activateSubscription($subscription, $payment, null),
+            'renewal' => $this->subscriptionService->renewSubscription($subscription, $payment),
+            'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
+            default => null,
+        };
+    }
+
+    private function handleUpgradeProration(BillingPayment $payment, $subscription): void
+    {
+        $metadata = $payment->metadata ?? [];
+        $toPlanId = $metadata['to_plan_id'] ?? null;
+
+        if ($toPlanId) {
+            $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+            Log::info('[GatewayService] Upgrade completed via payment', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscription->id,
+                'to_plan_id' => $toPlanId,
+            ]);
+        } else {
+            Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
+                'payment_id' => $payment->id,
+            ]);
+        }
+    }
+
     private function autoApprove(BillingPayment $payment, array $webhookData, array $verification): void
     {
         DB::transaction(function () use ($payment, $webhookData, $verification) {
@@ -239,22 +297,7 @@ class GatewayService
 
             $payment->refresh();
 
-            $paymentType = $payment->payment_type instanceof \App\Enums\Billing\PaymentType
-                ? $payment->payment_type->value
-                : $payment->payment_type;
-
-            match ($paymentType) {
-                'onboarding' => $this->subscriptionService->activateAfterOnboarding(
-                    $payment->subscription
-                ),
-                'subscription' => $this->subscriptionService->activateSubscription(
-                    $payment->subscription, $payment, null
-                ),
-                'renewal' => $this->subscriptionService->renewSubscription(
-                    $payment->subscription, $payment
-                ),
-                default => null,
-            };
+            $this->handlePaymentType($payment);
 
             Log::info('[GatewayService] Payment auto-approved', [
                 'payment_id' => $payment->id,

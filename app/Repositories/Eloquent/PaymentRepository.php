@@ -36,6 +36,11 @@ class PaymentRepository implements PaymentRepositoryInterface
         return BillingPayment::where('transaction_reference', $reference)->first();
     }
 
+    public function findByIdempotencyKey(string $idempotencyKey): ?BillingPayment
+    {
+        return BillingPayment::where('idempotency_key', $idempotencyKey)->first();
+    }
+
     public function create(array $data): BillingPayment
     {
         return BillingPayment::create($data);

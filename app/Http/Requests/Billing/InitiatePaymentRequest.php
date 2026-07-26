@@ -19,6 +19,7 @@ class InitiatePaymentRequest extends BaseFormRequest
             'currency' => ['required', 'string', 'size:3'],
             'payment_type' => ['required', 'string', 'in:onboarding,subscription,renewal,upgrade_proration'],
             'phone' => ['sometimes', 'string'],
+            'idempotency_key' => ['sometimes', 'string', 'max:255'],
         ];
     }
 }

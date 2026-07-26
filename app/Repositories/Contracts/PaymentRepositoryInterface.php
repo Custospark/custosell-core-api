@@ -12,6 +12,7 @@ interface PaymentRepositoryInterface
     public function findByBusiness(int $businessId): Collection;
     public function findByGatewayTransactionId(string $gatewayTransactionId): ?BillingPayment;
     public function findByTransactionReference(string $reference): ?BillingPayment;
+    public function findByIdempotencyKey(string $idempotencyKey): ?BillingPayment;
     public function create(array $data): BillingPayment;
     public function update(BillingPayment $payment, array $data): BillingPayment;
     public function delete(BillingPayment $payment): bool;

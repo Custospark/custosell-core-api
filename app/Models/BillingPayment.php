@@ -33,6 +33,7 @@ class BillingPayment extends Model
         'approved_by_user_id',
         'rejection_reason',
         'metadata',
+        'idempotency_key',
     ];
 
     protected function casts(): array

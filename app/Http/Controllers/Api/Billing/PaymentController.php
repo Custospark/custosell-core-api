@@ -83,6 +83,7 @@ class PaymentController extends Controller
                     'customer_name' => $request->user()->name,
                     'phone_number' => $validated['phone'] ?? $request->user()->phone ?? '',
                     'metadata' => $validated['metadata'] ?? null,
+                    'idempotency_key' => $validated['idempotency_key'] ?? null,
                 ]
             );
 

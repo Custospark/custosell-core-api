@@ -253,7 +253,7 @@ class BillingLifecycleTest extends TestCase
         $this->assertSame(350_000, (int) $subscription->onboarding_fee_ugx);
     }
 
-    public function test_alan_turing_trial_expires(): void
+    public function test_alan_turing_trial_expires_to_past_due_with_grace(): void
     {
         $subscription = $this->subscriptionService->subscribe(
             $this->enigmaTech->id,
@@ -269,11 +269,13 @@ class BillingLifecycleTest extends TestCase
         $this->assertSame(1, $expired);
 
         $subscription->refresh();
-        $this->assertSame(SubscriptionStatus::EXPIRED, $subscription->status);
-        $this->assertNotNull($subscription->ends_at);
+        $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->status);
+        $this->assertNotNull($subscription->grace_period_ends_at);
+        $this->assertTrue($subscription->grace_period_ends_at->isFuture());
+        $this->assertTrue($subscription->grace_used);
     }
 
-    public function test_alan_turing_loses_access_after_trial_expiry(): void
+    public function test_alan_turing_still_has_access_during_trial_grace_period(): void
     {
         $subscription = $this->subscriptionService->subscribe(
             $this->enigmaTech->id,
@@ -285,7 +287,8 @@ class BillingLifecycleTest extends TestCase
         $this->subscriptionService->processExpiredTrials();
         $subscription->refresh();
 
-        $this->assertFalse($this->subscriptionService->hasAccess($this->enigmaTech->id));
+        // Access is still granted during the 7-day grace period
+        $this->assertTrue($this->subscriptionService->hasAccess($this->enigmaTech->id));
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -580,7 +583,33 @@ class BillingLifecycleTest extends TestCase
         $this->assertTrue($this->subscriptionService->hasAccess($this->aceHardware->id));
     }
 
-    public function test_access_is_denied_for_expired_trial(): void
+    public function test_access_is_denied_for_expired_trial_grace(): void
+    {
+        // Create subscription, expire the trial, then force the grace period into the past
+        $subscription = $this->subscriptionService->subscribe(
+            $this->enigmaTech->id,
+            $this->professional->id,
+            'monthly',
+        );
+        $subscription->update(['trial_ends_at' => Carbon::now()->subDay()]);
+        $this->subscriptionService->processExpiredTrials();
+        $subscription->refresh();
+
+        // Should now be PAST_DUE with active grace
+        $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->status);
+        $this->assertTrue($subscription->isInGrace());
+
+        // Force grace period into the past
+        $subscription->update(['grace_period_ends_at' => Carbon::now()->subDay()]);
+
+        // Calling hasAccess triggers processDueTransitions -> SUSPENDED
+        $this->assertFalse($this->subscriptionService->hasAccess($this->enigmaTech->id));
+        $subscription->refresh();
+
+        $this->assertSame(SubscriptionStatus::SUSPENDED, $subscription->status);
+    }
+
+    public function test_access_is_granted_for_trial_grace_period(): void
     {
         $subscription = $this->subscriptionService->subscribe(
             $this->enigmaTech->id,
@@ -591,7 +620,7 @@ class BillingLifecycleTest extends TestCase
         $subscription->update(['trial_ends_at' => Carbon::now()->subDay()]);
         $this->subscriptionService->processExpiredTrials();
 
-        $this->assertFalse($this->subscriptionService->hasAccess($this->enigmaTech->id));
+        $this->assertTrue($this->subscriptionService->hasAccess($this->enigmaTech->id));
     }
 
     public function test_access_is_granted_for_past_due_within_grace(): void
