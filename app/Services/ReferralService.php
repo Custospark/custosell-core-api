@@ -108,13 +108,13 @@ class ReferralService implements ReferralServiceInterface
                 throw new \RuntimeException('This business has already used this referral code');
             }
 
-            // Calculate discount and reward based on subscription price
-            $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
+            // Calculate discount and reward based on plan's USD price
+            $monthlyPriceUsd = (float) ($subscription?->plan?->price_monthly_usd ?? 0);
 
             $discountApplied = match ($referralCode->discount_type) {
-                DiscountType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
+                DiscountType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
                 DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
-                DiscountType::FREE_MONTH => $monthlyPrice,
+                DiscountType::FREE_MONTH => $monthlyPriceUsd,
             };
 
             $referral = $this->referralRepository->create([
@@ -151,13 +151,13 @@ class ReferralService implements ReferralServiceInterface
             }
 
             $subscription = $referral->subscription;
-            $monthlyPrice = (float) ($subscription?->price_monthly ?? 0);
+            $monthlyPriceUsd = (float) ($subscription?->plan?->price_monthly_usd ?? 0);
 
             // Calculate reward for the referrer (business-owned codes)
             $rewardAmount = match ($referralCode->reward_type) {
-                RewardType::PERCENTAGE => round($monthlyPrice * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                RewardType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
                 RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                RewardType::FREE_MONTH => $monthlyPrice,
+                RewardType::FREE_MONTH => $monthlyPriceUsd,
                 default => 0,
             };
             $updateData['reward_amount'] = $rewardAmount;
@@ -167,7 +167,7 @@ class ReferralService implements ReferralServiceInterface
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
                     $commissionEarned = match ($salesRep->commission_type) {
-                        CommissionType::PERCENTAGE => round($monthlyPrice * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
+                        CommissionType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
                     };
 
