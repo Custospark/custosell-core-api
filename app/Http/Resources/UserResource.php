@@ -82,6 +82,17 @@ class UserResource extends JsonResource
                                 'onboarding_fee_usd' => $this->business->subscription->onboarding_fee_usd,
                                 'onboarding_fee_paid' => (bool) ($this->business->subscription->onboarding_fee_paid ?? false),
                                 'payment_action' => app(SubscriptionPaymentActionResolver::class)->resolve($this->business->subscription),
+                                'status' => $this->business->subscription->status?->value,
+                                'billing_cycle' => $this->business->subscription->billing_cycle,
+                                'starts_at' => $this->business->subscription->starts_at,
+                                'trial_ends_at' => $this->business->subscription->trial_ends_at,
+                                'ends_at' => $this->business->subscription->ends_at,
+                                'next_billing_date' => $this->business->subscription->next_billing_date,
+                                'grace_period_ends_at' => $this->business->subscription->grace_period_ends_at,
+                                'cancelled_at' => $this->business->subscription->cancelled_at,
+                                'suspended_at' => $this->business->subscription->suspended_at,
+                                'approved_at' => $this->business->subscription->approved_at,
+                                'onboarding_fee_ugx' => $this->business->subscription->onboarding_fee_ugx,
                             ]
                         ),
                 ];
