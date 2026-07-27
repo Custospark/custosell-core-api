@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 class CreditService
 {
 
-    public function createFromReferral(Referral $referral, float $amountUsd): BillingCredit
+    public function createFromReferral(Referral $referral, float $amountUsd): ?BillingCredit
     {
         $referralCode = $referral->referralCode;
 
@@ -34,6 +34,10 @@ class CreditService
         } elseif ($referralCode->owner_business_id) {
             $ownerType = 'business';
             $ownerId = $referralCode->owner_business_id;
+        }
+
+        if (!$ownerId) {
+            return null;
         }
 
         return BillingCredit::create([
