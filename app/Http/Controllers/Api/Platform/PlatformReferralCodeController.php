@@ -51,6 +51,11 @@ class PlatformReferralCodeController extends Controller
             $data['code'] = $this->referralCodeService->generateCode();
         }
 
+        // Auto-assign owner_user_id for personal business codes (no specific business owner)
+        if (!isset($data['owner_user_id']) && !isset($data['owner_business_id']) && $request->user()) {
+            $data['owner_user_id'] = $request->user()->id;
+        }
+
         $code = $this->referralCodeService->create($data);
 
         return response()->json(['data' => $code], 201);

@@ -33,7 +33,11 @@ class ReferralCodeController extends Controller
 
     public function store(ReferralCodeRequest $request): JsonResponse
     {
-        $referralCode = $this->referralCodeService->create($request->validated());
+        $data = $request->validated();
+        if (!isset($data['owner_user_id']) && $request->user()) {
+            $data['owner_user_id'] = $request->user()->id;
+        }
+        $referralCode = $this->referralCodeService->create($data);
         return response()->json(new ReferralCodeResource($referralCode), 201);
     }
 

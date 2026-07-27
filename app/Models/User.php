@@ -36,6 +36,13 @@ class User extends Authenticatable
         'tour_skipped_at',
         'payout_frequency',
         'next_payout_at',
+        'payment_method',
+        'mobile_money_provider',
+        'mobile_money_number',
+        'bank_name',
+        'bank_account_name',
+        'bank_account_number',
+        'bank_branch',
     ];
 
     protected $hidden = [

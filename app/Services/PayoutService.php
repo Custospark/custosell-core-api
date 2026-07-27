@@ -50,9 +50,15 @@ class PayoutService
             ];
         }
 
-        $userIdsWithReferrals = User::whereHas('referralCode.referrals', function ($q) {
-            $q->where('reward_amount', '>', 0);
-        })->pluck('id');
+        $userIdsWithReferrals = DB::table('referral_codes')
+            ->join('referrals', 'referral_codes.id', '=', 'referrals.referral_code_id')
+            ->leftJoin('businesses', 'referral_codes.owner_business_id', '=', 'businesses.id')
+            ->where(function ($q) {
+                $q->whereNotNull('referral_codes.owner_user_id')
+                  ->orWhereNotNull('businesses.owner_id');
+            })
+            ->distinct()
+            ->pluck(DB::raw('COALESCE(referral_codes.owner_user_id, businesses.owner_id)'));
 
         $salesRepUserIds = SalesRep::pluck('user_id');
 

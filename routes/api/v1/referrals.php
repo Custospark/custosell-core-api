@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\ReferralController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +13,11 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
         Route::get('/earnings/me', [ReferralController::class, 'myEarnings']);
         Route::post('/apply', [ReferralController::class, 'apply']);
     });
+
+    Route::prefix('account')->group(function () {
+        Route::get('payment-info', [AccountController::class, 'paymentInfo']);
+        Route::put('payment-info', [AccountController::class, 'updatePaymentInfo']);
+    });
+
+    Route::get('payouts/my-history', [AccountController::class, 'payoutHistory']);
 });
