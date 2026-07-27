@@ -73,10 +73,11 @@ class PayoutService
             $earnings = $this->referralService->getEarningsByUser($user->id);
             $pending = (float) ($earnings['pending_rewards'] ?? 0);
             $rewarded = (float) ($earnings['rewarded_amount'] ?? 0);
+            $totalEarned = $pending + $rewarded;
             $totalPaid = (float) $user->payouts()->where('status', 'paid')->sum('amount');
             $lastPayout = $user->payouts()->where('status', 'paid')->latest('paid_at')->first();
 
-            if ($pending <= 0 && $rewarded <= 0 && $totalPaid <= 0) {
+            if ($totalEarned <= 0 && $totalPaid <= 0) {
                 continue;
             }
 
@@ -87,9 +88,9 @@ class PayoutService
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'total_earned' => round($pending + $rewarded + $totalPaid, 2),
+                'total_earned' => round($totalEarned, 2),
                 'total_paid' => round($totalPaid, 2),
-                'pending' => round(max(0, $pending + $rewarded - $totalPaid), 2),
+                'pending' => round(max(0, $totalEarned - $totalPaid), 2),
                 'payout_frequency' => $user->payout_frequency,
                 'next_payout_at' => $user->next_payout_at?->toIso8601String(),
                 'last_payout_at' => $lastPayout?->paid_at?->toIso8601String(),
