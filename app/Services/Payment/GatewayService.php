@@ -404,12 +404,15 @@ class GatewayService
         if ($currency === 'USD') {
             $expected = $expectedUsd;
         } elseif ($currency === 'UGX') {
-            $expected = match ($paymentType) {
-                'onboarding' => (float) ($subscription->onboarding_fee_ugx ?? 0),
-                default => $subscription->billing_cycle === 'yearly'
+            if ($paymentType === 'onboarding') {
+                $rate = app(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class)
+                    ->getExchangeRate('USD', $currency);
+                $expected = $rate ? round($expectedUsd * $rate, 2) : $expectedUsd;
+            } else {
+                $expected = $subscription->billing_cycle === 'yearly'
                     ? (float) ($subscription->price_yearly ?? 0)
-                    : (float) ($subscription->price_monthly ?? 0),
-            };
+                    : (float) ($subscription->price_monthly ?? 0);
+            }
             $tolerance = max(50, $expected * 0.01);
         } else {
             $rate = app(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class)
