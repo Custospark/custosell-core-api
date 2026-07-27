@@ -57,7 +57,9 @@ class PayoutService
                   ->orWhereNotNull('businesses.owner_id');
             })
             ->distinct()
-            ->pluck(DB::raw('COALESCE(referral_codes.owner_user_id, businesses.owner_id)'));
+            ->select(DB::raw('COALESCE(referral_codes.owner_user_id, businesses.owner_id) as user_id'))
+            ->get()
+            ->pluck('user_id');
 
         $salesRepUserIds = SalesRep::pluck('user_id');
 

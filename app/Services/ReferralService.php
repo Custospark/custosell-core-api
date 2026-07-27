@@ -228,7 +228,10 @@ class ReferralService implements ReferralServiceInterface
         // Check if this user is a sales rep first
         $salesRep = SalesRep::where('user_id', $userId)->with('referralCode')->first();
         $userCode = $salesRep?->referralCode
-            ?? ReferralCode::where('owner_user_id', $userId)->first();
+            ?? ReferralCode::where('owner_user_id', $userId)->first()
+            ?? ReferralCode::whereHas('ownerBusiness', function ($q) use ($userId) {
+                $q->where('owner_id', $userId);
+            })->first();
 
         if (!$userCode) {
             return [
