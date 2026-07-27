@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BillingCredit;
 use App\Models\Payout;
 use App\Models\SalesRep;
 use App\Models\User;
@@ -16,6 +17,7 @@ class PayoutService
 {
     public function __construct(
         protected ReferralServiceInterface $referralService,
+        protected CreditService $creditService,
     ) {}
 
     public function getPayables(): array
@@ -102,12 +104,12 @@ class PayoutService
                 'payout_frequency' => $user->payout_frequency,
                 'next_payout_at' => $user->next_payout_at?->toIso8601String(),
                 'last_payout_at' => $lastPayout?->paid_at?->toIso8601String(),
-                'payment_method' => null,
-                'mobile_money_provider' => null,
-                'mobile_money_number' => null,
+                'payment_method' => $user->payment_method,
+                'mobile_money_provider' => $user->mobile_money_provider,
+                'mobile_money_number' => $user->mobile_money_number,
                 'mobile_money_name' => null,
-                'bank_name' => null,
-                'bank_account_name' => null,
+                'bank_name' => $user->bank_name,
+                'bank_account_name' => $user->bank_account_name,
             ];
         }
 
@@ -150,7 +152,11 @@ class PayoutService
             ]);
 
             if ($isImmediate && $payable instanceof User) {
+                $referrals = $this->getUnpaidActiveReferrals($payable);
                 $this->markUserReferralsRewarded($payable);
+                if ($amount > 0) {
+                    $this->consumeReferralCredits($referrals, $amount);
+                }
             }
 
             if ($isImmediate && $payable->next_payout_at && $payable->payout_frequency) {
@@ -245,6 +251,45 @@ class PayoutService
         }
 
         return 0;
+    }
+
+    protected function getUnpaidActiveReferrals(User $user): \Illuminate\Support\Collection
+    {
+        $code = $user->referralCode;
+        if (!$code) return collect();
+
+        return $code->referrals()
+            ->where('status', 'active')
+            ->where('reward_paid', false)
+            ->where('reward_amount', '>', 0)
+            ->get();
+    }
+
+    protected function consumeReferralCredits(\Illuminate\Support\Collection $referrals, float $amount): void
+    {
+        $remaining = $amount;
+        foreach ($referrals as $referral) {
+            if ($remaining <= 0) break;
+
+            $credits = BillingCredit::where('referral_id', $referral->id)
+                ->whereIn('status', ['available', 'partially_used'])
+                ->get();
+
+            foreach ($credits as $credit) {
+                if ($remaining <= 0) break;
+
+                $available = $credit->amount_remaining;
+                if ($available <= 0) continue;
+
+                $toConsume = min($available, $remaining);
+                $newUsed = (float) $credit->amount_used + $toConsume;
+                $credit->update([
+                    'amount_used' => $newUsed,
+                    'status' => $newUsed >= (float) $credit->amount ? 'fully_used' : 'partially_used',
+                ]);
+                $remaining = round($remaining - $toConsume, 2);
+            }
+        }
     }
 
     protected function markUserReferralsRewarded(User $user): void
