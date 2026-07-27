@@ -35,6 +35,7 @@ class PayoutService
                 'user_id' => $rep->user_id,
                 'name' => $rep->user?->name ?? 'Unknown',
                 'email' => $rep->user?->email,
+                'phone' => $rep->phone,
                 'total_earned' => $totalCommission,
                 'total_paid' => round($totalPaid, 2),
                 'pending' => round(max(0, $totalCommission - $totalPaid), 2),
@@ -44,6 +45,7 @@ class PayoutService
                 'payment_method' => $rep->payment_method,
                 'mobile_money_provider' => $rep->mobile_money_provider,
                 'mobile_money_number' => $rep->mobile_money_number,
+                'mobile_money_name' => $rep->mobile_money_name,
                 'bank_name' => $rep->bank_name,
                 'bank_account_name' => $rep->bank_account_name,
             ];
@@ -84,6 +86,7 @@ class PayoutService
                 'user_id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'total_earned' => round($pending + $rewarded + $totalPaid, 2),
                 'total_paid' => round($totalPaid, 2),
                 'pending' => round(max(0, $pending + $rewarded - $totalPaid), 2),
@@ -93,6 +96,7 @@ class PayoutService
                 'payment_method' => null,
                 'mobile_money_provider' => null,
                 'mobile_money_number' => null,
+                'mobile_money_name' => null,
                 'bank_name' => null,
                 'bank_account_name' => null,
             ];
