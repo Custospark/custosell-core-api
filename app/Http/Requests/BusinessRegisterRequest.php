@@ -22,6 +22,7 @@ class BusinessRegisterRequest extends BaseFormRequest
             'plan_id' => ['sometimes', 'integer', 'exists:plans,id'],
             'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
             'referral_code' => ['nullable', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'max:10'],
         ];
     }
 
