@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Enums\Billing\CommissionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class SalesRep extends Model
 {
@@ -25,6 +25,8 @@ class SalesRep extends Model
         'bank_branch',
         'bank_account_name',
         'bank_account_number',
+        'payout_frequency',
+        'next_payout_at',
     ];
 
     protected function casts(): array
@@ -33,6 +35,7 @@ class SalesRep extends Model
             'commission_rate' => 'decimal:2',
             'is_active' => 'boolean',
             'commission_type' => CommissionType::class,
+            'next_payout_at' => 'datetime',
         ];
     }
 
@@ -46,9 +49,9 @@ class SalesRep extends Model
         return $this->belongsTo(ReferralCode::class);
     }
 
-    public function payouts(): HasMany
+    public function payouts(): MorphMany
     {
-        return $this->hasMany(SalesRepPayout::class);
+        return $this->morphMany(Payout::class, 'payable');
     }
 
     public function scopeActive($query)

@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Enums\Billing\DiscountType;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\ReferralStatus;
+use App\Models\Payout;
 use App\Models\Referral;
 use App\Models\SalesRep;
-use App\Models\SalesRepPayout;
 use App\Models\User;
 use App\Repositories\Contracts\SalesRepRepositoryInterface;
 use App\Services\Contracts\ReferralCodeServiceInterface;
@@ -167,18 +167,19 @@ class SalesRepService implements SalesRepServiceInterface
         if (!$salesRep) {
             throw new \RuntimeException('SalesRep not found');
         }
-        return $salesRep->payouts()->with('paidByUser')->orderBy('paid_at', 'desc')->get();
+        return $salesRep->payouts()->with('paidByUser')->where('status', 'paid')->orderBy('paid_at', 'desc')->get();
     }
 
-    public function recordPayout(int $id, array $data, int $paidByUserId): SalesRepPayout
+    public function recordPayout(int $id, array $data, int $paidByUserId): Payout
     {
         $salesRep = $this->salesRepRepository->find($id);
         if (!$salesRep) {
             throw new \RuntimeException('SalesRep not found');
         }
 
-        $attachments = [];
+        $attachments = null;
         if (isset($data['attachments']) && is_array($data['attachments'])) {
+            $attachments = [];
             foreach ($data['attachments'] as $file) {
                 if ($file instanceof UploadedFile) {
                     $path = $file->store('payout-attachments', 'public');
@@ -192,12 +193,14 @@ class SalesRepService implements SalesRepServiceInterface
             }
         }
 
-        return SalesRepPayout::create([
-            'sales_rep_id' => $id,
+        return $salesRep->payouts()->create([
             'amount' => $data['amount'],
+            'currency' => 'USD',
+            'status' => 'paid',
             'payment_method' => $data['payment_method'] ?? null,
             'notes' => $data['notes'] ?? null,
-            'attachments' => !empty($attachments) ? $attachments : null,
+            'attachments' => $attachments,
+            'scheduled_at' => null,
             'paid_at' => $data['paid_at'] ?? now(),
             'paid_by' => $paidByUserId,
         ]);

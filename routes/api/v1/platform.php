@@ -101,4 +101,12 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::delete('{id}', [PlatformReferralCodeController::class, 'destroy']);
         Route::get('{id}/usage', [PlatformReferralCodeController::class, 'usage']);
     });
+
+    Route::middleware(['platform:platform.businesses.manage'])->prefix('payouts')->group(function () {
+        Route::get('/payables', [\App\Http\Controllers\Api\Platform\PlatformPayoutController::class, 'payables']);
+        Route::post('/', [\App\Http\Controllers\Api\Platform\PlatformPayoutController::class, 'store']);
+        Route::get('/history', [\App\Http\Controllers\Api\Platform\PlatformPayoutController::class, 'history']);
+        Route::put('/schedule', [\App\Http\Controllers\Api\Platform\PlatformPayoutController::class, 'updateSchedule']);
+        Route::patch('/{id}/cancel', [\App\Http\Controllers\Api\Platform\PlatformPayoutController::class, 'cancel']);
+    });
 });

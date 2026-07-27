@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -33,6 +34,8 @@ class User extends Authenticatable
         'tour_step',
         'tour_completed_at',
         'tour_skipped_at',
+        'payout_frequency',
+        'next_payout_at',
     ];
 
     protected $hidden = [
@@ -51,7 +54,13 @@ class User extends Authenticatable
             'tour_step' => 'integer',
             'tour_completed_at' => 'datetime',
             'tour_skipped_at' => 'datetime',
+            'next_payout_at' => 'datetime',
         ];
+    }
+
+    public function payouts(): MorphMany
+    {
+        return $this->morphMany(Payout::class, 'payable');
     }
 
     public function business(): BelongsTo
