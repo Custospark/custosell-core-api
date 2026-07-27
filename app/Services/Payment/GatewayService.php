@@ -8,6 +8,7 @@ use App\Repositories\Contracts\PaymentRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionScheduledChangeRepositoryInterface;
 use App\Services\Contracts\PaymentServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
+use App\Services\CreditService;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class GatewayService
         private readonly PaymentServiceInterface $paymentService,
         private readonly SubscriptionServiceInterface $subscriptionService,
         private readonly SubscriptionScheduledChangeRepositoryInterface $scheduledChangeRepo,
+        private readonly CreditService $creditService,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
@@ -58,6 +60,18 @@ class GatewayService
             }
         }
 
+        // Apply billing credits to reduce the amount before creating the payment
+        $creditApplications = [];
+        $creditResult = ['credit_used' => 0];
+        $originalAmount = (float) $data['amount'];
+        if ($originalAmount > 0) {
+            $creditResult = $this->creditService->applyToRenewal($subscription, $originalAmount);
+            if ($creditResult['credit_used'] > 0) {
+                $data['amount'] = $creditResult['remaining'];
+                $creditApplications = $creditResult['applications'];
+            }
+        }
+
         $payment = $this->paymentService->createPending([
             'subscription_id' => $subscription->id,
             'business_id' => $subscription->business_id,
@@ -67,7 +81,14 @@ class GatewayService
             'payment_type' => $data['payment_type'] ?? 'subscription',
             'gateway_name' => $gatewayName,
             'paid_at' => null,
-            'metadata' => $data['metadata'] ?? null,
+            'metadata' => array_merge(
+                $data['metadata'] ?? [],
+                [
+                    'original_amount' => $originalAmount,
+                    'credit_used' => $creditResult['credit_used'] ?? 0,
+                    'credit_application_ids' => array_map(fn ($a) => $a->id, $creditApplications),
+                ]
+            ),
             'idempotency_key' => $idempotencyKey,
         ]);
 
@@ -90,6 +111,13 @@ class GatewayService
         ];
 
         try {
+            // Link credit applications to the payment
+            if (!empty($creditApplications)) {
+                foreach ($creditApplications as $app) {
+                    $app->update(['billing_payment_id' => $payment->id]);
+                }
+            }
+
             $result = $driver->initiate($driverPayload);
 
             $this->paymentRepo->update($payment, [
@@ -151,10 +179,16 @@ class GatewayService
                 'rejection_reason' => "Gateway initiation failed: {$e->getMessage()}",
             ]);
 
+            // Reverse credit consumption since the payment failed
+            if (!empty($creditApplications)) {
+                $this->creditService->reverseApplications($creditApplications);
+            }
+
             Log::error('[GatewayService] Initiation failed', [
                 'payment_id' => $payment->id,
                 'gateway' => $gatewayName,
                 'error' => $e->getMessage(),
+                'credit_reversed' => !empty($creditApplications),
             ]);
 
             throw $e;

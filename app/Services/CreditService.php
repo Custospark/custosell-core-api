@@ -176,6 +176,21 @@ class CreditService
         ];
     }
 
+    public function reverseApplications(array $applications): void
+    {
+        foreach ($applications as $app) {
+            $credit = $app->credit;
+            $app->delete();
+
+            $newUsed = (float) CreditApplication::where('credit_id', $credit->id)->sum('amount_applied');
+            $newStatus = 'available';
+            if ($newUsed > 0) {
+                $newStatus = $newUsed >= (float) $credit->amount ? 'fully_used' : 'partially_used';
+            }
+            $credit->update(['amount_used' => $newUsed, 'status' => $newStatus]);
+        }
+    }
+
     public function getHistoryForOwner(string $ownerType, int $ownerId): Collection
     {
         return BillingCredit::where('owner_type', $ownerType)
