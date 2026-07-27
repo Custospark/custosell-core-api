@@ -15,11 +15,13 @@ class ReferralCodeRequest extends BaseFormRequest
     {
         $codeId = $this->route('referral_code') ?? $this->route('id');
 
+        $isCreate = $this->isMethod('post');
+
         $rules = [
-            'owner_type' => ['required', 'string', 'in:business,sales_rep,campaign'],
+            'owner_type' => [$isCreate ? 'required' : 'sometimes', 'string', 'in:business,sales_rep,campaign'],
             'owner_business_id' => ['sometimes', 'integer', 'exists:businesses,id'],
             'owner_user_id' => ['sometimes', 'integer', 'exists:users,id'],
-            'discount_type' => ['required', 'string', 'in:percentage,flat_amount,free_month'],
+            'discount_type' => [$isCreate ? 'required' : 'sometimes', 'string', 'in:percentage,flat_amount,free_month'],
             'discount_value' => ['sometimes', 'numeric', 'min:0', 'required_if:discount_type,percentage,flat_amount'],
             'discount_duration_months' => ['sometimes', 'integer', 'min:1', 'max:12'],
             'reward_type' => ['sometimes', 'string', 'in:percentage,flat_amount,free_month'],
