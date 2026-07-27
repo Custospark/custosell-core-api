@@ -22,11 +22,10 @@ class PayoutService
     {
         $payables = [];
 
-        $salesReps = SalesRep::with(['user', 'referralCode'])
-            ->withCount(['referrals as total_commission' => fn($q) => $q->select(DB::raw('COALESCE(SUM(commission_earned), 0)'))])
-            ->get();
+        $salesReps = SalesRep::with(['user', 'referralCode.referrals'])->get();
 
         foreach ($salesReps as $rep) {
+            $totalCommission = (float) ($rep->referralCode?->referrals->sum('commission_earned') ?? 0);
             $totalPaid = (float) $rep->payouts()->where('status', 'paid')->sum('amount');
             $lastPayout = $rep->payouts()->where('status', 'paid')->latest('paid_at')->first();
 
@@ -36,9 +35,9 @@ class PayoutService
                 'user_id' => $rep->user_id,
                 'name' => $rep->user?->name ?? 'Unknown',
                 'email' => $rep->user?->email,
-                'total_earned' => (float) ($rep->total_commission ?? 0),
+                'total_earned' => $totalCommission,
                 'total_paid' => round($totalPaid, 2),
-                'pending' => round(max(0, (float) ($rep->total_commission ?? 0) - $totalPaid), 2),
+                'pending' => round(max(0, $totalCommission - $totalPaid), 2),
                 'payout_frequency' => $rep->payout_frequency,
                 'next_payout_at' => $rep->next_payout_at?->toIso8601String(),
                 'last_payout_at' => $lastPayout?->paid_at?->toIso8601String(),

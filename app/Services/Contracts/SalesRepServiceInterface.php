@@ -2,8 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\Models\Payout;
 use App\Models\SalesRep;
-use App\Models\SalesRepPayout;
 use Illuminate\Database\Eloquent\Collection;
 
 interface SalesRepServiceInterface
@@ -18,7 +18,7 @@ interface SalesRepServiceInterface
     public function getWithEarnings(): Collection;
     public function getEarnings(int $id): array;
     public function getPayouts(int $id): Collection;
-    public function recordPayout(int $id, array $data, int $paidByUserId): SalesRepPayout;
+    public function recordPayout(int $id, array $data, int $paidByUserId): Payout;
     public function import(array $rows): array;
     public function generateTemplate(): string;
 }
