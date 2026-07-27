@@ -46,7 +46,8 @@ class BusinessController extends Controller
             'password' => $request->input('password'),
         ];
         $businessData = $request->except(['password', 'password_confirmation', 'owner_name']);
-        $business = $this->businessService->register($userData, $businessData);
+        $referralCode = $request->input('referral_code');
+        $business = $this->businessService->register($userData, $businessData, $referralCode);
         if ($request->has('plan_id')) {
             $business->load('subscription.plan');
         }

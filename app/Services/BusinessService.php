@@ -12,6 +12,7 @@ use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\BusinessServiceInterface;
 use App\Services\Contracts\ReferralCodeServiceInterface;
+use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\ModuleAccessService;
 use App\Services\Platform\PlatformAdminService;
@@ -31,6 +32,7 @@ class BusinessService implements BusinessServiceInterface
         protected SubscriptionServiceInterface $subscriptionService,
         protected ReferralCodeServiceInterface $referralCodeService,
         protected ReferralCodeRepositoryInterface $referralCodeRepository,
+        protected ReferralServiceInterface $referralService,
     ) {}
 
     public function getById(int $id): ?Business
@@ -70,9 +72,12 @@ class BusinessService implements BusinessServiceInterface
         return null;
     }
 
-    public function register(array $userData, array $businessData): Business
+    public function register(array $userData, array $businessData, ?string $referralCode = null): Business
     {
-        return DB::transaction(function () use ($userData, $businessData) {
+        return DB::transaction(function () use ($userData, $businessData, $referralCode) {
+            // Strip referral_code so it's not passed to the business model
+            unset($businessData['referral_code']);
+
             $userData['password'] = Hash::make($userData['password']);
             $user = $this->userRepository->create($userData);
 
@@ -113,13 +118,25 @@ class BusinessService implements BusinessServiceInterface
             if (isset($businessData['plan_id'])) {
                 $planId = (int) $businessData['plan_id'];
                 $billingCycle = $businessData['billing_cycle'] ?? 'monthly';
-                $this->subscriptionService->subscribe(
+                $subscription = $this->subscriptionService->subscribe(
                     $business->id,
                     $planId,
                     $billingCycle,
                     null,
                     true
                 );
+
+                if ($referralCode) {
+                    try {
+                        $this->referralService->processReferral(
+                            $referralCode,
+                            $subscription->id,
+                            $business->id
+                        );
+                    } catch (\RuntimeException) {
+                        // Invalid, expired, or duplicate — registration proceeds without referral
+                    }
+                }
             }
 
             return $business;

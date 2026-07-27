@@ -13,7 +13,7 @@ interface BusinessServiceInterface
 
     public function getForUser(User $user): ?Business;
 
-    public function register(array $userData, array $businessData): Business;
+    public function register(array $userData, array $businessData, ?string $referralCode = null): Business;
 
     public function update(int $id, array $data): Business;
 
