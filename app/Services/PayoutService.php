@@ -29,6 +29,12 @@ class PayoutService
             $totalPaid = (float) $rep->payouts()->where('status', 'paid')->sum('amount');
             $lastPayout = $rep->payouts()->where('status', 'paid')->latest('paid_at')->first();
 
+            $paymentMethod = $rep->payment_method ?? $rep->user?->payment_method;
+            $mobileProvider = $rep->mobile_money_provider ?? $rep->user?->mobile_money_provider;
+            $mobileNumber = $rep->mobile_money_number ?? $rep->user?->mobile_money_number;
+            $bankName = $rep->bank_name ?? $rep->user?->bank_name;
+            $bankAccountName = $rep->bank_account_name ?? $rep->user?->bank_account_name;
+
             $payables[] = [
                 'type' => 'sales_rep',
                 'id' => $rep->id,
@@ -36,19 +42,19 @@ class PayoutService
                 'name' => $rep->user?->name ?? 'Unknown',
                 'code' => $rep->referralCode?->code,
                 'email' => $rep->user?->email,
-                'phone' => $rep->phone,
+                'phone' => $rep->phone ?? $rep->user?->phone,
                 'total_earned' => $totalCommission,
                 'total_paid' => round($totalPaid, 2),
                 'pending' => round(max(0, $totalCommission - $totalPaid), 2),
                 'payout_frequency' => $rep->payout_frequency,
                 'next_payout_at' => $rep->next_payout_at?->toIso8601String(),
                 'last_payout_at' => $lastPayout?->paid_at?->toIso8601String(),
-                'payment_method' => $rep->payment_method,
-                'mobile_money_provider' => $rep->mobile_money_provider,
-                'mobile_money_number' => $rep->mobile_money_number,
+                'payment_method' => $paymentMethod,
+                'mobile_money_provider' => $mobileProvider,
+                'mobile_money_number' => $mobileNumber,
                 'mobile_money_name' => $rep->mobile_money_name,
-                'bank_name' => $rep->bank_name,
-                'bank_account_name' => $rep->bank_account_name,
+                'bank_name' => $bankName,
+                'bank_account_name' => $bankAccountName,
             ];
         }
 
@@ -122,6 +128,11 @@ class PayoutService
     ): Payout {
         $payable = $this->resolvePayable($payableType, $payableId);
 
+        $pending = $this->getPendingAmount($payable);
+        if ($amount > $pending) {
+            throw new \RuntimeException("Payout amount ({$amount}) exceeds pending balance ({$pending}).");
+        }
+
         return DB::transaction(function () use ($payable, $amount, $paymentMethod, $notes, $attachments, $scheduledAt, $paidBy) {
             $now = now();
             $isImmediate = empty($scheduledAt);
@@ -168,14 +179,25 @@ class PayoutService
             ->toArray();
 
         return array_map(function ($payout) {
-            if (!empty($payout['attachments'])) {
-                $payout['attachments'] = array_map(function ($att) {
-                    $att['file_url'] = $att['path'] ? url('storage/' . ltrim($att['path'], '/')) : null;
-                    return $att;
-                }, $payout['attachments']);
-            }
+            $payout['attachments'] = $this->normalizeAttachments($payout['attachments'] ?? null);
             return $payout;
         }, $payouts);
+    }
+
+    private function normalizeAttachments(mixed $attachments): ?array
+    {
+        if (empty($attachments)) return null;
+        if (is_string($attachments)) {
+            $attachments = json_decode($attachments, true) ?? [];
+        }
+        if (!is_array($attachments)) return null;
+
+        return array_map(function ($att) {
+            if (is_array($att)) {
+                $att['file_url'] = !empty($att['path']) ? url('storage/' . ltrim($att['path'], '/')) : null;
+            }
+            return $att;
+        }, $attachments);
     }
 
     public function updateSchedule(
@@ -205,6 +227,24 @@ class PayoutService
         }
 
         return $instance;
+    }
+
+    protected function getPendingAmount(Model $payable): float
+    {
+        if ($payable instanceof SalesRep) {
+            $totalCommission = (float) ($payable->referralCode?->referrals->sum('commission_earned') ?? 0);
+            $totalPaid = (float) $payable->payouts()->where('status', 'paid')->sum('amount');
+            return round(max(0, $totalCommission - $totalPaid), 2);
+        }
+
+        if ($payable instanceof User) {
+            $earnings = $this->referralService->getEarningsByUser($payable->id);
+            $pending = (float) ($earnings['pending_rewards'] ?? 0);
+            $rewardedPaid = (float) $payable->payouts()->where('status', 'paid')->sum('amount');
+            return round(max(0, $pending + (float) ($earnings['rewarded_amount'] ?? 0) - $rewardedPaid), 2);
+        }
+
+        return 0;
     }
 
     protected function markUserReferralsRewarded(User $user): void

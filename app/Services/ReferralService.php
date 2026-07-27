@@ -10,6 +10,7 @@ use App\Enums\Billing\RewardType;
 use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\SalesRep;
+use App\Models\User;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\ReferralRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
@@ -259,6 +260,8 @@ class ReferralService implements ReferralServiceInterface
         $totalCommission = (float) $referrals->sum('commission_earned');
         $paidCommission = $salesRep ? (float) $salesRep->payouts()->sum('amount') : 0;
 
+        $rewardsPaid = (float) User::find($userId)?->payouts()->where('status', 'paid')->sum('amount') ?? 0;
+
         return [
             'referral_code' => $userCode->code,
             'is_sales_rep' => $salesRep !== null,
@@ -267,6 +270,7 @@ class ReferralService implements ReferralServiceInterface
             'total_earned' => (float) $referrals->sum('reward_amount'),
             'pending_rewards' => (float) $referrals->where('status', ReferralStatus::ACTIVE)->where('reward_paid', false)->sum('reward_amount'),
             'rewarded_amount' => (float) $referrals->where('status', ReferralStatus::REWARDED)->sum('reward_amount'),
+            'rewards_paid' => $rewardsPaid,
             'commission_earned' => $totalCommission,
             'commission_pending' => round(max(0, $totalCommission - $paidCommission), 2),
             'commission_paid' => $paidCommission,

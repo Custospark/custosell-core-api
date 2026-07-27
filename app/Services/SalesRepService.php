@@ -117,17 +117,28 @@ class SalesRepService implements SalesRepServiceInterface
     public function getWithEarnings(): Collection
     {
         $salesReps = $this->salesRepRepository->all();
-        $salesReps->load('user', 'referralCode', 'payouts');
+        $salesReps->load('user', 'referralCode', 'referralCode.referrals');
 
         foreach ($salesReps as $rep) {
-            $referrals = Referral::where('referral_code_id', $rep->referral_code_id)->get();
+            $referrals = $rep->referralCode?->referrals ?? collect();
             $totalCommission = (float) $referrals->sum('commission_earned');
-            $totalPaid = (float) $rep->payouts->sum('amount');
+            $totalPaid = (float) $rep->payouts()->where('status', 'paid')->sum('amount');
             $rep->total_commission = $totalCommission;
             $rep->pending_commission = round(max(0, $totalCommission - $totalPaid), 2);
             $rep->paid_commission = $totalPaid;
             $rep->total_referrals = $referrals->count();
             $rep->active_referrals = $referrals->where('status', ReferralStatus::ACTIVE)->count();
+
+            if (!$rep->payment_method && $rep->relationLoaded('user') && $rep->user) {
+                $rep->payment_method = $rep->user->payment_method;
+                $rep->mobile_money_provider = $rep->user->mobile_money_provider;
+                $rep->mobile_money_number = $rep->user->mobile_money_number;
+                $rep->bank_name = $rep->user->bank_name;
+                $rep->bank_account_name = $rep->user->bank_account_name;
+                $rep->bank_account_number = $rep->user->bank_account_number;
+                $rep->bank_branch = $rep->user->bank_branch;
+                if ($rep->user->phone) $rep->phone = $rep->user->phone;
+            }
         }
 
         return $salesReps;
@@ -140,7 +151,7 @@ class SalesRepService implements SalesRepServiceInterface
             throw new \RuntimeException('SalesRep not found');
         }
 
-        $salesRep->load('user', 'referralCode', 'payouts');
+        $salesRep->load('user', 'referralCode');
 
         $referrals = Referral::where('referral_code_id', $salesRep->referral_code_id)
             ->with('referredBusiness', 'subscription')
@@ -148,7 +159,7 @@ class SalesRepService implements SalesRepServiceInterface
             ->get();
 
         $totalCommission = (float) $referrals->sum('commission_earned');
-        $totalPaid = (float) $salesRep->payouts->sum('amount');
+        $totalPaid = (float) $salesRep->payouts()->where('status', 'paid')->sum('amount');
 
         return [
             'sales_rep' => $salesRep,
@@ -171,14 +182,25 @@ class SalesRepService implements SalesRepServiceInterface
 
         return $payouts->map(function ($payout) {
             $payoutArray = $payout->toArray();
-            if (!empty($payoutArray['attachments'])) {
-                $payoutArray['attachments'] = array_map(function ($att) {
-                    $att['file_url'] = $att['path'] ? url('storage/' . ltrim($att['path'], '/')) : null;
-                    return $att;
-                }, $payoutArray['attachments']);
-            }
+            $payoutArray['attachments'] = $this->normalizeAttachments($payoutArray['attachments'] ?? null);
             return $payoutArray;
         });
+    }
+
+    private function normalizeAttachments(mixed $attachments): ?array
+    {
+        if (empty($attachments)) return null;
+        if (is_string($attachments)) {
+            $attachments = json_decode($attachments, true) ?? [];
+        }
+        if (!is_array($attachments)) return null;
+
+        return array_map(function ($att) {
+            if (is_array($att)) {
+                $att['file_url'] = !empty($att['path']) ? url('storage/' . ltrim($att['path'], '/')) : null;
+            }
+            return $att;
+        }, $attachments);
     }
 
     public function recordPayout(int $id, array $data, int $paidByUserId): Payout
@@ -186,6 +208,16 @@ class SalesRepService implements SalesRepServiceInterface
         $salesRep = $this->salesRepRepository->find($id);
         if (!$salesRep) {
             throw new \RuntimeException('SalesRep not found');
+        }
+
+        $referrals = Referral::where('referral_code_id', $salesRep->referral_code_id)->get();
+        $totalCommission = (float) $referrals->sum('commission_earned');
+        $totalPaid = (float) $salesRep->payouts()->where('status', 'paid')->sum('amount');
+        $pending = round(max(0, $totalCommission - $totalPaid), 2);
+
+        $amount = (float) ($data['amount'] ?? 0);
+        if ($amount > $pending) {
+            throw new \RuntimeException("Payout amount ({$amount}) exceeds pending commission ({$pending}).");
         }
 
         $attachments = null;

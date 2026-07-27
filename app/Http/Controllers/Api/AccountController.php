@@ -50,6 +50,27 @@ class AccountController extends Controller
             ->get()
             ->toArray();
 
+        $payouts = array_map(function ($payout) {
+            $payout['attachments'] = $this->normalizePayoutAttachments($payout['attachments'] ?? null);
+            return $payout;
+        }, $payouts);
+
         return response()->json(['data' => $payouts]);
+    }
+
+    private function normalizePayoutAttachments(mixed $attachments): ?array
+    {
+        if (empty($attachments)) return null;
+        if (is_string($attachments)) {
+            $attachments = json_decode($attachments, true) ?? [];
+        }
+        if (!is_array($attachments)) return null;
+
+        return array_map(function ($att) {
+            if (is_array($att)) {
+                $att['file_url'] = !empty($att['path']) ? url('storage/' . ltrim($att['path'], '/')) : null;
+            }
+            return $att;
+        }, $attachments);
     }
 }

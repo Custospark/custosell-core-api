@@ -37,6 +37,16 @@ class ReferralCodeController extends Controller
         if (!isset($data['owner_user_id']) && $request->user()) {
             $data['owner_user_id'] = $request->user()->id;
         }
+
+        if (isset($data['owner_user_id'])) {
+            $existing = ReferralCode::where('owner_user_id', $data['owner_user_id'])
+                ->where('owner_type', $data['owner_type'] ?? 'business')
+                ->first();
+            if ($existing) {
+                return response()->json(new ReferralCodeResource($existing), 200);
+            }
+        }
+
         $referralCode = $this->referralCodeService->create($data);
         return response()->json(new ReferralCodeResource($referralCode), 201);
     }
