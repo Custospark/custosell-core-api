@@ -102,7 +102,8 @@ class UserService implements UserServiceInterface
                 'owner_business_id' => $businessId,
                 'discount_type' => DiscountType::PERCENTAGE,
                 'discount_value' => 10,
-                'reward_type' => RewardType::FREE_MONTH,
+                'reward_type' => RewardType::PERCENTAGE,
+                'reward_value' => 20,
             ]);
         }
 

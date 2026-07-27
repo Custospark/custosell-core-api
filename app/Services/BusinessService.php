@@ -91,7 +91,8 @@ class BusinessService implements BusinessServiceInterface
                     'owner_user_id' => $user->id,
                     'discount_type' => DiscountType::PERCENTAGE,
                     'discount_value' => 10,
-                    'reward_type' => RewardType::FREE_MONTH,
+                    'reward_type' => RewardType::PERCENTAGE,
+                    'reward_value' => 20,
                 ]);
             }
 
