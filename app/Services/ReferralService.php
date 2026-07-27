@@ -167,32 +167,34 @@ class ReferralService implements ReferralServiceInterface
             }
 
             $subscription = $referral->subscription;
-            $monthlyPriceUsd = (float) ($subscription?->plan?->price_monthly_usd ?? 0);
+            $plan = $subscription?->plan;
+            $monthlyPriceUsd = (float) ($plan->price_monthly_usd ?? 0);
+            $onboardingFeeUsd = (float) ($plan->onboarding_fee_usd ?? 0);
 
-            // Calculate reward for the referrer (business-owned codes)
-            $rewardAmount = match ($referralCode->reward_type) {
-                RewardType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
-                RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                RewardType::FREE_MONTH => $monthlyPriceUsd,
-                default => 0,
-            };
-            $updateData['reward_amount'] = $rewardAmount;
-
-            // Create billing credit from the reward
-            if ($rewardAmount > 0) {
-                $this->creditService->createFromReferral($referral, $rewardAmount);
-            }
-
-            // Calculate commission for sales reps
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
+                    // TODO: Include monthly subscription commission in the future.
+                    // Currently commission is based on onboarding fee only since the first
+                    // subscription payment is not guaranteed (business may churn after trial).
+                    $commissionBaseUsd = $onboardingFeeUsd;
                     $commissionEarned = match ($salesRep->commission_type) {
-                        CommissionType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
+                        CommissionType::PERCENTAGE => round($commissionBaseUsd * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
                     };
-
                     $updateData['commission_earned'] = $commissionEarned;
+                }
+            } else {
+                $rewardAmount = match ($referralCode->reward_type) {
+                    RewardType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                    RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
+                    RewardType::FREE_MONTH => $monthlyPriceUsd,
+                    default => 0,
+                };
+                $updateData['reward_amount'] = $rewardAmount;
+
+                if ($rewardAmount > 0) {
+                    $this->creditService->createFromReferral($referral, $rewardAmount);
                 }
             }
 

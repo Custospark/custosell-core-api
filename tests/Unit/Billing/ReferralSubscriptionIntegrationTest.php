@@ -218,7 +218,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $fullPrice = (float) $this->essential->price_monthly_usd;
+        $fullPrice = (float) $this->essential->onboarding_fee_usd;
         $expectedCommission = round($fullPrice * 10 / 100, 2);
 
         $this->assertEquals($expectedCommission, (float) $referral->commission_earned,
