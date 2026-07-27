@@ -161,11 +161,21 @@ class PayoutService
     {
         $payable = $this->resolvePayable($payableType, $payableId);
 
-        return $payable->payouts()
+        $payouts = $payable->payouts()
             ->with('paidByUser')
             ->orderBy('created_at', 'desc')
             ->get()
             ->toArray();
+
+        return array_map(function ($payout) {
+            if (!empty($payout['attachments'])) {
+                $payout['attachments'] = array_map(function ($att) {
+                    $att['file_url'] = $att['path'] ? url('storage/' . ltrim($att['path'], '/')) : null;
+                    return $att;
+                }, $payout['attachments']);
+            }
+            return $payout;
+        }, $payouts);
     }
 
     public function updateSchedule(

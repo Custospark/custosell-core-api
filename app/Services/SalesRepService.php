@@ -167,7 +167,18 @@ class SalesRepService implements SalesRepServiceInterface
         if (!$salesRep) {
             throw new \RuntimeException('SalesRep not found');
         }
-        return $salesRep->payouts()->with('paidByUser')->where('status', 'paid')->orderBy('paid_at', 'desc')->get();
+        $payouts = $salesRep->payouts()->with('paidByUser')->where('status', 'paid')->orderBy('paid_at', 'desc')->get();
+
+        return $payouts->map(function ($payout) {
+            $payoutArray = $payout->toArray();
+            if (!empty($payoutArray['attachments'])) {
+                $payoutArray['attachments'] = array_map(function ($att) {
+                    $att['file_url'] = $att['path'] ? url('storage/' . ltrim($att['path'], '/')) : null;
+                    return $att;
+                }, $payoutArray['attachments']);
+            }
+            return $payoutArray;
+        });
     }
 
     public function recordPayout(int $id, array $data, int $paidByUserId): Payout
