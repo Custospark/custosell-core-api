@@ -32,7 +32,7 @@ class PesaPalGateway implements PaymentGatewayInterface
 
     private function isBypassMode(): bool
     {
-        if (app()->environment('production')) {
+        if (!app()->environment('local')) {
             return false;
         }
         return config('pesapal.bypass', false) === true;

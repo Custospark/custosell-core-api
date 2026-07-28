@@ -27,6 +27,8 @@ return [
     'allowed_origins_patterns' => [
         '/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/',
         '/^https:\/\/(www\.)?custosell\.com$/',
+        '/^https:\/\/staging\.custosell\.com$/',
+        '/^https:\/\/staging-api\.custosell\.com$/',
     ],
 
     'allowed_headers' => ['*'],
