@@ -8,4 +8,5 @@ rm -rf "$USERPROFILE/AppData/Roaming/opencode"
 npm uninstall -g opencode-ai
 
 
-ln -s /home/u214605677/domains/stag.custospark.com/public /home/u214605677/domains/custospark.com/public_html/rodgercakes
+ln -s /home/u214605677/domains/staging-api.custosell.com/public /home/u214605677/domains/custosell.com/public_html/staging-api
+ln -s /home/u214605677/domains/staging-api.custosell.com/storage/app/public /home/u214605677/domains/staging-api.custosell.com/public/storage

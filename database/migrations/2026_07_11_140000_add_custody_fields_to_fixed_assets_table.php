@@ -29,8 +29,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('fixed_assets', function (Blueprint $table) {
-            $table->dropUnique(['business_id', 'asset_tag']);
             $table->dropConstrainedForeignId('assigned_employee_id');
+            $table->index('business_id');
+            $table->dropUnique(['business_id', 'asset_tag']);
             $table->dropColumn([
                 'asset_tag',
                 'serial_number',
