@@ -11,9 +11,7 @@ use App\Services\Contracts\SubscriptionServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-
 use App\Enums\Billing\SubscriptionStatus;
-
 class SubscriptionService implements SubscriptionServiceInterface
 {
     public function __construct(
@@ -304,7 +302,7 @@ class SubscriptionService implements SubscriptionServiceInterface
                 $data['status'] = SubscriptionStatus::TRIAL;
                 $data['trial_ends_at'] = $now->copy()->addDays($trialDays);
                 $data['trial_used'] = true;
-                $data['next_billing_date'] = $now->copy()->addDays($trialDays);
+                $data['next_billing_date'] = $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly');
                 $data['approved_at'] = $now;
             } else {
                 $data['status'] = SubscriptionStatus::ACTIVE;
@@ -496,7 +494,6 @@ class SubscriptionService implements SubscriptionServiceInterface
             } catch (\Exception) {
             }
         }
-
         return $count;
     }
 }
