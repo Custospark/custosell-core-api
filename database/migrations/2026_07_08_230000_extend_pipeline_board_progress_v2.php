@@ -116,6 +116,12 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::hasColumn('pipeline_board_metric_snapshots', 'stage_id')) {
+            Schema::table('pipeline_board_metric_snapshots', function (Blueprint $table) {
+                $table->dropForeign(['stage_id']);
+            });
+        }
+
         if ($this->indexExists('pipeline_board_metric_snapshots', 'pb_metric_snapshots_unique_v2')) {
             Schema::table('pipeline_board_metric_snapshots', function (Blueprint $table) {
                 $table->dropUnique('pb_metric_snapshots_unique_v2');
@@ -133,7 +139,6 @@ return new class extends Migration
 
         if (Schema::hasColumn('pipeline_board_metric_snapshots', 'stage_id')) {
             Schema::table('pipeline_board_metric_snapshots', function (Blueprint $table) {
-                $table->dropForeign(['stage_id']);
                 $table->dropColumn('stage_id');
             });
         }
