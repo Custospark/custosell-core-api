@@ -281,8 +281,7 @@ class SubscriptionService implements SubscriptionServiceInterface
 
         return DB::transaction(function () use ($subscription) {
             $now = Carbon::now();
-            $plan = $subscription->plan;
-            $trialDays = (int) ($plan?->trial_days ?? 0);
+            $trialDays = (int) config('onboarding.trial_days', 30);
 
             $data = [
                 'onboarding_fee_paid' => true,
