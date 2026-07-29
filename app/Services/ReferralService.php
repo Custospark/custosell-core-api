@@ -134,21 +134,9 @@ class ReferralService implements ReferralServiceInterface
                 'reward_amount' => 0,
             ]);
 
-            // Create discount BillingCredit immediately so it can reduce the onboarding fee
-            // at payment time instead of being created after payment.
-            if ($discountApplied > 0) {
-                $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
-                $totalDiscount = round($discountApplied * $discountDuration, 2);
-                BillingCredit::create([
-                    'owner_type' => 'business',
-                    'owner_id' => $businessId,
-                    'referral_id' => $referral->id,
-                    'amount' => $totalDiscount,
-                    'amount_used' => 0,
-                    'status' => 'available',
-                ]);
-            }
-
+            // No BillingCredit created here — the discount is applied directly
+            // to the payment amount in GatewayService. After payment confirms,
+            // markActive() creates any remaining months as a credit.
             $referralCode->markUsed();
 
             return $referral;
@@ -203,8 +191,22 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
-            // Discount BillingCredit was already created in processReferral — no duplicate here.
-            // The reward/commission for the referrer is handled above.
+            // Create discount BillingCredit for remaining months after the first payment.
+            // The first month's discount was consumed directly in GatewayService.
+            $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
+            $remainingMonths = $discountDuration - 1;
+            $discountApplied = (float) $referral->discount_applied;
+            if ($remainingMonths > 0 && $discountApplied > 0) {
+                $remainingCredit = round($discountApplied * $remainingMonths, 2);
+                BillingCredit::create([
+                    'owner_type' => 'business',
+                    'owner_id' => $referral->referred_business_id,
+                    'referral_id' => $referral->id,
+                    'amount' => $remainingCredit,
+                    'amount_used' => 0,
+                    'status' => 'available',
+                ]);
+            }
 
             return $this->referralRepository->update($referral, $updateData);
         });

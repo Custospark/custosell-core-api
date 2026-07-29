@@ -2,7 +2,9 @@
 
 namespace App\Services\Payment;
 
+use App\Enums\Billing\ReferralStatus;
 use App\Models\BillingPayment;
+use App\Models\Referral;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionScheduledChangeRepositoryInterface;
@@ -72,6 +74,18 @@ class GatewayService
             };
         }
 
+        // Apply pending referral discount directly (no pre-existing credit needed)
+        $referralDiscount = 0;
+        if (!in_array($paymentType, ['upgrade_proration'], true)) {
+            $referral = Referral::where('subscription_id', $subscription->id)
+                ->where('status', ReferralStatus::PENDING)
+                ->first();
+            if ($referral && (float) $referral->discount_applied > 0) {
+                $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
+                $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
+            }
+        }
+
         // Validate amount in USD terms before any conversion
         $data['currency'] = 'USD';
         $this->validatePaymentAmount($subscription, $data);
@@ -96,7 +110,6 @@ class GatewayService
                 ];
             }
         }
-
         // Apply billing credits to reduce the amount (still in USD) before creating the payment
         $creditApplications = [];
         $creditResult = ['credit_used' => 0];
@@ -129,6 +142,7 @@ class GatewayService
                         [
                             'credit_full_payment' => true,
                             'original_amount' => $originalAmount,
+                            'referral_discount_applied' => $referralDiscount,
                             'credit_application_ids' => array_map(fn ($a) => $a->id, array_filter($creditApplications)),
                         ]
                     ),
@@ -171,7 +185,6 @@ class GatewayService
         if ($paymentCurrency !== 'USD' && $exchangeRate !== null) {
             $data['amount'] = round((float) $data['amount'] * $exchangeRate, 2);
         }
-
         $payment = $this->paymentService->createPending([
             'subscription_id' => $subscription->id,
             'business_id' => $subscription->business_id,
@@ -185,6 +198,7 @@ class GatewayService
                 $data['metadata'] ?? [],
                 [
                     'original_amount' => $originalAmount,
+                    'referral_discount_applied' => $referralDiscount,
                     'credit_used' => $creditResult['credit_used'] ?? 0,
                     'credit_application_ids' => array_map(fn ($a) => $a->id, $creditApplications),
                 ]
