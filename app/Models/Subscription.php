@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Enums\Billing\SubscriptionStatus;
+use App\Models\Referral;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -69,6 +71,11 @@ class Subscription extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
+
+    public function referral(): HasOne
+    {
+        return $this->hasOne(Referral::class);
     }
 
     public function payments(): HasMany

@@ -49,11 +49,22 @@ class BusinessResource extends JsonResource
             'status' => $this->status,
             'trial_ends_at' => $this->trial_ends_at,
             'subscription' => $this->whenLoaded('subscription', function () {
+                $referral = $this->subscription->relationLoaded('referral')
+                    ? $this->subscription->referral
+                    : null;
                 return [
                     ...$this->subscription->toArray(),
                     'plan_name' => $this->subscription->plan?->name,
                     'plan_slug' => $this->subscription->plan?->slug,
                     'plan_features' => $this->subscription->plan?->features,
+                    'referral' => $referral ? [
+                        'code' => $referral->referralCode?->code,
+                        'discount_type' => $referral->referralCode?->discount_type,
+                        'discount_value' => $referral->referralCode?->discount_value,
+                        'discount_duration_months' => $referral->referralCode?->discount_duration_months,
+                        'discount_applied' => $referral->discount_applied,
+                        'status' => $referral->status,
+                    ] : null,
                 ];
             }),
             'created_at' => $this->created_at,

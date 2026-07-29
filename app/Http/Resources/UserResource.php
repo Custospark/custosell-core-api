@@ -90,6 +90,16 @@ class UserResource extends JsonResource
                                 'cancelled_at' => $this->business->subscription->cancelled_at,
                                 'suspended_at' => $this->business->subscription->suspended_at,
                                 'approved_at' => $this->business->subscription->approved_at,
+                                'referral' => $this->business->subscription->relationLoaded('referral') && $this->business->subscription->referral
+                                    ? [
+                                        'code' => $this->business->subscription->referral->referralCode?->code,
+                                        'discount_type' => $this->business->subscription->referral->referralCode?->discount_type,
+                                        'discount_value' => $this->business->subscription->referral->referralCode?->discount_value,
+                                        'discount_duration_months' => $this->business->subscription->referral->referralCode?->discount_duration_months,
+                                        'discount_applied' => $this->business->subscription->referral->discount_applied,
+                                        'status' => $this->business->subscription->referral->status,
+                                    ]
+                                    : null,
                             ]
                         ),
                 ];

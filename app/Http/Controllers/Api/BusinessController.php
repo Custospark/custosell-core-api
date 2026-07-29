@@ -25,6 +25,7 @@ class BusinessController extends Controller
         if (!$business) {
             abort(404, 'Business not found');
         }
+        $business->loadMissing('subscription.plan')->load('subscription.referral.referralCode');
         return new BusinessResource($business);
     }
 
@@ -35,7 +36,8 @@ class BusinessController extends Controller
             abort(404, 'No business found for this user');
         }
 
-        return new BusinessResource($business->loadMissing('subscription.plan'));
+        $business->loadMissing('subscription.plan')->load('subscription.referral.referralCode');
+        return new BusinessResource($business);
     }
 
     public function store(BusinessRegisterRequest $request): JsonResponse
@@ -50,6 +52,9 @@ class BusinessController extends Controller
         $business = $this->businessService->register($userData, $businessData, $referralCode);
         if ($request->has('plan_id')) {
             $business->load('subscription.plan');
+            if ($business->relationLoaded('subscription') && $business->subscription) {
+                $business->subscription->load('referral.referralCode');
+            }
         }
         return response()->json(new BusinessResource($business), 201);
     }
