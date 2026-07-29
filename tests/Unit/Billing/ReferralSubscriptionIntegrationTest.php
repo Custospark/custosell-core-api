@@ -78,7 +78,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral, 'Referral record must be created during subscribe');
-        $expected = round($this->essential->price_monthly_usd * 10 / 100, 2);
+        $expected = round($this->essential->onboarding_fee_usd * 10 / 100, 2);
         $this->assertEquals($expected, (float) $referral->discount_applied);
         $this->assertEquals(
             $this->essential->price_monthly_usd,
@@ -123,7 +123,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral);
-        $this->assertEquals($this->essential->price_monthly_usd, (float) $referral->discount_applied);
+        $this->assertEquals($this->essential->onboarding_fee_usd, (float) $referral->discount_applied);
         $this->assertEquals(
             $this->essential->price_monthly_usd,
             (float) $subscription->price_monthly_usd,
@@ -148,7 +148,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertEquals(ReferralStatus::PENDING, $referral->status);
         $this->assertEquals(0, (float) $referral->reward_amount, 'Reward must be 0 before activation');
 
-        $expectedDiscount = round($this->essential->price_monthly_usd * 20 / 100, 2);
+        $expectedDiscount = round($this->essential->onboarding_fee_usd * 20 / 100, 2);
         $this->assertEquals($expectedDiscount, (float) $referral->discount_applied);
         $this->assertEquals($this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
     }
@@ -166,13 +166,13 @@ class ReferralSubscriptionIntegrationTest extends TestCase
 
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
-        $expectedDiscount = round($this->essential->price_monthly_usd * 50 / 100, 2);
+        $expectedDiscount = round($this->essential->onboarding_fee_usd * 50 / 100, 2);
         $this->assertEquals($expectedDiscount, (float) $referral->discount_applied);
 
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $fullPrice = (float) $this->essential->price_monthly_usd;
+        $fullPrice = (float) $this->essential->onboarding_fee_usd;
         $expectedReward = round($fullPrice * 15 / 100, 2);
 
         $this->assertEquals($expectedReward, (float) $referral->reward_amount,

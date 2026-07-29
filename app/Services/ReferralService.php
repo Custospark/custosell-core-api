@@ -112,13 +112,17 @@ class ReferralService implements ReferralServiceInterface
                 throw new \RuntimeException('This business has already used this referral code');
             }
 
-            // Calculate discount and reward based on plan's USD price
-            $monthlyPriceUsd = (float) ($subscription?->plan?->price_monthly_usd ?? 0);
+            // Calculate discount based on the amount being paid at the time of application
+            $plan = $subscription?->plan;
+            $monthlyPriceUsd = (float) ($plan->price_monthly_usd ?? 0);
+            $onboardingFeeUsd = (float) ($plan->onboarding_fee_usd ?? 0);
+            $isOnboarding = !$subscription->onboarding_fee_paid;
+            $discountBase = $isOnboarding && $onboardingFeeUsd > 0 ? $onboardingFeeUsd : $monthlyPriceUsd;
 
             $discountApplied = match ($referralCode->discount_type) {
-                DiscountType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
+                DiscountType::PERCENTAGE => round($discountBase * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
                 DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
-                DiscountType::FREE_MONTH => $monthlyPriceUsd,
+                DiscountType::FREE_MONTH => $discountBase,
             };
 
             $referral = $this->referralRepository->create([
@@ -130,8 +134,20 @@ class ReferralService implements ReferralServiceInterface
                 'reward_amount' => 0,
             ]);
 
-            // Discount credit is NOT created here — deferred to markActive()
-            // so it only activates after the referred business makes their first payment.
+            // Create discount BillingCredit immediately so it can reduce the onboarding fee
+            // at payment time instead of being created after payment.
+            if ($discountApplied > 0) {
+                $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
+                $totalDiscount = round($discountApplied * $discountDuration, 2);
+                BillingCredit::create([
+                    'owner_type' => 'business',
+                    'owner_id' => $businessId,
+                    'referral_id' => $referral->id,
+                    'amount' => $totalDiscount,
+                    'amount_used' => 0,
+                    'status' => 'available',
+                ]);
+            }
 
             $referralCode->markUsed();
 
@@ -161,25 +177,23 @@ class ReferralService implements ReferralServiceInterface
             $plan = $subscription?->plan;
             $monthlyPriceUsd = (float) ($plan->price_monthly_usd ?? 0);
             $onboardingFeeUsd = (float) ($plan->onboarding_fee_usd ?? 0);
+            $isOnboarding = !$subscription->onboarding_fee_paid;
+            $rewardBase = $isOnboarding && $onboardingFeeUsd > 0 ? $onboardingFeeUsd : $monthlyPriceUsd;
 
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
-                    // TODO: Include monthly subscription commission in the future.
-                    // Currently commission is based on onboarding fee only since the first
-                    // subscription payment is not guaranteed (business may churn after trial).
-                    $commissionBaseUsd = $onboardingFeeUsd;
                     $commissionEarned = match ($salesRep->commission_type) {
-                        CommissionType::PERCENTAGE => round($commissionBaseUsd * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
+                        CommissionType::PERCENTAGE => round($rewardBase * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
                     };
                     $updateData['commission_earned'] = $commissionEarned;
                 }
             } else {
                 $rewardAmount = match ($referralCode->reward_type) {
-                    RewardType::PERCENTAGE => round($monthlyPriceUsd * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                    RewardType::PERCENTAGE => round($rewardBase * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
                     RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                    RewardType::FREE_MONTH => $monthlyPriceUsd,
+                    RewardType::FREE_MONTH => $rewardBase,
                     default => 0,
                 };
                 $updateData['reward_amount'] = $rewardAmount;
@@ -189,20 +203,8 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
-            // Create discount credit for the referred business — only after payment activates the subscription
-            $discountApplied = (float) ($referral->discount_applied ?? 0);
-            if ($discountApplied > 0) {
-                $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
-                $totalDiscount = round($discountApplied * $discountDuration, 2);
-                BillingCredit::create([
-                    'owner_type' => 'business',
-                    'owner_id' => $referral->referred_business_id,
-                    'referral_id' => $referral->id,
-                    'amount' => $totalDiscount,
-                    'amount_used' => 0,
-                    'status' => 'available',
-                ]);
-            }
+            // Discount BillingCredit was already created in processReferral — no duplicate here.
+            // The reward/commission for the referrer is handled above.
 
             return $this->referralRepository->update($referral, $updateData);
         });
