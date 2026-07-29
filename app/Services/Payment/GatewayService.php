@@ -9,6 +9,7 @@ use App\Repositories\Contracts\SubscriptionScheduledChangeRepositoryInterface;
 use App\Services\Contracts\PaymentServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\CreditService;
+use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 
 class GatewayService
 {
+    use \App\Services\Payment\Concerns\HandlesPaymentApproval;
     public function __construct(
         private readonly GatewayManager $gatewayManager,
         private readonly PaymentRepositoryInterface $paymentRepo,
@@ -23,6 +25,7 @@ class GatewayService
         private readonly SubscriptionServiceInterface $subscriptionService,
         private readonly SubscriptionScheduledChangeRepositoryInterface $scheduledChangeRepo,
         private readonly CreditService $creditService,
+        private readonly CurrencyExchangeServiceInterface $currencyExchange,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
@@ -34,6 +37,37 @@ class GatewayService
                 "Gateway '{$gatewayName}' is not currently enabled.",
                 $gatewayName
             );
+        }
+
+        // 1. Resolve payment currency authoritatively from business
+        $business = $subscription->business;
+        $businessCurrency = strtoupper($business?->currency ?? 'UGX');
+        $paymentCurrency = in_array($businessCurrency, $driver->getSupportedCurrencies())
+            ? $businessCurrency
+            : 'USD';
+
+        // 2. For non-USD currencies, resolve exchange rate NOW — fail hard if unavailable
+        $exchangeRate = null;
+        if ($paymentCurrency !== 'USD') {
+            $exchangeRate = $this->currencyExchange->getExchangeRate('USD', $paymentCurrency);
+            if ($exchangeRate === null) {
+                throw new GatewayException(
+                    "Cannot initiate payment: exchange rate unavailable for {$paymentCurrency}. Please try again later.",
+                    $gatewayName
+                );
+            }
+        }
+
+        // 3. Compute authoritative amount for known payment types (ignore frontend value)
+        $paymentType = $data['payment_type'] ?? 'subscription';
+        if (!in_array($paymentType, ['upgrade_proration'], true)) {
+            $data['amount'] = match ($paymentType) {
+                'onboarding' => (float) ($subscription->onboarding_fee_usd ?? 0),
+                'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
+                    ? (float) ($subscription->price_yearly_usd ?? 0)
+                    : (float) ($subscription->price_monthly_usd ?? 0),
+                default => (float) ($data['amount'] ?? 0),
+            };
         }
 
         // Validate amount against expected subscription prices
@@ -60,7 +94,7 @@ class GatewayService
             }
         }
 
-        // Apply billing credits to reduce the amount before creating the payment
+        // Apply billing credits to reduce the amount (still in USD) before creating the payment
         $creditApplications = [];
         $creditResult = ['credit_used' => 0];
         $originalAmount = (float) $data['amount'];
@@ -70,6 +104,12 @@ class GatewayService
                 $data['amount'] = $creditResult['remaining'];
                 $creditApplications = $creditResult['applications'];
             }
+        }
+
+        // Convert amount to payment currency after credit application
+        $data['currency'] = $paymentCurrency;
+        if ($paymentCurrency !== 'USD' && $exchangeRate !== null) {
+            $data['amount'] = round((float) $data['amount'] * $exchangeRate, 2);
         }
 
         $payment = $this->paymentService->createPending([
@@ -287,96 +327,6 @@ class GatewayService
         ];
     }
 
-    private function handlePaymentType(BillingPayment $payment): void
-    {
-        $paymentType = $payment->payment_type instanceof \App\Enums\Billing\PaymentType
-            ? $payment->payment_type->value
-            : $payment->payment_type;
-
-        $subscription = $payment->subscription;
-
-        match ($paymentType) {
-            'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
-            'subscription' => $this->subscriptionService->activateSubscription($subscription, $payment, null),
-            'renewal' => $this->subscriptionService->renewSubscription($subscription, $payment),
-            'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
-            default => null,
-        };
-    }
-
-    private function handleUpgradeProration(BillingPayment $payment, $subscription): void
-    {
-        $metadata = $payment->metadata ?? [];
-        $toPlanId = $metadata['to_plan_id'] ?? null;
-
-        if (!$toPlanId) {
-            Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
-                'payment_id' => $payment->id,
-            ]);
-            return;
-        }
-
-        if ((int) $toPlanId === $subscription->plan_id) {
-            Log::info('[GatewayService] Upgrade skipped — already on target plan', [
-                'payment_id' => $payment->id,
-                'plan_id' => $subscription->plan_id,
-            ]);
-            return;
-        }
-
-        DB::transaction(function () use ($payment, $subscription, $toPlanId) {
-            $this->scheduledChangeRepo->create([
-                'subscription_id' => $subscription->id,
-                'business_id' => $subscription->business_id,
-                'change_type' => 'upgrade',
-                'from_plan_id' => $subscription->plan_id,
-                'to_plan_id' => $toPlanId,
-                'effective_at' => now(),
-                'status' => 'applied',
-                'proration_amount' => $payment->amount,
-                'metadata' => [
-                    'source' => 'payment_webhook',
-                    'payment_id' => $payment->id,
-                ],
-            ]);
-
-            $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
-        });
-
-        Log::info('[GatewayService] Upgrade completed via payment', [
-            'payment_id' => $payment->id,
-            'subscription_id' => $subscription->id,
-            'to_plan_id' => $toPlanId,
-        ]);
-    }
-
-    private function autoApprove(BillingPayment $payment, array $webhookData, array $verification): void
-    {
-        DB::transaction(function () use ($payment, $webhookData, $verification) {
-            $this->paymentRepo->update($payment, [
-                'status' => 'completed',
-                'approved_at' => now(),
-                'paid_at' => $payment->paid_at ?? now(),
-                'gateway_transaction_id' => $verification['gateway_txn_id'] ?? $payment->gateway_transaction_id,
-                'gateway_response' => array_merge(
-                    $payment->gateway_response ?? [],
-                    ['webhook' => $webhookData, 'verification' => $verification]
-                ),
-            ]);
-
-            $payment->refresh();
-
-            $this->handlePaymentType($payment);
-
-            Log::info('[GatewayService] Payment auto-approved', [
-                'payment_id' => $payment->id,
-                'gateway' => $payment->gateway_name,
-                'subscription_id' => $payment->subscription_id,
-                'business_id' => $payment->business_id,
-            ]);
-        });
-    }
-
     public function confirmPayment(int $paymentId): array
     {
         $payment = $this->paymentRepo->find($paymentId);
@@ -417,7 +367,6 @@ class GatewayService
         $paymentType = $data['payment_type'] ?? 'subscription';
         $amount = (float) ($data['amount'] ?? 0);
         $currency = strtoupper($data['currency'] ?? 'USD');
-        $tolerance = 0.50;
 
         $expectedUsd = match ($paymentType) {
             'onboarding' => (float) ($subscription->onboarding_fee_usd ?? 0),
@@ -437,21 +386,17 @@ class GatewayService
 
         if ($currency === 'USD') {
             $expected = $expectedUsd;
-        } elseif ($currency === 'UGX') {
-            if ($paymentType === 'onboarding') {
-                $rate = app(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class)
-                    ->getExchangeRate('USD', $currency);
-                $expected = $rate ? round($expectedUsd * $rate, 2) : $expectedUsd;
-            } else {
-                $expected = $subscription->billing_cycle === 'yearly'
-                    ? (float) ($subscription->price_yearly ?? 0)
-                    : (float) ($subscription->price_monthly ?? 0);
-            }
-            $tolerance = max(50, $expected * 0.01);
+            $tolerance = 0.50;
         } else {
-            $rate = app(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class)
-                ->getExchangeRate('USD', $currency);
-            $expected = $rate ? round($expectedUsd * $rate, 2) : $expectedUsd;
+            $rate = $this->currencyExchange->getExchangeRate('USD', $currency);
+            if ($rate === null) {
+                throw new GatewayException(
+                    "Cannot validate payment: exchange rate unavailable for {$currency}.",
+                    $data['gateway_name'] ?? 'unknown',
+                    ['payment_type' => $paymentType, 'currency' => $currency]
+                );
+            }
+            $expected = round($expectedUsd * $rate, 2);
             $tolerance = max(50, $expected * 0.02);
         }
 
