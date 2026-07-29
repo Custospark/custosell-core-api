@@ -1,29 +1,47 @@
-# ADR: Referral Credit System
+# ADR: Referral Credit System (Revised)
 
 ## Date
-2026-07-26
+2026-07-30 (revised from 2026-07-26)
 
 ## Status
 Accepted
 
 ## Context
-Referral earnings (`reward_amount` from referral activations) need to be useful to the referrer without requiring manual payouts. Industry best practice is to auto-apply credit to subscription renewals.
+Referral earnings (`reward_amount` from referral activations) need to be useful to the referrer without requiring manual payouts. Industry best practice is to auto-apply credit to subscription renewals. The referee's discount must never create a prepaid liability — it is applied as a direct price reduction at payment time, not as a pre-existing credit.
+
+## Core Principle — No Value Without Payment
+- **Referee's discount**: Applied as a direct markdown on the amount charged. No credit exists before payment clears. The company's exposure is limited to reduced ARPU on a confirmed transaction.
+- **Referrer's reward**: Created as a `BillingCredit` only after the referral's subscription activates (payment confirmed). No payment = no reward.
+- **Company**: No prepaid liability. Both discount and reward are zero-risk before cash-in-hand.
+
+## Discount Base — Dynamic, Matches What's Being Paid
+The discount/reward percentage is always calculated against the **amount actually being charged** at the time:
+- **Onboarding (unpaid)**: `plan.onboarding_fee_usd` (e.g., $40 for Essential)
+- **Subscription/renewal (paid)**: `plan.price_monthly_usd` or `plan.price_yearly_usd`
+- **Upgrade proration**: frontend-provided amount (passthrough, no discount applied)
+
+This ensures a 20% code gives 20% off whatever the user is paying right now — not a fixed $0 for Essential's $0 monthly price.
 
 ## Decision
-1. When a referral becomes ACTIVE via `markActive()`, a `BillingCredit` record is created in USD via `CreditService::createFromReferral()`.
-2. Credits are owned polymorphically (`morphs('owner')`): `business` (for users with a `business_id`) or `user` (for staff without a business).
-3. On renewal payments (`payment_type = 'renewal'`), `GatewayService::initiatePayment()` checks available business credit via `CreditService::applyToRenewal()` and applies it FIFO (by `created_at`) before initiating the gateway.
-4. If credit covers the full amount → `CreditService::completeRenewalWithCredit()` completes the payment with no gateway call, creating a `completed` payment record with method `credit`.
-5. If credit covers partially → the gateway is called for the reduced amount only; `validatePaymentAmount()` accounts for the credit-applied portion.
-6. Staff (user-owned) credits accumulate as user credit. Platform admins can record manual payouts via `POST /api/v1/platform/credits/{creditId}/payout`, which updates `amount_used` and transitions status to `partially_used` or `fully_used`.
-7. All referral amounts are in USD throughout: `discount_applied`, `reward_amount`, `commission_earned`, and credit amounts use `plan.price_monthly_usd`.
+1. **`processReferral()`** — Creates the referral record with `discount_applied` (computed from the dynamic base). Does **NOT** create any `BillingCredit`. The discount is stored on the referral only.
+2. **`GatewayService::initiatePayment()`** — After computing the authoritative plan amount (overriding frontend value), checks for a pending referral and **reduces the amount directly** by `referral.discount_applied`. The discount is consumed at payment time, not via credit consumption.
+3. **`markActive()`** — After payment is confirmed and subscription activates:
+   - Creates **referrer's reward** `BillingCredit` via `CreditService::createFromReferral()`
+   - Creates **referee's remaining discount** `BillingCredit` for months after the first (`discountApplied * (duration - 1)`) so multi-month codes still benefit future renewals
+4. Credits are owned polymorphically (`morphs('owner')`): `business` (for users with a `business_id`) or `user` (for staff without a business).
+5. On renewal payments (`payment_type = 'renewal'`), `GatewayService::initiatePayment()` checks available business credit via `CreditService::applyToRenewal()` and applies it FIFO (by `created_at`) before initiating the gateway.
+6. If credit covers the full amount → `CreditService::completeRenewalWithCredit()` completes the payment with no gateway call, creating a `completed` payment record with method `credit`.
+7. If credit covers partially → the gateway is called for the reduced amount only; `validatePaymentAmount()` accounts for the credit-applied portion.
+8. Staff (user-owned) credits accumulate as user credit. Platform admins can record manual payouts via `POST /api/v1/platform/credits/{creditId}/payout`, which updates `amount_used` and transitions status to `partially_used` or `fully_used`.
+9. All referral amounts are in USD throughout: `discount_applied`, `reward_amount`, `commission_earned`.
 
 ## Consequences
+- No prepaid credit exists before payment. Referee's discount is a direct price markdown at charge time.
+- Referrer's reward only vests after a confirmed payment — no phantom liability.
 - Renewals automatically consume available business credit before charging, oldest credit first.
 - Staff members without a subscription can see their user credit balance via `GET /api/v1/credits/balance`.
 - Platform admin panel (`/api/v1/platform/credits/*`) shows all credits with totals, pending payouts, and supports manual payout recording.
 - No manual payout infrastructure needed for business owners — their credit is auto-consumed on renewal.
-- Existing pre-feature referrals (processed before the migration) will not have associated credit records.
 
 ## New API Endpoints
 ### User-facing (auth:sanctum + business.active)
