@@ -109,56 +109,59 @@ class GatewayService
 
         // If credits fully cover the payment, bypass the gateway entirely
         if ($originalAmount > 0 && $data['amount'] <= 0) {
-            $ourRef = 'CREDIT-' . now()->format('YmdHis') . '-' . $subscription->id;
-            $payment = $this->paymentService->createPending([
-                'subscription_id' => $subscription->id,
-                'business_id' => $subscription->business_id,
-                'amount' => 0,
-                'currency' => 'USD',
-                'method' => 'credit',
-                'payment_type' => $data['payment_type'] ?? 'subscription',
-                'gateway_name' => $gatewayName,
-                'paid_at' => now(),
-                'transaction_reference' => $ourRef,
-                'metadata' => array_merge(
-                    $data['metadata'] ?? [],
-                    [
-                        'credit_full_payment' => true,
-                        'original_amount' => $originalAmount,
-                        'credit_application_ids' => array_map(fn ($a) => $a->id, array_filter($creditApplications)),
-                    ]
-                ),
-            ]);
+            return DB::transaction(function () use ($subscription, $gatewayName, $data, $originalAmount, $creditApplications, $idempotencyKey) {
+                $ourRef = 'CREDIT-' . now()->format('YmdHis') . '-' . $subscription->id;
+                $payment = $this->paymentService->createPending([
+                    'subscription_id' => $subscription->id,
+                    'business_id' => $subscription->business_id,
+                    'amount' => 0,
+                    'currency' => 'USD',
+                    'method' => 'credit',
+                    'payment_type' => $data['payment_type'] ?? 'subscription',
+                    'gateway_name' => $gatewayName,
+                    'paid_at' => now(),
+                    'transaction_reference' => $ourRef,
+                    'idempotency_key' => $idempotencyKey,
+                    'metadata' => array_merge(
+                        $data['metadata'] ?? [],
+                        [
+                            'credit_full_payment' => true,
+                            'original_amount' => $originalAmount,
+                            'credit_application_ids' => array_map(fn ($a) => $a->id, array_filter($creditApplications)),
+                        ]
+                    ),
+                ]);
 
-            $this->paymentRepo->update($payment, [
-                'status' => 'completed',
-                'approved_at' => now(),
-                'gateway_response' => ['type' => 'credit', 'message' => 'Paid entirely by credit.'],
-            ]);
+                $this->paymentRepo->update($payment, [
+                    'status' => 'completed',
+                    'approved_at' => now(),
+                    'gateway_response' => ['type' => 'credit', 'message' => 'Paid entirely by credit.'],
+                ]);
 
-            $payment->refresh();
+                $payment->refresh();
 
-            foreach ($creditApplications as $app) {
-                $app->update(['billing_payment_id' => $payment->id]);
-            }
+                foreach ($creditApplications as $app) {
+                    $app->update(['billing_payment_id' => $payment->id]);
+                }
 
-            $this->handlePaymentType($payment);
+                $this->handlePaymentType($payment);
 
-            Log::info('[GatewayService] Payment completed via credit (no gateway)', [
-                'subscription_id' => $subscription->id,
-                'payment_id' => $payment->id,
-                'payment_type' => $data['payment_type'] ?? 'subscription',
-            ]);
+                Log::info('[GatewayService] Payment completed via credit (no gateway)', [
+                    'subscription_id' => $subscription->id,
+                    'payment_id' => $payment->id,
+                    'payment_type' => $data['payment_type'] ?? 'subscription',
+                ]);
 
-            return [
-                'success' => true,
-                'payment_id' => $payment->id,
-                'gateway' => 'credit',
-                'type' => 'credit',
-                'redirect_url' => null,
-                'reference' => $ourRef,
-                'message' => 'Payment completed entirely by credit.',
-            ];
+                return [
+                    'success' => true,
+                    'payment_id' => $payment->id,
+                    'gateway' => 'credit',
+                    'type' => 'credit',
+                    'redirect_url' => null,
+                    'reference' => $ourRef,
+                    'message' => 'Payment completed entirely by credit.',
+                ];
+            });
         }
 
         // Convert amount to payment currency after credit application
