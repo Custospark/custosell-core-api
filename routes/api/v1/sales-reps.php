@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\SalesRepController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active'])->group(function () {
     Route::get('sales-reps/import-template', [SalesRepController::class, 'downloadTemplate']);
     Route::post('sales-reps/import', [SalesRepController::class, 'import']);
     Route::get('sales-reps/earnings/all', [SalesRepController::class, 'earningsIndex']);

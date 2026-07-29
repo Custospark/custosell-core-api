@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\DocumentController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:documents'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:documents'])->group(function () {
     Route::get('/documents/cabinets', [DocumentController::class, 'indexCabinets']);
     Route::post('/documents/cabinets', [DocumentController::class, 'storeCabinet']);
     Route::get('/documents/cabinets/{id}', [DocumentController::class, 'showCabinet'])->whereNumber('id');

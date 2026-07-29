@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\Forecasting\ForecastingController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:forecasting'])->prefix('forecasting')->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:forecasting'])->prefix('forecasting')->group(function () {
     Route::get('/overview', [ForecastingController::class, 'overview']);
     Route::get('/cash-forecast', [ForecastingController::class, 'cashForecast']);
     Route::get('/budget-vs-actual', [ForecastingController::class, 'budgetVsActual']);

@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\RatioController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:accounting'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:accounting'])->group(function () {
     Route::get('/chart-of-accounts', [ChartOfAccountController::class, 'index']);
     Route::get('/chart-of-accounts/tree', [ChartOfAccountController::class, 'tree']);
     Route::get('/chart-of-accounts/{id}', [ChartOfAccountController::class, 'show'])->whereNumber('id');

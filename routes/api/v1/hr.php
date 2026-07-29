@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\Hr\HrReportController;
 use App\Http\Controllers\Api\Hr\HrTalentController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:hr'])->prefix('hr')->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:hr'])->prefix('hr')->group(function () {
     // Org (full HR)
     Route::middleware('hr.full')->group(function () {
         Route::get('/departments', [HrOrgController::class, 'indexDepartments']);

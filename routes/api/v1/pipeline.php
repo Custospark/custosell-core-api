@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\WallOfFameController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active', 'pipeline.access'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'pipeline.access'])->group(function () {
     Route::get('/pipeline/boards', [PipelineController::class, 'boards']);
     Route::get('/pipeline/team-members', [PipelineController::class, 'teamMembers']);
     Route::post('/pipeline/boards', [PipelineController::class, 'storeBoard']);

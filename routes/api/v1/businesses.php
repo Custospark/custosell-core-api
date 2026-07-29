@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/businesses/register', [BusinessController::class, 'store']);
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:settings'])->group(function () {
     // Static routes before parameterized {id} routes
     Route::get('/businesses/mine', [BusinessController::class, 'mine']);
     Route::put('/businesses/profile', [BusinessController::class, 'updateProfile']);
@@ -22,6 +22,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group
     Route::put('/businesses/{id}', [BusinessController::class, 'update']);
 });
 
-Route::middleware(['auth:sanctum', 'business.active', 'module:inventory'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:inventory'])->group(function () {
     Route::patch('/businesses/supply-profile', [BusinessController::class, 'updateSupplyProfile']);
 });

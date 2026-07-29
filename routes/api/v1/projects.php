@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\ProjectController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
+Route::middleware(['auth:sanctum', 'business.active', 'subscription.active'])->group(function () {
     Route::get('/my-projects', [ProjectController::class, 'myProjects']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::get('/projects/{id}', [ProjectController::class, 'show'])->whereNumber('id');
