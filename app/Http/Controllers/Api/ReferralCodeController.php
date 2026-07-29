@@ -9,6 +9,7 @@ use App\Http\Resources\ReferralCodeResource;
 use App\Models\ReferralCode;
 use App\Services\Contracts\ReferralCodeServiceInterface;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 
 class ReferralCodeController extends Controller
@@ -69,5 +70,31 @@ class ReferralCodeController extends Controller
         } catch (RuntimeException $e) {
             abort(404, $e->getMessage());
         }
+    }
+
+    public function validateCode(Request $request): JsonResponse
+    {
+        $code = $request->query('code');
+        if (!$code) {
+            return response()->json(['valid' => false, 'message' => 'No code provided.'], 422);
+        }
+
+        $referralCode = ReferralCode::where('code', $code)->first();
+
+        if (!$referralCode) {
+            return response()->json(['valid' => false, 'message' => 'Referral code not found.']);
+        }
+
+        if (!$referralCode->isValid()) {
+            return response()->json(['valid' => false, 'message' => 'This referral code has expired or reached its usage limit.']);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'message' => 'Referral code is valid!',
+            'discount_type' => $referralCode->discount_type->value,
+            'discount_value' => (float) $referralCode->discount_value,
+            'discount_duration_months' => $referralCode->discount_duration_months ?? 1,
+        ]);
     }
 }

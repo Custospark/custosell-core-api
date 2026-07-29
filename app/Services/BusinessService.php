@@ -134,10 +134,8 @@ class BusinessService implements BusinessServiceInterface
                             $subscription->id,
                             $business->id
                         );
-                    } catch (\RuntimeException $e) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'referral_code' => $e->getMessage(),
-                        ]);
+                    } catch (\RuntimeException) {
+                        // Invalid, expired, or duplicate — registration proceeds without referral
                     }
                 }
             }
