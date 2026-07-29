@@ -32,8 +32,8 @@ class PaymentQuoteService
             ?? now()->addMonth();
 
         $subscriptionPrices = [
-            'price_monthly_usd' => $subscription->price_monthly_usd,
-            'price_yearly_usd' => $subscription->price_yearly_usd,
+            'price_monthly_usd' => $currentPlan->price_monthly_usd,
+            'price_yearly_usd' => $currentPlan->price_yearly_usd,
         ];
 
         $proration = $this->prorationCalculator->calculateUpgradeCost(
@@ -48,8 +48,8 @@ class PaymentQuoteService
             'current_plan' => [
                 'id' => $currentPlan->id,
                 'name' => $currentPlan->name,
-                'price_monthly_usd' => (float) ($subscription->price_monthly_usd ?? $currentPlan->price_monthly_usd ?? 0),
-                'price_yearly_usd' => (float) ($subscription->price_yearly_usd ?? $currentPlan->price_yearly_usd ?? 0),
+                'price_monthly_usd' => (float) ($currentPlan->price_monthly_usd ?? 0),
+                'price_yearly_usd' => (float) ($currentPlan->price_yearly_usd ?? 0),
             ],
             'new_plan' => [
                 'id' => $newPlan->id,

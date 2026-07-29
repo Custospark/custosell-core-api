@@ -59,13 +59,15 @@ class GatewayService
         }
 
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
+        // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone
         $paymentType = $data['payment_type'] ?? 'subscription';
         if (!in_array($paymentType, ['upgrade_proration'], true)) {
+            $plan = $subscription->plan;
             $data['amount'] = match ($paymentType) {
-                'onboarding' => (float) ($subscription->onboarding_fee_usd ?? 0),
+                'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
                 'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
-                    ? (float) ($subscription->price_yearly_usd ?? 0)
-                    : (float) ($subscription->price_monthly_usd ?? 0),
+                    ? (float) ($plan?->price_yearly_usd ?? 0)
+                    : (float) ($plan?->price_monthly_usd ?? 0),
                 default => (float) ($data['amount'] ?? 0),
             };
         }
@@ -426,14 +428,15 @@ class GatewayService
         $amount = (float) ($data['amount'] ?? 0);
         $currency = strtoupper($data['currency'] ?? 'USD');
 
+        $plan = $subscription->plan;
         $expectedUsd = match ($paymentType) {
-            'onboarding' => (float) ($subscription->onboarding_fee_usd ?? 0),
+            'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
             'subscription' => $subscription->billing_cycle === 'yearly'
-                ? (float) ($subscription->price_yearly_usd ?? 0)
-                : (float) ($subscription->price_monthly_usd ?? 0),
+                ? (float) ($plan?->price_yearly_usd ?? 0)
+                : (float) ($plan?->price_monthly_usd ?? 0),
             'renewal' => $subscription->billing_cycle === 'yearly'
-                ? (float) ($subscription->price_yearly_usd ?? 0)
-                : (float) ($subscription->price_monthly_usd ?? 0),
+                ? (float) ($plan?->price_yearly_usd ?? 0)
+                : (float) ($plan?->price_monthly_usd ?? 0),
             'upgrade_proration' => $amount,
             default => $amount,
         };

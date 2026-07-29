@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Contracts\SubscriptionStateMachineServiceInterface;
 use App\Services\Platform\PlatformAdminService;
 use Closure;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ class EnsureActiveSubscription
 {
     public function __construct(
         protected PlatformAdminService $platformAdminService,
+        protected SubscriptionStateMachineServiceInterface $stateMachineService,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -36,6 +38,10 @@ class EnsureActiveSubscription
                 'message' => 'No active subscription. Please subscribe to continue using Custosell.',
             ], 403);
         }
+
+        // Request-time lifecycle detection (no cron — drive transitions from user requests)
+        $this->stateMachineService->processDueTransitions($subscription);
+        $subscription = $subscription->fresh();
 
         if (! $subscription->hasAccess()) {
             return response()->json([

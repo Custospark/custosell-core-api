@@ -141,7 +141,7 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
 
         return DB::transaction(function () use ($subscription) {
             $now = Carbon::now();
-            $trialDays = (int) config('onboarding.trial_days', 30);
+            $trialDays = (int) ($subscription->plan->trial_days ?? config('onboarding.trial_days', 30));
 
             $data = [
                 'onboarding_fee_paid' => true,
