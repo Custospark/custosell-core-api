@@ -12,7 +12,7 @@ class PlanSeeder extends Seeder
         Plan::updateOrCreate(['slug' => 'essential'], [
             'name' => 'Essential',
             'slug' => 'essential',
-            'description' => 'Basic POS features for small businesses just getting started.',
+            'description' => 'Point of sale, inventory, and online storefront for small businesses.',
             'price_monthly_usd' => 20,
             'price_yearly_usd' => 200,
             'onboarding_fee_usd' => 40,
@@ -39,7 +39,7 @@ class PlanSeeder extends Seeder
         Plan::updateOrCreate(['slug' => 'professional'], [
             'name' => 'Professional',
             'slug' => 'professional',
-            'description' => 'Full-featured POS for growing businesses with advanced tools.',
+            'description' => 'Full business management suite for growing businesses — including pipeline, estimates, and document management.',
             'price_monthly_usd' => 54,
             'price_yearly_usd' => 540,
             'onboarding_fee_usd' => 95,
