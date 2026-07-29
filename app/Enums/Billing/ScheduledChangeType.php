@@ -8,4 +8,5 @@ enum ScheduledChangeType: string
     case DOWNGRADE = 'downgrade';
     case CANCEL = 'cancel';
     case PLAN_CHANGE = 'plan_change';
+    case BILLING_CYCLE_CHANGE = 'billing_cycle_change';
 }

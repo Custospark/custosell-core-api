@@ -163,6 +163,16 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
                                 'cancel_at_period_end' => false,
                             ]),
                         ]);
+                    } elseif ($changeType === 'billing_cycle_change') {
+                        $pendingCycle = $subscription->metadata['pending_billing_cycle'] ?? null;
+                        if ($pendingCycle && in_array($pendingCycle, ['monthly', 'yearly'], true)) {
+                            $metadata = $subscription->metadata ?? [];
+                            unset($metadata['pending_billing_cycle']);
+                            $this->subscriptionRepo->update($subscription, [
+                                'billing_cycle' => $pendingCycle,
+                                'metadata' => $metadata,
+                            ]);
+                        }
                     } else {
                         $this->subscriptionRepo->update($subscription, [
                             'plan_id' => $change->to_plan_id,

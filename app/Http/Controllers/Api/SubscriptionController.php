@@ -194,6 +194,7 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validate([
             'to_plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
         ]);
 
         $subscription = $this->subscriptionService->getById($id);
@@ -205,9 +206,56 @@ class SubscriptionController extends Controller
             abort(403);
         }
 
-        $quote = $this->paymentQuoteService->getQuote($subscription, (int) $validated['to_plan_id']);
+        $quote = $this->paymentQuoteService->getQuote(
+            $subscription,
+            (int) $validated['to_plan_id'],
+            $validated['billing_cycle'] ?? null,
+        );
 
         return response()->json(['data' => $quote]);
+    }
+
+    public function changeBillingCycle(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'billing_cycle' => ['required', 'string', 'in:monthly,yearly'],
+            'effective' => ['sometimes', 'string', 'in:immediate,end_of_period'],
+        ]);
+
+        $subscription = $this->subscriptionService->getById($id);
+        if (!$subscription) {
+            abort(404, 'Subscription not found');
+        }
+
+        if ($subscription->business_id !== $request->user()->business_id) {
+            abort(403);
+        }
+
+        try {
+            $effective = $validated['effective'] ?? null;
+
+            // Default effective based on direction
+            if (!$effective) {
+                $effective = $subscription->billing_cycle === 'monthly' && $validated['billing_cycle'] === 'yearly'
+                    ? 'immediate'
+                    : 'end_of_period';
+            }
+
+            $updated = $this->subscriptionService->changeBillingCycle(
+                $subscription,
+                $validated['billing_cycle'],
+                $effective,
+            );
+
+            return response()->json([
+                'message' => $effective === 'immediate'
+                    ? 'Billing cycle changed successfully'
+                    : 'Billing cycle change scheduled for end of current period',
+                'data' => new SubscriptionResource($updated),
+            ]);
+        } catch (\RuntimeException $e) {
+            abort(422, $e->getMessage());
+        }
     }
 
     public function changes(int $id): JsonResponse

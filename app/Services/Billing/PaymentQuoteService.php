@@ -14,7 +14,7 @@ class PaymentQuoteService
         protected SubscriptionProrationCalculator $prorationCalculator,
     ) {}
 
-    public function getQuote(Subscription $subscription, int $toPlanId): array
+    public function getQuote(Subscription $subscription, int $toPlanId, ?string $billingCycleOverride = null): array
     {
         $currentPlan = $subscription->plan;
         if (!$currentPlan) {
@@ -26,7 +26,7 @@ class PaymentQuoteService
             throw new \RuntimeException('Target plan not found');
         }
 
-        $billingCycle = $subscription->billing_cycle ?? 'monthly';
+        $billingCycle = $billingCycleOverride ?? $subscription->billing_cycle ?? 'monthly';
         $nextBillingDate = $subscription->next_billing_date
             ?? $subscription->ends_at
             ?? now()->addMonth();
