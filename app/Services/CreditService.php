@@ -134,7 +134,7 @@ class CreditService
         $businessId = $subscription->business_id;
         $credits = BillingCredit::where('owner_type', 'business')
             ->where('owner_id', $businessId)
-            ->where('status', 'available')
+            ->whereIn('status', ['available', 'partially_used'])
             ->get()
             ->filter(fn ($c) => $c->amount_remaining > 0)
             ->sortBy('created_at');
