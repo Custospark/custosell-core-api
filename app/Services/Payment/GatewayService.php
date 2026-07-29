@@ -70,7 +70,8 @@ class GatewayService
             };
         }
 
-        // Validate amount against expected subscription prices
+        // Validate amount in USD terms before any conversion
+        $data['currency'] = 'USD';
         $this->validatePaymentAmount($subscription, $data);
 
         // H5: Idempotency check — return existing payment if same key used
