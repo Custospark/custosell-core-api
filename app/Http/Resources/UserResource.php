@@ -75,8 +75,6 @@ class UserResource extends JsonResource
                                 'plan_name' => $this->business->subscription->plan?->name,
                                 'plan_slug' => $this->business->subscription->plan?->slug,
                                 'plan_features' => $this->business->subscription->plan?->features,
-                                'price_monthly' => $this->business->subscription->price_monthly,
-                                'price_yearly' => $this->business->subscription->price_yearly,
                                 'price_monthly_usd' => $this->business->subscription->price_monthly_usd,
                                 'price_yearly_usd' => $this->business->subscription->price_yearly_usd,
                                 'onboarding_fee_usd' => $this->business->subscription->onboarding_fee_usd,
@@ -92,7 +90,6 @@ class UserResource extends JsonResource
                                 'cancelled_at' => $this->business->subscription->cancelled_at,
                                 'suspended_at' => $this->business->subscription->suspended_at,
                                 'approved_at' => $this->business->subscription->approved_at,
-                                'onboarding_fee_ugx' => $this->business->subscription->onboarding_fee_ugx,
                             ]
                         ),
                 ];

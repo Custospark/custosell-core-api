@@ -40,7 +40,7 @@ class ForensicGapFixTest extends TestCase
             'name' => 'No Trial',
             'slug' => 'no-trial',
             'description' => 'Plan without trial',
-            'price_monthly' => 50000,
+            'price_monthly_usd' => 15,
             'trial_days' => 0,
             'features' => ['sales' => true],
             'limits' => ['staff_users' => 1],
@@ -322,7 +322,7 @@ class ForensicGapFixTest extends TestCase
         );
 
         $this->assertSame($this->noTrialPlan->id, $changed->plan_id);
-        $this->assertSame((float) $this->noTrialPlan->price_monthly, (float) $changed->price_monthly);
+        $this->assertSame((float) $this->noTrialPlan->price_monthly_usd, (float) $changed->price_monthly_usd);
     }
 
     public function test_h1_change_plan_with_invalid_plan_throws(): void

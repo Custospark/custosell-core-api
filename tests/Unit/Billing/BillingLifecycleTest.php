@@ -99,9 +99,9 @@ class BillingLifecycleTest extends TestCase
             'name' => 'Starter',
             'slug' => 'starter',
             'description' => 'No-trial plan',
-            'price_monthly' => 30000,
-            'price_yearly' => 300000,
-            'onboarding_fee_ugx' => 50000,
+            'price_monthly_usd' => 8,
+            'price_yearly_usd' => 80,
+            'onboarding_fee_usd' => 15,
             'trial_days' => 0,
             'billing_cycle' => 'both',
             'features' => ['sales' => true],
@@ -164,9 +164,9 @@ class BillingLifecycleTest extends TestCase
         $this->assertSame('monthly', $subscription->billing_cycle);
         $this->assertNotNull($subscription->trial_ends_at);
         $this->assertTrue($subscription->trial_ends_at->isFuture());
-        $this->assertSame(75_000, (int) $subscription->price_monthly);
-        $this->assertSame(150_000, (int) $subscription->onboarding_fee_ugx);
-        $this->assertSame(750_000, (int) $subscription->price_yearly);
+        $this->assertSame((float) $this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
+        $this->assertSame((float) $this->essential->onboarding_fee_usd, (float) $subscription->onboarding_fee_usd);
+        $this->assertSame((float) $this->essential->price_yearly_usd, (float) $subscription->price_yearly_usd);
         $this->assertFalse($subscription->onboarding_fee_paid);
     }
 
@@ -249,8 +249,8 @@ class BillingLifecycleTest extends TestCase
 
         $this->assertSame(SubscriptionStatus::TRIAL, $subscription->status);
         $this->assertSame($this->professional->id, $subscription->plan_id);
-        $this->assertSame(200_000, (int) $subscription->price_monthly);
-        $this->assertSame(350_000, (int) $subscription->onboarding_fee_ugx);
+        $this->assertSame((float) $this->professional->price_monthly_usd, (float) $subscription->price_monthly_usd);
+        $this->assertSame((float) $this->professional->onboarding_fee_usd, (float) $subscription->onboarding_fee_usd);
     }
 
     public function test_alan_turing_trial_expires_to_past_due_with_grace(): void
@@ -305,8 +305,8 @@ class BillingLifecycleTest extends TestCase
 
         $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->status);
         $this->assertNull($subscription->trial_ends_at);
-        $this->assertSame(30_000, (int) $subscription->price_monthly);
-        $this->assertSame(50_000, (int) $subscription->onboarding_fee_ugx);
+        $this->assertSame((float) $this->noTrial->price_monthly_usd, (float) $subscription->price_monthly_usd);
+        $this->assertSame((float) $this->noTrial->onboarding_fee_usd, (float) $subscription->onboarding_fee_usd);
     }
 
     public function test_margaret_hamilton_pays_onboarding_and_activates_no_trial_plan(): void
@@ -383,7 +383,7 @@ class BillingLifecycleTest extends TestCase
         $subscription->refresh();
 
         $this->assertSame($this->enterprise->id, $subscription->plan_id);
-        $this->assertSame(500_000, (int) $subscription->plan->price_monthly);
+        $this->assertSame((float) $this->enterprise->price_monthly_usd, (float) $subscription->plan->price_monthly_usd);
     }
 
     public function test_tim_berners_lee_gets_proration_quote_for_upgrade(): void
@@ -395,8 +395,8 @@ class BillingLifecycleTest extends TestCase
 
         $this->assertSame($this->essential->id, $quote['current_plan']['id']);
         $this->assertSame($this->enterprise->id, $quote['new_plan']['id']);
-        $this->assertSame(75_000, (int) $quote['current_plan']['price_monthly']);
-        $this->assertSame(500_000, (int) $quote['new_plan']['price_monthly']);
+        $this->assertSame((float) $this->essential->price_monthly_usd, (float) $quote['current_plan']['price_monthly_usd']);
+        $this->assertSame((float) $this->enterprise->price_monthly_usd, (float) $quote['new_plan']['price_monthly_usd']);
         $this->assertArrayHasKey('proration', $quote);
         $this->assertArrayHasKey('proration_due', $quote['proration']);
         $this->assertGreaterThan(0, $quote['proration']['proration_due']);

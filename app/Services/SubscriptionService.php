@@ -46,9 +46,6 @@ class SubscriptionService implements SubscriptionServiceInterface
         if ($planId) {
             $plan = $this->planRepository->find($planId);
             if ($plan) {
-                $data['price_monthly'] = $plan->price_monthly;
-                $data['price_yearly'] = $plan->price_yearly;
-                $data['onboarding_fee_ugx'] = $plan->onboarding_fee_ugx;
                 $data['price_monthly_usd'] = $plan->price_monthly_usd;
                 $data['price_yearly_usd'] = $plan->price_yearly_usd;
                 $data['onboarding_fee_usd'] = $plan->onboarding_fee_usd;
@@ -102,9 +99,6 @@ class SubscriptionService implements SubscriptionServiceInterface
         $data = [
             'business_id' => $businessId,
             'plan_id' => $planId,
-            'price_monthly' => $plan->price_monthly,
-            'price_yearly' => $plan->price_yearly,
-            'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
             'price_monthly_usd' => $plan->price_monthly_usd,
             'price_yearly_usd' => $plan->price_yearly_usd,
             'onboarding_fee_usd' => $plan->onboarding_fee_usd,
@@ -172,9 +166,6 @@ class SubscriptionService implements SubscriptionServiceInterface
         return DB::transaction(function () use ($subscription, $plan) {
             $data = [
                 'plan_id' => $plan->id,
-                'price_monthly' => $plan->price_monthly,
-                'price_yearly' => $plan->price_yearly,
-                'onboarding_fee_ugx' => $plan->onboarding_fee_ugx,
                 'price_monthly_usd' => $plan->price_monthly_usd,
                 'price_yearly_usd' => $plan->price_yearly_usd,
                 'onboarding_fee_usd' => $plan->onboarding_fee_usd,

@@ -106,8 +106,8 @@ class SubscriptionBillingTest extends TestCase
         $this->assertContains('Enterprise', $names);
 
         $essential = collect($response->json('data'))->firstWhere('slug', 'essential');
-        $this->assertArrayHasKey('price_monthly', $essential);
-        $this->assertEquals(75000, (int) $essential['price_monthly']);
+        $this->assertArrayHasKey('price_monthly_usd', $essential);
+        $this->assertEquals(20, (int) $essential['price_monthly_usd']);
     }
 
     public function test_list_active_plans_returns_only_active_sorted(): void
@@ -115,7 +115,7 @@ class SubscriptionBillingTest extends TestCase
         Plan::create([
             'name' => 'Inactive Plan',
             'slug' => 'inactive',
-            'price_monthly' => 1000,
+            'price_monthly_usd' => 10,
             'features' => [],
             'limits' => [],
             'is_active' => false,
@@ -141,7 +141,7 @@ class SubscriptionBillingTest extends TestCase
         $response = $this->getJson('/api/v1/plans/' . $this->essentialPlan->id);
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly', 'features', 'limits']])
+            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly_usd', 'features', 'limits']])
             ->assertJsonPath('data.name', 'Essential');
     }
 

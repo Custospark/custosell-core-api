@@ -39,7 +39,7 @@ class SubscriptionLifecycleTest extends TestCase
             'name' => 'No Trial',
             'slug' => 'no-trial',
             'description' => 'Plan without trial',
-            'price_monthly' => 50000,
+            'price_monthly_usd' => 15,
             'trial_days' => 0,
             'features' => ['sales' => true],
             'limits' => ['staff_users' => 1],

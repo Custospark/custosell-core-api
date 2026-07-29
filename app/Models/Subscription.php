@@ -16,9 +16,9 @@ class Subscription extends Model
     protected $fillable = [
         'business_id',
         'plan_id',
-        'price_monthly',
-        'price_yearly',
-        'onboarding_fee_ugx',
+        'price_monthly_usd',
+        'price_yearly_usd',
+        'onboarding_fee_usd',
         'billing_cycle',
         'status',
         'starts_at',

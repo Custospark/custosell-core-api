@@ -45,7 +45,7 @@ class ReferralLifecycleTest extends TestCase
             'business_id' => $this->business->id,
             'plan_id' => $plan->id,
             'status' => 'trial',
-            'price_monthly' => 100000,
+            'price_monthly_usd' => 25,
             'billing_cycle' => 'monthly',
             'starts_at' => now(),
             'trial_ends_at' => now()->addDays(14),

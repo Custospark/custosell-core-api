@@ -40,8 +40,8 @@ class SubscriptionPaymentActionResolverTest extends TestCase
         return Subscription::create(array_merge([
             'business_id' => $this->business->id,
             'plan_id' => $this->plan->id,
-            'price_monthly' => $this->plan->price_monthly,
-            'price_yearly' => $this->plan->price_yearly,
+            'price_monthly_usd' => $this->plan->price_monthly_usd,
+            'price_yearly_usd' => $this->plan->price_yearly_usd,
             'billing_cycle' => 'monthly',
             'status' => SubscriptionStatus::TRIAL,
             'onboarding_fee_paid' => true,

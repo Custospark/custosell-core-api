@@ -31,10 +31,7 @@ class PaymentQuoteService
             ?? $subscription->ends_at
             ?? now()->addMonth();
 
-        // Use snapshotted prices from the subscription for the current plan
         $subscriptionPrices = [
-            'price_monthly' => $subscription->price_monthly,
-            'price_yearly' => $subscription->price_yearly,
             'price_monthly_usd' => $subscription->price_monthly_usd,
             'price_yearly_usd' => $subscription->price_yearly_usd,
         ];
@@ -51,16 +48,12 @@ class PaymentQuoteService
             'current_plan' => [
                 'id' => $currentPlan->id,
                 'name' => $currentPlan->name,
-                'price_monthly' => (float) ($subscription->price_monthly ?? $currentPlan->price_monthly),
-                'price_yearly' => (float) ($subscription->price_yearly ?? $currentPlan->price_yearly),
                 'price_monthly_usd' => (float) ($subscription->price_monthly_usd ?? $currentPlan->price_monthly_usd ?? 0),
                 'price_yearly_usd' => (float) ($subscription->price_yearly_usd ?? $currentPlan->price_yearly_usd ?? 0),
             ],
             'new_plan' => [
                 'id' => $newPlan->id,
                 'name' => $newPlan->name,
-                'price_monthly' => (float) $newPlan->price_monthly,
-                'price_yearly' => (float) $newPlan->price_yearly,
                 'price_monthly_usd' => (float) ($newPlan->price_monthly_usd ?? 0),
                 'price_yearly_usd' => (float) ($newPlan->price_yearly_usd ?? 0),
             ],

@@ -64,7 +64,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         return Business::factory()->create(['owner_id' => $user->id]);
     }
 
-    // ─── Story 1: Percentage discount — discount_applied is calculated, price_monthly unchanged ───
+    // ─── Story 1: Percentage discount — discount_applied is calculated, price_monthly_usd unchanged ───
 
     public function test_percentage_discount_applied_does_not_change_subscription_price(): void
     {
@@ -81,19 +81,19 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $expected = round($this->essential->price_monthly_usd * 10 / 100, 2);
         $this->assertEquals($expected, (float) $referral->discount_applied);
         $this->assertEquals(
-            $this->essential->price_monthly,
-            (float) $subscription->price_monthly,
-            'Subscription price_monthly must remain unchanged — referral discount is informational only'
+            $this->essential->price_monthly_usd,
+            (float) $subscription->price_monthly_usd,
+            'Subscription price_monthly_usd must remain unchanged — referral discount is informational only'
         );
     }
 
-    // ─── Story 2: Flat discount — discount_applied is calculated, price_monthly unchanged ───
+    // ─── Story 2: Flat discount — discount_applied is calculated, price_monthly_usd unchanged ───
 
     public function test_flat_discount_applied_does_not_change_subscription_price(): void
     {
-        $code = $this->makeReferrer('FLAT50', DiscountType::FLAT_AMOUNT, 50000);
-        $business = $this->makeReferredBusiness();
+        $code = $this->makeReferrer('FLAT10', DiscountType::FLAT_AMOUNT, 10);
 
+        $business = $this->makeReferredBusiness();
         $subscription = $this->subscriptionService->subscribe(
             $business->id, $this->professional->id, 'monthly', $code->code
         );
@@ -101,15 +101,15 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral);
-        $this->assertEquals(50000, (float) $referral->discount_applied);
+        $this->assertEquals(10, (float) $referral->discount_applied);
         $this->assertEquals(
-            $this->professional->price_monthly,
-            (float) $subscription->price_monthly,
+            $this->professional->price_monthly_usd,
+            (float) $subscription->price_monthly_usd,
             'Flat discount must not reduce the subscription price'
         );
     }
 
-    // ─── Story 3: Free month discount — discount_applied equals price, price_monthly unchanged ───
+    // ─── Story 3: Free month discount — discount_applied equals price, price_monthly_usd unchanged ───
 
     public function test_free_month_discount_applied_does_not_change_subscription_price(): void
     {
@@ -125,8 +125,8 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertNotNull($referral);
         $this->assertEquals($this->essential->price_monthly_usd, (float) $referral->discount_applied);
         $this->assertEquals(
-            $this->essential->price_monthly,
-            (float) $subscription->price_monthly,
+            $this->essential->price_monthly_usd,
+            (float) $subscription->price_monthly_usd,
             'Free month discount must not change the stored subscription price'
         );
     }
@@ -150,7 +150,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
 
         $expectedDiscount = round($this->essential->price_monthly_usd * 20 / 100, 2);
         $this->assertEquals($expectedDiscount, (float) $referral->discount_applied);
-        $this->assertEquals($this->essential->price_monthly, (float) $subscription->price_monthly);
+        $this->assertEquals($this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
     }
 
     // ─── Story 5: Activation calculates reward based on FULL price, not discounted ───
@@ -181,7 +181,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertNotNull($referral->converted_at);
     }
 
-    // ─── Story 6: Sales rep commission is based on FULL price ───
+    // ─── Story 6: Sales rep commission is based on FULL price (USD) ───
 
     public function test_sales_rep_commission_is_based_on_full_price(): void
     {
@@ -191,9 +191,9 @@ class ReferralSubscriptionIntegrationTest extends TestCase
             'owner_user_id' => $salesRepUser->id,
             'code' => 'SRPCT',
             'discount_type' => DiscountType::FLAT_AMOUNT,
-            'discount_value' => 10000,
+            'discount_value' => 5,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 5000,
+            'reward_value' => 2,
             'is_active' => true,
         ]);
         SalesRep::create([
@@ -213,7 +213,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral);
-        $this->assertEquals(10000, (float) $referral->discount_applied);
+        $this->assertEquals(5, (float) $referral->discount_applied);
 
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
@@ -225,13 +225,13 @@ class ReferralSubscriptionIntegrationTest extends TestCase
             'Commission must be on the FULL price, not the discounted price');
     }
 
-    // ─── Story 7: All discount types keep price_monthly at full value ───
+    // ─── Story 7: All discount types keep price_monthly_usd at full value ───
 
     public function test_all_discount_types_leave_subscription_price_unchanged(): void
     {
         $setups = [
             ['code' => 'PCT15', 'type' => DiscountType::PERCENTAGE, 'value' => 15],
-            ['code' => 'FLAT25', 'type' => DiscountType::FLAT_AMOUNT, 'value' => 25000],
+            ['code' => 'FLAT25', 'type' => DiscountType::FLAT_AMOUNT, 'value' => 25],
             ['code' => 'FREEM2', 'type' => DiscountType::FREE_MONTH, 'value' => 0],
         ];
 
@@ -244,9 +244,9 @@ class ReferralSubscriptionIntegrationTest extends TestCase
             );
 
             $this->assertEquals(
-                $this->essential->price_monthly,
-                (float) $subscription->price_monthly,
-                "price_monthly must stay at {$this->essential->price_monthly} with {$cfg['code']}"
+                $this->essential->price_monthly_usd,
+                (float) $subscription->price_monthly_usd,
+                "price_monthly_usd must stay at {$this->essential->price_monthly_usd} with {$cfg['code']}"
             );
         }
     }

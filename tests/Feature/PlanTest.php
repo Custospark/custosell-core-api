@@ -98,7 +98,7 @@ class PlanTest extends TestCase
         $response = $this->getJson("/api/v1/plans/{$plan->id}");
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly', 'features', 'limits']])
+            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly_usd', 'features', 'limits']])
             ->assertJsonPath('data.name', 'Essential');
     }
 
@@ -115,8 +115,8 @@ class PlanTest extends TestCase
             'name' => 'Enterprise Plus',
             'slug' => 'enterprise-plus',
             'description' => 'For large businesses',
-            'price_monthly' => 500000,
-            'price_yearly' => 5000000,
+            'price_monthly_usd' => 135,
+            'price_yearly_usd' => 1350,
             'features' => ['expenses' => true, 'shift_tracking' => true, 'discounts' => true, 'refunds' => true, 'export_data' => true],
             'limits' => ['staff_users' => 50, 'products' => 10000, 'monthly_sales' => null, 'customers' => 10000, 'categories' => 100],
             'is_active' => true,
@@ -124,7 +124,7 @@ class PlanTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'slug', 'price_monthly'])
+            ->assertJsonStructure(['id', 'name', 'slug', 'price_monthly_usd'])
             ->assertJsonPath('name', 'Enterprise Plus');
     }
 
@@ -132,7 +132,7 @@ class PlanTest extends TestCase
     {
         $response = $this->postJson('/api/v1/plans', [
             'slug' => 'no-name',
-            'price_monthly' => 0,
+            'price_monthly_usd' => 0,
             'features' => [],
             'limits' => [],
         ]);
@@ -146,7 +146,7 @@ class PlanTest extends TestCase
         $this->postJson('/api/v1/plans', [
             'name' => 'First Plan',
             'slug' => 'duplicate-slug',
-            'price_monthly' => 1000,
+            'price_monthly_usd' => 10,
             'features' => ['sales' => true],
             'limits' => ['max_products' => 100],
         ]);
@@ -154,7 +154,7 @@ class PlanTest extends TestCase
         $response = $this->postJson('/api/v1/plans', [
             'name' => 'Second Plan',
             'slug' => 'duplicate-slug',
-            'price_monthly' => 2000,
+            'price_monthly_usd' => 20,
             'features' => ['sales' => true],
             'limits' => ['max_products' => 100],
         ]);
@@ -170,7 +170,7 @@ class PlanTest extends TestCase
         $response = $this->putJson("/api/v1/plans/{$plan->id}", [
             'name' => 'Essential Updated',
             'slug' => 'essential',
-            'price_monthly' => 0,
+            'price_monthly_usd' => 0,
             'features' => ['expenses' => false, 'shift_tracking' => false, 'discounts' => true, 'refunds' => false, 'export_data' => false],
             'limits' => ['staff_users' => 2, 'products' => 100, 'monthly_sales' => 200, 'customers' => 100, 'categories' => 10],
         ]);
@@ -186,14 +186,14 @@ class PlanTest extends TestCase
         $response = $this->putJson("/api/v1/plans/{$plan->id}", [
             'name' => 'Professional',
             'slug' => 'professional',
-            'price_monthly' => 50000,
-            'price_yearly' => 500000,
+            'price_monthly_usd' => 15,
+            'price_yearly_usd' => 150,
             'features' => ['expenses' => true, 'shift_tracking' => true, 'discounts' => true, 'refunds' => true, 'export_data' => false],
             'limits' => ['staff_users' => 5, 'products' => 1000, 'monthly_sales' => null, 'customers' => 1000, 'categories' => 30],
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.price_monthly', '50000.00');
+            ->assertJsonPath('data.price_monthly_usd', 15);
     }
 
     public function test_delete_plan(): void

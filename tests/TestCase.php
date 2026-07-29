@@ -30,7 +30,7 @@ abstract class TestCase extends BaseTestCase
                 'name' => 'Essential',
                 'slug' => 'essential',
                 'description' => 'Auto-created for tests',
-                'price_monthly' => 75000,
+                'price_monthly_usd' => 20,
                 'features' => ['sales' => true],
                 'limits' => ['staff_users' => 5],
                 'is_active' => true,

@@ -12,11 +12,8 @@ class Plan extends Model
         'name',
         'slug',
         'description',
-        'price_monthly',
-        'price_yearly',
         'price_monthly_usd',
         'price_yearly_usd',
-        'onboarding_fee_ugx',
         'onboarding_fee_usd',
         'trial_days',
         'billing_cycle',
@@ -31,11 +28,8 @@ class Plan extends Model
     protected function casts(): array
     {
         return [
-            'price_monthly' => 'decimal:2',
-            'price_yearly' => 'decimal:2',
             'price_monthly_usd' => 'float',
             'price_yearly_usd' => 'float',
-            'onboarding_fee_ugx' => 'float',
             'onboarding_fee_usd' => 'float',
             'trial_days' => 'integer',
             'features' => 'array',
@@ -59,21 +53,21 @@ class Plan extends Model
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('sort_order')->orderBy('price_monthly');
+        return $query->orderBy('sort_order')->orderBy('price_monthly_usd');
     }
 
-    public function priceIn(string $currency = 'UGX'): float
+    public function priceMonthly(): float
     {
-        return strtoupper($currency) === 'USD' ? $this->price_monthly_usd : (float) $this->price_monthly;
+        return (float) $this->price_monthly_usd;
     }
 
-    public function onboardingFeeIn(string $currency = 'UGX'): float
+    public function priceYearly(): float
     {
-        return strtoupper($currency) === 'USD' ? $this->onboarding_fee_usd : $this->onboarding_fee_ugx;
+        return (float) ($this->price_yearly_usd ?? 0);
     }
 
     public function hasOnboardingFee(): bool
     {
-        return $this->onboarding_fee_ugx > 0 || $this->onboarding_fee_usd > 0;
+        return (float) ($this->onboarding_fee_usd ?? 0) > 0;
     }
 }
