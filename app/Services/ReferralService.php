@@ -130,18 +130,8 @@ class ReferralService implements ReferralServiceInterface
                 'reward_amount' => 0,
             ]);
 
-            // Create a billing credit for the referred business so the discount is real
-            if ($discountApplied > 0) {
-                $totalDiscount = $discountApplied * max(1, (int) ($referralCode->discount_duration_months ?? 1));
-                BillingCredit::create([
-                    'owner_type' => 'business',
-                    'owner_id' => $businessId,
-                    'referral_id' => $referral->id,
-                    'amount' => $totalDiscount,
-                    'amount_used' => 0,
-                    'status' => 'available',
-                ]);
-            }
+            // Discount credit is NOT created here — deferred to markActive()
+            // so it only activates after the referred business makes their first payment.
 
             $referralCode->markUsed();
 
@@ -197,6 +187,21 @@ class ReferralService implements ReferralServiceInterface
                 if ($rewardAmount > 0) {
                     $this->creditService->createFromReferral($referral, $rewardAmount);
                 }
+            }
+
+            // Create discount credit for the referred business — only after payment activates the subscription
+            $discountApplied = (float) ($referral->discount_applied ?? 0);
+            if ($discountApplied > 0) {
+                $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
+                $totalDiscount = round($discountApplied * $discountDuration, 2);
+                BillingCredit::create([
+                    'owner_type' => 'business',
+                    'owner_id' => $referral->referred_business_id,
+                    'referral_id' => $referral->id,
+                    'amount' => $totalDiscount,
+                    'amount_used' => 0,
+                    'status' => 'available',
+                ]);
             }
 
             return $this->referralRepository->update($referral, $updateData);
