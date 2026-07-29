@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\Product;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\Services\Contracts\ProductServiceInterface;
+use App\Services\Contracts\SubscriptionServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class ProductService implements ProductServiceInterface
 {
     public function __construct(
         protected ProductRepositoryInterface $productRepository,
+        protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -25,6 +28,19 @@ class ProductService implements ProductServiceInterface
 
     public function create(int $businessId, array $data): Product
     {
+        $subscription = $this->subscriptionService->getByBusiness($businessId);
+        $limits = $subscription?->plan?->limits ?? [];
+        $maxProducts = $limits['max_products'] ?? null;
+
+        if ($maxProducts !== null) {
+            $currentCount = $this->productRepository->countByBusiness($businessId);
+            if ($currentCount >= $maxProducts) {
+                throw ValidationException::withMessages([
+                    'plan_limit' => "You have reached the maximum of {$maxProducts} products. Upgrade your plan to add more.",
+                ]);
+            }
+        }
+
         $data['business_id'] = $businessId;
         $data = $this->normalizeCatalogType($data);
 

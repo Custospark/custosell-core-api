@@ -27,6 +27,11 @@ class ProductRepository implements ProductRepositoryInterface
             ->first();
     }
 
+    public function countByBusiness(int $businessId): int
+    {
+        return Product::where('business_id', $businessId)->count();
+    }
+
     public function create(array $data): Product
     {
         return Product::create($data);

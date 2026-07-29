@@ -12,6 +12,7 @@ use App\Models\ReferralCode;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Contracts\ReferralCodeServiceInterface;
+use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\Hr\HrStaffMirrorService;
 use App\Services\ModuleAccessService;
@@ -29,6 +30,7 @@ class UserService implements UserServiceInterface
         protected HrStaffMirrorService $hrStaffMirror,
         protected ReferralCodeServiceInterface $referralCodeService,
         protected ReferralCodeRepositoryInterface $referralCodeRepository,
+        protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
     public function getAll(int $businessId): Collection
@@ -75,6 +77,8 @@ class UserService implements UserServiceInterface
 
     public function createStaff(int $businessId, array $data, bool $mirrorEmployee = true): User
     {
+        $this->assertWithinStaffLimit($businessId);
+
         $data['business_id'] = $businessId;
         $data['password'] = Hash::make($data['password']);
         $data['created_by'] = Auth::id();
@@ -294,6 +298,30 @@ class UserService implements UserServiceInterface
         if (!$available) {
             throw ValidationException::withMessages([
                 'role_id' => 'The selected role is not available for this business.',
+            ]);
+        }
+    }
+
+    protected function assertWithinStaffLimit(int $businessId): void
+    {
+        $subscription = $this->subscriptionService->getByBusiness($businessId);
+        $limits = $subscription?->plan?->limits ?? [];
+        $maxStaff = $limits['max_staff'] ?? null;
+
+        if ($maxStaff === null) {
+            return;
+        }
+
+        $business = Business::find($businessId);
+        $ownerId = $business?->owner_id;
+
+        $staffCount = User::where('business_id', $businessId)
+            ->when($ownerId, fn ($q) => $q->where('id', '!=', $ownerId))
+            ->count();
+
+        if ($staffCount >= $maxStaff) {
+            throw ValidationException::withMessages([
+                'plan_limit' => "You have reached the maximum of {$maxStaff} staff members. Upgrade your plan to add more.",
             ]);
         }
     }

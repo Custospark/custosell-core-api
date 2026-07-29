@@ -19,6 +19,8 @@ interface ProductRepositoryInterface
 
     public function delete(Product $product): bool;
 
+    public function countByBusiness(int $businessId): int;
+
     public function getActive(int $businessId): Collection;
 
     public function getLowStock(int $businessId): Collection;

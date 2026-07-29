@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Models\Hr\HrEmployee;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Hr\HrStaffMirrorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +20,7 @@ class StaffMembershipService
     public function __construct(
         protected ModuleAccessService $moduleAccess,
         protected HrStaffMirrorService $hrStaffMirror,
+        protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
     /**
@@ -100,6 +102,8 @@ class StaffMembershipService
         if ($roleId !== null) {
             $this->assertRoleAvailableForBusiness($businessId, $roleId);
         }
+
+        $this->assertWithinStaffLimit($businessId);
 
         return DB::transaction(function () use ($actor, $businessId, $email, $roleId, $data) {
             $user = User::withTrashed()
@@ -255,6 +259,30 @@ class StaffMembershipService
         if (! $available) {
             throw ValidationException::withMessages([
                 'role_id' => 'The selected role is not available for this business.',
+            ]);
+        }
+    }
+
+    protected function assertWithinStaffLimit(int $businessId): void
+    {
+        $subscription = $this->subscriptionService->getByBusiness($businessId);
+        $limits = $subscription?->plan?->limits ?? [];
+        $maxStaff = $limits['max_staff'] ?? null;
+
+        if ($maxStaff === null) {
+            return;
+        }
+
+        $business = Business::find($businessId);
+        $ownerId = $business?->owner_id;
+
+        $staffCount = User::where('business_id', $businessId)
+            ->when($ownerId, fn ($q) => $q->where('id', '!=', $ownerId))
+            ->count();
+
+        if ($staffCount >= $maxStaff) {
+            throw ValidationException::withMessages([
+                'plan_limit' => "You have reached the maximum of {$maxStaff} staff members. Upgrade your plan to add more.",
             ]);
         }
     }
