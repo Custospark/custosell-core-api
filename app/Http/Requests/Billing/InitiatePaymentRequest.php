@@ -17,7 +17,7 @@ class InitiatePaymentRequest extends BaseFormRequest
             'gateway_name' => ['required', 'string'],
             'amount' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3'],
-            'payment_type' => ['required', 'string', 'in:onboarding,subscription,renewal,upgrade_proration'],
+            'payment_type' => ['required', 'string', 'in:onboarding,subscription,renewal,upgrade_proration,billing_cycle_change'],
             'phone' => ['sometimes', 'string'],
             'idempotency_key' => ['sometimes', 'string', 'max:255'],
             'metadata' => ['sometimes', 'array'],

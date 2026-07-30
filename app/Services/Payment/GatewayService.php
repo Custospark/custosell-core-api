@@ -65,16 +65,14 @@ class GatewayService
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
         // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone
         $paymentType = $data['payment_type'] ?? 'subscription';
-        if (!in_array($paymentType, [], true)) {
-            $plan = $subscription->plan;
-            $data['amount'] = match ($paymentType) {
-                'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
-                'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
-                    ? (float) ($plan?->price_yearly_usd ?? 0)
-                    : (float) ($plan?->price_monthly_usd ?? 0),
-                default => (float) ($data['amount'] ?? 0),
-            };
-        }
+        $plan = $subscription->plan;
+        $data['amount'] = match ($paymentType) {
+            'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
+            'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
+                ? (float) ($plan?->price_yearly_usd ?? 0)
+                : (float) ($plan?->price_monthly_usd ?? 0),
+            default => (float) ($data['amount'] ?? 0),
+        };
 
         // Validate authoritative amount in USD before applying any discounts
         $data['currency'] = 'USD';
@@ -82,15 +80,13 @@ class GatewayService
 
         // Apply pending referral discount directly (no pre-existing credit needed)
         $referralDiscount = 0;
-        if (!in_array($paymentType, [], true)) {
-            $referral = Referral::where('subscription_id', $subscription->id)
-                ->where('status', ReferralStatus::PENDING)
-                ->first();
-            if ($referral && (float) $referral->discount_applied > 0) {
-                $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
-                $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
-                $referral->update(['status' => ReferralStatus::APPLIED]);
-            }
+        $referral = Referral::where('subscription_id', $subscription->id)
+            ->where('status', ReferralStatus::PENDING)
+            ->first();
+        if ($referral && (float) $referral->discount_applied > 0) {
+            $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
+            $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
+            $referral->update(['status' => ReferralStatus::APPLIED]);
         }
 
         // H5: Idempotency check — return existing payment if same key used
@@ -127,7 +123,8 @@ class GatewayService
 
         // If credits fully cover the payment, bypass the gateway entirely
         if ($originalAmount > 0 && $data['amount'] <= 0) {
-            return DB::transaction(function () use ($subscription, $gatewayName, $data, $originalAmount, $creditApplications, $idempotencyKey, $referralDiscount) {
+            try {
+                return DB::transaction(function () use ($subscription, $gatewayName, $data, $originalAmount, $creditApplications, $idempotencyKey, $referralDiscount) {
                 $ourRef = 'CREDIT-' . now()->format('YmdHis') . '-' . $subscription->id;
                 $payment = $this->paymentService->createPending([
                     'subscription_id' => $subscription->id,
@@ -180,7 +177,13 @@ class GatewayService
                     'reference' => $ourRef,
                     'message' => 'Payment completed entirely by credit.',
                 ];
-            });
+                });
+            } catch (\Throwable $e) {
+                if (!empty($creditApplications)) {
+                    $this->creditService->reverseApplications($creditApplications);
+                }
+                throw $e;
+            }
         }
 
         // Convert amount to payment currency after credit application
@@ -441,26 +444,28 @@ class GatewayService
 
     public function processZeroCostUpgrade(Subscription $subscription, int $toPlanId, ?string $billingCycle = null): void
     {
-        $payment = $this->paymentService->createPending([
-            'subscription_id' => $subscription->id,
-            'business_id' => $subscription->business_id,
-            'amount' => 0,
-            'currency' => 'USD',
-            'method' => 'internal',
-            'payment_type' => 'upgrade_proration',
-            'gateway_name' => 'internal',
-            'paid_at' => now(),
-            'status' => 'completed',
-            'approved_at' => now(),
-            'metadata' => [
-                'to_plan_id' => $toPlanId,
-                'billing_cycle' => $billingCycle,
-                'zero_cost_upgrade' => true,
-            ],
-        ]);
+        DB::transaction(function () use ($subscription, $toPlanId, $billingCycle) {
+            $payment = $this->paymentService->createPending([
+                'subscription_id' => $subscription->id,
+                'business_id' => $subscription->business_id,
+                'amount' => 0,
+                'currency' => 'USD',
+                'method' => 'internal',
+                'payment_type' => 'upgrade_proration',
+                'gateway_name' => 'internal',
+                'paid_at' => now(),
+                'status' => 'completed',
+                'approved_at' => now(),
+                'metadata' => [
+                    'to_plan_id' => $toPlanId,
+                    'billing_cycle' => $billingCycle,
+                    'zero_cost_upgrade' => true,
+                ],
+            ]);
 
-        $payment->refresh();
+            $payment->refresh();
 
-        $this->handlePaymentType($payment);
+            $this->handlePaymentType($payment);
+        });
     }
 }

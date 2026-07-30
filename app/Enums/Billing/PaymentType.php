@@ -8,4 +8,5 @@ enum PaymentType: string
     case SUBSCRIPTION = 'subscription';
     case RENEWAL = 'renewal';
     case UPGRADE_PRORATION = 'upgrade_proration';
+    case BILLING_CYCLE_CHANGE = 'billing_cycle_change';
 }
