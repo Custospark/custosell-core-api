@@ -29,7 +29,7 @@ class AuthController extends Controller
         $this->platformAdminService->assignIfEligible($user);
         $user->load(['business.subscription.plan', 'role', 'roles']);
 
-        if ($user->business_id) {
+        if ($user->business_id && $user->business?->business_type !== 'personal') {
             $activeShift = Shift::create([
                 'business_id' => $user->business_id,
                 'user_id' => $user->id,

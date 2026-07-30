@@ -54,7 +54,7 @@ class UserService implements UserServiceInterface
     {
         $data['password'] = Hash::make($data['password']);
 
-        $accountType = $data['account_type'] ?? 'business';
+        $accountType = $data['account_type'] ?? 'personal';
         $isPersonalType = in_array($accountType, ['personal', 'storefront_buyer'], true);
         $data['account_type'] = $isPersonalType ? 'personal' : 'business';
 
