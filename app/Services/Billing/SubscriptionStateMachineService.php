@@ -28,11 +28,17 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
         return DB::transaction(function () use ($subscription, $approvedBy) {
             $now = Carbon::now();
 
+            // Preserve remaining trial days: if the user activates while still on trial,
+            // billing starts after the trial ends, not immediately.
+            $billingFrom = $subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isFuture()
+                ? $subscription->trial_ends_at
+                : $now;
+
             $data = [
                 'status' => SubscriptionStatus::ACTIVE,
                 'approved_at' => $now,
                 'approved_by_user_id' => $approvedBy,
-                'next_billing_date' => $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly'),
+                'next_billing_date' => $this->nextBillingDate($billingFrom, $subscription->billing_cycle ?? 'monthly'),
                 'grace_period_ends_at' => null,
             ];
 
