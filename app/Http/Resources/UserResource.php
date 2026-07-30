@@ -75,6 +75,7 @@ class UserResource extends JsonResource
                                 'plan_name' => $this->business->subscription->plan?->name,
                                 'plan_slug' => $this->business->subscription->plan?->slug,
                                 'plan_features' => $this->business->subscription->plan?->features,
+                                'plan_limits' => $this->business->subscription->plan?->limits,
                                 'price_monthly_usd' => $this->business->subscription->price_monthly_usd,
                                 'price_yearly_usd' => $this->business->subscription->price_yearly_usd,
                                 'onboarding_fee_usd' => $this->business->subscription->onboarding_fee_usd,

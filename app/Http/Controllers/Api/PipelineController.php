@@ -28,9 +28,9 @@ use App\Services\Pipeline\PipelineBoardConversationService;
 use App\Services\Pipeline\PipelineBoardProgressService;
 use App\Services\Pipeline\PipelineBoardResourceService;
 use App\Services\Pipeline\PipelineBoardTemplateService;
-use App\Services\Pipeline\PipelineCollaborationService;
 use App\Services\Pipeline\PipelineLeadImportService;
-use App\Services\PipelineService;
+use App\Services\BoardMemberLimitService;
+use App\Services\Contracts\SubscriptionServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -47,6 +47,8 @@ class PipelineController extends Controller
         protected PipelineBoardTemplateService $boardTemplates,
         protected PipelineBoardProgressService $boardProgress,
         protected PipelineLeadImportService $leadImport,
+        protected BoardMemberLimitService $boardMemberLimit,
+        protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
     public function boards(Request $request): JsonResponse
@@ -102,6 +104,12 @@ class PipelineController extends Controller
             'workspace' => ['nullable', 'in:pipeline,estimates'],
         ]);
 
+        if ($validated['visibility'] === 'shared' && (!empty($validated['members']) || !empty($validated['member_ids']))) {
+            $subscription = $this->subscriptionService->getByBusiness((int) $request->user()->business_id);
+            $incomingCount = !empty($validated['members']) ? count($validated['members']) : count($validated['member_ids']);
+            $this->boardMemberLimit->assertWithinBoardMemberLimit($subscription, 0, $incomingCount);
+        }
+
         $board = $this->pipelineService->createBoard(
             (int) $request->user()->business_id,
             (int) $request->user()->id,
@@ -141,6 +149,14 @@ class PipelineController extends Controller
             'members.*.role' => ['nullable', 'in:viewer,contributor,manager,editor'],
             'members.*.send_notification' => ['nullable', 'boolean'],
         ]);
+
+        if ($validated['visibility'] === 'shared' && (!empty($validated['members']) || !empty($validated['member_ids']))) {
+            $board = $this->pipelineService->getBoard((int) $request->user()->business_id, $request->user(), $id);
+            $currentMemberCount = $board->members->count();
+            $subscription = $this->subscriptionService->getByBusiness((int) $request->user()->business_id);
+            $incomingCount = !empty($validated['members']) ? count($validated['members']) : count($validated['member_ids']);
+            $this->boardMemberLimit->assertWithinBoardMemberLimit($subscription, $currentMemberCount, $incomingCount);
+        }
 
         $board = $this->pipelineService->updateBoard(
             (int) $request->user()->business_id,
