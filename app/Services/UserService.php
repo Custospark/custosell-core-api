@@ -67,6 +67,21 @@ class UserService implements UserServiceInterface
 
         $user = $this->userRepository->create($data);
 
+        // Auto-generate a referral code so every user has one from account creation
+        $hasCode = $this->referralCodeRepository->findByOwnerUser($user->id);
+        if (!$hasCode) {
+            $code = $this->referralCodeService->generateCodeForUser($user->name);
+            $this->referralCodeService->create([
+                'code' => $code,
+                'owner_type' => ReferralCodeOwnerType::BUSINESS,
+                'owner_user_id' => $user->id,
+                'discount_type' => DiscountType::PERCENTAGE,
+                'discount_value' => 10,
+                'reward_type' => RewardType::PERCENTAGE,
+                'reward_value' => 20,
+            ]);
+        }
+
         // Personal accounts get a minimal business record + Personal plan subscription.
         // Module access is gated by the subscription status, same as business accounts.
         if ($isPersonalType) {
