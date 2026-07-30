@@ -107,6 +107,7 @@ class BusinessService implements BusinessServiceInterface
             $business = $this->businessRepository->create($businessData);
 
             $user->business_id = $business->id;
+            $user->account_type = 'business';
             $user->modules = [
                 ...$this->moduleAccess->fullBusinessModulesForOwner(),
                 ModuleAccessService::ESTIMATES_FULL_SLUG,
