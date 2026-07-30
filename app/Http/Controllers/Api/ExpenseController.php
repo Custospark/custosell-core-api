@@ -75,6 +75,15 @@ class ExpenseController extends Controller
         return response()->json(null, 204);
     }
 
+    public function overview(Request $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $filters = $request->only(['date_from', 'date_to']);
+        return response()->json(
+            $this->expenseService->getOverview($businessId, $filters)
+        );
+    }
+
     public function summary(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;

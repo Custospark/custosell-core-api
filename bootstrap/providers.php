@@ -53,6 +53,7 @@ return [
     SubscriptionServiceProvider::class,
     ExpenseCategoryServiceProvider::class,
     ExpenseServiceProvider::class,
+    IncomeSourceServiceProvider::class,
     InvoiceServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
