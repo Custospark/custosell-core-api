@@ -103,6 +103,60 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        Plan::updateOrCreate(['slug' => 'estimates-personal'], [
+            'name' => 'Estimates & Projects (Personal)',
+            'slug' => 'estimates-personal',
+            'description' => 'Send estimates, manage projects, and track progress.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 14,
+            'billing_cycle' => 'both',
+            'is_popular' => false,
+            'features' => [
+                'estimates' => true,
+            ],
+            'limits' => [],
+            'sort_order' => 12,
+            'is_active' => true,
+        ]);
+
+        Plan::updateOrCreate(['slug' => 'expenses-personal'], [
+            'name' => 'Expenses (Personal)',
+            'slug' => 'expenses-personal',
+            'description' => 'Track personal and project expenses.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 14,
+            'billing_cycle' => 'both',
+            'is_popular' => false,
+            'features' => [
+                'expenses' => true,
+            ],
+            'limits' => [],
+            'sort_order' => 13,
+            'is_active' => true,
+        ]);
+
+        Plan::updateOrCreate(['slug' => 'documents-personal'], [
+            'name' => 'Documents (Personal)',
+            'slug' => 'documents-personal',
+            'description' => 'Store, organise, and share files and documents.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 14,
+            'billing_cycle' => 'both',
+            'is_popular' => false,
+            'features' => [
+                'documents' => true,
+            ],
+            'limits' => [],
+            'sort_order' => 14,
+            'is_active' => true,
+        ]);
+
         Plan::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Enterprise',
             'slug' => 'enterprise',

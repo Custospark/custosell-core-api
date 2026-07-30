@@ -18,6 +18,7 @@ class BillingPayment extends Model
     protected $fillable = [
         'business_id',
         'subscription_id',
+        'user_id',
         'amount',
         'currency',
         'method',

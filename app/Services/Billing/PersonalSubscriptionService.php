@@ -16,9 +16,27 @@ class PersonalSubscriptionService
             'price_monthly_usd' => 5,
             'price_yearly_usd' => 50,
         ],
+        'estimates' => [
+            'label' => 'Projects & Estimates',
+            'description' => 'Send estimates, manage projects, and track progress.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+        ],
+        'expenses' => [
+            'label' => 'Expenses',
+            'description' => 'Track personal and project expenses.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+        ],
         'accounting' => [
             'label' => 'Accounting',
             'description' => 'Personal bookkeeping — chart of accounts, journals, and financial reports.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+        ],
+        'documents' => [
+            'label' => 'Documents',
+            'description' => 'Store, organise, and share files and documents.',
             'price_monthly_usd' => 5,
             'price_yearly_usd' => 50,
         ],

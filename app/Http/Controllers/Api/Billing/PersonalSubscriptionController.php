@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\BillingPayment;
 use App\Models\PersonalModuleSubscription;
 use App\Services\Billing\PersonalSubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class PersonalSubscriptionController extends Controller
@@ -72,6 +74,42 @@ class PersonalSubscriptionController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+    }
+
+    public function initiatePayment(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $activeSubscriptions = $this->personalSubscriptionService->activeModules($user);
+
+        if ($activeSubscriptions->isEmpty()) {
+            return response()->json(['message' => 'No active subscriptions to pay for.'], 422);
+        }
+
+        $total = (float) $activeSubscriptions->sum('price_usd');
+
+        $payment = DB::transaction(function () use ($user, $total, $activeSubscriptions) {
+            return BillingPayment::create([
+                'user_id' => $user->id,
+                'amount' => $total,
+                'currency' => 'USD',
+                'status' => 'pending',
+                'payment_type' => 'subscription',
+                'metadata' => [
+                    'personal_modules' => $activeSubscriptions->pluck('module_slug')->toArray(),
+                    'subscription_ids' => $activeSubscriptions->pluck('id')->toArray(),
+                ],
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Payment initiated.',
+            'payment' => [
+                'id' => $payment->id,
+                'amount' => $payment->amount,
+                'currency' => $payment->currency,
+                'status' => $payment->status,
+            ],
+        ]);
     }
 
     public function cancel(int $id, Request $request): JsonResponse

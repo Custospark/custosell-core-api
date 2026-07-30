@@ -7,5 +7,6 @@ Route::middleware('auth:sanctum')->prefix('personal/subscriptions')->group(funct
     Route::get('available', [PersonalSubscriptionController::class, 'availableModules']);
     Route::get('mine', [PersonalSubscriptionController::class, 'mySubscriptions']);
     Route::post('subscribe', [PersonalSubscriptionController::class, 'subscribe']);
+    Route::post('pay', [PersonalSubscriptionController::class, 'initiatePayment']);
     Route::post('{id}/cancel', [PersonalSubscriptionController::class, 'cancel']);
 });
