@@ -57,7 +57,7 @@ class GuideFaqSeeder extends Seeder
             // ── For Personal Accounts ────────────────────────────
             [
                 'question' => 'What tools are available on a Personal account?',
-                'answer' => 'Personal accounts can choose from the following modules:\n\n• Sales CRM / Pipeline — manage leads, deals, and customer interactions\n• Projects & Estimates — create estimates, manage projects, and collaborate with your team\n• Expenses — track and categorize your business expenses\n• Accounting — chart of accounts, journal entries, trial balance, income statement, balance sheet\n• Documents — store and organize your business files\n\nEach module is available on a monthly subscription basis. You only pay for what you use.',
+                'answer' => 'Personal accounts can choose from the following modules:\n\n• **Sales CRM / Pipeline** — Manage leads, deals, and customer interactions with a visual pipeline board. Track every stage from first contact to closed deal.\n• **Projects & Estimates** — Create professional estimates and invoices, manage projects with tasks and milestones, and collaborate with your team in real time.\n• **Expenses** — Track and categorize your business expenses. Record receipts, attach images, and generate expense reports for tax time.\n• **Accounting** — Full double-entry accounting with a chart of accounts, journal entries, trial balance, income statement, and balance sheet.\n• **Documents** — Store and organize your business files securely in the cloud. Upload contracts, receipts, reports, and any other documents you need to keep.\n\nEach module is available on a monthly subscription basis. You only pay for what you use.',
                 'sort_order' => 9,
             ],
             [
@@ -67,7 +67,7 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'How does module purchasing work for Personal accounts?',
-                'answer' => 'On a Personal plan, you select which modules you want to use (Pipeline, Projects & Estimates, Expenses, Accounting, Documents). Each module adds to your monthly fee. You can enable or disable modules from your account settings anytime — changes take effect on your next billing cycle.',
+                'answer' => 'On a Personal plan, you select which modules you want to use — Sales CRM / Pipeline, Projects & Estimates, Expenses, Accounting, or Documents. Each module adds to your monthly fee. You can enable or disable modules from your account settings anytime; changes take effect on your next billing cycle.',
                 'sort_order' => 11,
             ],
 
@@ -97,7 +97,7 @@ class GuideFaqSeeder extends Seeder
         ];
 
         foreach ($faqs as $faq) {
-            GuideFaq::firstOrCreate(
+            GuideFaq::updateOrCreate(
                 ['question' => $faq['question']],
                 $faq,
             );
