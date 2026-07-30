@@ -3,7 +3,9 @@
 namespace App\Services\Payment\Concerns;
 
 use App\Models\BillingPayment;
+use App\Models\Plan;
 use App\Models\Subscription;
+use App\Services\ModuleAccessService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -111,6 +113,19 @@ trait HandlesPaymentApproval
             ]);
 
             $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+
+            $plan = Plan::find($toPlanId);
+            if ($plan && $plan->type !== 'personal') {
+                $business = $subscription->business;
+                $owner = $business->owner;
+                if ($owner && $owner->account_type === 'personal') {
+                    $owner->update([
+                        'account_type' => 'business',
+                        'modules' => ModuleAccessService::BUSINESS_MODULES,
+                    ]);
+                    $business->update(['business_type' => 'retail']);
+                }
+            }
         });
 
         Log::info('[GatewayService] Upgrade completed via payment', [
