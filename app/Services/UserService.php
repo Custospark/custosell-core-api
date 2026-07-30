@@ -18,6 +18,7 @@ use App\Services\Hr\HrStaffMirrorService;
 use App\Services\ModuleAccessService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -57,14 +58,33 @@ class UserService implements UserServiceInterface
         $data['account_type'] = $isPersonalType ? 'personal' : 'business';
 
         if ($isPersonalType) {
-            $data['business_id'] = null;
             $data['role_id'] = null;
             $data['modules'] = [];
         } elseif (! array_key_exists('modules', $data) || $data['modules'] === null) {
             $data['modules'] = ModuleAccessService::BUSINESS_MODULES;
         }
 
-        return $this->userRepository->create($data);
+        $user = $this->userRepository->create($data);
+
+        // Personal accounts get a minimal business record so business-dependent
+        // features (sidebar, pipeline, accounting, etc.) work correctly.
+        if ($isPersonalType) {
+            DB::transaction(function () use ($user, $data) {
+                $business = Business::create([
+                    'owner_id' => $user->id,
+                    'name' => ($data['name'] ?? 'Personal') . "'s Workspace",
+                    'slug' => 'personal-workspace-' . $user->id,
+                    'currency' => 'USD',
+                    'status' => 'active',
+                    'business_type' => 'personal',
+                ]);
+                $user->business_id = $business->id;
+                $user->save();
+                $user->setRelation('business', $business);
+            });
+        }
+
+        return $user;
     }
 
     public function login(string $email, string $password): ?User
