@@ -239,6 +239,28 @@ class SubscriptionController extends Controller
                     : 'end_of_period';
             }
 
+            // Monthly→Yearly immediate: require payment first (like upgrade proration)
+            if ($effective === 'immediate' && $subscription->billing_cycle === 'monthly' && $validated['billing_cycle'] === 'yearly') {
+                // Store pending billing cycle (don't update yet — deferred to payment approval)
+                $this->subscriptionService->stageBillingCycleChange(
+                    $subscription,
+                    $validated['billing_cycle'],
+                );
+
+                $quote = $this->paymentQuoteService->getQuote(
+                    $subscription,
+                    $subscription->plan_id,
+                    $validated['billing_cycle'],
+                );
+
+                return response()->json([
+                    'payment_required' => true,
+                    'message' => 'Payment required to switch to yearly billing',
+                    'proration' => $quote,
+                ]);
+            }
+
+            // All other cases (end_of_period or yearly→monthly): use existing flow
             $updated = $this->subscriptionService->changeBillingCycle(
                 $subscription,
                 $validated['billing_cycle'],
@@ -246,6 +268,7 @@ class SubscriptionController extends Controller
             );
 
             return response()->json([
+                'payment_required' => false,
                 'message' => $effective === 'immediate'
                     ? 'Billing cycle changed successfully'
                     : 'Billing cycle change scheduled for end of current period',

@@ -33,8 +33,53 @@ trait HandlesPaymentApproval
             'subscription' => $this->subscriptionService->activateSubscription($subscription, $payment, null),
             'renewal' => $this->subscriptionService->renewSubscription($subscription, $payment),
             'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
+            'billing_cycle_change' => $this->handleBillingCycleChange($payment, $subscription),
             default => null,
         };
+    }
+
+    private function handleBillingCycleChange(BillingPayment $payment, Subscription $subscription): void
+    {
+        $pendingCycle = $subscription->metadata['pending_billing_cycle'] ?? null;
+        if (!$pendingCycle || !in_array($pendingCycle, ['monthly', 'yearly'], true)) {
+            Log::warning('[GatewayService] Billing cycle change payment missing pending_billing_cycle in metadata', [
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscription->id,
+            ]);
+            return;
+        }
+
+        DB::transaction(function () use ($payment, $subscription, $pendingCycle) {
+            $this->scheduledChangeRepo->create([
+                'subscription_id' => $subscription->id,
+                'business_id' => $subscription->business_id,
+                'change_type' => 'billing_cycle_change',
+                'from_plan_id' => $subscription->plan_id,
+                'to_plan_id' => $subscription->plan_id,
+                'effective_at' => now(),
+                'status' => 'applied',
+                'proration_amount' => $payment->amount,
+                'metadata' => [
+                    'source' => 'payment_webhook',
+                    'payment_id' => $payment->id,
+                ],
+            ]);
+
+            $metadata = $subscription->metadata ?? [];
+            unset($metadata['pending_billing_cycle']);
+
+            $this->subscriptionService->applyBillingCycleChange(
+                $subscription,
+                $pendingCycle,
+                $metadata,
+            );
+        });
+
+        Log::info('[GatewayService] Billing cycle change completed via payment', [
+            'payment_id' => $payment->id,
+            'subscription_id' => $subscription->id,
+            'new_billing_cycle' => $pendingCycle,
+        ]);
     }
 
     private function handleUpgradeProration(BillingPayment $payment, Subscription $subscription): void

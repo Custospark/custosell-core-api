@@ -16,7 +16,6 @@ use App\Services\Payment\Gateways\Exceptions\GatewayException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
 class GatewayService
 {
     use \App\Services\Payment\Concerns\HandlesPaymentApproval;
@@ -453,10 +452,11 @@ class GatewayService
                 ? (float) ($plan?->price_yearly_usd ?? 0)
                 : (float) ($plan?->price_monthly_usd ?? 0),
             'upgrade_proration' => $amount,
+            'billing_cycle_change' => $amount,
             default => $amount,
         };
 
-        if ($paymentType === 'upgrade_proration') {
+        if (in_array($paymentType, ['upgrade_proration', 'billing_cycle_change'], true)) {
             return;
         }
 
@@ -491,11 +491,9 @@ class GatewayService
             $payment = $this->paymentRepo->findByGatewayTransactionId($webhookData['gateway_txn_id']);
             if ($payment) return $payment;
         }
-
         if (!empty($webhookData['our_reference'])) {
             return $this->paymentRepo->findByTransactionReference($webhookData['our_reference']);
         }
-
         return null;
     }
 }

@@ -134,6 +134,34 @@ class SubscriptionService implements SubscriptionServiceInterface
         return $subscription;
     }
 
+    public function applyBillingCycleChange(Subscription $subscription, string $newBillingCycle, array $metadata = []): Subscription
+    {
+        $plan = $this->planRepository->find($subscription->plan_id);
+        if (!$plan) {
+            throw new \RuntimeException('Plan not found');
+        }
+
+        return $this->subscriptionRepository->update($subscription, [
+            'billing_cycle' => $newBillingCycle,
+            'price_monthly_usd' => $plan->price_monthly_usd,
+            'price_yearly_usd' => $plan->price_yearly_usd,
+            'onboarding_fee_usd' => $plan->onboarding_fee_usd,
+            'next_billing_date' => $this->nextBillingDate(now(), $newBillingCycle),
+            'metadata' => $metadata,
+        ]);
+    }
+
+    public function stageBillingCycleChange(Subscription $subscription, string $newBillingCycle): Subscription
+    {
+        $this->subscriptionRepository->update($subscription, [
+            'metadata' => array_merge($subscription->metadata ?? [], [
+                'pending_billing_cycle' => $newBillingCycle,
+            ]),
+        ]);
+
+        return $subscription->fresh();
+    }
+
     public function changeBillingCycle(Subscription $subscription, string $newBillingCycle, string $effective = 'immediate'): Subscription
     {
         if (!in_array($newBillingCycle, ['monthly', 'yearly'], true)) {

@@ -25,6 +25,8 @@ interface SubscriptionServiceInterface
     public function cancelImmediately(int $id): Subscription;
     public function reactivate(Subscription $subscription): Subscription;
     public function activateAfterOnboarding(Subscription $subscription): Subscription;
+    public function stageBillingCycleChange(Subscription $subscription, string $newBillingCycle): Subscription;
+    public function applyBillingCycleChange(Subscription $subscription, string $newBillingCycle, array $metadata = []): Subscription;
     public function hasAccess(int $businessId): bool;
 
     public function processRenewals(): int;
