@@ -74,6 +74,10 @@ class GatewayService
             };
         }
 
+        // Validate authoritative amount in USD before applying any discounts
+        $data['currency'] = 'USD';
+        $this->validatePaymentAmount($subscription, $data);
+
         // Apply pending referral discount directly (no pre-existing credit needed)
         $referralDiscount = 0;
         if (!in_array($paymentType, ['upgrade_proration'], true)) {
@@ -85,10 +89,6 @@ class GatewayService
                 $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
             }
         }
-
-        // Validate amount in USD terms before any conversion
-        $data['currency'] = 'USD';
-        $this->validatePaymentAmount($subscription, $data);
 
         // H5: Idempotency check — return existing payment if same key used
         $idempotencyKey = $data['idempotency_key'] ?? null;
