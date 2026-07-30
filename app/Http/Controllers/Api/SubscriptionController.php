@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SubscriptionRequest;
 use App\Http\Resources\SubscriptionCollection;
 use App\Http\Resources\SubscriptionResource;
+use App\Models\Plan;
 use App\Services\Billing\PaymentQuoteService;
 use App\Services\Billing\SubscriptionProrationCalculator;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Contracts\SubscriptionScheduledChangeServiceInterface;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionController extends Controller
 {
@@ -133,17 +136,32 @@ class SubscriptionController extends Controller
         $toPlanId = (int) $validated['to_plan_id'];
         $effective = $validated['effective'] ?? 'immediate';
 
+        $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId);
+
         if ($effective === 'immediate') {
-            // Plan change is deferred to payment confirmation callback
-            // (handleUpgradeProration in HandlesPaymentApproval trait).
-            // Just validate and return the proration quote.
+            $prorationDue = $quote['proration']['proration_due'] ?? 0;
+            if ($prorationDue <= 0) {
+                DB::transaction(function () use ($subscription, $toPlanId) {
+                    $this->subscriptionService->changePlan($subscription, $toPlanId);
+
+                    $plan = Plan::find($toPlanId);
+                    if ($plan && $plan->type !== 'personal') {
+                        $owner = $subscription->business->owner;
+                        if ($owner && $owner->account_type === 'personal') {
+                            $owner->update([
+                                'account_type' => 'business',
+                                'modules' => ModuleAccessService::BUSINESS_MODULES,
+                            ]);
+                            $subscription->business->update(['business_type' => 'retail']);
+                        }
+                    }
+                });
+            }
         } else {
-            $change = $this->scheduledChangeService->schedulePlanChange(
+            $this->scheduledChangeService->schedulePlanChange(
                 $subscription->id, $toPlanId, 'upgrade'
             );
         }
-
-        $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId);
 
         return response()->json([
             'proration' => $quote,
