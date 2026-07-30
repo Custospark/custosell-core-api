@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             SystemExpenseCategorySeeder::class,
             DefaultAccountingTemplateSeeder::class,
             AccountingModuleSeeder::class,
+            GuideFaqSeeder::class,
             TestBusinessSeeder::class,
         ]);
     }
