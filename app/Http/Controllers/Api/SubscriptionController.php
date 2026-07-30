@@ -6,15 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SubscriptionRequest;
 use App\Http\Resources\SubscriptionCollection;
 use App\Http\Resources\SubscriptionResource;
-use App\Models\Plan;
 use App\Services\Billing\PaymentQuoteService;
-use App\Services\Billing\SubscriptionProrationCalculator;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Contracts\SubscriptionScheduledChangeServiceInterface;
-use App\Services\ModuleAccessService;
+use App\Services\Payment\GatewayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class SubscriptionController extends Controller
 {
@@ -23,6 +20,7 @@ class SubscriptionController extends Controller
         protected SubscriptionScheduledChangeServiceInterface $scheduledChangeService,
         protected SubscriptionProrationCalculator $prorationCalculator,
         protected PaymentQuoteService $paymentQuoteService,
+        protected GatewayService $gatewayService,
     ) {}
 
     public function index(): SubscriptionCollection
@@ -143,21 +141,15 @@ class SubscriptionController extends Controller
         if ($effective === 'immediate') {
             $prorationDue = $quote['proration']['proration_due'] ?? 0;
             if ($prorationDue <= 0) {
-                DB::transaction(function () use ($subscription, $toPlanId, $billingCycle) {
-                    $this->subscriptionService->changePlan($subscription, $toPlanId, $billingCycle);
-
-                    $plan = Plan::find($toPlanId);
-                    if ($plan && $plan->type !== 'personal') {
-                        $owner = $subscription->business->owner;
-                        if ($owner && $owner->account_type === 'personal') {
-                            $owner->update([
-                                'account_type' => 'business',
-                                'modules' => ModuleAccessService::BUSINESS_MODULES,
-                            ]);
-                            $subscription->business->update(['business_type' => 'retail']);
-                        }
-                    }
-                });
+                $this->gatewayService->processZeroCostUpgrade($subscription, $toPlanId, $billingCycle);
+            } else {
+                $meta = $subscription->metadata ?? [];
+                $meta['pending_upgrade_amount_usd'] = (float) ($quote['proration']['proration_due_usd'] ?? $prorationDue);
+                $meta['pending_upgrade_to_plan_id'] = $toPlanId;
+                if ($billingCycle) {
+                    $meta['pending_upgrade_billing_cycle'] = $billingCycle;
+                }
+                $subscription->update(['metadata' => $meta]);
             }
         } else {
             $this->scheduledChangeService->schedulePlanChange(

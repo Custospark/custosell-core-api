@@ -3,7 +3,6 @@
 namespace App\Services\Payment;
 
 use App\Enums\Billing\ReferralStatus;
-use App\Models\BillingPayment;
 use App\Models\Referral;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
@@ -12,7 +11,9 @@ use App\Services\Contracts\PaymentServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\CreditService;
 use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
+use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
+use App\Services\Payment\Validation\PaymentValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +28,8 @@ class GatewayService
         private readonly SubscriptionScheduledChangeRepositoryInterface $scheduledChangeRepo,
         private readonly CreditService $creditService,
         private readonly CurrencyExchangeServiceInterface $currencyExchange,
+        private readonly ReferralServiceInterface $referralService,
+        private readonly PaymentValidator $paymentValidator,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
@@ -62,7 +65,7 @@ class GatewayService
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
         // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone
         $paymentType = $data['payment_type'] ?? 'subscription';
-        if (!in_array($paymentType, ['upgrade_proration'], true)) {
+        if (!in_array($paymentType, [], true)) {
             $plan = $subscription->plan;
             $data['amount'] = match ($paymentType) {
                 'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
@@ -75,11 +78,11 @@ class GatewayService
 
         // Validate authoritative amount in USD before applying any discounts
         $data['currency'] = 'USD';
-        $this->validatePaymentAmount($subscription, $data);
+        $this->paymentValidator->validatePaymentAmount($subscription, $data);
 
         // Apply pending referral discount directly (no pre-existing credit needed)
         $referralDiscount = 0;
-        if (!in_array($paymentType, ['upgrade_proration'], true)) {
+        if (!in_array($paymentType, [], true)) {
             $referral = Referral::where('subscription_id', $subscription->id)
                 ->where('status', ReferralStatus::PENDING)
                 ->first();
@@ -330,7 +333,7 @@ class GatewayService
             return;
         }
 
-        $payment = $this->resolvePaymentFromWebhook($webhookData);
+        $payment = $this->paymentValidator->resolvePaymentFromWebhook($webhookData);
 
         if (!$payment) {
             Log::error("[GatewayService] Payment not found for webhook", $webhookData);
@@ -436,64 +439,28 @@ class GatewayService
         ];
     }
 
-    private function validatePaymentAmount(Subscription $subscription, array $data): void
+    public function processZeroCostUpgrade(Subscription $subscription, int $toPlanId, ?string $billingCycle = null): void
     {
-        $paymentType = $data['payment_type'] ?? 'subscription';
-        $amount = (float) ($data['amount'] ?? 0);
-        $currency = strtoupper($data['currency'] ?? 'USD');
+        $payment = $this->paymentService->createPending([
+            'subscription_id' => $subscription->id,
+            'business_id' => $subscription->business_id,
+            'amount' => 0,
+            'currency' => 'USD',
+            'method' => 'internal',
+            'payment_type' => 'upgrade_proration',
+            'gateway_name' => 'internal',
+            'paid_at' => now(),
+            'status' => 'completed',
+            'approved_at' => now(),
+            'metadata' => [
+                'to_plan_id' => $toPlanId,
+                'billing_cycle' => $billingCycle,
+                'zero_cost_upgrade' => true,
+            ],
+        ]);
 
-        $plan = $subscription->plan;
-        $expectedUsd = match ($paymentType) {
-            'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
-            'subscription' => $subscription->billing_cycle === 'yearly'
-                ? (float) ($plan?->price_yearly_usd ?? 0)
-                : (float) ($plan?->price_monthly_usd ?? 0),
-            'renewal' => $subscription->billing_cycle === 'yearly'
-                ? (float) ($plan?->price_yearly_usd ?? 0)
-                : (float) ($plan?->price_monthly_usd ?? 0),
-            'upgrade_proration' => $amount,
-            'billing_cycle_change' => $amount,
-            default => $amount,
-        };
+        $payment->refresh();
 
-        if (in_array($paymentType, ['upgrade_proration', 'billing_cycle_change'], true)) {
-            return;
-        }
-
-        if ($currency === 'USD') {
-            $expected = $expectedUsd;
-            $tolerance = 0.50;
-        } else {
-            $rate = $this->currencyExchange->getExchangeRate('USD', $currency);
-            if ($rate === null) {
-                throw new GatewayException(
-                    "Cannot validate payment: exchange rate unavailable for {$currency}.",
-                    $data['gateway_name'] ?? 'unknown',
-                    ['payment_type' => $paymentType, 'currency' => $currency]
-                );
-            }
-            $expected = round($expectedUsd * $rate, 2);
-            $tolerance = max(50, $expected * 0.02);
-        }
-
-        if ($expected > 0 && abs($amount - $expected) > $tolerance) {
-            throw new GatewayException(
-                "Payment amount {$currency} {$amount} does not match expected amount {$currency} {$expected} for {$paymentType}.",
-                $data['gateway_name'] ?? 'unknown',
-                ['payment_type' => $paymentType, 'expected' => $expected, 'received' => $amount, 'currency' => $currency]
-            );
-        }
-    }
-
-    private function resolvePaymentFromWebhook(array $webhookData): ?BillingPayment
-    {
-        if (!empty($webhookData['gateway_txn_id'])) {
-            $payment = $this->paymentRepo->findByGatewayTransactionId($webhookData['gateway_txn_id']);
-            if ($payment) return $payment;
-        }
-        if (!empty($webhookData['our_reference'])) {
-            return $this->paymentRepo->findByTransactionReference($webhookData['our_reference']);
-        }
-        return null;
+        $this->handlePaymentType($payment);
     }
 }

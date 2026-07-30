@@ -115,6 +115,14 @@ trait HandlesPaymentApproval
 
             $this->subscriptionService->changePlan($subscription, (int) $toPlanId, $billingCycle);
 
+            $this->referralService->activateForSubscription($subscription->id);
+
+            $meta = $subscription->metadata ?? [];
+            unset($meta['pending_upgrade_amount_usd']);
+            unset($meta['pending_upgrade_to_plan_id']);
+            unset($meta['pending_upgrade_billing_cycle']);
+            $subscription->update(['metadata' => $meta]);
+
             $plan = Plan::find($toPlanId);
             if ($plan && $plan->type !== 'personal') {
                 $business = $subscription->business;
