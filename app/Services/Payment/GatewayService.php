@@ -87,6 +87,7 @@ class GatewayService
             if ($referral && (float) $referral->discount_applied > 0) {
                 $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
                 $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
+                $referral->update(['status' => ReferralStatus::APPLIED]);
             }
         }
 
@@ -124,7 +125,7 @@ class GatewayService
 
         // If credits fully cover the payment, bypass the gateway entirely
         if ($originalAmount > 0 && $data['amount'] <= 0) {
-            return DB::transaction(function () use ($subscription, $gatewayName, $data, $originalAmount, $creditApplications, $idempotencyKey) {
+            return DB::transaction(function () use ($subscription, $gatewayName, $data, $originalAmount, $creditApplications, $idempotencyKey, $referralDiscount) {
                 $ourRef = 'CREDIT-' . now()->format('YmdHis') . '-' . $subscription->id;
                 $payment = $this->paymentService->createPending([
                     'subscription_id' => $subscription->id,

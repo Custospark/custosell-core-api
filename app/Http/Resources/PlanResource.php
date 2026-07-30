@@ -13,6 +13,7 @@ class PlanResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'type' => $this->type ?? 'business',
             'description' => $this->description,
             'price_monthly_usd' => $this->price_monthly_usd,
             'price_yearly_usd' => $this->price_yearly_usd,
