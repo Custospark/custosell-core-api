@@ -36,7 +36,10 @@ class PaymentQuoteService
             'price_yearly_usd' => $currentPlan->price_yearly_usd,
         ];
 
-        $isTrial = in_array($subscription->status, ['trial', 'trialing'], true);
+        $status = $subscription->status instanceof \App\Enums\Billing\SubscriptionStatus
+            ? $subscription->status->value
+            : $subscription->status;
+        $isTrial = in_array($status, ['trial', 'trialing'], true);
         if ($isTrial) {
             $proration = [
                 'proration_due' => 0,
