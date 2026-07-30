@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:expenses'])->group(function () {
     Route::get('/expenses/overview', [ExpenseController::class, 'overview']);
+    Route::get('/expenses/budgets', [ExpenseController::class, 'budgets']);
     Route::get('/expenses/summary', [ExpenseController::class, 'summary']);
     Route::get('/expenses/export', [ExpenseController::class, 'export']);
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->whereNumber('expense');

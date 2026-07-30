@@ -42,6 +42,7 @@ class BusinessResource extends JsonResource
             'payment_mobile_money_account_name' => $this->payment_mobile_money_account_name,
             'payment_mobile_money_number' => $this->payment_mobile_money_number,
             'payment_instructions' => $this->payment_instructions,
+            'income_target' => (float) ($this->income_target ?? 0),
             'logo_path' => $this->logo_path,
             'is_open_for_supply' => (bool) $this->is_open_for_supply,
             'supply_headline' => $this->supply_headline,

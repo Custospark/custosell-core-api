@@ -6,6 +6,7 @@ use App\Providers\CategoryServiceProvider;
 use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
+use App\Providers\IncomeSourceServiceProvider;
 use App\Providers\InvoiceServiceProvider;
 use App\Providers\MarketplaceServiceProvider;
 use App\Providers\SupplierListServiceProvider;

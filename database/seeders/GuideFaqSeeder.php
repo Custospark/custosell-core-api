@@ -18,12 +18,12 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'What is the difference between a Personal account and a Business account?',
-                'answer' => 'A Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.',
+                'answer' => "A Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.",
                 'sort_order' => 2,
             ],
             [
                 'question' => 'How do I get started with Custosell?',
-                'answer' => 'Create a free account and choose your account type:\n\n• Personal — pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n• Business — pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor both account types, you can upgrade, downgrade, or cancel anytime.',
+                'answer' => "Create a free account and choose your account type:\n\n- Personal — pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n- Business — pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor both account types, you can upgrade, downgrade, or cancel anytime.",
                 'sort_order' => 3,
             ],
             [
@@ -35,7 +35,7 @@ class GuideFaqSeeder extends Seeder
             // ── Plans & Billing ───────────────────────────────────
             [
                 'question' => 'How much does Custosell cost?',
-                'answer' => 'Pricing depends on your account type and chosen plan:\n\n• Personal — a flat monthly fee that includes access to the modules you subscribe to. No long-term contract.\n\n• Business — tiered plans (Essential, Professional, Enterprise). Each includes a one-time setup fee followed by a monthly or yearly subscription. See our Plans page for current pricing in your currency region (USD or UGX).',
+                'answer' => "Pricing depends on your account type and chosen plan:\n\n- Personal — a flat monthly fee that includes access to the modules you subscribe to. No long-term contract.\n\n- Business — tiered plans (Essential, Professional, Enterprise). Each includes a one-time setup fee followed by a monthly or yearly subscription. See our Plans page for current pricing in your currency region (USD or UGX).",
                 'sort_order' => 5,
             ],
             [
@@ -57,7 +57,7 @@ class GuideFaqSeeder extends Seeder
             // ── For Personal Accounts ────────────────────────────
             [
                 'question' => 'What tools are available on a Personal account?',
-                'answer' => 'Personal accounts can choose from the following modules:\n\n• **Sales CRM / Pipeline** — Manage leads, deals, and customer interactions with a visual pipeline board. Track every stage from first contact to closed deal.\n• **Projects & Estimates** — Create professional estimates and invoices, manage projects with tasks and milestones, and collaborate with your team in real time.\n• **Expenses** — Track and categorize your business expenses. Record receipts, attach images, and generate expense reports for tax time.\n• **Accounting** — Full double-entry accounting with a chart of accounts, journal entries, trial balance, income statement, and balance sheet.\n• **Documents** — Store and organize your business files securely in the cloud. Upload contracts, receipts, reports, and any other documents you need to keep.\n\nEach module is available on a monthly subscription basis. You only pay for what you use.',
+                'answer' => "Personal accounts can choose from the following modules:\n\n- Sales CRM / Pipeline — Manage leads, deals, and customer interactions with a visual pipeline board. Track every stage from first contact to closed deal.\n- Projects & Estimates — Create professional estimates and invoices, manage projects with tasks and milestones, and collaborate with your team in real time.\n- Expenses — Track and categorize your business expenses. Record receipts, attach images, and generate expense reports for tax time.\n- Accounting — Full double-entry accounting with a chart of accounts, journal entries, trial balance, income statement, and balance sheet.\n- Documents — Store and organize your business files securely in the cloud. Upload contracts, receipts, reports, and any other documents you need to keep.\n\nEach module is available on a monthly subscription basis. You only pay for what you use.",
                 'sort_order' => 9,
             ],
             [
@@ -74,7 +74,7 @@ class GuideFaqSeeder extends Seeder
             // ── For Business Accounts ────────────────────────────
             [
                 'question' => 'What modules are included in each Business plan?',
-                'answer' => 'Essential includes point of sale, inventory, customers, expenses, dashboard, and a public online storefront.\n\nProfessional adds pipeline (Sales CRM), estimates & projects, documents, and marketplace access.\n\nEnterprise adds full accounting, HR & payroll, and forecasting.\n\nAll plans include staff management with granular role-based permissions.',
+                'answer' => "Essential includes point of sale, inventory, customers, expenses, dashboard, and a public online storefront.\n\nProfessional adds pipeline (Sales CRM), estimates & projects, documents, and marketplace access.\n\nEnterprise adds full accounting, HR & payroll, and forecasting.\n\nAll plans include staff management with granular role-based permissions.",
                 'sort_order' => 12,
             ],
             [

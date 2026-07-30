@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Expense;
 use App\Repositories\Contracts\ExpenseCategoryRepositoryInterface;
 use App\Repositories\Contracts\ExpenseRepositoryInterface;
+use App\Models\Business;
+use App\Models\ExpenseCategory;
 use App\Models\IncomeSource;
 use App\Repositories\Contracts\IncomeSourceRepositoryInterface;
 use App\Services\Contracts\ExpenseServiceInterface;
@@ -160,6 +162,85 @@ class ExpenseService implements ExpenseServiceInterface
             'expenses_by_category' => $expenseSummary['by_category'] ?? [],
             'monthly_trends' => $monthlyTrends,
             'recent_transactions' => $recentTransactions,
+        ];
+    }
+
+    public function getBudgets(int $businessId, array $filters = []): array
+    {
+        $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
+        $dateTo = $filters['date_to'] ?? now()->endOfMonth()->toDateString();
+
+        $business = Business::find($businessId);
+        $incomeTarget = (float) ($business?->income_target ?? 0);
+
+        $incomeSummary = $this->incomeSourceRepository->getSummary($businessId, [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ]);
+
+        $expenseSummary = $this->expenseRepository->getSummary($businessId, [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ]);
+
+        $totalIncome = $incomeSummary['total_amount'];
+        $totalExpenses = $expenseSummary['total_amount'];
+
+        $categoryBudgets = ExpenseCategory::where('business_id', $businessId)
+            ->whereNotNull('budget_amount')
+            ->get();
+
+        $expensesByCategory = collect($expenseSummary['by_category'] ?? [])
+            ->keyBy('category_id');
+
+        $categories = $categoryBudgets->map(function ($cat) use ($expensesByCategory) {
+            $actual = (float) ($expensesByCategory->get($cat->id)['total'] ?? 0);
+            $budget = (float) $cat->budget_amount;
+            $remaining = $budget - $actual;
+            $percentage = $budget > 0 ? round(($actual / $budget) * 100, 1) : 0;
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'budget' => $budget,
+                'actual' => $actual,
+                'remaining' => $remaining,
+                'percentage' => $percentage,
+            ];
+        })->values();
+
+        $totalExpenseBudget = $categoryBudgets->sum('budget_amount');
+        $expenseBudgetActual = $categories->sum('actual');
+        $netTarget = $incomeTarget - (float) $totalExpenseBudget;
+        $netActual = $totalIncome - $totalExpenses;
+
+        $periodStart = \Carbon\Carbon::parse($dateFrom);
+        $periodEnd = \Carbon\Carbon::parse($dateTo);
+        $daysTotal = $periodStart->diffInDays($periodEnd) + 1;
+        $daysRemaining = max(0, now()->diffInDays($periodEnd, false));
+        $remainingBudget = $totalExpenseBudget - $expenseBudgetActual;
+        $dailyRemaining = $daysRemaining > 0 ? round($remainingBudget / $daysRemaining, 2) : 0;
+
+        $monthLabels = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+        ];
+
+        return [
+            'period' => [
+                'start' => $dateFrom,
+                'end' => $dateTo,
+                'days_remaining' => $daysRemaining,
+                'label' => $monthLabels[(int) $periodStart->format('n')] . ' ' . $periodStart->format('Y'),
+            ],
+            'income_target' => $incomeTarget,
+            'income_actual' => $totalIncome,
+            'expense_budget' => (float) $totalExpenseBudget,
+            'expense_actual' => $totalExpenses,
+            'net_target' => $netTarget,
+            'net_actual' => $netActual,
+            'daily_remaining' => $dailyRemaining,
+            'categories' => $categories,
         ];
     }
 

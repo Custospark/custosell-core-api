@@ -187,9 +187,60 @@ class DocumentCabinetService
         $this->activity->record($businessId, $user, 'cabinet_deleted', 'cabinet', null, $name, null, $cabinetId);
     }
 
-    public function seedDefaultCabinets(int $businessId, ?int $ownerId = null): void
+    public function seedDefaultCabinets(int $businessId, ?int $ownerId = null, ?string $businessType = null): void
     {
-        $starters = [
+        $isPersonal = $businessType === 'personal';
+
+        $starters = $isPersonal ? [
+            [
+                'name' => 'Personal Documents',
+                'description' => 'IDs, certificates, passports, and personal records',
+                'cover_color' => '#6366f1',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/10/1200/800',
+                'sort_order' => 0,
+            ],
+            [
+                'name' => 'Health & Medical',
+                'description' => 'Medical records, prescriptions, insurance, and wellness',
+                'cover_color' => '#dc2626',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/15/1200/800',
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'Education',
+                'description' => 'Certificates, transcripts, courses, and learning materials',
+                'cover_color' => '#f59e0b',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/26/1200/800',
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'Home & Family',
+                'description' => 'Household documents, family records, and personal items',
+                'cover_color' => '#059669',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/28/1200/800',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Financial',
+                'description' => 'Tax returns, insurance, investments, and personal finance',
+                'cover_color' => '#8b5cf6',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/36/1200/800',
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'Career & Work',
+                'description' => 'Resumes, contracts, performance reviews, and work files',
+                'cover_color' => '#0284c7',
+                'background_type' => 'gallery',
+                'background_value' => 'https://picsum.photos/id/40/1200/800',
+                'sort_order' => 5,
+            ],
+        ] : [
             [
                 'name' => 'General',
                 'description' => 'Shared company files and everyday documents',

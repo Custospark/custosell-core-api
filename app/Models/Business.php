@@ -28,7 +28,7 @@ class Business extends Model
 
         static::created(function (Business $business): void {
             app(\App\Services\Documents\DocumentCabinetService::class)
-                ->seedDefaultCabinets((int) $business->id, $business->owner_id ? (int) $business->owner_id : null);
+                ->seedDefaultCabinets((int) $business->id, $business->owner_id ? (int) $business->owner_id : null, $business->business_type);
         });
     }
 
@@ -64,6 +64,7 @@ class Business extends Model
         'payment_mobile_money_account_name',
         'payment_mobile_money_number',
         'payment_instructions',
+        'income_target',
         'logo_path',
         'documents_cover_color',
         'documents_background_type',
@@ -91,6 +92,7 @@ class Business extends Model
             'intent_skipped_at' => 'datetime',
             'last_activity_at' => 'datetime',
             'dormant_notified_at' => 'datetime',
+            'income_target' => 'decimal:2',
             'default_vat_rate' => 'decimal:2',
             'prices_include_tax' => 'boolean',
             'is_open_for_supply' => 'boolean',

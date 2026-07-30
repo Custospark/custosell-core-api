@@ -26,4 +26,6 @@ interface ExpenseServiceInterface
     public function getSummary(int $businessId, array $filters = []): array;
 
     public function getOverview(int $businessId, array $filters = []): array;
+
+    public function getBudgets(int $businessId, array $filters = []): array;
 }
