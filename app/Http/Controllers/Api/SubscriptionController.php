@@ -7,6 +7,7 @@ use App\Http\Requests\SubscriptionRequest;
 use App\Http\Resources\SubscriptionCollection;
 use App\Http\Resources\SubscriptionResource;
 use App\Services\Billing\PaymentQuoteService;
+use App\Services\Billing\SubscriptionProrationCalculator;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\Contracts\SubscriptionScheduledChangeServiceInterface;
 use App\Services\Payment\GatewayService;

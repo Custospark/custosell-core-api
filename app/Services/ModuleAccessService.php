@@ -75,7 +75,15 @@ class ModuleAccessService
 
     public function hasFullEstimatesWorkspace(User $user): bool
     {
-        return in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true);
+        if (in_array(self::ESTIMATES_FULL_SLUG, $this->storedStaffModules($user), true)) {
+            return true;
+        }
+
+        if ($this->isBusinessOwner($user) && $this->planAllowsModule($user, self::ESTIMATES_FULL_SLUG)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function hasFullHrWorkspace(User $user): bool

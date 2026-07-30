@@ -90,7 +90,7 @@ class UserService implements UserServiceInterface
                     'owner_id' => $user->id,
                     'name' => ($data['name'] ?? 'Personal') . "'s Workspace",
                     'slug' => 'personal-workspace-' . $user->id,
-                    'currency' => 'USD',
+                    'currency' => 'UGX',
                     'status' => 'active',
                     'business_type' => 'personal',
                 ]);

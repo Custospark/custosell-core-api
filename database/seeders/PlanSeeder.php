@@ -91,6 +91,7 @@ class PlanSeeder extends Seeder
             'features' => [
                 'pipeline' => true,
                 'estimates' => true,
+                'estimates_full' => true,
                 'expenses' => true,
                 'accounting' => true,
                 'documents' => true,
