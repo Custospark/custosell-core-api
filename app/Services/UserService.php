@@ -52,10 +52,11 @@ class UserService implements UserServiceInterface
     {
         $data['password'] = Hash::make($data['password']);
 
-        $isStorefrontBuyer = ($data['account_type'] ?? null) === 'storefront_buyer';
-        unset($data['account_type']);
+        $accountType = $data['account_type'] ?? 'business';
+        $isPersonalType = in_array($accountType, ['personal', 'storefront_buyer'], true);
+        $data['account_type'] = $isPersonalType ? 'personal' : 'business';
 
-        if ($isStorefrontBuyer) {
+        if ($isPersonalType) {
             $data['business_id'] = null;
             $data['role_id'] = null;
             $data['modules'] = [];

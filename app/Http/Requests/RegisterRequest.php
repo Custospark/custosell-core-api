@@ -19,7 +19,7 @@ class RegisterRequest extends BaseFormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'account_type' => ['sometimes', 'string', Rule::in(['storefront_buyer'])],
+            'account_type' => ['sometimes', 'string', Rule::in(['personal', 'storefront_buyer'])],
             'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'modules' => ['sometimes', 'array'],
@@ -29,7 +29,8 @@ class RegisterRequest extends BaseFormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('account_type') === 'storefront_buyer') {
+        $type = $this->input('account_type');
+        if (in_array($type, ['personal', 'storefront_buyer'], true)) {
             $this->merge([
                 'business_id' => null,
                 'role_id' => null,

@@ -27,7 +27,7 @@ class AuthController extends Controller
     {
         $user = $this->userService->register($request->validated());
         $this->platformAdminService->assignIfEligible($user);
-        $user->load(['business.subscription.plan', 'role', 'roles']);
+        $user->load(['business.subscription.plan', 'role', 'roles', 'personalModuleSubscriptions']);
 
         if ($user->business_id) {
             $activeShift = Shift::create([
@@ -61,7 +61,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $user->load(['business.subscription.plan', 'business.subscription.referral.referralCode', 'role', 'roles']);
+        $user->load(['business.subscription.plan', 'business.subscription.referral.referralCode', 'role', 'roles', 'personalModuleSubscriptions']);
         $this->platformAdminService->assignIfEligible($user);
 
         if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
@@ -145,7 +145,7 @@ class AuthController extends Controller
 
     public function me(Request $request): UserResource
     {
-        $user = $request->user()->load(['role', 'business.subscription.plan', 'business.subscription.referral.referralCode', 'roles']);
+        $user = $request->user()->load(['role', 'business.subscription.plan', 'business.subscription.referral.referralCode', 'roles', 'personalModuleSubscriptions']);
         $this->platformAdminService->assignIfEligible($user);
 
         $activeShift = Shift::where('business_id', $user->business_id)

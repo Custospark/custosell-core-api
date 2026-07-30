@@ -67,6 +67,42 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        Plan::updateOrCreate(['slug' => 'pipeline-personal'], [
+            'name' => 'Pipeline (Personal)',
+            'slug' => 'pipeline-personal',
+            'description' => 'Project management for individuals — boards, tasks, leads, and insights.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 14,
+            'billing_cycle' => 'both',
+            'is_popular' => false,
+            'features' => [
+                'pipeline' => true,
+            ],
+            'limits' => [],
+            'sort_order' => 10,
+            'is_active' => true,
+        ]);
+
+        Plan::updateOrCreate(['slug' => 'accounting-personal'], [
+            'name' => 'Accounting (Personal)',
+            'slug' => 'accounting-personal',
+            'description' => 'Personal bookkeeping — chart of accounts, journal entries, and financial reports.',
+            'price_monthly_usd' => 5,
+            'price_yearly_usd' => 50,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 14,
+            'billing_cycle' => 'both',
+            'is_popular' => false,
+            'features' => [
+                'accounting' => true,
+            ],
+            'limits' => [],
+            'sort_order' => 11,
+            'is_active' => true,
+        ]);
+
         Plan::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Enterprise',
             'slug' => 'enterprise',

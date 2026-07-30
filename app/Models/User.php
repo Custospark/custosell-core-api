@@ -21,6 +21,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
+        'account_type',
         'business_id',
         'role_id',
         'name',
@@ -57,6 +58,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'account_type' => 'string',
             'modules' => 'array',
             'tour_step' => 'integer',
             'tour_completed_at' => 'datetime',
@@ -123,6 +125,11 @@ class User extends Authenticatable
     public function referralCode(): HasOne
     {
         return $this->hasOne(\App\Models\ReferralCode::class, 'owner_user_id');
+    }
+
+    public function personalModuleSubscriptions(): HasMany
+    {
+        return $this->hasMany(PersonalModuleSubscription::class);
     }
 
     public function sendPasswordResetNotification($token): void

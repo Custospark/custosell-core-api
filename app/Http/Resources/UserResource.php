@@ -104,7 +104,20 @@ class UserResource extends JsonResource
                         ),
                 ];
             }),
-            'modules' => $this->modules ?? [],
+            'modules' => $this->resolveModules(),
+            'personal_modules' => $this->when($this->account_type === 'personal', fn () =>
+                $this->relationLoaded('personalModuleSubscriptions')
+                    ? $this->personalModuleSubscriptions->map(fn ($m) => [
+                        'id' => $m->id,
+                        'module_slug' => $m->module_slug,
+                        'status' => $m->status,
+                        'billing_cycle' => $m->billing_cycle,
+                        'price_usd' => $m->price_usd,
+                        'current_period_end' => $m->current_period_end,
+                    ])
+                    : [],
+            ),
+            'account_type' => $this->account_type ?? 'business',
             'onboarding' => app(OnboardingService::class)->payloadFor($this->resource),
             'is_platform_admin' => app(PlatformAdminService::class)->isPlatformAdmin($this->resource),
             'project_member_ids' => $this->when(
@@ -122,5 +135,23 @@ class UserResource extends JsonResource
                 Plan::active()->orderBy('sort_order')->get(),
             ),
         ];
+    }
+
+    private function resolveModules(): array
+    {
+        if ($this->account_type === 'personal') {
+            $personalModules = $this->relationLoaded('personalModuleSubscriptions')
+                ? $this->personalModuleSubscriptions
+                    ->where('status', 'active')
+                    ->pluck('module_slug')
+                    ->toArray()
+                : [];
+            return array_values(array_unique([
+                'account', 'guide', 'discover',
+                ...$personalModules,
+            ]));
+        }
+
+        return $this->modules ?? [];
     }
 }
