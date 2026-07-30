@@ -9,63 +9,71 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('hr_onboarding_templates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->json('tasks_json')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+        if (! Schema::hasTable('hr_onboarding_templates')) {
+            Schema::create('hr_onboarding_templates', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+                $table->string('name');
+                $table->json('tasks_json')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
 
-            $table->index(['business_id']);
-        });
+                $table->index(['business_id']);
+            });
+        }
 
-        Schema::create('hr_onboarding_tasks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('employee_id')->constrained('hr_employees')->cascadeOnDelete();
-            $table->foreignId('template_id')->nullable()->constrained('hr_onboarding_templates')->nullOnDelete();
-            $table->string('title');
-            $table->string('status', 32)->default('pending');
-            $table->date('due_date')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+        if (! Schema::hasTable('hr_onboarding_tasks')) {
+            Schema::create('hr_onboarding_tasks', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('employee_id')->constrained('hr_employees')->cascadeOnDelete();
+                $table->foreignId('template_id')->nullable()->constrained('hr_onboarding_templates')->nullOnDelete();
+                $table->string('title');
+                $table->string('status', 32)->default('pending');
+                $table->date('due_date')->nullable();
+                $table->timestamp('completed_at')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
 
-            $table->index(['business_id', 'employee_id', 'status']);
-        });
+                $table->index(['business_id', 'employee_id', 'status']);
+            });
+        }
 
-        Schema::create('hr_reviews', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('employee_id')->constrained('hr_employees')->cascadeOnDelete();
-            $table->foreignId('reviewer_user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('period_label');
-            $table->string('status', 32)->default('draft');
-            $table->decimal('rating', 4, 2)->nullable();
-            $table->text('strengths')->nullable();
-            $table->text('improvements')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+        if (! Schema::hasTable('hr_reviews')) {
+            Schema::create('hr_reviews', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('employee_id')->constrained('hr_employees')->cascadeOnDelete();
+                $table->foreignId('reviewer_user_id')->constrained('users')->cascadeOnDelete();
+                $table->string('period_label');
+                $table->string('status', 32)->default('draft');
+                $table->decimal('rating', 4, 2)->nullable();
+                $table->text('strengths')->nullable();
+                $table->text('improvements')->nullable();
+                $table->text('notes')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
 
-            $table->index(['business_id', 'employee_id']);
-            $table->index(['business_id', 'status']);
-        });
+                $table->index(['business_id', 'employee_id']);
+                $table->index(['business_id', 'status']);
+            });
+        }
 
-        Schema::create('hr_audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('actor_user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('action');
-            $table->string('subject_type');
-            $table->unsignedBigInteger('subject_id');
-            $table->json('meta_json')->nullable();
-            $table->timestamps();
+        if (! Schema::hasTable('hr_audit_logs')) {
+            Schema::create('hr_audit_logs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('actor_user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->string('action');
+                $table->string('subject_type');
+                $table->unsignedBigInteger('subject_id');
+                $table->json('meta_json')->nullable();
+                $table->timestamps();
 
-            $table->index(['business_id', 'created_at']);
-            $table->index(['subject_type', 'subject_id']);
-        });
+                $table->index(['business_id', 'created_at']);
+                $table->index(['subject_type', 'subject_id']);
+            });
+        }
 
         // Global Uganda statutory defaults (business_id null = system-wide).
         if (Schema::hasTable('hr_statutory_rate_sets')) {
@@ -98,9 +106,17 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('hr_audit_logs');
-        Schema::dropIfExists('hr_reviews');
-        Schema::dropIfExists('hr_onboarding_tasks');
-        Schema::dropIfExists('hr_onboarding_templates');
+        if (Schema::hasTable('hr_audit_logs')) {
+            Schema::dropIfExists('hr_audit_logs');
+        }
+        if (Schema::hasTable('hr_reviews')) {
+            Schema::dropIfExists('hr_reviews');
+        }
+        if (Schema::hasTable('hr_onboarding_tasks')) {
+            Schema::dropIfExists('hr_onboarding_tasks');
+        }
+        if (Schema::hasTable('hr_onboarding_templates')) {
+            Schema::dropIfExists('hr_onboarding_templates');
+        }
     }
 };
