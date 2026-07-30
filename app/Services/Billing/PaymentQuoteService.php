@@ -26,14 +26,15 @@ class PaymentQuoteService
             throw new \RuntimeException('Target plan not found');
         }
 
-        $billingCycle = $billingCycleOverride ?? $subscription->billing_cycle ?? 'monthly';
+        $billingCycle = $subscription->billing_cycle ?? 'monthly';
+        $targetCycle = $billingCycleOverride ?? $billingCycle;
         $nextBillingDate = $subscription->next_billing_date
             ?? $subscription->ends_at
             ?? now()->addMonth();
 
         $subscriptionPrices = [
-            'price_monthly_usd' => $currentPlan->price_monthly_usd,
-            'price_yearly_usd' => $currentPlan->price_yearly_usd,
+            'price_monthly_usd' => $subscription->price_monthly_usd ?? $currentPlan->price_monthly_usd,
+            'price_yearly_usd' => $subscription->price_yearly_usd ?? $currentPlan->price_yearly_usd,
         ];
 
         $proration = $this->prorationCalculator->calculateUpgradeCost(
@@ -43,6 +44,22 @@ class PaymentQuoteService
             $billingCycle,
             $subscriptionPrices,
         );
+
+        if ($targetCycle !== $billingCycle) {
+            $newPriceUsd = $targetCycle === 'yearly'
+                ? (float) ($newPlan->price_yearly_usd ?? 0)
+                : (float) ($newPlan->price_monthly_usd ?? 0);
+
+            $chargeUsd = round($newPriceUsd * ($proration['days_remaining'] / $proration['days_in_period']), 2);
+            $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
+
+            $proration['new_price'] = $newPriceUsd;
+            $proration['new_price_usd'] = $newPriceUsd;
+            $proration['charge'] = $chargeUsd;
+            $proration['charge_usd'] = $chargeUsd;
+            $proration['proration_due'] = $prorationDueUsd;
+            $proration['proration_due_usd'] = $prorationDueUsd;
+        }
 
         $status = $subscription->status instanceof \App\Enums\Billing\SubscriptionStatus
             ? $subscription->status->value
@@ -69,7 +86,7 @@ class PaymentQuoteService
                 'price_monthly_usd' => (float) ($newPlan->price_monthly_usd ?? 0),
                 'price_yearly_usd' => (float) ($newPlan->price_yearly_usd ?? 0),
             ],
-            'billing_cycle' => $billingCycle,
+            'billing_cycle' => $targetCycle,
             'next_billing_date' => $nextBillingDate->toDateString(),
             'proration' => $proration,
         ];
