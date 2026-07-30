@@ -60,6 +60,7 @@ Keep our interaction **conversational**—just like two teammates working side b
 | 13 | **Sage and Blue are cross-stack by default when needed.** If a backend change can affect frontend UX, request payloads, response shapes, validation messages, offline queues, or sync replay, Sage and Blue must inspect both stacks and produce one integrated plan. |
 | 14 | **File size hard limit: 500 lines — refactor, never revert.** No source file may exceed **500 lines of code**. If a change would push a file over 500 lines, or Vera fails `[file-size-500]` on an already-oversized file you must touch, **stop and refactor into modular files** (split classes, extract services/traits/helpers, move DTOs/resources/requests) **before** continuing. This is **non-negotiable**. **Never** delete, revert, or strip working functionality just so Vera passes. Fix the size by modularizing; then restore/complete the feature; then re-run Vera. |
 | 15 | **Never edit an existing migration file directly.** If a migration fails or needs a fix (e.g. table already exists, wrong schema), create a **new migration** with a later timestamp that corrects the issue idempotently. Existing migrations are historical records of what ran; editing them breaks reproducibility across environments. |
+| 16 | **Stage, commit, and push after every change — always.** Every time you make a code change, stage all modified/new files, commit with a descriptive message, and push to GitHub. No exceptions. Also update this AGENTS.md and Frontend/AGENTS.md if the change warrants it. |
 
 ---
 
