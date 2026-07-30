@@ -36,33 +36,24 @@ class PaymentQuoteService
             'price_yearly_usd' => $currentPlan->price_yearly_usd,
         ];
 
+        $proration = $this->prorationCalculator->calculateUpgradeCost(
+            $currentPlan,
+            $newPlan,
+            $nextBillingDate,
+            $billingCycle,
+            $subscriptionPrices,
+        );
+
         $status = $subscription->status instanceof \App\Enums\Billing\SubscriptionStatus
             ? $subscription->status->value
             : $subscription->status;
-        $isTrial = in_array($status, ['trial', 'trialing'], true);
-        if ($isTrial) {
-            $proration = [
-                'proration_due' => 0,
-                'days_remaining' => 0,
-                'days_in_period' => 0,
-                'credit' => 0,
-                'charge' => 0,
-                'old_price' => 0,
-                'new_price' => 0,
-                'old_price_usd' => 0,
-                'new_price_usd' => 0,
-                'proration_due_usd' => 0,
-                'credit_usd' => 0,
-                'charge_usd' => 0,
-            ];
-        } else {
-            $proration = $this->prorationCalculator->calculateUpgradeCost(
-                $currentPlan,
-                $newPlan,
-                $nextBillingDate,
-                $billingCycle,
-                $subscriptionPrices,
-            );
+        if (in_array($status, ['trial', 'trialing'], true)) {
+            $proration['proration_due'] = 0;
+            $proration['credit'] = 0;
+            $proration['charge'] = 0;
+            $proration['proration_due_usd'] = 0;
+            $proration['credit_usd'] = 0;
+            $proration['charge_usd'] = 0;
         }
 
         return [
