@@ -5,39 +5,31 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\PipelineBoard;
-use App\Models\PipelineBoardMember;
 use App\Models\PipelineChecklist;
 use App\Models\PipelineChecklistItem;
+use App\Models\PipelineLabel;
 use App\Models\PipelineLead;
 use App\Models\PipelineLeadActivity;
 use App\Models\PipelineLeadLink;
-use App\Models\PipelineLabel;
 use App\Models\PipelineSource;
 use App\Models\PipelineStage;
-use App\Models\Project;
-use App\Models\ProjectTask;
-use App\Models\PipelineLeadAssignee;
 use App\Models\User;
-use App\Services\Pipeline\PipelineBoardActivityService;
-use App\Services\Pipeline\PipelineBoardAutomationService;
-use App\Services\Pipeline\PipelineBoardSeedService;
-use App\Services\Pipeline\PipelineCollaborationService;
-use App\Services\Pipeline\PipelineNotificationService;
+use App\Services\Pipeline\PipelineActivityService;
+use App\Services\Pipeline\PipelineBoardLookupService;
+use App\Services\Pipeline\PipelineBoardPermissionService;
+use App\Services\Pipeline\PipelineBoardService;
+use App\Services\Pipeline\PipelineCalendarService;
+use App\Services\Pipeline\PipelineChecklistService;
+use App\Services\Pipeline\PipelineLabelService;
+use App\Services\Pipeline\PipelineLeadLinkService;
+use App\Services\Pipeline\PipelineLeadService;
+use App\Services\Pipeline\PipelineMemberService;
+use App\Services\Pipeline\PipelineSourceService;
+use App\Services\Pipeline\PipelineStageService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class PipelineService
 {
-    public function __construct(
-        protected ModuleAccessService $moduleAccess,
-        protected CustomerContactService $customerContactService,
-        protected ProjectAccessService $projectAccess,
-        protected PipelineNotificationService $pipelineNotifier,
-        protected PipelineBoardSeedService $boardSeed,
-    ) {}
-
-    /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
     public const PROJECT_STAGES = [
         ['name' => 'To Do', 'color' => '#64748b', 'is_won' => false, 'is_lost' => false, 'rotting_days' => null],
         ['name' => 'In Progress', 'color' => '#3b82f6', 'is_won' => false, 'is_lost' => false, 'rotting_days' => null],
@@ -54,7 +46,6 @@ class PipelineService
         ['name' => 'Research', 'color' => '#64748b'],
     ];
 
-    /** @return list<array{name: string, color: string|null, is_won: bool, is_lost: bool, rotting_days: int|null}> */
     public const DEFAULT_STAGES = [
         ['name' => 'New', 'color' => '#6366f1', 'is_won' => false, 'is_lost' => false, 'rotting_days' => 3],
         ['name' => 'Contacted', 'color' => '#3b82f6', 'is_won' => false, 'is_lost' => false, 'rotting_days' => 5],
@@ -65,2253 +56,343 @@ class PipelineService
         ['name' => 'Closed lost', 'color' => '#ef4444', 'is_won' => false, 'is_lost' => true, 'rotting_days' => null],
     ];
 
+    public function __construct(
+        protected PipelineBoardLookupService $lookup,
+        protected PipelineBoardPermissionService $permission,
+        protected PipelineBoardService $boardService,
+        protected PipelineSourceService $sourceService,
+        protected PipelineLabelService $labelService,
+        protected PipelineMemberService $memberService,
+        protected PipelineStageService $stageService,
+        protected PipelineLeadService $leadService,
+        protected PipelineCalendarService $calendarService,
+        protected PipelineChecklistService $checklistService,
+        protected PipelineLeadLinkService $leadLinkService,
+        protected PipelineActivityService $activityService,
+    ) {}
+
     public function ensureBusinessSetup(int $businessId, int $userId): void
     {
-        $this->seedSourcesIfMissing($businessId);
-
-        $hasBoard = PipelineBoard::query()
-            ->where('business_id', $businessId)
-            ->where('is_archived', false)
-            ->exists();
-
-        if (!$hasBoard) {
-            $this->createBoard($businessId, $userId, [
-                'name' => 'Main sales pipeline',
-                'description' => 'Default team pipeline',
-                'visibility' => 'team',
-                'is_default' => true,
-                'cover_color' => '#6366f1',
-                'workspace' => 'pipeline',
-            ]);
-        }
+        $this->boardService->ensureBusinessSetup($businessId, $userId);
     }
 
     public function seedSourcesIfMissing(int $businessId): void
     {
-        if (PipelineSource::query()->where('business_id', $businessId)->exists()) {
-            return;
-        }
-
-        $defaults = [
-            ['name' => 'Walk-in', 'sort_order' => 1],
-            ['name' => 'Referral', 'sort_order' => 2],
-            ['name' => 'Website', 'sort_order' => 3],
-            ['name' => 'Phone', 'sort_order' => 4],
-            ['name' => 'Other', 'sort_order' => 5],
-        ];
-
-        foreach ($defaults as $row) {
-            PipelineSource::create([
-                'business_id' => $businessId,
-                'name' => $row['name'],
-                'is_system' => true,
-                'sort_order' => $row['sort_order'],
-            ]);
-        }
+        $this->sourceService->seedSourcesIfMissing($businessId);
     }
 
     public function getOrCreateProjectBoard(int $businessId, User $user, int $projectId): PipelineBoard
     {
-        $project = Project::query()
-            ->where('business_id', $businessId)
-            ->whereKey($projectId)
-            ->firstOrFail();
-
-        $this->projectAccess->assertCanAccessProject($user, $project);
-
-        $existing = PipelineBoard::query()
-            ->where('business_id', $businessId)
-            ->where('project_id', $projectId)
-            ->first();
-
-        if ($existing) {
-            return $existing->load(['stages', 'creator']);
-        }
-
-        return DB::transaction(function () use ($businessId, $user, $project) {
-            $board = PipelineBoard::create([
-                'business_id' => $businessId,
-                'created_by' => $user->id,
-                'name' => $project->name,
-                'description' => 'Project board for ' . $project->name,
-                'visibility' => 'team',
-                'project_id' => $project->id,
-                'workspace' => 'estimates',
-            ]);
-
-            foreach (self::PROJECT_STAGES as $index => $stage) {
-                PipelineStage::create([
-                    'business_id' => $businessId,
-                    'board_id' => $board->id,
-                    'name' => $stage['name'],
-                    'sort_order' => $index,
-                    'color' => $stage['color'],
-                    'is_won' => $stage['is_won'],
-                    'is_lost' => $stage['is_lost'],
-                    'rotting_days' => $stage['rotting_days'],
-                ]);
-            }
-
-            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
-            $this->boardSeed->applyDefaultAppearance($board, (int) $board->id);
-            $this->boardSeed->seedGuidingCards($board, $user->id);
-
-            return $board->load(['stages', 'creator']);
-        });
+        return $this->boardService->getOrCreateProjectBoard($businessId, $user, $projectId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function createBoard(int $businessId, int $userId, array $data): PipelineBoard
     {
-        $stageTemplate = ($data['workspace'] ?? 'pipeline') === 'estimates'
-            ? self::PROJECT_STAGES
-            : self::DEFAULT_STAGES;
-
-        return DB::transaction(function () use ($businessId, $userId, $data, $stageTemplate) {
-            $boardAttributes = [
-                'business_id' => $businessId,
-                'created_by' => $userId,
-                'name' => $data['name'],
-                'description' => $data['description'] ?? null,
-                'visibility' => $data['visibility'] ?? 'team',
-                'cover_color' => $data['cover_color'] ?? null,
-                'is_default' => (bool) ($data['is_default'] ?? false),
-                'sort_order' => (int) ($data['sort_order'] ?? 0),
-                'workspace' => ($data['workspace'] ?? 'pipeline') === 'estimates' ? 'estimates' : 'pipeline',
-            ];
-
-            if (!empty($data['background_type'])) {
-                $boardAttributes['background_type'] = $data['background_type'];
-                $boardAttributes['background_value'] = $data['background_value'] ?? null;
-            }
-
-            $board = PipelineBoard::create($boardAttributes);
-
-            if (!empty($data['member_ids']) && $board->visibility === 'shared') {
-                $this->syncBoardMembers($board, $data['member_ids'], $userId);
-            }
-            if (!empty($data['members']) && $board->visibility === 'shared') {
-                $this->syncBoardMembers($board, $data['members'], $userId);
-            }
-
-            foreach ($stageTemplate as $index => $stage) {
-                PipelineStage::create([
-                    'business_id' => $businessId,
-                    'board_id' => $board->id,
-                    'name' => $stage['name'],
-                    'sort_order' => $index,
-                    'color' => $stage['color'],
-                    'is_won' => $stage['is_won'],
-                    'is_lost' => $stage['is_lost'],
-                    'rotting_days' => $stage['rotting_days'],
-                ]);
-            }
-
-            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
-
-            if (empty($data['background_type'])) {
-                $this->boardSeed->applyDefaultAppearance($board, (int) $board->id);
-            } elseif (empty($board->cover_color)) {
-                $appearance = $this->boardSeed->defaultAppearance((int) $board->id);
-                $board->cover_color = $appearance['cover_color'];
-                $board->save();
-            }
-
-            $this->boardSeed->seedGuidingCards($board, $userId);
-
-            return $board->load(['stages', 'members.user', 'creator']);
-        });
+        return $this->boardService->createBoard($businessId, $userId, $data);
     }
 
-    /** @param  list<int>|list<array{user_id: int, role?: string, send_notification?: bool}>  $members */
     public function syncBoardMembers(PipelineBoard $board, array $members, ?int $actorUserId = null): void
     {
-        $existingUserIds = PipelineBoardMember::query()
-            ->where('board_id', $board->id)
-            ->pluck('user_id')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
-
-        PipelineBoardMember::query()->where('board_id', $board->id)->delete();
-
-        foreach ($members as $entry) {
-            $userId = is_array($entry) ? (int) ($entry['user_id'] ?? 0) : (int) $entry;
-            $role = is_array($entry) ? ($entry['role'] ?? 'contributor') : 'contributor';
-            $sendNotification = is_array($entry) && ($entry['send_notification'] ?? false);
-
-            if ($userId === 0 || $userId === (int) $board->created_by) {
-                continue;
-            }
-            $role = $this->normalizeBoardMemberRole($role);
-            if (! in_array($role, ['viewer', 'contributor', 'manager'], true)) {
-                $role = 'viewer';
-            }
-            PipelineBoardMember::create([
-                'board_id' => $board->id,
-                'user_id' => $userId,
-                'role' => $role,
-            ]);
-
-            if ($sendNotification && $actorUserId && ! in_array($userId, $existingUserIds, true)) {
-                $recipient = User::find($userId);
-                if ($recipient) {
-                    $actor = User::find($actorUserId);
-                    if ($actor) {
-                        $this->pipelineNotifier->notifyBoardMemberAdded($board, $actor, [$recipient], $role);
-                    }
-                }
-            }
-        }
+        $this->memberService->syncBoardMembers($board, $members, $actorUserId);
     }
 
-    /** @return list<array{id: int, name: string, email: string|null, avatar: string|null, modules: list<string>}> */
-    public function listBoardTeamMembers(
-        int $businessId,
-        string $workspace = 'pipeline',
-        string $scope = 'workspace',
-    ): array {
-        $workspace = $workspace === 'estimates' ? 'estimates' : 'pipeline';
-        $scope = $scope === 'business' ? 'business' : 'workspace';
-
-        return User::query()
-            ->where('business_id', $businessId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (User $user) => $scope === 'business'
-                || $this->userEligibleForBoardWorkspace($user, $workspace))
-            ->map(fn (User $user) => [
-                'id' => (int) $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $user->avatar,
-                'modules' => $this->moduleAccess->accessibleModules($user),
-            ])
-            ->values()
-            ->all();
-    }
-
-    protected function userEligibleForBoardWorkspace(User $user, string $workspace): bool
+    public function listBoardTeamMembers(int $businessId, string $workspace = 'pipeline', string $scope = 'workspace'): array
     {
-        if ($this->moduleAccess->isBusinessOwner($user)) {
-            return true;
-        }
-
-        if ($workspace === 'estimates') {
-            // Personal/project boards: any active staff in the business can be invited or listed.
-            // Full Projects & Estimates admin (estimates_full) is not required.
-            return true;
-        }
-
-        return in_array('pipeline', $this->moduleAccess->storedStaffModules($user), true);
+        return $this->memberService->listBoardTeamMembers($businessId, $workspace, $scope);
     }
 
-    protected function seedDefaultLabels(int $businessId, int $boardId): void
+    public function listBoards(int $businessId, User $user, bool $salesOnly = false, bool $projectOnly = false, bool $estimatesWorkspace = false): Collection
     {
-        $this->boardSeed->seedDefaultLabels($businessId, $boardId);
-    }
-
-    public function listBoards(
-        int $businessId,
-        User $user,
-        bool $salesOnly = false,
-        bool $projectOnly = false,
-        bool $estimatesWorkspace = false,
-    ): Collection {
-        $this->ensureBusinessSetup($businessId, $user->id);
-
-        $query = PipelineBoard::query()
-            ->where('business_id', $businessId)
-            ->where('is_archived', false)
-            ->when($salesOnly, fn ($q) => $q->whereNull('project_id')->where(function ($inner) {
-                $inner->where('workspace', 'pipeline')->orWhereNull('workspace');
-            }))
-            ->when($projectOnly, fn ($q) => $q->whereNotNull('project_id'))
-            ->when($estimatesWorkspace, fn ($q) => $q->where(function ($inner) {
-                $inner->whereNotNull('project_id')->orWhere('workspace', 'estimates');
-            }))
-            ->withCount(['leads as open_leads_count' => fn ($q) => $q
-                ->where('status', 'open')
-                ->when($salesOnly, fn ($inner) => $inner->where('card_type', 'lead'))])
-            ->with(['creator:id,name'])
-            ->orderByDesc('is_default')
-            ->orderBy('sort_order')
-            ->orderBy('name');
-
-        return $query->get()
-            ->filter(fn (PipelineBoard $board) => $this->canViewBoard($user, $board))
-            ->values();
+        return $this->boardService->listBoards($businessId, $user, $salesOnly, $projectOnly, $estimatesWorkspace);
     }
 
     public function getBoard(int $businessId, User $user, int $boardId): PipelineBoard
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanViewBoard($user, $board);
-
-        return $board->load(['stages', 'members.user', 'creator']);
+        return $this->boardService->getBoard($businessId, $user, $boardId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateBoard(int $businessId, User $user, int $boardId, array $data): PipelineBoard
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-
-        if (array_key_exists('is_archived', $data) && $data['is_archived']) {
-            $this->assertCanArchiveBoard($user, $board);
-        } else {
-            $this->assertCanManageBoard($user, $board);
-        }
-
-        $board->update(array_filter([
-            'name' => $data['name'] ?? null,
-            'description' => array_key_exists('description', $data) ? $data['description'] : $board->description,
-            'visibility' => $data['visibility'] ?? null,
-            'cover_color' => array_key_exists('cover_color', $data) ? $data['cover_color'] : $board->cover_color,
-            'background_type' => array_key_exists('background_type', $data) ? $data['background_type'] : $board->background_type,
-            'background_value' => array_key_exists('background_value', $data) ? $data['background_value'] : $board->background_value,
-            'is_archived' => array_key_exists('is_archived', $data) ? $data['is_archived'] : null,
-        ], fn ($v) => $v !== null));
-
-        if ($board->visibility === 'shared' && (array_key_exists('member_ids', $data) || array_key_exists('members', $data))) {
-            $this->assertCanManageBoard($user, $board);
-            $members = $data['members'] ?? $data['member_ids'] ?? [];
-            $this->syncBoardMembers($board, $members, (int) $user->id);
-        }
-
-        return $board->fresh(['stages', 'members.user', 'creator']);
+        return $this->boardService->updateBoard($businessId, $user, $boardId, $data);
     }
 
     public function deleteBoard(int $businessId, User $user, int $boardId): void
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
-
-        if ($board->is_default) {
-            abort(422, 'The default board cannot be deleted.');
-        }
-
-        $board->delete();
+        $this->boardService->deleteBoard($businessId, $user, $boardId);
     }
 
     public function getKanban(int $businessId, User $user, int $boardId): PipelineBoard
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanViewBoard($user, $board);
-
-        return $board->load([
-            'stages.leads' => fn ($q) => $q
-                ->whereIn('status', ['open', 'won', 'lost'])
-                ->with([
-            'creator:id,name,avatar',
-                    'assignee:id,name,avatar',
-                    'assignees:id,name,avatar',
-                    'source:id,name',
-                    'customer:id,name,email,phone',
-                    'labels:id,name,color',
-                    'checklists.items',
-                    'meetings',
-                ])
-                ->withCount('attachments')
-                ->withCount([
-                    'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
-                ])
-                ->withCount([
-                    'activities as history_count',
-                ])
-                ->orderByRaw('is_pinned DESC, position ASC'),
-            'members.user:id,name',
-            'creator:id,name',
-        ]);
+        return $this->boardService->getKanban($businessId, $user, $boardId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function createStage(int $businessId, User $user, int $boardId, array $data): PipelineStage
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanManageBoard($user, $board);
-
-        $maxOrder = PipelineStage::query()->where('board_id', $boardId)->max('sort_order');
-
-        return PipelineStage::create([
-            'business_id' => $businessId,
-            'board_id' => $boardId,
-            'name' => $data['name'],
-            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
-            'color' => $data['color'] ?? '#64748b',
-            'is_won' => (bool) ($data['is_won'] ?? false),
-            'is_lost' => (bool) ($data['is_lost'] ?? false),
-            'rotting_days' => $data['rotting_days'] ?? null,
-        ]);
+        return $this->stageService->createStage($businessId, $user, $boardId, $data);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateStage(int $businessId, User $user, int $stageId, array $data): PipelineStage
     {
-        $stage = $this->findStageForBusiness($businessId, $stageId);
-        $this->assertCanManageBoard($user, $stage->board);
-
-        $stage->update(array_filter([
-            'name' => $data['name'] ?? null,
-            'color' => $data['color'] ?? null,
-            'is_won' => array_key_exists('is_won', $data) ? (bool) $data['is_won'] : null,
-            'is_lost' => array_key_exists('is_lost', $data) ? (bool) $data['is_lost'] : null,
-            'rotting_days' => array_key_exists('rotting_days', $data) ? $data['rotting_days'] : null,
-            'sort_order' => $data['sort_order'] ?? null,
-        ], fn ($v) => $v !== null));
-
-        return $stage->fresh();
+        return $this->stageService->updateStage($businessId, $user, $stageId, $data);
     }
 
-    /** @param  list<int>  $stageIdsInOrder */
     public function reorderStages(int $businessId, User $user, int $boardId, array $stageIdsInOrder): Collection
     {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanEditBoard($user, $board);
-
-        foreach ($stageIdsInOrder as $order => $stageId) {
-            PipelineStage::query()
-                ->where('board_id', $boardId)
-                ->where('business_id', $businessId)
-                ->where('id', $stageId)
-                ->update(['sort_order' => $order]);
-        }
-
-        return $board->stages()->orderBy('sort_order')->get();
+        return $this->stageService->reorderStages($businessId, $user, $boardId, $stageIdsInOrder);
     }
 
     public function deleteStage(int $businessId, User $user, int $stageId, ?int $migrateToStageId = null): void
     {
-        $stage = $this->findStageForBusiness($businessId, $stageId);
-        $this->assertCanManageBoard($user, $stage->board);
-
-        $stageCount = PipelineStage::query()->where('board_id', $stage->board_id)->count();
-        if ($stageCount <= 1) {
-            throw ValidationException::withMessages(['stage' => 'A board must have at least one stage.']);
-        }
-
-        $leadCount = PipelineLead::query()->where('stage_id', $stageId)->whereNull('deleted_at')->count();
-        if ($leadCount > 0) {
-            if (!$migrateToStageId) {
-                throw ValidationException::withMessages(['migrate_to_stage_id' => 'Move leads to another stage before deleting.']);
-            }
-            $target = PipelineStage::query()
-                ->where('board_id', $stage->board_id)
-                ->where('business_id', $businessId)
-                ->where('id', $migrateToStageId)
-                ->where('id', '!=', $stageId)
-                ->firstOrFail();
-
-            PipelineLead::query()
-                ->where('stage_id', $stageId)
-                ->update(['stage_id' => $target->id]);
-        }
-
-        $stage->delete();
+        $this->stageService->deleteStage($businessId, $user, $stageId, $migrateToStageId);
     }
 
     public function archiveLead(int $businessId, User $user, int $leadId): void
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanManageBoard($user, $lead->board);
-
-        $this->recordActivity($lead, $user->id, 'system', 'Card archived', [
-            'action' => 'archived',
-        ]);
-
-        $lead->update(['status' => 'archived']);
-        $lead->delete();
+        $this->leadService->archiveLead($businessId, $user, $leadId);
     }
 
-    /** @return list<array{date: string, leads: list<array<string, mixed>>}> */
-    public function boardCalendar(
-        int $businessId,
-        User $user,
-        int $boardId,
-        int $year,
-        int $month,
-        string $dateField = 'due',
-    ): array {
-        $board = $this->findBoardForBusiness($businessId, $boardId);
-        $this->assertCanViewBoard($user, $board);
-
-        $start = sprintf('%04d-%02d-01', $year, $month);
-        $end = date('Y-m-t', strtotime($start));
-
-        $query = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->where('board_id', $boardId)
-            ->whereIn('status', ['open', 'won', 'lost'])
-            ->with(['stage:id,name,color', 'assignee:id,name,avatar']);
-
-        if ($dateField === 'start') {
-            $query->whereBetween('start_date', [$start, $end]);
-        } elseif ($dateField === 'close') {
-            $query->whereBetween('expected_close_date', [$start, $end]);
-        } elseif ($dateField === 'all') {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_date', [$start, $end])
-                    ->orWhereBetween('due_date', [$start, $end])
-                    ->orWhereBetween('expected_close_date', [$start, $end]);
-            });
-        } else {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('due_date', [$start, $end])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
-                    });
-            });
-        }
-
-        $leads = $query->get();
-        $byDate = [];
-
-        foreach ($leads as $lead) {
-            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
-            foreach ($entries as $entry) {
-                $byDate[$entry['date']][] = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
-            }
-        }
-
-        ksort($byDate);
-
-        return collect($byDate)
-            ->map(fn ($group, $date) => [
-                'date' => $date,
-                'leads' => array_values($group),
-            ])
-            ->values()
-            ->all();
-    }
-
-    public function allBoardsCalendar(
-        int $businessId,
-        User $user,
-        int $year,
-        int $month,
-        string $dateField = 'due',
-        string $workspace = 'pipeline',
-    ): array {
-        $boards = $this->listBoards(
-            $businessId,
-            $user,
-            salesOnly: $workspace === 'pipeline',
-            estimatesWorkspace: $workspace === 'estimates',
-        );
-
-        $boardIds = $boards->pluck('id')->toArray();
-        if (empty($boardIds)) {
-            return [];
-        }
-
-        $start = sprintf('%04d-%02d-01', $year, $month);
-        $end = date('Y-m-t', strtotime($start));
-
-        $query = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->whereIn('board_id', $boardIds)
-            ->whereIn('status', ['open', 'won', 'lost'])
-            ->with(['stage:id,name,color', 'assignee:id,name,avatar', 'board:id,name']);
-
-        if ($dateField === 'start') {
-            $query->whereBetween('start_date', [$start, $end]);
-        } elseif ($dateField === 'close') {
-            $query->whereBetween('expected_close_date', [$start, $end]);
-        } elseif ($dateField === 'all') {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_date', [$start, $end])
-                    ->orWhereBetween('due_date', [$start, $end])
-                    ->orWhereBetween('expected_close_date', [$start, $end]);
-            });
-        } else {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('due_date', [$start, $end])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
-                    });
-            });
-        }
-
-        $leads = $query->get();
-        $byDate = [];
-
-        foreach ($leads as $lead) {
-            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
-            foreach ($entries as $entry) {
-                $formatted = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
-                $formatted['board'] = $lead->board ? [
-                    'id' => $lead->board->id,
-                    'name' => $lead->board->name,
-                ] : null;
-                $byDate[$entry['date']][] = $formatted;
-            }
-        }
-
-        ksort($byDate);
-
-        return collect($byDate)
-            ->map(fn ($group, $date) => [
-                'date' => $date,
-                'leads' => array_values($group),
-            ])
-            ->values()
-            ->all();
-    }
-
-    /** @return list<array{date: string, kind: string}> */
-    protected function calendarDateEntriesForLead(
-        PipelineLead $lead,
-        string $dateField,
-        string $rangeStart,
-        string $rangeEnd,
-    ): array {
-        $entries = [];
-        $normalizeDate = static function (mixed $date): ?string {
-            if ($date === null) {
-                return null;
-            }
-            if ($date instanceof \Carbon\CarbonInterface) {
-                return $date->toDateString();
-            }
-
-            return substr((string) $date, 0, 10);
-        };
-
-        $inRange = static function (?string $date) use ($rangeStart, $rangeEnd): bool {
-            if (!$date) {
-                return false;
-            }
-
-            return $date >= $rangeStart && $date <= $rangeEnd;
-        };
-
-        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($inRange): void {
-            if ($rawDate === null) {
-                return;
-            }
-            $dateStr = $rawDate instanceof \Carbon\CarbonInterface
-                ? $rawDate->toDateString()
-                : substr((string) $rawDate, 0, 10);
-            if (!$inRange($dateStr)) {
-                return;
-            }
-            $timeStr = $rawDate instanceof \Carbon\CarbonInterface
-                ? $rawDate->toISOString()
-                : null;
-            $entries[] = ['date' => $dateStr, 'time' => $timeStr, 'kind' => $kind];
-        };
-
-        if ($dateField === 'start') {
-            $push($entries, $lead->start_date, 'start');
-        } elseif ($dateField === 'close') {
-            $push($entries, $lead->expected_close_date, 'close');
-        } elseif ($dateField === 'all') {
-            $push($entries, $lead->start_date, 'start');
-            $push($entries, $lead->due_date, 'due');
-            $push($entries, $lead->expected_close_date, 'close');
-        } else {
-            if ($lead->due_date) {
-                $push($entries, $lead->due_date, 'due');
-            } else {
-                $push($entries, $lead->expected_close_date, 'close');
-            }
-        }
-
-        return $entries;
-    }
-
-    /** @return array<string, mixed> */
-    protected function formatCalendarLead(PipelineLead $lead, string $dateKind, ?string $time = null): array
+    public function boardCalendar(int $businessId, User $user, int $boardId, int $year, int $month, string $dateField = 'due'): array
     {
-        return [
-            'id' => $lead->id,
-            'title' => $lead->title,
-            'card_type' => $lead->card_type ?? 'lead',
-            'estimated_value' => $lead->estimated_value !== null ? (float) $lead->estimated_value : null,
-            'currency' => $lead->currency,
-            'status' => $lead->status,
-            'priority' => $lead->priority,
-            'date_kind' => $dateKind,
-            'time' => $time,
-            'stage' => $lead->stage ? [
-                'id' => $lead->stage->id,
-                'name' => $lead->stage->name,
-                'color' => $lead->stage->color,
-            ] : null,
-            'assignee' => $lead->assignee ? [
-                'id' => $lead->assignee->id,
-                'name' => $lead->assignee->name,
-                'avatar' => $lead->assignee->avatar,
-            ] : null,
-        ];
+        return $this->calendarService->boardCalendar($businessId, $user, $boardId, $year, $month, $dateField);
     }
 
-    /** @param  array<string, mixed>  $data */
+    public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline'): array
+    {
+        return $this->calendarService->allBoardsCalendar($businessId, $user, $year, $month, $dateField, $workspace);
+    }
+
     public function createSource(int $businessId, User $user, array $data): PipelineSource
     {
-        $maxOrder = PipelineSource::query()->where('business_id', $businessId)->max('sort_order');
-
-        return PipelineSource::create([
-            'business_id' => $businessId,
-            'name' => $data['name'],
-            'is_system' => false,
-            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
-        ]);
+        return $this->sourceService->createSource($businessId, $user, $data);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateSource(int $businessId, int $sourceId, array $data): PipelineSource
     {
-        $source = PipelineSource::query()
-            ->where('business_id', $businessId)
-            ->where('id', $sourceId)
-            ->firstOrFail();
-
-        if ($source->is_system && array_key_exists('name', $data)) {
-            throw ValidationException::withMessages(['name' => 'System sources cannot be renamed.']);
-        }
-
-        $source->update(array_filter([
-            'name' => $data['name'] ?? null,
-            'sort_order' => $data['sort_order'] ?? null,
-        ], fn ($v) => $v !== null));
-
-        return $source->fresh();
+        return $this->sourceService->updateSource($businessId, $sourceId, $data);
     }
 
     public function deleteSource(int $businessId, int $sourceId): void
     {
-        $source = PipelineSource::query()
-            ->where('business_id', $businessId)
-            ->where('id', $sourceId)
-            ->firstOrFail();
-
-        if ($source->is_system) {
-            throw ValidationException::withMessages(['source' => 'System sources cannot be deleted.']);
-        }
-
-        PipelineLead::query()->where('source_id', $sourceId)->update(['source_id' => null]);
-        $source->delete();
+        $this->sourceService->deleteSource($businessId, $sourceId);
     }
 
-    /** @param  array<string, mixed>  $filters */
     public function listLeads(int $businessId, User $user, array $filters = []): Collection
     {
-        $this->ensureBusinessSetup($businessId, $user->id);
-
-        $query = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->with(['board', 'stage', 'assignee:id,name,avatar', 'source:id,name', 'customer:id,name,email,phone', 'meetings']);
-
-        if (!empty($filters['board_id'])) {
-            $board = $this->findBoardForBusiness($businessId, (int) $filters['board_id']);
-            $this->assertCanViewBoard($user, $board);
-            $query->where('board_id', $board->id);
-        } else {
-            $accessibleBoardIds = $this->listBoards($businessId, $user)->pluck('id');
-            $query->whereIn('board_id', $accessibleBoardIds);
-        }
-
-        if (!empty($filters['assigned_to'])) {
-            if ($filters['assigned_to'] === 'me') {
-                $query->where(function ($q) use ($user) {
-                    $q->where('assigned_to', $user->id)
-                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id));
-                });
-            } elseif ($filters['assigned_to'] === 'unassigned') {
-                $query->whereNull('assigned_to')
-                    ->whereDoesntHave('assignees');
-            } else {
-                $assigneeId = (int) $filters['assigned_to'];
-                $query->where(function ($q) use ($assigneeId) {
-                    $q->where('assigned_to', $assigneeId)
-                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $assigneeId));
-                });
-            }
-        }
-
-        if (!empty($filters['source_id'])) {
-            $query->where('source_id', (int) $filters['source_id']);
-        }
-
-        if (!empty($filters['card_type'])) {
-            $query->where('card_type', $filters['card_type']);
-        }
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        } else {
-            $query->whereIn('status', ['open', 'won', 'lost', 'converted']);
-        }
-
-        if (!empty($filters['search'])) {
-            $term = '%' . addcslashes($filters['search'], '%_') . '%';
-            $query->where(function ($q) use ($term) {
-                $q->where('title', 'like', $term)
-                    ->orWhere('contact_name', 'like', $term)
-                    ->orWhere('contact_email', 'like', $term)
-                    ->orWhere('contact_phone', 'like', $term);
-            });
-        }
-
-        return $query->orderByDesc('updated_at')->get();
+        return $this->leadService->listLeads($businessId, $user, $filters);
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @param  array{for_import?: bool, board?: PipelineBoard, position?: int}  $options
-     */
     public function createLead(int $businessId, User $user, array $data, array $options = []): PipelineLead
     {
-        $forImport = (bool) ($options['for_import'] ?? false);
-        $board = $options['board'] ?? $this->findBoardForBusiness($businessId, (int) $data['board_id']);
-        if (! ($options['board'] ?? null)) {
-            $this->assertCanEditBoard($user, $board);
-        }
-
-        $stage = PipelineStage::query()
-            ->where('board_id', $board->id)
-            ->where('business_id', $businessId)
-            ->where('id', (int) $data['stage_id'])
-            ->firstOrFail();
-
-        if (isset($options['position'])) {
-            $position = (int) $options['position'];
-        } else {
-            $maxPosition = PipelineLead::query()
-                ->where('stage_id', $stage->id)
-                ->max('position');
-            $position = ($maxPosition ?? 0) + 1;
-        }
-
-        $assigneeIds = $this->resolveAssigneeIds($data, $user);
-
-        $lead = PipelineLead::create([
-            'business_id' => $businessId,
-            'board_id' => $board->id,
-            'stage_id' => $stage->id,
-            'created_by' => $user->id,
-            'assigned_to' => $assigneeIds[0] ?? $user->id,
-            'customer_id' => $data['customer_id'] ?? null,
-            'source_id' => $data['source_id'] ?? null,
-            'title' => $data['title'],
-            'card_type' => $data['card_type'] ?? ($board->project_id || $board->workspace === 'estimates' ? 'card' : 'lead'),
-            'description' => $data['description'] ?? null,
-            'contact_name' => $data['contact_name'] ?? null,
-            'contact_email' => $data['contact_email'] ?? null,
-            'contact_phone' => $data['contact_phone'] ?? null,
-            'estimated_value' => $data['estimated_value'] ?? null,
-            'currency' => $data['currency'] ?? 'UGX',
-            'status' => 'open',
-            'position' => $position,
-            'expected_close_date' => $data['expected_close_date'] ?? null,
-            'due_date' => $data['due_date'] ?? $data['expected_close_date'] ?? null,
-            'start_date' => $data['start_date'] ?? null,
-            'priority' => $data['priority'] ?? null,
-        ]);
-
-        if ($board->project_id && ($data['card_type'] ?? 'lead') === 'card') {
-            $this->createTaskFromLead($lead, $businessId);
-        }
-
-        if (!empty($data['label_ids'])) {
-            $lead->labels()->sync($data['label_ids']);
-        }
-
-        $newAssignees = $this->syncLeadAssignees($lead, $assigneeIds, $user->id);
-        // Bulk Excel import skips per-row notifications and history load (product-import style).
-        if (! $forImport && $newAssignees !== []) {
-            $lead->load('board');
-            $this->pipelineNotifier->notifyAssignees(
-                $lead,
-                $lead->board,
-                $user,
-                User::query()->whereIn('id', $newAssignees)->get()->all(),
-                true,
-            );
-        }
-
-        if (! $forImport) {
-            $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
-
-            return $this->loadLeadWithHistory($lead);
-        }
-
-        return $lead;
+        return $this->leadService->createLead($businessId, $user, $data, $options);
     }
 
     public function getLead(int $businessId, User $user, int $leadId): PipelineLead
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanViewBoard($user, $lead->board);
-
-        return $lead->load(array_merge($this->leadDetailRelations(), [
-            'activities' => fn ($q) => $q->with(['user:id,name,avatar', 'reactions'])->orderBy('created_at'),
-        ]));
+        return $this->leadService->getLead($businessId, $user, $leadId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateLead(int $businessId, User $user, int $leadId, array $data): PipelineLead
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-        $lead->load(['labels:id,name', 'assignees:id,name']);
-
-        $before = $lead->replicate();
-        $before->setRelation('labels', $lead->labels);
-        $before->setRelation('assignees', $lead->assignees);
-
-        $updates = [];
-        foreach ([
-            'title', 'card_type', 'description', 'assigned_to', 'customer_id', 'source_id',
-            'contact_name', 'contact_email', 'contact_phone', 'estimated_value',
-            'currency', 'expected_close_date', 'due_date', 'start_date', 'priority',
-            'background_color', 'lost_reason', 'status', 'is_pinned',
-        ] as $field) {
-            if (array_key_exists($field, $data)) {
-                $updates[$field] = $data[$field];
-            }
-        }
-
-        if (array_key_exists('status', $data)) {
-            $status = $data['status'];
-            if ($status === 'won') {
-                $updates['won_at'] = now();
-                $updates['lost_at'] = null;
-            } elseif ($status === 'lost') {
-                $updates['lost_at'] = now();
-                $updates['won_at'] = null;
-            } elseif ($status === 'open') {
-                $updates['won_at'] = null;
-                $updates['lost_at'] = null;
-            }
-        }
-
-        if ($updates !== []) {
-            $lead->update($updates);
-        }
-
-        if (array_key_exists('label_ids', $data)) {
-            $lead->labels()->sync($data['label_ids'] ?? []);
-        }
-
-        if (array_key_exists('assignee_ids', $data) || array_key_exists('assigned_to', $data)) {
-            $assigneeIds = $this->resolveAssigneeIds($data, $user, $lead);
-            $newAssignees = $this->syncLeadAssignees($lead, $assigneeIds, $user->id);
-            if ($newAssignees !== []) {
-                $lead->load('board');
-                $this->pipelineNotifier->notifyAssignees(
-                    $lead,
-                    $lead->board,
-                    $user,
-                    User::query()->whereIn('id', $newAssignees)->get()->all(),
-                    false,
-                );
-            }
-        }
-
-        $lead->refresh();
-        $this->recordLeadUpdateActivities($lead, $user, $before, $data);
-
-        if (array_key_exists('status', $data)) {
-            $newStatus = (string) ($lead->status ?? 'open');
-            $oldStatus = (string) ($before->status ?? 'open');
-            if ($newStatus !== $oldStatus && in_array($newStatus, ['won', 'lost'], true)) {
-                $lead->load('board');
-                app(PipelineBoardAutomationService::class)->runForLeadStatusChange($lead, $lead->board, $newStatus, $user);
-                app(PipelineBoardActivityService::class)->log(
-                    $lead->board,
-                    $user,
-                    'lead_status',
-                    "Marked {$lead->title} as ".strtoupper($newStatus),
-                    null,
-                    'lead',
-                    (int) $lead->id,
-                    ['status' => $newStatus],
-                );
-            }
-        }
-
-        return $this->loadLeadWithHistory($lead);
+        return $this->leadService->updateLead($businessId, $user, $leadId, $data);
     }
 
     public function moveLead(int $businessId, User $user, int $leadId, int $stageId, float $position): PipelineLead
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        $stage = PipelineStage::query()
-            ->where('board_id', $lead->board_id)
-            ->where('business_id', $businessId)
-            ->where('id', $stageId)
-            ->firstOrFail();
-
-        $fromStageId = $lead->stage_id;
-        $fromStatus = $lead->status;
-        $status = 'open';
-        $wonAt = null;
-        $lostAt = null;
-
-        if ($stage->is_won) {
-            $status = 'won';
-            $wonAt = now();
-        } elseif ($stage->is_lost) {
-            $status = 'lost';
-            $lostAt = now();
-        }
-
-        $lead->update([
-            'stage_id' => $stage->id,
-            'position' => $position,
-            'status' => $status,
-            'won_at' => $wonAt,
-            'lost_at' => $lostAt,
-        ]);
-
-        if ($lead->project_task_id) {
-            $this->syncTaskStatusFromStage($lead, $stage);
-        }
-
-        if ($fromStageId !== $stage->id) {
-            $fromStage = $fromStageId
-                ? PipelineStage::query()->whereKey($fromStageId)->first()
-                : null;
-
-            $fromName = $fromStage?->name ?? 'Previous stage';
-            $this->recordActivity($lead, $user->id, 'stage_change', "Moved from {$fromName} to {$stage->name}", [
-                'from_stage_id' => $fromStageId,
-                'to_stage_id' => $stage->id,
-                'from_stage_name' => $fromName,
-                'to_stage_name' => $stage->name,
-            ]);
-        }
-
-        if ($fromStatus !== $status) {
-            $this->recordActivity($lead, $user->id, 'system', $this->statusChangeMessage(
-                (string) $fromStatus,
-                (string) $status,
-                (string) ($lead->card_type ?? 'lead'),
-            ), [
-                'action' => 'status_change',
-                'from' => $fromStatus,
-                'to' => $status,
-                'card_type' => $lead->card_type ?? 'lead',
-            ]);
-        }
-
-        $lead->load('board');
-        if ($fromStageId !== $stage->id) {
-            app(PipelineBoardActivityService::class)->log(
-                $lead->board,
-                $user,
-                'lead_moved',
-                "Moved {$lead->title} to {$stage->name}",
-                null,
-                'lead',
-                (int) $lead->id,
-                ['stage_id' => $stage->id, 'stage_name' => $stage->name],
-            );
-            app(PipelineBoardAutomationService::class)->runForLeadStageChange($lead, $lead->board, $stage, $user);
-        }
-        if ($fromStatus !== $status && in_array($status, ['won', 'lost'], true)) {
-            app(PipelineBoardAutomationService::class)->runForLeadStatusChange($lead, $lead->board, $status, $user);
-        }
-
-        return $this->loadLeadWithHistory($lead);
+        return $this->leadService->moveLead($businessId, $user, $leadId, $stageId, $position);
     }
 
-    protected function syncTaskStatusFromStage(PipelineLead $lead, PipelineStage $stage): void
-    {
-        $statusMap = [
-            'To Do' => 'todo',
-            'In Progress' => 'in_progress',
-            'Review' => 'in_progress',
-            'Done' => 'done',
-        ];
-
-        $taskStatus = $statusMap[$stage->name] ?? 'todo';
-
-        ProjectTask::query()
-            ->where('id', $lead->project_task_id)
-            ->update(['status' => $taskStatus]);
-    }
-
-    protected function createTaskFromLead(PipelineLead $lead, int $businessId): void
-    {
-        $stageName = $lead->stage?->name;
-        $statusMap = [
-            'To Do' => 'todo',
-            'In Progress' => 'in_progress',
-            'Review' => 'in_progress',
-            'Done' => 'done',
-        ];
-        $taskStatus = $statusMap[$stageName] ?? 'todo';
-
-        $task = ProjectTask::create([
-            'project_id' => $lead->board->project_id,
-            'name' => $lead->title,
-            'description' => $lead->description,
-            'status' => $taskStatus,
-            'estimated_hours' => 0,
-            'actual_hours' => 0,
-            'budget_cost' => 0,
-            'assigned_to' => $lead->assigned_to,
-        ]);
-
-        $lead->update(['project_task_id' => $task->id]);
-    }
-
-    /** @param  array<string, mixed>  $data */
     public function convertLead(int $businessId, User $user, int $leadId, array $data): PipelineLead
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        if ($lead->status === 'converted') {
-            throw ValidationException::withMessages(['lead' => 'Lead is already converted.']);
-        }
-
-        $customerId = $data['customer_id'] ?? $lead->customer_id;
-
-        if (!$customerId) {
-            $customer = $this->customerContactService->resolve($businessId, [
-                'name' => $lead->contact_name ?: $lead->title,
-                'email' => $lead->contact_email,
-                'phone' => $lead->contact_phone,
-            ]);
-            $customerId = $customer->id;
-        }
-
-        $lead->update([
-            'customer_id' => $customerId,
-            'converted_customer_id' => $customerId,
-            'status' => 'converted',
-            'converted_at' => now(),
-        ]);
-
-        $this->recordActivity($lead, $user->id, 'system', 'Lead converted to customer', [
-            'customer_id' => $customerId,
-        ]);
-
-        return $this->loadLeadWithHistory($lead);
+        return $this->leadService->convertLead($businessId, $user, $leadId, $data);
     }
 
-    public function addActivity(
-        int $businessId,
-        User $user,
-        int $leadId,
-        string $type,
-        ?string $body,
-        ?array $metadata = null,
-        ?int $parentId = null,
-    ): PipelineLeadActivity {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        if ($parentId !== null) {
-            $parent = PipelineLeadActivity::query()
-                ->where('business_id', $businessId)
-                ->where('lead_id', $leadId)
-                ->whereKey($parentId)
-                ->firstOrFail();
-
-            if (! in_array($parent->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
-                abort(422, 'You can only reply to user comments.');
-            }
-
-            if ($parent->parent_id !== null) {
-                abort(422, 'Replies cannot be nested further — reply to the main comment instead.');
-            }
-        }
-
-        return $this->recordActivity($lead, $user->id, $type, $body, $metadata, $parentId);
+    public function addActivity(int $businessId, User $user, int $leadId, string $type, ?string $body, ?array $metadata = null, ?int $parentId = null): PipelineLeadActivity
+    {
+        return $this->activityService->addActivity($businessId, $user, $leadId, $type, $body, $metadata, $parentId);
     }
 
-    public function logLeadHistoryEvent(
-        PipelineLead $lead,
-        User $user,
-        string $body,
-        ?array $metadata = null,
-    ): PipelineLeadActivity {
-        return $this->recordActivity($lead, $user->id, 'system', $body, $metadata);
+    public function logLeadHistoryEvent(PipelineLead $lead, User $user, string $body, ?array $metadata = null): PipelineLeadActivity
+    {
+        return $this->activityService->logLeadHistoryEvent($lead, $user, $body, $metadata);
     }
 
-    public function addActivityAndNotify(
-        int $businessId,
-        User $user,
-        int $leadId,
-        string $type,
-        ?string $body,
-        ?array $metadata = null,
-        ?int $parentId = null,
-    ): PipelineLeadActivity {
-        $activity = $this->addActivity($businessId, $user, $leadId, $type, $body, $metadata, $parentId);
-
-        if (in_array($type, ['note', 'comment', 'call', 'email', 'meeting'], true) && $body) {
-            $lead = $this->findLeadForBusiness($businessId, $leadId);
-            $lead->load('board');
-            $recipients = app(PipelineCollaborationService::class)->leadNotificationRecipients($lead, $user);
-            $this->pipelineNotifier->notifyComment(
-                $lead,
-                $lead->board,
-                $user,
-                $body,
-                $recipients,
-                $parentId !== null,
-            );
-        }
-
-        return $activity;
+    public function addActivityAndNotify(int $businessId, User $user, int $leadId, string $type, ?string $body, ?array $metadata = null, ?int $parentId = null): PipelineLeadActivity
+    {
+        return $this->activityService->addActivityAndNotify($businessId, $user, $leadId, $type, $body, $metadata, $parentId);
     }
 
     public function deleteActivity(int $businessId, User $user, int $activityId): void
     {
-        $activity = PipelineLeadActivity::query()
-            ->where('business_id', $businessId)
-            ->whereKey($activityId)
-            ->firstOrFail();
-
-        if (! in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
-            abort(403, 'This activity cannot be deleted.');
-        }
-
-        $lead = $this->findLeadForBusiness($businessId, (int) $activity->lead_id);
-        $board = $lead->board ?? $this->findBoardForBusiness($businessId, (int) $lead->board_id);
-
-        $isAuthor = (int) $activity->user_id === (int) $user->id;
-        $canModerate = $this->userCanManageBoard($user, $board);
-
-        if (! $isAuthor && ! $canModerate) {
-            abort(403, 'You can only delete your own comments or moderate as a board manager.');
-        }
-
-        if (in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
-            $preview = $activity->body ? mb_substr($activity->body, 0, 120) : null;
-            $this->logLeadHistoryEvent($lead, $user, 'Comment removed', [
-                'action' => 'comment_removed',
-                'comment_type' => $activity->type,
-                'preview' => $preview,
-            ]);
-        }
-
-        PipelineLeadActivity::query()
-            ->where('lead_id', $lead->id)
-            ->where('parent_id', $activity->id)
-            ->delete();
-
-        $activity->delete();
+        $this->activityService->deleteActivity($businessId, $user, $activityId);
     }
 
     public function updateActivity(int $businessId, User $user, int $activityId, string $body): PipelineLeadActivity
     {
-        $activity = PipelineLeadActivity::query()
-            ->where('business_id', $businessId)
-            ->whereKey($activityId)
-            ->firstOrFail();
-
-        if (! in_array($activity->type, ['note', 'comment', 'call', 'email', 'meeting'], true)) {
-            abort(403, 'This activity cannot be edited.');
-        }
-
-        $lead = $this->findLeadForBusiness($businessId, (int) $activity->lead_id);
-        $board = $lead->board ?? $this->findBoardForBusiness($businessId, (int) $lead->board_id);
-
-        $isAuthor = (int) $activity->user_id === (int) $user->id;
-
-        if (! $isAuthor) {
-            abort(403, 'You can only edit your own comments.');
-        }
-
-        $beforeBody = $activity->body;
-        $activity->update(['body' => $body]);
-
-        if ($beforeBody !== $body) {
-            $this->logLeadHistoryEvent($lead, $user, 'Comment edited', [
-                'action' => 'comment_edited',
-                'comment_type' => $activity->type,
-                'preview' => mb_substr($body, 0, 120),
-            ]);
-        }
-
-        return $activity->fresh(['user:id,name,avatar', 'reactions']);
+        return $this->activityService->updateActivity($businessId, $user, $activityId, $body);
     }
 
     public function userCanManageBoard(User $user, PipelineBoard $board): bool
     {
-        if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
-        }
-
-        if ($this->moduleAccess->isBusinessOwner($user)) {
-            return true;
-        }
-
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-
-            return $project && $this->projectAccess->canManageProjectMembers($user, $project);
-        }
-
-        if ((int) $board->created_by === (int) $user->id) {
-            return true;
-        }
-
-        if ($board->visibility === 'shared') {
-            $member = PipelineBoardMember::query()
-                ->where('board_id', $board->id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            return $member && $this->boardMemberRoleAllowsManage($member->role);
-        }
-
-        return false;
+        return $this->permission->userCanManageBoard($user, $board);
     }
 
     public function listSources(int $businessId): Collection
     {
-        $this->seedSourcesIfMissing($businessId);
-
-        return PipelineSource::query()
-            ->where('business_id', $businessId)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        return $this->sourceService->listSources($businessId);
     }
 
-    /** @return array<string, mixed> */
     public function insightsSummary(int $businessId, User $user, ?int $boardId = null): array
     {
-        $boards = $boardId
-            ? collect([$this->getBoard($businessId, $user, $boardId)])
-            : $this->listBoards($businessId, $user, salesOnly: true);
-
-        $boards = $boards->filter(fn (PipelineBoard $board) => $board->project_id === null)->values();
-        $boardIds = $boards->pluck('id');
-
-        if ($boardIds->isEmpty()) {
-            return [
-                'open_leads' => 0,
-                'open_pipeline_value' => 0,
-                'won_leads' => 0,
-                'lost_leads' => 0,
-                'converted_leads' => 0,
-                'win_rate_percent' => 0,
-                'by_stage' => [],
-                'by_source' => [],
-            ];
-        }
-
-        $leads = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->whereIn('board_id', $boardIds)
-            ->where('card_type', 'lead')
-            ->whereIn('status', ['open', 'won', 'lost', 'converted'])
-            ->with(['stage:id,name,is_won,is_lost,color,sort_order', 'source:id,name'])
-            ->get();
-
-        $openLeads = $leads->where('status', 'open');
-        $wonLeads = $leads->where('status', 'won');
-        $lostLeads = $leads->where('status', 'lost');
-        $convertedLeads = $leads->where('status', 'converted');
-
-        $byStage = $openLeads->groupBy('stage_id')->map(function ($group, $stageId) {
-            $stage = $group->first()->stage;
-
-            return [
-                'stage_id' => (int) $stageId,
-                'stage_name' => $stage?->name ?? 'Unknown',
-                'color' => $stage?->color,
-                'sort_order' => $stage?->sort_order ?? 0,
-                'count' => $group->count(),
-                'value' => round((float) $group->sum('estimated_value'), 2),
-            ];
-        })->sortBy('sort_order')->values();
-
-        $bySource = $openLeads->groupBy('source_id')->map(function ($group, $sourceId) {
-            $source = $group->first()->source;
-
-            return [
-                'source_id' => $sourceId ? (int) $sourceId : null,
-                'source_name' => $source?->name ?? 'No source',
-                'count' => $group->count(),
-                'value' => round((float) $group->sum('estimated_value'), 2),
-            ];
-        })->sortByDesc('count')->values();
-
-        $totalOpen = $openLeads->count();
-        $closed = $wonLeads->count() + $lostLeads->count();
-        $winRate = $closed > 0 ? round(($wonLeads->count() / $closed) * 100, 1) : 0;
-
-        return [
-            'open_leads' => $totalOpen,
-            'open_pipeline_value' => round((float) $openLeads->sum('estimated_value'), 2),
-            'won_leads' => $wonLeads->count(),
-            'lost_leads' => $lostLeads->count(),
-            'converted_leads' => $convertedLeads->count(),
-            'win_rate_percent' => $winRate,
-            'by_stage' => $byStage,
-            'by_source' => $bySource,
-        ];
+        return $this->calendarService->insightsSummary($businessId, $user, $boardId);
     }
 
     public function listLabels(int $businessId, User $user, ?int $boardId = null): Collection
     {
-        if ($boardId) {
-            $board = $this->findBoardForBusiness($businessId, $boardId);
-            $this->assertCanViewBoard($user, $board);
-        }
-
-        $labels = PipelineLabel::query()
-            ->where('business_id', $businessId)
-            ->when($boardId, fn ($q) => $q->where('board_id', $boardId))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        if ($boardId && $labels->isEmpty()) {
-            $this->seedDefaultLabels($businessId, $boardId);
-
-            return PipelineLabel::query()
-                ->where('business_id', $businessId)
-                ->where('board_id', $boardId)
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get();
-        }
-
-        return $labels;
+        return $this->labelService->listLabels($businessId, $user, $boardId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function createLabel(int $businessId, User $user, array $data): PipelineLabel
     {
-        if (!empty($data['board_id'])) {
-            $board = $this->findBoardForBusiness($businessId, (int) $data['board_id']);
-            $this->assertCanEditBoard($user, $board);
-        }
-
-        $maxOrder = PipelineLabel::query()
-            ->where('business_id', $businessId)
-            ->where('board_id', $data['board_id'] ?? null)
-            ->max('sort_order');
-
-        return PipelineLabel::create([
-            'business_id' => $businessId,
-            'board_id' => $data['board_id'] ?? null,
-            'name' => $data['name'],
-            'color' => $data['color'] ?? '#6366f1',
-            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
-        ]);
+        return $this->labelService->createLabel($businessId, $user, $data);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateLabel(int $businessId, User $user, int $labelId, array $data): PipelineLabel
     {
-        $label = PipelineLabel::query()
-            ->where('business_id', $businessId)
-            ->where('id', $labelId)
-            ->firstOrFail();
-
-        if ($label->board_id) {
-            $board = $this->findBoardForBusiness($businessId, $label->board_id);
-            $this->assertCanEditBoard($user, $board);
-        }
-
-        $label->update(array_filter([
-            'name' => $data['name'] ?? null,
-            'color' => $data['color'] ?? null,
-            'sort_order' => $data['sort_order'] ?? null,
-        ], fn ($v) => $v !== null));
-
-        return $label->fresh();
+        return $this->labelService->updateLabel($businessId, $user, $labelId, $data);
     }
 
     public function deleteLabel(int $businessId, User $user, int $labelId): void
     {
-        $label = PipelineLabel::query()
-            ->where('business_id', $businessId)
-            ->where('id', $labelId)
-            ->firstOrFail();
-
-        if ($label->board_id) {
-            $board = $this->findBoardForBusiness($businessId, $label->board_id);
-            $this->assertCanEditBoard($user, $board);
-        }
-
-        $label->delete();
+        $this->labelService->deleteLabel($businessId, $user, $labelId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function createChecklist(int $businessId, User $user, int $leadId, array $data): PipelineChecklist
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        $maxOrder = PipelineChecklist::query()->where('lead_id', $leadId)->max('sort_order');
-        $title = $data['title'] ?? 'Checklist';
-
-        $checklist = PipelineChecklist::create([
-            'lead_id' => $leadId,
-            'title' => $title,
-            'description' => $data['description'] ?? null,
-            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
-        ]);
-
-        $this->recordActivity($lead, $user->id, 'system', "Checklist added: {$title}", [
-            'action' => 'checklist_added',
-            'title' => $title,
-        ]);
-
-        return $checklist;
+        return $this->checklistService->createChecklist($businessId, $user, $leadId, $data);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateChecklist(int $businessId, User $user, int $checklistId, array $data): PipelineChecklist
     {
-        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
-        $this->assertCanEditBoard($user, $checklist->lead->board);
-
-        $payload = [];
-        if (array_key_exists('title', $data)) {
-            $payload['title'] = $data['title'];
-        }
-        if (array_key_exists('description', $data)) {
-            $payload['description'] = $data['description'];
-        }
-        if (array_key_exists('sort_order', $data)) {
-            $payload['sort_order'] = $data['sort_order'];
-        }
-        $checklist->update($payload);
-
-        return $checklist->fresh('items');
+        return $this->checklistService->updateChecklist($businessId, $user, $checklistId, $data);
     }
 
     public function deleteChecklist(int $businessId, User $user, int $checklistId): void
     {
-        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
-        $this->assertCanEditBoard($user, $checklist->lead->board);
-        $title = $checklist->title;
-
-        $checklist->delete();
-
-        $this->recordActivity($checklist->lead, $user->id, 'system', "Checklist removed: {$title}", [
-            'action' => 'checklist_removed',
-            'title' => $title,
-        ]);
+        $this->checklistService->deleteChecklist($businessId, $user, $checklistId);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function createChecklistItem(int $businessId, User $user, int $checklistId, array $data): PipelineChecklistItem
     {
-        $checklist = PipelineChecklist::query()->with('lead.board')->findOrFail($checklistId);
-        $this->assertCanEditBoard($user, $checklist->lead->board);
-
-        $maxOrder = PipelineChecklistItem::query()->where('checklist_id', $checklistId)->max('sort_order');
-        $title = $data['title'];
-
-        $item = PipelineChecklistItem::create([
-            'checklist_id' => $checklistId,
-            'title' => $title,
-            'description' => $data['description'] ?? null,
-            'is_done' => (bool) ($data['is_done'] ?? false),
-            'sort_order' => (int) ($data['sort_order'] ?? ($maxOrder + 1)),
-        ]);
-
-        $this->recordActivity($checklist->lead, $user->id, 'system', "Checklist item added: {$title}", [
-            'action' => 'checklist_item_added',
-            'title' => $title,
-        ]);
-
-        return $item;
+        return $this->checklistService->createChecklistItem($businessId, $user, $checklistId, $data);
     }
 
-    /** @param  array<string, mixed>  $data */
     public function updateChecklistItem(int $businessId, User $user, int $itemId, array $data): PipelineChecklistItem
     {
-        $item = PipelineChecklistItem::query()
-            ->with('checklist.lead.board')
-            ->findOrFail($itemId);
-        $this->assertCanEditBoard($user, $item->checklist->lead->board);
-
-        $wasDone = (bool) $item->is_done;
-
-        $payload = [];
-        if (array_key_exists('title', $data)) {
-            $payload['title'] = $data['title'];
-        }
-        if (array_key_exists('description', $data)) {
-            $payload['description'] = $data['description'];
-        }
-        if (array_key_exists('is_done', $data)) {
-            $payload['is_done'] = (bool) $data['is_done'];
-        }
-        if (array_key_exists('sort_order', $data)) {
-            $payload['sort_order'] = $data['sort_order'];
-        }
-        $item->update($payload);
-
-        if (array_key_exists('is_done', $data) && (bool) $data['is_done'] !== $wasDone) {
-            $message = (bool) $data['is_done']
-                ? "Checklist item completed: {$item->title}"
-                : "Checklist item reopened: {$item->title}";
-            $this->recordActivity($item->checklist->lead, $user->id, 'system', $message, [
-                'action' => (bool) $data['is_done'] ? 'checklist_item_done' : 'checklist_item_reopened',
-                'title' => $item->title,
-            ]);
-        }
-
-        return $item->fresh();
+        return $this->checklistService->updateChecklistItem($businessId, $user, $itemId, $data);
     }
 
     public function deleteChecklistItem(int $businessId, User $user, int $itemId): void
     {
-        $item = PipelineChecklistItem::query()
-            ->with('checklist.lead.board')
-            ->findOrFail($itemId);
-        $this->assertCanEditBoard($user, $item->checklist->lead->board);
-        $title = $item->title;
-        $lead = $item->checklist->lead;
-
-        $item->delete();
-
-        $this->recordActivity($lead, $user->id, 'system', "Checklist item removed: {$title}", [
-            'action' => 'checklist_item_removed',
-            'title' => $title,
-        ]);
+        $this->checklistService->deleteChecklistItem($businessId, $user, $itemId);
     }
 
-
-    /** @return list<string> */
-    protected function leadDetailRelations(): array
+    public function recordActivity(PipelineLead $lead, ?int $userId, string $type, ?string $body, ?array $metadata = null, ?int $parentId = null): PipelineLeadActivity
     {
-        return [
-            'board',
-            'stage',
-            'assignee:id,name,avatar',
-            'assignees:id,name,avatar',
-            'source:id,name',
-            'customer:id,name,email,phone',
-            'convertedCustomer:id,name,email,phone',
-            'labels:id,name,color',
-            'checklists.items',
-            'attachments.user:id,name',
-            'meetings',
-        ];
+        return $this->leadService->recordActivity($lead, $userId, $type, $body, $metadata, $parentId);
     }
 
-    protected function loadLeadWithHistory(PipelineLead $lead): PipelineLead
+    public function findBoardForBusiness(int $businessId, int $boardId): PipelineBoard
     {
-        $lead->load(array_merge($this->leadDetailRelations(), [
-            'activities' => fn ($q) => $q->with(['user:id,name,avatar', 'reactions'])->orderBy('created_at'),
-        ]));
-
-        $lead->loadCount([
-            'activities as comments_count' => fn ($q) => $q->whereIn('type', ['note', 'comment', 'call', 'email', 'meeting']),
-            'activities as history_count',
-        ]);
-
-        return $lead;
+        return $this->lookup->findBoardForBusiness($businessId, $boardId);
     }
 
-    public function recordActivity(
-        PipelineLead $lead,
-        ?int $userId,
-        string $type,
-        ?string $body,
-        ?array $metadata = null,
-        ?int $parentId = null,
-    ): PipelineLeadActivity {
-        return PipelineLeadActivity::create([
-            'business_id' => $lead->business_id,
-            'lead_id' => $lead->id,
-            'parent_id' => $parentId,
-            'user_id' => $userId,
-            'type' => $type,
-            'body' => $body,
-            'metadata' => $metadata,
-        ]);
-    }
-
-    /** @param  array<string, mixed>  $data */
-    protected function recordLeadUpdateActivities(
-        PipelineLead $lead,
-        User $user,
-        PipelineLead $before,
-        array $data,
-    ): void {
-        $userId = $user->id;
-
-        $scalarFields = [
-            'title' => 'Title',
-            'description' => 'Description',
-            'due_date' => 'Due date',
-            'expected_close_date' => 'Expected close',
-            'start_date' => 'Start date',
-            'priority' => 'Priority',
-            'estimated_value' => 'Estimated value',
-            'background_color' => 'Card color',
-            'lost_reason' => 'Lost reason',
-            'contact_name' => 'Contact name',
-            'contact_email' => 'Contact email',
-            'contact_phone' => 'Contact phone',
-        ];
-
-        foreach ($scalarFields as $field => $label) {
-            if (! array_key_exists($field, $data)) {
-                continue;
-            }
-
-            $from = $before->{$field};
-            $to = $lead->{$field};
-            if ($this->normalizeActivityValue($from) === $this->normalizeActivityValue($to)) {
-                continue;
-            }
-
-            $this->recordActivity($lead, $userId, 'system', "{$label} updated", [
-                'action' => 'field_change',
-                'field' => $field,
-                'field_label' => $label,
-                'from' => $from,
-                'to' => $to,
-            ]);
-        }
-
-        if (array_key_exists('label_ids', $data)) {
-            $beforeNames = $before->labels->pluck('name')->values()->all();
-            $lead->load('labels:id,name');
-            $afterNames = $lead->labels->pluck('name')->values()->all();
-
-            if ($beforeNames !== $afterNames) {
-                $this->recordActivity($lead, $userId, 'system', 'Labels updated', [
-                    'action' => 'labels_change',
-                    'from' => $beforeNames,
-                    'to' => $afterNames,
-                ]);
-            }
-        }
-
-        if (array_key_exists('assignee_ids', $data) || array_key_exists('assigned_to', $data)) {
-            $beforeNames = $before->assignees->pluck('name')->values()->all();
-            $lead->load('assignees:id,name');
-            $afterNames = $lead->assignees->pluck('name')->values()->all();
-
-            if ($beforeNames !== $afterNames) {
-                $this->recordActivity($lead, $userId, 'system', 'Assignees updated', [
-                    'action' => 'assignees_change',
-                    'from' => $beforeNames,
-                    'to' => $afterNames,
-                ]);
-            }
-        }
-
-        if (array_key_exists('source_id', $data)) {
-            $beforeSource = $before->source_id
-                ? PipelineSource::query()->whereKey($before->source_id)->value('name')
-                : null;
-            $afterSource = $lead->source_id
-                ? PipelineSource::query()->whereKey($lead->source_id)->value('name')
-                : null;
-            if ($this->normalizeActivityValue($beforeSource) !== $this->normalizeActivityValue($afterSource)) {
-                $this->recordActivity($lead, $userId, 'system', 'Source updated', [
-                    'action' => 'field_change',
-                    'field' => 'source_id',
-                    'field_label' => 'Source',
-                    'from' => $beforeSource,
-                    'to' => $afterSource,
-                ]);
-            }
-        }
-
-        if (array_key_exists('status', $data) && $before->status !== $lead->status) {
-            $this->recordActivity($lead, $userId, 'system', $this->statusChangeMessage(
-                (string) $before->status,
-                (string) $lead->status,
-                (string) ($lead->card_type ?? 'lead'),
-            ), [
-                'action' => 'status_change',
-                'from' => $before->status,
-                'to' => $lead->status,
-                'card_type' => $lead->card_type ?? 'lead',
-            ]);
-        }
-    }
-
-    protected function statusChangeMessage(string $from, string $to, string $cardType): string
+    public function findStageForBusiness(int $businessId, int $stageId): PipelineStage
     {
-        $isTask = $cardType === 'card';
-
-        if ($to === 'won') {
-            return $isTask ? 'Task marked complete' : 'Lead marked won';
-        }
-        if ($to === 'lost') {
-            return $isTask ? 'Task marked lost' : 'Lead marked lost';
-        }
-        if ($from === 'won' && $to === 'open') {
-            return $isTask ? 'Task marked incomplete' : 'Lead reopened';
-        }
-        if ($from === 'lost' && $to === 'open') {
-            return $isTask ? 'Task reopened' : 'Lead reopened';
-        }
-
-        $toLabel = match ($to) {
-            'converted' => 'Converted',
-            'archived' => 'Archived',
-            default => ucfirst($to),
-        };
-
-        return $isTask ? "Task status changed to {$toLabel}" : "Lead status changed to {$toLabel}";
-    }
-
-    protected function normalizeActivityValue(mixed $value): ?string
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d');
-        }
-
-        return (string) $value;
-    }
-
-    protected function findBoardForBusiness(int $businessId, int $boardId): PipelineBoard
-    {
-        return PipelineBoard::query()
-            ->where('business_id', $businessId)
-            ->where('id', $boardId)
-            ->firstOrFail();
-    }
-
-    protected function findStageForBusiness(int $businessId, int $stageId): PipelineStage
-    {
-        return PipelineStage::query()
-            ->where('business_id', $businessId)
-            ->where('id', $stageId)
-            ->with('board')
-            ->firstOrFail();
+        return $this->lookup->findStageForBusiness($businessId, $stageId);
     }
 
     public function findLeadForBusiness(int $businessId, int $leadId): PipelineLead
     {
-        return PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->where('id', $leadId)
-            ->with('board')
-            ->firstOrFail();
+        return $this->lookup->findLeadForBusiness($businessId, $leadId);
+    }
+
+    public function findBoardForUser(User $user, int $boardId): PipelineBoard
+    {
+        return $this->lookup->findBoardForUser($user, $boardId);
+    }
+
+    public function findLeadForUser(User $user, int $leadId): PipelineLead
+    {
+        return $this->lookup->findLeadForUser($user, $leadId);
+    }
+
+    public function findStageForUser(User $user, int $stageId): PipelineStage
+    {
+        return $this->lookup->findStageForUser($user, $stageId);
     }
 
     public function canViewBoard(User $user, PipelineBoard $board): bool
     {
-        if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
-        }
-
-        if ($this->moduleAccess->isBusinessOwner($user)) {
-            return true;
-        }
-
-        if ($board->project_id) {
-            return $this->projectAccess->canAccessProjectBoard($user, $board);
-        }
-
-        return match ($board->visibility) {
-            'team' => $this->moduleAccess->canAccess($user, 'pipeline')
-                || $this->moduleAccess->canAccess($user, 'estimates'),
-            'private' => (int) $board->created_by === (int) $user->id,
-            'shared' => (int) $board->created_by === (int) $user->id
-                || PipelineBoardMember::query()
-                    ->where('board_id', $board->id)
-                    ->where('user_id', $user->id)
-                    ->exists(),
-            default => false,
-        };
-    }
-
-    protected function assertCanViewBoard(User $user, PipelineBoard $board): void
-    {
-        if (!$this->canViewBoard($user, $board)) {
-            abort(403, 'You do not have access to this pipeline board.');
-        }
+        return $this->permission->canViewBoard($user, $board);
     }
 
     public function ensureCanContributeToBoard(User $user, PipelineBoard $board): void
     {
-        if (! $this->userCanContributeToBoard($user, $board)) {
-            abort(403, 'You have read-only access to this board.');
-        }
+        $this->permission->ensureCanContributeToBoard($user, $board);
     }
 
     public function assertCanEditBoard(User $user, PipelineBoard $board): void
     {
-        $this->assertCanViewBoard($user, $board);
-
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
-            return;
-        }
-
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-            if ($project && $this->projectAccess->canEditProjectBoard($user, $project)) {
-                return;
-            }
-            abort(403, 'You cannot edit this project board.');
-        }
-
-        if ($board->visibility === 'team') {
-            if (! $this->userCanContributeToBoard($user, $board)) {
-                abort(403, 'You have read-only access to this board.');
-            }
-
-            return;
-        }
-
-        if ($board->visibility === 'shared') {
-            $member = PipelineBoardMember::query()
-                ->where('board_id', $board->id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            if ($member && $this->boardMemberRoleAllowsEdit($member->role)) {
-                return;
-            }
-        }
-
-        abort(403, 'You cannot edit this pipeline board.');
-    }
-
-    public function normalizeBoardMemberRole(string $role): string
-    {
-        return match ($role) {
-            'editor' => 'contributor',
-            'viewer', 'contributor', 'manager' => $role,
-            default => 'viewer',
-        };
-    }
-
-    public function userCanContributeToBoard(User $user, PipelineBoard $board): bool
-    {
-        if (! $this->canViewBoard($user, $board)) {
-            return false;
-        }
-
-        if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
-        }
-
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
-            return true;
-        }
-
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-
-            return $project && $this->projectAccess->canEditProjectBoard($user, $project);
-        }
-
-        if ($board->visibility === 'team') {
-            return $this->moduleAccess->canAccess($user, 'pipeline')
-                || $this->moduleAccess->canAccess($user, 'estimates');
-        }
-
-        if ($board->visibility === 'shared') {
-            $member = PipelineBoardMember::query()
-                ->where('board_id', $board->id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            return $member && $this->boardMemberRoleAllowsEdit($member->role);
-        }
-
-        return false;
-    }
-
-    public function resolveCurrentUserBoardMemberRole(User $user, PipelineBoard $board): ?string
-    {
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
-            return 'manager';
-        }
-
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-            if ($project && (int) $project->created_by === (int) $user->id) {
-                return 'manager';
-            }
-
-            $projectMember = \App\Models\ProjectMember::query()
-                ->where('project_id', $board->project_id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            if ($projectMember) {
-                return $this->normalizeBoardMemberRole((string) $projectMember->role);
-            }
-        }
-
-        if ($board->visibility === 'team') {
-            return $this->userCanManageBoard($user, $board) ? 'manager' : 'contributor';
-        }
-
-        if ($board->visibility !== 'shared') {
-            return null;
-        }
-
-        $member = PipelineBoardMember::query()
-            ->where('board_id', $board->id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        return $member ? $this->normalizeBoardMemberRole((string) $member->role) : null;
-    }
-
-    public function boardMemberRoleAllowsEdit(?string $role): bool
-    {
-        $normalized = $this->normalizeBoardMemberRole((string) $role);
-
-        return in_array($normalized, ['contributor', 'manager'], true);
-    }
-
-    public function boardMemberRoleAllowsManage(?string $role): bool
-    {
-        return $this->normalizeBoardMemberRole((string) $role) === 'manager';
+        $this->permission->assertCanEditBoard($user, $board);
     }
 
     public function ensureCanEditBoard(User $user, PipelineBoard $board): void
     {
-        $this->assertCanEditBoard($user, $board);
+        $this->permission->ensureCanEditBoard($user, $board);
     }
 
     public function ensureCanManageBoard(User $user, PipelineBoard $board): void
     {
-        $this->assertCanManageBoard($user, $board);
+        $this->permission->ensureCanManageBoard($user, $board);
     }
 
-    protected function assertCanManageBoard(User $user, PipelineBoard $board): void
+    public function userCanContributeToBoard(User $user, PipelineBoard $board): bool
     {
-        if ($this->userCanManageBoard($user, $board)) {
-            return;
-        }
-
-        abort(403, $board->project_id
-            ? 'Only project managers can change these board settings.'
-            : 'Only the board owner can change pipeline settings.');
+        return $this->permission->userCanContributeToBoard($user, $board);
     }
 
-    protected function assertCanArchiveBoard(User $user, PipelineBoard $board): void
+    public function resolveCurrentUserBoardMemberRole(User $user, PipelineBoard $board): ?string
     {
-        if ($board->visibility === 'private' && ! $board->project_id) {
-            if ((int) $board->created_by === (int) $user->id) {
-                return;
-            }
-
-            abort(403, 'Only the board owner can archive this board.');
-        }
-
-        if ($this->moduleAccess->isBusinessOwner($user)) {
-            return;
-        }
-
-        if ($board->project_id) {
-            $project = Project::query()->find($board->project_id);
-            if ($project && (int) $project->created_by === (int) $user->id) {
-                return;
-            }
-            if ((int) $board->created_by === (int) $user->id) {
-                return;
-            }
-            abort(403, 'Only the project owner can archive this board.');
-        }
-
-        if ((int) $board->created_by === (int) $user->id) {
-            return;
-        }
-
-        abort(403, 'Only the board owner can archive this board.');
+        return $this->permission->resolveCurrentUserBoardMemberRole($user, $board);
     }
 
-    /** @param  array<string, mixed>  $data */
-  protected function resolveAssigneeIds(array $data, User $actor, ?PipelineLead $existing = null): array
+    public function boardMemberRoleAllowsEdit(?string $role): bool
     {
-        if (array_key_exists('assignee_ids', $data) && is_array($data['assignee_ids'])) {
-            $ids = array_values(array_unique(array_filter(array_map('intval', $data['assignee_ids']))));
-
-            return $ids !== [] ? $ids : [(int) $actor->id];
-        }
-
-        if (array_key_exists('assigned_to', $data)) {
-            return $data['assigned_to'] ? [(int) $data['assigned_to']] : [];
-        }
-
-        if ($existing) {
-            $pivotIds = PipelineLeadAssignee::query()
-                ->where('lead_id', $existing->id)
-                ->pluck('user_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            if ($pivotIds !== []) {
-                return $pivotIds;
-            }
-
-            return $existing->assigned_to ? [(int) $existing->assigned_to] : [];
-        }
-
-        return [(int) $actor->id];
+        return $this->permission->boardMemberRoleAllowsEdit($role);
     }
 
-    /** @param  list<int>  $userIds  @return list<int> newly added assignee user ids */
-    protected function syncLeadAssignees(PipelineLead $lead, array $userIds, int $assignedBy): array
+    public function boardMemberRoleAllowsManage(?string $role): bool
     {
-        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
-        $existing = PipelineLeadAssignee::query()
-            ->where('lead_id', $lead->id)
-            ->pluck('user_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        return $this->permission->boardMemberRoleAllowsManage($role);
+    }
 
-        $toAdd = array_values(array_diff($userIds, $existing));
-        $toRemove = array_values(array_diff($existing, $userIds));
-
-        if ($toRemove !== []) {
-            PipelineLeadAssignee::query()
-                ->where('lead_id', $lead->id)
-                ->whereIn('user_id', $toRemove)
-                ->delete();
-        }
-
-        foreach ($toAdd as $userId) {
-            PipelineLeadAssignee::create([
-                'lead_id' => $lead->id,
-                'user_id' => $userId,
-                'assigned_by' => $assignedBy,
-            ]);
-        }
-
-        $primary = $userIds[0] ?? null;
-        if ($lead->assigned_to !== $primary) {
-            $lead->update(['assigned_to' => $primary]);
-        }
-
-        return $toAdd;
+    public function normalizeBoardMemberRole(string $role): string
+    {
+        return $this->permission->normalizeBoardMemberRole($role);
     }
 
     public function createLeadLink(int $businessId, User $user, int $leadId, array $data): PipelineLeadLink
     {
-        $lead = $this->findLeadForBusiness($businessId, $leadId);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        if (!empty($data['linked_lead_id'])) {
-            $targetLead = $this->findLeadForBusiness($businessId, (int) $data['linked_lead_id']);
-        }
-
-        return PipelineLeadLink::create([
-            'lead_id' => $leadId,
-            'linked_lead_id' => $data['linked_lead_id'] ?? null,
-            'linked_board_id' => $data['linked_board_id'] ?? null,
-            'label' => $data['label'] ?? null,
-            'created_by' => $user->id,
-        ]);
+        return $this->leadLinkService->createLeadLink($businessId, $user, $leadId, $data);
     }
 
     public function deleteLeadLink(int $businessId, User $user, int $linkId): void
     {
-        $link = PipelineLeadLink::query()
-            ->where('id', $linkId)
-            ->firstOrFail();
-
-        $lead = $this->findLeadForBusiness($businessId, $link->lead_id);
-        $this->assertCanEditBoard($user, $lead->board);
-
-        $link->delete();
+        $this->leadLinkService->deleteLeadLink($businessId, $user, $linkId);
     }
 
     public function duplicateBoard(int $businessId, User $user, int $boardId): PipelineBoard
     {
-        $source = $this->getBoard($businessId, $user, $boardId);
-        $this->assertCanEditBoard($user, $source);
-
-        return DB::transaction(function () use ($businessId, $user, $source) {
-            $board = PipelineBoard::create([
-                'business_id' => $businessId,
-                'created_by' => $user->id,
-                'name' => 'Copy of ' . $source->name,
-                'description' => $source->description,
-                'visibility' => $source->visibility,
-                'cover_color' => $source->cover_color,
-                'background_type' => $source->background_type,
-                'background_value' => $source->background_value,
-                'workspace' => $source->workspace ?? 'pipeline',
-                'sort_order' => 0,
-            ]);
-
-            $stageIdMap = [];
-            foreach ($source->stages ?? [] as $index => $stage) {
-                $newStage = PipelineStage::create([
-                    'business_id' => $businessId,
-                    'board_id' => $board->id,
-                    'name' => $stage->name,
-                    'sort_order' => $index,
-                    'color' => $stage->color,
-                    'is_won' => $stage->is_won,
-                    'is_lost' => $stage->is_lost,
-                    'rotting_days' => $stage->rotting_days,
-                ]);
-                $stageIdMap[$stage->id] = $newStage->id;
-            }
-
-            $this->boardSeed->seedDefaultLabels($businessId, $board->id);
-
-            if ($source->visibility === 'shared' && $source->members->isNotEmpty()) {
-                $memberIds = $source->members->pluck('user_id')->toArray();
-                if (!in_array($user->id, $memberIds)) {
-                    $memberIds[] = $user->id;
-                }
-                $this->syncBoardMembers($board, $memberIds, $user->id);
-            }
-
-            $sourceLeads = PipelineLead::query()
-                ->where('board_id', $source->id)
-                ->whereIn('status', ['open', 'won', 'lost', 'converted'])
-                ->with(['labels', 'assignees'])
-                ->get();
-
-            foreach ($sourceLeads as $lead) {
-                $newStageId = $stageIdMap[$lead->stage_id] ?? null;
-                if (!$newStageId) continue;
-
-                $newLead = PipelineLead::create([
-                    'business_id' => $businessId,
-                    'board_id' => $board->id,
-                    'stage_id' => $newStageId,
-                    'created_by' => $user->id,
-                    'assigned_to' => $lead->assigned_to,
-                    'title' => $lead->title,
-                    'card_type' => $lead->card_type,
-                    'description' => $lead->description,
-                    'contact_name' => $lead->contact_name,
-                    'contact_email' => $lead->contact_email,
-                    'contact_phone' => $lead->contact_phone,
-                    'estimated_value' => $lead->estimated_value,
-                    'currency' => $lead->currency,
-                    'status' => $lead->status,
-                    'position' => $lead->position,
-                    'priority' => $lead->priority,
-                    'due_date' => $lead->due_date,
-                    'expected_close_date' => $lead->expected_close_date,
-                    'start_date' => $lead->start_date,
-                    'background_color' => $lead->background_color,
-                ]);
-
-                if ($lead->labels->isNotEmpty()) {
-                    $newLead->labels()->sync($lead->labels->pluck('id')->toArray());
-                }
-
-                if ($lead->assignees->isNotEmpty()) {
-                    $newLead->assignees()->sync($lead->assignees->pluck('id')->toArray());
-                }
-            }
-
-            return $board->load(['stages', 'members.user', 'creator']);
-        });
+        return $this->boardService->duplicateBoard($businessId, $user, $boardId);
     }
 }

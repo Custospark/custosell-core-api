@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\Api\Pipeline\PipelineBoardController;
 use App\Http\Controllers\Api\ProjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -8,8 +8,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active'])->g
     Route::get('/my-projects', [ProjectController::class, 'myProjects']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::get('/projects/{id}', [ProjectController::class, 'show'])->whereNumber('id');
-    Route::get('/projects/{id}/board', [PipelineController::class, 'projectBoard'])->whereNumber('id');
-    Route::get('/projects/{id}/board/kanban', [PipelineController::class, 'projectKanban'])->whereNumber('id');
+    Route::get('/projects/{id}/board', [PipelineBoardController::class, 'projectBoard'])->whereNumber('id');
+    Route::get('/projects/{id}/board/kanban', [PipelineBoardController::class, 'projectKanban'])->whereNumber('id');
     Route::get('/projects/{id}/members', [ProjectController::class, 'members'])->whereNumber('id');
     Route::post('/projects/{id}/members', [ProjectController::class, 'storeMember'])->whereNumber('id');
     Route::patch('/projects/{id}/members/{userId}', [ProjectController::class, 'updateMember'])->whereNumber(['id', 'userId']);
