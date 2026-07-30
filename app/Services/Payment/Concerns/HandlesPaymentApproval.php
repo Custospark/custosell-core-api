@@ -69,6 +69,7 @@ trait HandlesPaymentApproval
 
             $metadata = $subscription->metadata ?? [];
             unset($metadata['pending_billing_cycle']);
+            unset($metadata['pending_cycle_change_amount_usd']);
 
             $this->subscriptionService->applyBillingCycleChange(
                 $subscription,

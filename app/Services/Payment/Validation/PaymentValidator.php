@@ -31,13 +31,9 @@ class PaymentValidator
                 ? (float) ($plan?->price_yearly_usd ?? 0)
                 : (float) ($plan?->price_monthly_usd ?? 0),
             'upgrade_proration' => (float) ($subscription->metadata['pending_upgrade_amount_usd'] ?? $amount),
-            'billing_cycle_change' => $amount,
+            'billing_cycle_change' => (float) ($subscription->metadata['pending_cycle_change_amount_usd'] ?? $amount),
             default => $amount,
         };
-
-        if (in_array($paymentType, ['billing_cycle_change'], true)) {
-            return;
-        }
 
         if ($currency === 'USD') {
             $expected = $expectedUsd;

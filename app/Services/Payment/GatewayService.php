@@ -384,7 +384,7 @@ class GatewayService
             ];
         }
 
-        $payment = $this->resolvePaymentFromWebhook($callbackData);
+        $payment = $this->paymentValidator->resolvePaymentFromWebhook($callbackData);
 
         if (!$payment) {
             Log::error("[GatewayService] Callback — payment not found", $callbackData);

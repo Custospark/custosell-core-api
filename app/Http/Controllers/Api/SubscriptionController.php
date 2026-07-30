@@ -253,17 +253,16 @@ class SubscriptionController extends Controller
 
             // Monthly→Yearly immediate: require payment first (like upgrade proration)
             if ($effective === 'immediate' && $subscription->billing_cycle === 'monthly' && $validated['billing_cycle'] === 'yearly') {
-                // Store pending billing cycle (don't update yet — deferred to payment approval)
-                $this->subscriptionService->stageBillingCycleChange(
-                    $subscription,
-                    $validated['billing_cycle'],
-                );
-
                 $quote = $this->paymentQuoteService->getQuote(
                     $subscription,
                     $subscription->plan_id,
                     $validated['billing_cycle'],
                 );
+
+                $meta = $subscription->metadata ?? [];
+                $meta['pending_billing_cycle'] = $validated['billing_cycle'];
+                $meta['pending_cycle_change_amount_usd'] = (float) ($quote['proration']['proration_due_usd'] ?? $quote['proration']['proration_due'] ?? 0);
+                $subscription->update(['metadata' => $meta]);
 
                 return response()->json([
                     'payment_required' => true,
