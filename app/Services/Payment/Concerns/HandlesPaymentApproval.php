@@ -17,6 +17,17 @@ trait HandlesPaymentApproval
 
         $subscription = $payment->subscription;
 
+        // For onboarding payments, apply any pending plan upgrade
+        // stored in metadata before activating the subscription.
+        if ($paymentType === 'onboarding') {
+            $metadata = $payment->metadata ?? [];
+            $planId = $metadata['plan_id'] ?? null;
+            if ($planId && (int) $planId !== $subscription->plan_id) {
+                $this->subscriptionService->changePlan($subscription, (int) $planId);
+                $subscription = $subscription->fresh();
+            }
+        }
+
         match ($paymentType) {
             'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
             'subscription' => $this->subscriptionService->activateSubscription($subscription, $payment, null),
@@ -34,14 +45,6 @@ trait HandlesPaymentApproval
         if (!$toPlanId) {
             Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
                 'payment_id' => $payment->id,
-            ]);
-            return;
-        }
-
-        if ((int) $toPlanId === $subscription->plan_id) {
-            Log::info('[GatewayService] Upgrade skipped — already on target plan', [
-                'payment_id' => $payment->id,
-                'plan_id' => $subscription->plan_id,
             ]);
             return;
         }

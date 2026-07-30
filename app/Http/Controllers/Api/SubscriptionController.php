@@ -134,10 +134,9 @@ class SubscriptionController extends Controller
         $effective = $validated['effective'] ?? 'immediate';
 
         if ($effective === 'immediate') {
-            $change = $this->scheduledChangeService->schedulePlanChange(
-                $subscription->id, $toPlanId, 'upgrade'
-            );
-            $this->subscriptionService->update($subscription->id, ['plan_id' => $toPlanId]);
+            // Plan change is deferred to payment confirmation callback
+            // (handleUpgradeProration in HandlesPaymentApproval trait).
+            // Just validate and return the proration quote.
         } else {
             $change = $this->scheduledChangeService->schedulePlanChange(
                 $subscription->id, $toPlanId, 'upgrade'
@@ -147,7 +146,6 @@ class SubscriptionController extends Controller
         $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId);
 
         return response()->json([
-            'scheduled_change' => $change->toArray(),
             'proration' => $quote,
         ]);
     }
