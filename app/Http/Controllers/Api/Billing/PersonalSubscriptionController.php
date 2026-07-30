@@ -32,7 +32,7 @@ class PersonalSubscriptionController extends Controller
 
     public function mySubscriptions(Request $request): JsonResponse
     {
-        $subscriptions = $this->personalSubscriptionService->activeModules($request->user());
+        $subscriptions = $this->personalSubscriptionService->allBillableModules($request->user());
 
         return response()->json([
             'subscriptions' => $subscriptions->map(fn ($s) => [
@@ -79,17 +79,21 @@ class PersonalSubscriptionController extends Controller
     public function initiatePayment(Request $request): JsonResponse
     {
         $user = $request->user();
-        $activeSubscriptions = $this->personalSubscriptionService->activeModules($user);
+        $billableSubscriptions = $this->personalSubscriptionService->allBillableModules($user);
 
-        if ($activeSubscriptions->isEmpty()) {
+        if ($billableSubscriptions->isEmpty()) {
             return response()->json(['message' => 'No active subscriptions to pay for.'], 422);
         }
 
-        $total = (float) $activeSubscriptions->sum('price_usd');
+        $total = (float) $billableSubscriptions->sum('price_usd');
 
         $autoApproved = app()->environment('local') || $request->boolean('dev_bypass');
 
-        $payment = DB::transaction(function () use ($user, $total, $activeSubscriptions, $autoApproved) {
+        $payment = DB::transaction(function () use ($user, $total, $billableSubscriptions, $autoApproved) {
+            if ($autoApproved) {
+                $this->personalSubscriptionService->activatePendingSubscriptions($user);
+            }
+
             return BillingPayment::create([
                 'user_id' => $user->id,
                 'amount' => $total,
@@ -98,8 +102,8 @@ class PersonalSubscriptionController extends Controller
                 'payment_type' => 'subscription',
                 'paid_at' => $autoApproved ? now() : null,
                 'metadata' => [
-                    'personal_modules' => $activeSubscriptions->pluck('module_slug')->toArray(),
-                    'subscription_ids' => $activeSubscriptions->pluck('id')->toArray(),
+                    'personal_modules' => $billableSubscriptions->pluck('module_slug')->toArray(),
+                    'subscription_ids' => $billableSubscriptions->pluck('id')->toArray(),
                     'auto_approved' => $autoApproved,
                 ],
             ]);

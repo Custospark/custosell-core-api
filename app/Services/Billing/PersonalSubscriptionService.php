@@ -49,6 +49,20 @@ class PersonalSubscriptionService
             ->get();
     }
 
+    public function pendingModules(User $user): Collection
+    {
+        return $user->personalModuleSubscriptions()
+            ->where('status', 'pending')
+            ->get();
+    }
+
+    public function allBillableModules(User $user): Collection
+    {
+        return $user->personalModuleSubscriptions()
+            ->whereIn('status', ['pending', 'active'])
+            ->get();
+    }
+
     public function hasActiveModule(User $user, string $moduleSlug): bool
     {
         return $user->personalModuleSubscriptions()
@@ -68,11 +82,11 @@ class PersonalSubscriptionService
             ->first();
 
         if ($existing) {
-            if ($existing->status === 'active') {
+            if ($existing->status === 'active' || $existing->status === 'pending') {
                 throw new \RuntimeException("Already subscribed to '{$moduleSlug}'.");
             }
             $existing->update([
-                'status' => 'active',
+                'status' => 'pending',
                 'billing_cycle' => $billingCycle,
                 'price_usd' => self::AVAILABLE_MODULES[$moduleSlug]["price_{$billingCycle}_usd"],
                 'cancelled_at' => null,
@@ -85,11 +99,21 @@ class PersonalSubscriptionService
         return PersonalModuleSubscription::create([
             'user_id' => $user->id,
             'module_slug' => $moduleSlug,
-            'status' => 'active',
+            'status' => 'pending',
             'billing_cycle' => $billingCycle,
             'price_usd' => $price,
-            'current_period_start' => now(),
-            'current_period_end' => $billingCycle === 'monthly' ? now()->addMonth() : now()->addYear(),
+            'current_period_start' => null,
+            'current_period_end' => null,
+        ]);
+    }
+
+    public function activatePendingSubscriptions(User $user): void
+    {
+        $now = now();
+        $this->pendingModules($user)->each->update([
+            'status' => 'active',
+            'current_period_start' => $now,
+            'current_period_end' => $now->copy()->addMonth(),
         ]);
     }
 
@@ -106,9 +130,9 @@ class PersonalSubscriptionService
         return $this->activeModules($user)->pluck('module_slug')->toArray();
     }
 
-    /** Total monthly cost for all active modules. */
+    /** Total monthly cost for all billable modules (pending + active). */
     public function totalMonthly(User $user): float
     {
-        return (float) $this->activeModules($user)->sum('price_usd');
+        return (float) $this->allBillableModules($user)->sum('price_usd');
     }
 }
