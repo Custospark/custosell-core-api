@@ -214,20 +214,24 @@ class SubscriptionService implements SubscriptionServiceInterface
         });
     }
 
-    public function changePlan(Subscription $subscription, int $newPlanId): Subscription
+    public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null): Subscription
     {
         $plan = $this->planRepository->find($newPlanId);
         if (!$plan) {
             throw new \RuntimeException('Plan not found');
         }
 
-        return DB::transaction(function () use ($subscription, $plan) {
+        return DB::transaction(function () use ($subscription, $plan, $billingCycle) {
             $data = [
                 'plan_id' => $plan->id,
                 'price_monthly_usd' => $plan->price_monthly_usd,
                 'price_yearly_usd' => $plan->price_yearly_usd,
                 'onboarding_fee_usd' => $plan->onboarding_fee_usd,
             ];
+
+            if ($billingCycle) {
+                $data['billing_cycle'] = $billingCycle;
+            }
 
             return $this->subscriptionRepository->update($subscription, $data);
         });

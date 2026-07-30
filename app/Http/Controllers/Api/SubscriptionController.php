@@ -122,6 +122,7 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'to_plan_id' => ['required', 'integer', 'exists:plans,id'],
             'effective' => ['sometimes', 'string', 'in:immediate,end_of_period'],
+            'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
         ]);
 
         $subscription = $this->subscriptionService->getById($id);
@@ -135,14 +136,15 @@ class SubscriptionController extends Controller
 
         $toPlanId = (int) $validated['to_plan_id'];
         $effective = $validated['effective'] ?? 'immediate';
+        $billingCycle = $validated['billing_cycle'] ?? null;
 
-        $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId);
+        $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId, $billingCycle);
 
         if ($effective === 'immediate') {
             $prorationDue = $quote['proration']['proration_due'] ?? 0;
             if ($prorationDue <= 0) {
-                DB::transaction(function () use ($subscription, $toPlanId) {
-                    $this->subscriptionService->changePlan($subscription, $toPlanId);
+                DB::transaction(function () use ($subscription, $toPlanId, $billingCycle) {
+                    $this->subscriptionService->changePlan($subscription, $toPlanId, $billingCycle);
 
                     $plan = Plan::find($toPlanId);
                     if ($plan && $plan->type !== 'personal') {

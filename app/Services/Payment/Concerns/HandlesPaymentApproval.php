@@ -88,6 +88,7 @@ trait HandlesPaymentApproval
     {
         $metadata = $payment->metadata ?? [];
         $toPlanId = $metadata['to_plan_id'] ?? null;
+        $billingCycle = $metadata['billing_cycle'] ?? null;
 
         if (!$toPlanId) {
             Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
@@ -96,7 +97,7 @@ trait HandlesPaymentApproval
             return;
         }
 
-        DB::transaction(function () use ($payment, $subscription, $toPlanId) {
+        DB::transaction(function () use ($payment, $subscription, $toPlanId, $billingCycle) {
             $this->scheduledChangeRepo->create([
                 'subscription_id' => $subscription->id,
                 'business_id' => $subscription->business_id,
@@ -112,7 +113,7 @@ trait HandlesPaymentApproval
                 ],
             ]);
 
-            $this->subscriptionService->changePlan($subscription, (int) $toPlanId);
+            $this->subscriptionService->changePlan($subscription, (int) $toPlanId, $billingCycle);
 
             $plan = Plan::find($toPlanId);
             if ($plan && $plan->type !== 'personal') {
