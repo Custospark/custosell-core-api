@@ -9,9 +9,16 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
+        // Remove old per-module personal plans — replaced by the unified Personal plan below.
+        Plan::whereIn('slug', [
+            'pipeline-personal', 'accounting-personal',
+            'estimates-personal', 'expenses-personal', 'documents-personal',
+        ])->delete();
+
         Plan::updateOrCreate(['slug' => 'essential'], [
             'name' => 'Essential',
             'slug' => 'essential',
+            'type' => 'business',
             'description' => 'Point of sale, inventory, and online storefront for small businesses.',
             'price_monthly_usd' => 20,
             'price_yearly_usd' => 200,
@@ -39,6 +46,7 @@ class PlanSeeder extends Seeder
         Plan::updateOrCreate(['slug' => 'professional'], [
             'name' => 'Professional',
             'slug' => 'professional',
+            'type' => 'business',
             'description' => 'Full business management suite for growing businesses — including pipeline, estimates, and document management.',
             'price_monthly_usd' => 54,
             'price_yearly_usd' => 540,
@@ -67,99 +75,33 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::updateOrCreate(['slug' => 'pipeline-personal'], [
-            'name' => 'Pipeline (Personal)',
-            'slug' => 'pipeline-personal',
-            'description' => 'Project management for individuals — boards, tasks, leads, and insights.',
-            'price_monthly_usd' => 5,
-            'price_yearly_usd' => 50,
+        Plan::updateOrCreate(['slug' => 'personal'], [
+            'name' => 'Personal',
+            'slug' => 'personal',
+            'type' => 'personal',
+            'description' => 'All the tools you need for personal productivity — pipeline, estimates, expenses, accounting, and documents.',
+            'price_monthly_usd' => 10,
+            'price_yearly_usd' => 100,
             'onboarding_fee_usd' => 0,
-            'trial_days' => 14,
+            'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => false,
             'features' => [
                 'pipeline' => true,
+                'estimates' => true,
+                'expenses' => true,
+                'accounting' => true,
+                'documents' => true,
             ],
             'limits' => [],
             'sort_order' => 10,
             'is_active' => true,
         ]);
 
-        Plan::updateOrCreate(['slug' => 'accounting-personal'], [
-            'name' => 'Accounting (Personal)',
-            'slug' => 'accounting-personal',
-            'description' => 'Personal bookkeeping — chart of accounts, journal entries, and financial reports.',
-            'price_monthly_usd' => 5,
-            'price_yearly_usd' => 50,
-            'onboarding_fee_usd' => 0,
-            'trial_days' => 14,
-            'billing_cycle' => 'both',
-            'is_popular' => false,
-            'features' => [
-                'accounting' => true,
-            ],
-            'limits' => [],
-            'sort_order' => 11,
-            'is_active' => true,
-        ]);
-
-        Plan::updateOrCreate(['slug' => 'estimates-personal'], [
-            'name' => 'Estimates & Projects (Personal)',
-            'slug' => 'estimates-personal',
-            'description' => 'Send estimates, manage projects, and track progress.',
-            'price_monthly_usd' => 5,
-            'price_yearly_usd' => 50,
-            'onboarding_fee_usd' => 0,
-            'trial_days' => 14,
-            'billing_cycle' => 'both',
-            'is_popular' => false,
-            'features' => [
-                'estimates' => true,
-            ],
-            'limits' => [],
-            'sort_order' => 12,
-            'is_active' => true,
-        ]);
-
-        Plan::updateOrCreate(['slug' => 'expenses-personal'], [
-            'name' => 'Expenses (Personal)',
-            'slug' => 'expenses-personal',
-            'description' => 'Track personal and project expenses.',
-            'price_monthly_usd' => 5,
-            'price_yearly_usd' => 50,
-            'onboarding_fee_usd' => 0,
-            'trial_days' => 14,
-            'billing_cycle' => 'both',
-            'is_popular' => false,
-            'features' => [
-                'expenses' => true,
-            ],
-            'limits' => [],
-            'sort_order' => 13,
-            'is_active' => true,
-        ]);
-
-        Plan::updateOrCreate(['slug' => 'documents-personal'], [
-            'name' => 'Documents (Personal)',
-            'slug' => 'documents-personal',
-            'description' => 'Store, organise, and share files and documents.',
-            'price_monthly_usd' => 5,
-            'price_yearly_usd' => 50,
-            'onboarding_fee_usd' => 0,
-            'trial_days' => 14,
-            'billing_cycle' => 'both',
-            'is_popular' => false,
-            'features' => [
-                'documents' => true,
-            ],
-            'limits' => [],
-            'sort_order' => 14,
-            'is_active' => true,
-        ]);
-
         Plan::updateOrCreate(['slug' => 'enterprise'], [
             'name' => 'Enterprise',
             'slug' => 'enterprise',
+            'type' => 'business',
             'description' => 'Unlimited everything for large organizations and multi-branch operations.',
             'price_monthly_usd' => 135,
             'price_yearly_usd' => 1350,

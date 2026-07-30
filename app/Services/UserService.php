@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Plan;
 use App\Models\Role;
 use App\Models\User;
 use App\Enums\Billing\DiscountType;
@@ -66,8 +67,8 @@ class UserService implements UserServiceInterface
 
         $user = $this->userRepository->create($data);
 
-        // Personal accounts get a minimal business record so business-dependent
-        // features (sidebar, pipeline, accounting, etc.) work correctly.
+        // Personal accounts get a minimal business record + Personal plan subscription.
+        // Module access is gated by the subscription status, same as business accounts.
         if ($isPersonalType) {
             DB::transaction(function () use ($user, $data) {
                 $business = Business::create([
@@ -78,6 +79,21 @@ class UserService implements UserServiceInterface
                     'status' => 'active',
                     'business_type' => 'personal',
                 ]);
+
+                $plan = Plan::where('slug', 'personal')->first();
+                if ($plan) {
+                    $subscription = $this->subscriptionService->subscribe(
+                        $business->id,
+                        $plan->id,
+                        'monthly',
+                        null,
+                        false,
+                    );
+                    // Personal plan has $0 onboarding fee — mark as paid so no
+                    // onboarding payment action is ever shown.
+                    $subscription->update(['onboarding_fee_paid' => true]);
+                }
+
                 $user->business_id = $business->id;
                 $user->save();
                 $user->setRelation('business', $business);

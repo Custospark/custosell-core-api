@@ -127,11 +127,6 @@ class User extends Authenticatable
         return $this->hasOne(\App\Models\ReferralCode::class, 'owner_user_id');
     }
 
-    public function personalModuleSubscriptions(): HasMany
-    {
-        return $this->hasMany(PersonalModuleSubscription::class);
-    }
-
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));

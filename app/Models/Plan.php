@@ -11,6 +11,7 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'slug',
+        'type',
         'description',
         'price_monthly_usd',
         'price_yearly_usd',
@@ -49,6 +50,16 @@ class Plan extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeBusiness($query)
+    {
+        return $query->where('type', 'business');
+    }
+
+    public function scopePersonal($query)
+    {
+        return $query->where('type', 'personal');
     }
 
     public function scopeOrdered($query)

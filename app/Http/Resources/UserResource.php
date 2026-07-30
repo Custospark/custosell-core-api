@@ -105,18 +105,6 @@ class UserResource extends JsonResource
                 ];
             }),
             'modules' => $this->resolveModules(),
-            'personal_modules' => $this->when($this->account_type === 'personal', fn () =>
-                $this->relationLoaded('personalModuleSubscriptions')
-                    ? $this->personalModuleSubscriptions->map(fn ($m) => [
-                        'id' => $m->id,
-                        'module_slug' => $m->module_slug,
-                        'status' => $m->status,
-                        'billing_cycle' => $m->billing_cycle,
-                        'price_usd' => $m->price_usd,
-                        'current_period_end' => $m->current_period_end,
-                    ])
-                    : [],
-            ),
             'account_type' => $this->account_type ?? 'business',
             'onboarding' => app(OnboardingService::class)->payloadFor($this->resource),
             'is_platform_admin' => app(PlatformAdminService::class)->isPlatformAdmin($this->resource),
@@ -132,7 +120,10 @@ class UserResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'active_plans' => PlanResource::collection(
-                Plan::active()->orderBy('sort_order')->get(),
+                Plan::active()
+                    ->where('type', $this->account_type === 'personal' ? 'personal' : 'business')
+                    ->orderBy('sort_order')
+                    ->get(),
             ),
         ];
     }
@@ -140,15 +131,17 @@ class UserResource extends JsonResource
     private function resolveModules(): array
     {
         if ($this->account_type === 'personal') {
-            $personalModules = $this->relationLoaded('personalModuleSubscriptions')
-                ? $this->personalModuleSubscriptions
-                    ->where('status', 'active')
-                    ->pluck('module_slug')
-                    ->toArray()
+            $planFeatures = $this->business?->relationLoaded('subscription')
+                && $this->business->subscription
+                && $this->business->subscription->relationLoaded('plan')
+                && $this->business->subscription->plan
+                && $this->business->subscription->hasAccess()
+                ? ($this->business->subscription->plan->features ?? [])
                 : [];
+            $modules = array_keys(array_filter($planFeatures));
             return array_values(array_unique([
                 'account', 'guide', 'discover',
-                ...$personalModules,
+                ...$modules,
             ]));
         }
 
