@@ -60,6 +60,7 @@ Adopt **Option 2**:
 
 - Default program stays **referee 10% off**, referrer reward default drops from **20% → 15%**.
 - The reward (and sales-rep commission, for consistency) is calculated as a percentage of the **amount actually paid**, i.e. `max(0, base − discount_applied)` — NOT the undiscounted base.
+- This applies **uniformly to every code type** — default business codes, sales-rep codes, and campaign codes. All percentage commissions/rewards are based on what was actually collected; the configured `reward_value`/`commission_rate` percentage itself is always respected, only the base is the net amount. Confirmed by the product owner: fair to referrers, sales reps, and the company alike.
 - Flat-amount rewards and commissions are unchanged (they are already absolute, not percentage-of-base).
 - A free-month code yields a $0 referrer reward, since the referee paid $0. This is the cap working as designed.
 
