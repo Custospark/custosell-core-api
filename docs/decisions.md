@@ -227,3 +227,24 @@
 - Consistent UX: same card styling as PlanCards but with context-aware action buttons
 - Downgrade now offers both immediate and end-of-period options
 - Payment history and change history moved to their own tabs, reducing cognitive load
+
+---
+
+## ADR-014: Referral reward = % of amount actually paid (10% off / 15% reward)
+
+**Date:** 2026-07-31  
+**Status:** Accepted  
+
+**Context:** The default referral program was referee 10% off / referrer 20% reward, both on the undiscounted base. The reward could exceed what the platform actually collected (e.g., free-month codes), and cost more per acquisition than the discount it drove.
+
+**Decision:**
+- Default program stays **referee 10% off**; referrer reward default drops **20% → 15%**
+- Reward (and sales-rep commission) is a % of the **amount actually paid** = `max(0, base − discount_applied)`, not the undiscounted base
+- Flat-amount rewards/commissions unchanged; free-month codes yield $0 referrer reward (the cap working as designed)
+- Platform net per referral: 90% collected − 13.5% rewarded ≈ **76.5%**
+- Full option analysis (3 options + revisit triggers) in `docs/adr/2026-07-31-referral-reward-economics.md`
+
+**Consequences:**
+- `ReferralService::markActive()` now computes `$paidBase` and applies it to PERCENTAGE/FREE_MONTH rewards and PERCENTAGE commissions
+- Defaults updated in `UserService`, `BusinessService`, `SimulateCreditDeduction`
+- Referrer incentive slightly reduced (20% → ~13.5% of base) but still exceeds the referee's 10% saving

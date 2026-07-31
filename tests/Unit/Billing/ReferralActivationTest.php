@@ -78,7 +78,7 @@ class ReferralActivationTest extends TestCase
         $activated = $this->referralService->markActive($referral->id);
 
         $this->assertEquals(ReferralStatus::ACTIVE, $activated->status);
-        $this->assertEquals(2.00, (float) $activated->reward_amount, '5% of $40 onboarding fee = $2.00');
+        $this->assertEquals(1.80, (float) $activated->reward_amount, '5% of amount paid ($40 onboarding - $4 discount = $36) = $1.80');
         $this->assertNotNull($activated->converted_at);
     }
 
@@ -127,7 +127,7 @@ class ReferralActivationTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(40.00, (float) $activated->reward_amount, 'free_month reward = onboarding fee when onboarding unpaid');
+        $this->assertEquals(0.00, (float) $activated->reward_amount, 'free_month reward = 0 when the referee pays nothing');
     }
 
     // ─── Scenario 3: markActive (payment confirmed) — SALES_REP codes ───
@@ -162,7 +162,7 @@ class ReferralActivationTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(4.00, (float) $activated->commission_earned, '10% of $40 onboarding = $4.00');
+        $this->assertEquals(3.60, (float) $activated->commission_earned, '10% of amount paid ($40 - $4 discount = $36) = $3.60');
         $this->assertEquals(0, (float) $activated->reward_amount, 'sales rep earns commission only, not reward');
     }
 

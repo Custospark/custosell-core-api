@@ -92,7 +92,7 @@ class BusinessService implements BusinessServiceInterface
                     'discount_type' => DiscountType::PERCENTAGE,
                     'discount_value' => 10,
                     'reward_type' => RewardType::PERCENTAGE,
-                    'reward_value' => 20,
+                    'reward_value' => 15,
                 ]);
             }
 

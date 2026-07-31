@@ -153,9 +153,9 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertEquals($this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
     }
 
-    // ─── Story 5: Activation calculates reward based on FULL price, not discounted ───
+    // ─── Story 5: Activation calculates reward based on the amount ACTUALLY paid, not full price ───
 
-    public function test_reward_is_based_on_full_price_not_discounted_price(): void
+    public function test_reward_is_based_on_amount_actually_paid_not_full_price(): void
     {
         $code = $this->makeReferrer('REF50', DiscountType::PERCENTAGE, 50, RewardType::PERCENTAGE, 15);
         $business = $this->makeReferredBusiness();
@@ -172,18 +172,18 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $fullPrice = (float) $this->essential->onboarding_fee_usd;
-        $expectedReward = round($fullPrice * 15 / 100, 2);
+        $paidBase = (float) $this->essential->onboarding_fee_usd - (float) $referral->discount_applied;
+        $expectedReward = round($paidBase * 15 / 100, 2);
 
         $this->assertEquals($expectedReward, (float) $referral->reward_amount,
-            'reward_amount must be on the FULL price_monthly, not the discounted value');
+            'reward_amount must be a % of what the referee actually paid (full price minus discount)');
         $this->assertEquals(ReferralStatus::ACTIVE, $referral->status);
         $this->assertNotNull($referral->converted_at);
     }
 
-    // ─── Story 6: Sales rep commission is based on FULL price (USD) ───
+    // ─── Story 6: Sales rep commission is based on the amount ACTUALLY paid (USD) ───
 
-    public function test_sales_rep_commission_is_based_on_full_price(): void
+    public function test_sales_rep_commission_is_based_on_amount_actually_paid(): void
     {
         $salesRepUser = User::factory()->create(['is_active' => true]);
         $code = ReferralCode::create([
@@ -218,11 +218,11 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $fullPrice = (float) $this->essential->onboarding_fee_usd;
-        $expectedCommission = round($fullPrice * 10 / 100, 2);
+        $paidBase = (float) $this->essential->onboarding_fee_usd - (float) $referral->discount_applied;
+        $expectedCommission = round($paidBase * 10 / 100, 2);
 
         $this->assertEquals($expectedCommission, (float) $referral->commission_earned,
-            'Commission must be on the FULL price, not the discounted price');
+            'Commission must be a % of the amount actually paid, not the full price');
     }
 
     // ─── Story 7: All discount types keep price_monthly_usd at full value ───

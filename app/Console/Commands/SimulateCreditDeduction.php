@@ -70,10 +70,10 @@ class SimulateCreditDeduction extends Command
             'discount_type' => DiscountType::PERCENTAGE,
             'discount_value' => 10,
             'reward_type' => RewardType::PERCENTAGE,
-            'reward_value' => 20,
+            'reward_value' => 15,
             'is_active' => true,
         ]);
-        $this->components->twoColumnDetail('Referral code', "{$referralCode->code} — 20% reward of \${$plan->price_monthly_usd} = \$4.00");
+        $this->components->twoColumnDetail('Referral code', "{$referralCode->code} — 15% reward on amount paid");
 
         // ── Step 4: Create Bob (referred) ───────────────────────────────
         $bob = User::factory()->create([
@@ -134,12 +134,12 @@ class SimulateCreditDeduction extends Command
 
         $creditBalance = $creditService->getBusinessCredit($aliceBusiness->id);
         $this->components->twoColumnDetail('Credit balance', '$' . number_format($creditBalance, 2));
-        $this->assert($creditBalance === 4.0, 'Credit balance should be $4.00');
+        $this->assert($creditBalance === 5.4, 'Credit balance should be $5.40');
 
         // ── Step 8: Alice initiates onboarding payment ──────────────────
         $onboardingFee = (float) $plan->onboarding_fee_usd;
         $this->components->twoColumnDetail('Onboarding fee', '$' . number_format($onboardingFee, 2));
-        $this->components->twoColumnDetail('Expected after credit', '$' . number_format($onboardingFee - 4.0, 2));
+        $this->components->twoColumnDetail('Expected after credit', '$' . number_format($onboardingFee - 5.4, 2));
 
         // We call gatewayService->initiatePayment but it will try to reach PesaPal.
         // Instead, we bypass by calling the internals directly so we can verify credit deduction.
@@ -148,12 +148,12 @@ class SimulateCreditDeduction extends Command
         $this->components->task('Verifying CreditService::applyToRenewal', function () use ($creditService, $aliceSubscription, $onboardingFee) {
             $result = $creditService->applyToRenewal($aliceSubscription, $onboardingFee);
 
-            $this->assert($result['credit_used'] === 4.0, 'Should consume $4.00 credit');
-            $this->assert($result['remaining'] === 36.0, 'Should have $36.00 remaining');
+            $this->assert($result['credit_used'] === 5.4, 'Should consume $5.40 credit');
+            $this->assert($result['remaining'] === 34.6, 'Should have $34.60 remaining');
             $this->assert(count($result['applications']) === 1, 'Should create 1 CreditApplication');
 
             $app = $result['applications'][0];
-            $this->assert((float) $app->amount_applied === 4.0, 'Application amount should be $4.00');
+            $this->assert((float) $app->amount_applied === 5.4, 'Application amount should be $5.40');
         });
 
         // ── Step 9: Reverse the credit (clean up for re-testing) ────────
@@ -173,11 +173,11 @@ class SimulateCreditDeduction extends Command
         $this->newLine();
         $this->components->info('=== Simulation Complete ===');
         $this->components->bulletList([
-            "Alice created referral code {$referralCode->code} (20% reward)",
+            "Alice created referral code {$referralCode->code} (15% reward on amount paid)",
             'Bob subscribed and applied Alice\'s code → referral PENDING',
             'Bob paid onboarding → subscription activated → referral ACTIVE',
             "\$" . number_format((float) $referral->reward_amount, 2) . " credit created for Alice's business",
-            "CreditService::applyToRenewal reduces \${$onboardingFee} → \$" . number_format($onboardingFee - 4.0, 2) . ' after credit',
+            "CreditService::applyToRenewal reduces \${$onboardingFee} → \$" . number_format($onboardingFee - 5.4, 2) . ' after credit',
             'reverseApplications restores credit to available state',
         ]);
 

@@ -168,20 +168,25 @@ class ReferralService implements ReferralServiceInterface
             $isOnboarding = !$subscription->onboarding_fee_paid;
             $rewardBase = $isOnboarding && $onboardingFeeUsd > 0 ? $onboardingFeeUsd : $monthlyPriceUsd;
 
+            // Reward/commission is a % of what the referee ACTUALLY paid, not the
+            // undiscounted base. Keeps the give-away capped: it never exceeds the
+            // amount collected (base minus the referral discount).
+            $paidBase = max(0, $rewardBase - (float) ($referral->discount_applied ?? 0));
+
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
                     $commissionEarned = match ($salesRep->commission_type) {
-                        CommissionType::PERCENTAGE => round($rewardBase * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
+                        CommissionType::PERCENTAGE => round($paidBase * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
                     };
                     $updateData['commission_earned'] = $commissionEarned;
                 }
             } else {
                 $rewardAmount = match ($referralCode->reward_type) {
-                    RewardType::PERCENTAGE => round($rewardBase * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
+                    RewardType::PERCENTAGE => round($paidBase * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
                     RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                    RewardType::FREE_MONTH => $rewardBase,
+                    RewardType::FREE_MONTH => $paidBase,
                     default => 0,
                 };
                 $updateData['reward_amount'] = $rewardAmount;
