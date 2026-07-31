@@ -50,8 +50,16 @@ class PaymentQuoteService
                 ? (float) ($newPlan->price_yearly_usd ?? 0)
                 : (float) ($newPlan->price_monthly_usd ?? 0);
 
-            $chargeUsd = round($newPriceUsd * ($proration['days_remaining'] / $proration['days_in_period']), 2);
-            $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
+            if ($targetCycle === 'yearly') {
+                // Switching to yearly = prepaying the full year starting today.
+                // Charge the full yearly price, offset by the unused days of the
+                // already-paid current month (credit). e.g. 540 − 34.84 = 505.16.
+                $chargeUsd = $newPriceUsd;
+                $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
+            } else {
+                $chargeUsd = round($newPriceUsd * ($proration['days_remaining'] / $proration['days_in_period']), 2);
+                $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
+            }
 
             $proration['new_price'] = $newPriceUsd;
             $proration['new_price_usd'] = $newPriceUsd;
@@ -61,16 +69,21 @@ class PaymentQuoteService
             $proration['proration_due_usd'] = $prorationDueUsd;
         }
 
-        $status = $subscription->status instanceof \App\Enums\Billing\SubscriptionStatus
-            ? $subscription->status->value
-            : $subscription->status;
-        if (in_array($status, ['trial', 'trialing'], true)) {
-            $proration['proration_due'] = 0;
+        // Trial subscriptions carry no unused credit: the user has paid nothing,
+        // so subscribing or upgrading charges the full target plan price.
+        if ($subscription->isOnTrial()) {
+            $fullPriceUsd = $targetCycle === 'yearly'
+                ? (float) ($newPlan->price_yearly_usd ?? 0)
+                : (float) ($newPlan->price_monthly_usd ?? 0);
+
             $proration['credit'] = 0;
-            $proration['charge'] = 0;
-            $proration['proration_due_usd'] = 0;
             $proration['credit_usd'] = 0;
-            $proration['charge_usd'] = 0;
+            $proration['new_price'] = $fullPriceUsd;
+            $proration['new_price_usd'] = $fullPriceUsd;
+            $proration['charge'] = $fullPriceUsd;
+            $proration['charge_usd'] = $fullPriceUsd;
+            $proration['proration_due'] = $fullPriceUsd;
+            $proration['proration_due_usd'] = $fullPriceUsd;
         }
 
         return [

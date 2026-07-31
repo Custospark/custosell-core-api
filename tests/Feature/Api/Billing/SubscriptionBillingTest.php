@@ -375,6 +375,7 @@ class SubscriptionBillingTest extends TestCase
 
         $this->mock(\App\Services\Payment\Gateways\PesaPalGateway::class, function ($mock) {
             $mock->shouldReceive('isEnabled')->andReturn(true);
+            $mock->shouldReceive('getSupportedCurrencies')->andReturn(['UGX', 'KES', 'TZS', 'USD']);
             $mock->shouldReceive('initiate')->andReturn([
                 'gateway_txn_id' => 'mock-txn-123',
                 'gateway_ref' => 'mock-ref-123',
@@ -383,6 +384,12 @@ class SubscriptionBillingTest extends TestCase
                 'message' => 'Success',
                 'raw_response' => [],
             ]);
+        });
+
+        $this->mock(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class, function ($mock) {
+            $mock->shouldReceive('getExchangeRate')
+                ->with('USD', 'UGX')
+                ->andReturn(3708.59);
         });
 
         $subscription = Subscription::create([
@@ -394,6 +401,7 @@ class SubscriptionBillingTest extends TestCase
             'next_billing_date' => now()->addMonth(),
         ]);
 
+        // Sent amount ignored — backend recomputes authoritative $20/mo → 20 × 3708.59 = 74,171.80 UGX.
         $response = $this->withHeaders($this->authHeaders())
             ->postJson('/api/v1/billing/payments/initiate', [
                 'gateway_name' => 'pesapal',
@@ -407,7 +415,7 @@ class SubscriptionBillingTest extends TestCase
         $this->assertDatabaseHas('billing_payments', [
             'business_id' => $this->business->id,
             'subscription_id' => $subscription->id,
-            'amount' => 75000,
+            'amount' => round(20 * 3708.59, 2),
             'currency' => 'UGX',
             'status' => 'pending',
             'gateway_name' => 'pesapal',

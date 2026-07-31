@@ -465,6 +465,9 @@ class GatewayService
 
             $payment->refresh();
 
+            $this->paymentService->complete($payment);
+            $payment->refresh();
+
             $this->handlePaymentType($payment);
         });
     }

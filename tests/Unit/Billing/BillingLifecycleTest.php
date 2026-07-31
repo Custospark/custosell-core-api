@@ -402,6 +402,24 @@ class BillingLifecycleTest extends TestCase
         $this->assertGreaterThan(0, $quote['proration']['proration_due']);
     }
 
+    public function test_trial_upgrade_quote_charges_full_price_with_no_credit(): void
+    {
+        $subscription = $this->subscriptionService->subscribe(
+            $this->aceHardware->id,
+            $this->professional->id,
+            'monthly',
+        );
+
+        $quote = $this->paymentQuoteService->getQuote($subscription, $this->enterprise->id);
+
+        $this->assertSame((float) $this->professional->price_monthly_usd, (float) $quote['proration']['old_price']);
+        $this->assertSame((float) $this->enterprise->price_monthly_usd, (float) $quote['proration']['new_price']);
+        $this->assertSame(0.0, (float) $quote['proration']['credit']);
+        $this->assertSame(0.0, (float) $quote['proration']['credit_usd']);
+        $this->assertSame((float) $this->enterprise->price_monthly_usd, (float) $quote['proration']['charge']);
+        $this->assertSame((float) $this->enterprise->price_monthly_usd, (float) $quote['proration']['proration_due']);
+    }
+
     public function test_tim_berners_lee_cannot_upgrade_to_same_plan(): void
     {
         $subscription = $this->subscribeAndActivateEssential($this->webFoundation);

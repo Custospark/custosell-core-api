@@ -6,4 +6,6 @@ enum PaymentMethod: string
 {
     case GATEWAY = 'gateway';
     case MANUAL = 'manual';
+    case CREDIT = 'credit';
+    case INTERNAL = 'internal';
 }
