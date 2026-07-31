@@ -3,6 +3,7 @@
 namespace App\Services\Payment\Validation;
 
 use App\Models\BillingPayment;
+use App\Models\Plan;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
 use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
@@ -22,6 +23,17 @@ class PaymentValidator
         $currency = strtoupper($data['currency'] ?? 'USD');
 
         $plan = $subscription->plan;
+
+        if ($paymentType === 'onboarding') {
+            $metaPlanId = $data['metadata']['plan_id'] ?? null;
+            if ($metaPlanId && (int) $metaPlanId !== $subscription->plan_id) {
+                $target = Plan::find((int) $metaPlanId);
+                if ($target) {
+                    $plan = $target;
+                }
+            }
+        }
+
         $expectedUsd = match ($paymentType) {
             'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
             'subscription' => $subscription->billing_cycle === 'yearly'

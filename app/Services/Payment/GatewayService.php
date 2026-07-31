@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Enums\Billing\ReferralStatus;
+use App\Models\Plan;
 use App\Models\Referral;
 use App\Models\Subscription;
 use App\Repositories\Contracts\PaymentRepositoryInterface;
@@ -65,7 +66,7 @@ class GatewayService
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
         // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone
         $paymentType = $data['payment_type'] ?? 'subscription';
-        $plan = $subscription->plan;
+        $plan = $this->resolveEffectivePlan($subscription, $data);
         $data['amount'] = match ($paymentType) {
             'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
             'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
@@ -470,5 +471,22 @@ class GatewayService
 
             $this->handlePaymentType($payment);
         });
+    }
+
+    private function resolveEffectivePlan(Subscription $subscription, array $data): ?Plan
+    {
+        $plan = $subscription->plan;
+
+        if (($data['payment_type'] ?? null) === 'onboarding') {
+            $metaPlanId = $data['metadata']['plan_id'] ?? null;
+            if ($metaPlanId && (int) $metaPlanId !== $subscription->plan_id) {
+                $target = Plan::find((int) $metaPlanId);
+                if ($target) {
+                    return $target;
+                }
+            }
+        }
+
+        return $plan;
     }
 }
