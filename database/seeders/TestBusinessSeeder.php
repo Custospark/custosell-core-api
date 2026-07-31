@@ -8,6 +8,7 @@ use App\Models\Plan;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\Documents\DocumentCabinetService;
 use App\Services\ModuleAccessService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -103,6 +104,12 @@ class TestBusinessSeeder extends Seeder
         }
 
         $business = $owner->business;
+
+        app(DocumentCabinetService::class)->seedDefaultCabinets(
+            (int) $business->id,
+            (int) $owner->id,
+            $business->business_type
+        );
 
         $now = Carbon::now();
 
