@@ -57,7 +57,7 @@ return [
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
     'test_business_email' => env('TEST_BUSINESS_EMAIL', 'testmail'),
-    'test_business_password' => env('TEST_BUSINESS_PASSWORD', 'password'),
+    'test_business_password' => env('TEST_BUSINESS_PASSWORD', 'Password123'),
 
     /*
     |--------------------------------------------------------------------------
