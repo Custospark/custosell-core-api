@@ -8,6 +8,7 @@ use App\Models\Plan;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\ModuleAccessService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -24,8 +25,8 @@ class TestBusinessSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->environment() !== 'staging') {
-            $this->command?->warn('TestBusinessSeeder skipped — it only runs in the staging environment.');
+        if (!in_array(app()->environment(), ['staging', 'local'])) {
+            $this->command?->warn('TestBusinessSeeder skipped — it only runs in staging or local development.');
 
             return;
         }
@@ -81,6 +82,11 @@ class TestBusinessSeeder extends Seeder
                 'is_active' => true,
                 'account_type' => 'business',
                 'role_id' => $role?->id,
+                'modules' => [
+                    ...ModuleAccessService::BUSINESS_MODULES,
+                    ModuleAccessService::ESTIMATES_FULL_SLUG,
+                    ModuleAccessService::HR_FULL_SLUG,
+                ],
             ]
         );
 
