@@ -87,7 +87,6 @@ class GatewayService
         if ($referral && (float) $referral->discount_applied > 0) {
             $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
             $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
-            $referral->update(['status' => ReferralStatus::APPLIED]);
         }
 
         // H5: Idempotency check — return existing payment if same key used
