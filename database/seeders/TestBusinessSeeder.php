@@ -24,6 +24,9 @@ class TestBusinessSeeder extends Seeder
         ['name' => 'business4', 'email' => 'tester4@custosell.com'],
     ];
 
+    /** Password applied to every seeded test account. */
+    private const TESTER_PASSWORD = 'Password123';
+
     public function run(): void
     {
         if (!in_array(app()->environment(), ['staging', 'local'])) {
@@ -32,7 +35,7 @@ class TestBusinessSeeder extends Seeder
             return;
         }
 
-        $password = config('app.test_business_password', 'password');
+        $password = self::TESTER_PASSWORD;
 
         $plan = Plan::where('slug', 'enterprise')->first();
         if (!$plan) {
