@@ -50,16 +50,8 @@ class PaymentQuoteService
                 ? (float) ($newPlan->price_yearly_usd ?? 0)
                 : (float) ($newPlan->price_monthly_usd ?? 0);
 
-            if ($targetCycle === 'yearly') {
-                // Switching to yearly = prepaying the full year starting today.
-                // Charge the full yearly price, offset by the unused days of the
-                // already-paid current month (credit). e.g. 540 − 34.84 = 505.16.
-                $chargeUsd = $newPriceUsd;
-                $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
-            } else {
-                $chargeUsd = round($newPriceUsd * ($proration['days_remaining'] / $proration['days_in_period']), 2);
-                $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
-            }
+            $chargeUsd = $newPriceUsd;
+            $prorationDueUsd = round(max(0, $chargeUsd - $proration['credit_usd']), 2);
 
             $proration['new_price'] = $newPriceUsd;
             $proration['new_price_usd'] = $newPriceUsd;

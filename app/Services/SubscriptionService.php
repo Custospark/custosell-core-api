@@ -227,6 +227,7 @@ class SubscriptionService implements SubscriptionServiceInterface
                 'price_monthly_usd' => $plan->price_monthly_usd,
                 'price_yearly_usd' => $plan->price_yearly_usd,
                 'onboarding_fee_usd' => $plan->onboarding_fee_usd,
+                'next_billing_date' => $this->nextBillingDate(now(), $billingCycle ?? $subscription->billing_cycle ?? 'monthly'),
             ];
 
             if ($billingCycle) {

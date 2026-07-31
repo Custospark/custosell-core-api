@@ -34,7 +34,7 @@ class SubscriptionProrationCalculator
             : (float) ($newPlan->price_monthly_usd ?? 0);
 
         $creditUsd = round($oldPriceUsd * ($daysRemaining / $daysInPeriod), 2);
-        $chargeUsd = round($newPriceUsd * ($daysRemaining / $daysInPeriod), 2);
+        $chargeUsd = $newPriceUsd;
         $prorationDueUsd = round(max(0, $chargeUsd - $creditUsd), 2);
 
         return [

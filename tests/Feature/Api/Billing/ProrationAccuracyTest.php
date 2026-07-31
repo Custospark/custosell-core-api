@@ -149,7 +149,7 @@ class ProrationAccuracyTest extends TestCase
             : (float) $target->price_monthly_usd;
 
         $credit = round($oldPrice * ($daysRemaining / $daysInPeriod), 2);
-        $charge = round($newPrice * ($daysRemaining / $daysInPeriod), 2);
+        $charge = $newPrice;
         $due = round(max(0, $charge - $credit), 2);
 
         return [
