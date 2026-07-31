@@ -23,14 +23,19 @@ class DatabaseSeeder extends Seeder
         $this->call(MigrateSeeder::class);
 
         $this->command?->info('Running application seeders…');
-        $this->call([
+        $seeders = [
             PlanSeeder::class,
             SystemRoleSeeder::class,
             SystemExpenseCategorySeeder::class,
             DefaultAccountingTemplateSeeder::class,
             AccountingModuleSeeder::class,
             GuideFaqSeeder::class,
-            TestBusinessSeeder::class,
-        ]);
+        ];
+
+        if (app()->environment('staging')) {
+            $seeders[] = TestBusinessSeeder::class;
+        }
+
+        $this->call($seeders);
     }
 }

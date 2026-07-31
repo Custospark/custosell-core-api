@@ -24,6 +24,12 @@ class TestBusinessSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->environment() !== 'staging') {
+            $this->command?->warn('TestBusinessSeeder skipped — it only runs in the staging environment.');
+
+            return;
+        }
+
         $password = config('app.test_business_password', 'password');
 
         $plan = Plan::where('slug', 'enterprise')->first();
