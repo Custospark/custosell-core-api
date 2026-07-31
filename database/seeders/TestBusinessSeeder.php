@@ -62,8 +62,8 @@ class TestBusinessSeeder extends Seeder
             return;
         }
 
-        $user->ownedBusiness()->forceDelete();
-        $user->forceDelete();
+        $user->ownedBusiness()->delete();
+        $user->delete();
     }
 
     private function seedBusiness(
