@@ -34,6 +34,8 @@ class BusinessTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         $adminRole = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -53,6 +55,7 @@ class BusinessTest extends TestCase
         $this->staff = User::factory()->create([
             'business_id' => $this->business->id,
             'is_active' => true,
+            'modules' => ['settings'],
         ]);
         $staffRole = Role::create([
             'business_id' => $this->business->id,

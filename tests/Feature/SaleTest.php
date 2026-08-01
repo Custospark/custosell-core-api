@@ -94,18 +94,26 @@ class SaleTest extends TestCase
 
     public function test_create_sale(): void
     {
+        $product = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 20,
+            'unit_price' => 5000,
+        ]);
+
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/sales', [
-                'receipt_number' => 'REC-001',
-                'subtotal' => 15000,
-                'total_amount' => 15000,
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 2, 'unit_price' => 5000],
+                ],
+                'subtotal' => 10000,
+                'total_amount' => 10000,
                 'payment_method' => 'cash',
                 'sale_date' => now()->toDateTimeString(),
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'receipt_number', 'total_amount', 'payment_method'])
-            ->assertJsonPath('receipt_number', 'REC-001');
+            ->assertJsonStructure(['data' => ['id', 'receipt_number', 'total_amount', 'payment_method']])
+            ->assertJsonPath('data.payment_method', 'cash');
     }
 
     public function test_create_sale_with_items(): void
@@ -117,29 +125,26 @@ class SaleTest extends TestCase
 
         $saleResponse = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/sales', [
-                'receipt_number' => 'REC-ITM-001',
-                'subtotal' => 15000,
-                'total_amount' => 15000,
+                'items' => [
+                    [
+                        'product_id' => $product->id,
+                        'quantity' => 2,
+                        'unit_price' => $product->unit_price,
+                    ],
+                ],
+                'subtotal' => $product->unit_price * 2,
+                'total_amount' => $product->unit_price * 2,
                 'payment_method' => 'cash',
                 'sale_date' => now()->toDateTimeString(),
             ]);
 
         $saleResponse->assertStatus(201);
-        $saleData = $saleResponse->json();
-        $saleId = $saleData['data']['id'] ?? $saleData['id'];
 
-        $itemResponse = $this->withHeader('Authorization', "Bearer $this->adminToken")
-            ->postJson('/api/v1/sale-items', [
-                'sale_id' => $saleId,
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'product_price' => $product->unit_price,
-                'quantity' => 2,
-                'unit_price' => $product->unit_price,
-                'subtotal' => $product->unit_price * 2,
-            ]);
-
-        $itemResponse->assertStatus(201);
+        $this->assertDatabaseHas('sale_items', [
+            'sale_id' => $saleResponse->json('data.id'),
+            'product_id' => $product->id,
+            'quantity' => 2,
+        ]);
     }
 
     public function test_create_sale_updates_stock_quantity(): void
@@ -151,29 +156,44 @@ class SaleTest extends TestCase
 
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/sales', [
-                'receipt_number' => 'REC-STK-001',
-                'subtotal' => 15000,
-                'total_amount' => 15000,
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 3, 'unit_price' => $product->unit_price],
+                ],
+                'subtotal' => $product->unit_price * 3,
+                'total_amount' => $product->unit_price * 3,
                 'payment_method' => 'cash',
                 'sale_date' => now()->toDateTimeString(),
             ]);
 
         $response->assertStatus(201);
+
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'stock_quantity' => 17,
+        ]);
     }
 
     public function test_create_sale_generates_receipt_number(): void
     {
+        $product = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 20,
+            'unit_price' => 5000,
+        ]);
+
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->postJson('/api/v1/sales', [
-                'receipt_number' => 'REC-GEN-001',
-                'subtotal' => 20000,
-                'total_amount' => 20000,
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 2, 'unit_price' => 5000],
+                ],
+                'subtotal' => 10000,
+                'total_amount' => 10000,
                 'payment_method' => 'mobile_money',
                 'sale_date' => now()->toDateTimeString(),
             ]);
 
-        $response->assertStatus(201)
-            ->assertJsonPath('receipt_number', 'REC-GEN-001');
+        $response->assertStatus(201);
+        $this->assertNotEmpty($response->json('data.receipt_number'));
     }
 
     public function test_get_daily_sales(): void

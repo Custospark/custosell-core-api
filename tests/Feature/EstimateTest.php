@@ -42,6 +42,8 @@ class EstimateTest extends TestCase
         ]);
         $this->user->update(['business_id' => $this->business->id]);
 
+        $this->ensureSubscription($this->business->id);
+
         $this->seedAccountingForBusiness($this->business);
     }
 
@@ -75,9 +77,9 @@ class EstimateTest extends TestCase
             ]);
 
         $response->assertCreated()
-            ->assertJsonPath('title', 'Website redesign')
-            ->assertJsonPath('status', 'draft')
-            ->assertJsonCount(2, 'line_items');
+            ->assertJsonPath('data.title', 'Website redesign')
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonCount(2, 'data.line_items');
 
         $this->assertDatabaseHas('estimates', [
             'business_id' => $this->business->id,
@@ -107,7 +109,7 @@ class EstimateTest extends TestCase
 
         $response->assertCreated();
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals(300.0, (float) $data['subtotal']);
         $this->assertEquals(200.0, (float) $data['cost_subtotal']);
         $this->assertEquals(100.0, (float) $data['gross_profit']);
@@ -136,7 +138,7 @@ class EstimateTest extends TestCase
             ]);
 
         $create->assertCreated();
-        $estimateId = $create->json('id');
+        $estimateId = $create->json('data.id');
 
         $send = $this->withHeader('Authorization', "Bearer {$this->token}")
             ->postJson("/api/v1/estimates/{$estimateId}/send", [
@@ -144,7 +146,7 @@ class EstimateTest extends TestCase
             ]);
 
         $send->assertOk()
-            ->assertJsonPath('status', 'sent');
+            ->assertJsonPath('data.status', 'sent');
 
         $this->assertDatabaseHas('estimate_versions', [
             'estimate_id' => $estimateId,
@@ -179,7 +181,7 @@ class EstimateTest extends TestCase
                 ],
             ]);
 
-        $estimateId = $create->json('id');
+        $estimateId = $create->json('data.id');
 
         $this->withHeader('Authorization', "Bearer {$this->token}")
             ->postJson("/api/v1/estimates/{$estimateId}/send")
@@ -192,8 +194,8 @@ class EstimateTest extends TestCase
             ]);
 
         $convert->assertCreated()
-            ->assertJsonPath('status', 'draft')
-            ->assertJsonPath('total_amount', '1000.00');
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonPath('data.total_amount', '1000.00');
 
         $estimate = Estimate::findOrFail($estimateId);
         $this->assertNotNull($estimate->invoice_id);

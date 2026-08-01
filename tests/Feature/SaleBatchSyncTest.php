@@ -42,6 +42,8 @@ class SaleBatchSyncTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',

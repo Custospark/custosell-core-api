@@ -36,6 +36,8 @@ class SaleItemTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         $adminRole = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -122,8 +124,8 @@ class SaleItemTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'sale_id', 'product_name', 'quantity'])
-            ->assertJsonPath('product_name', $this->product->name);
+            ->assertJsonStructure(['data' => ['id', 'sale_id', 'product_name', 'quantity']])
+            ->assertJsonPath('data.product_name', $this->product->name);
     }
 
     public function test_update_sale_item(): void
@@ -188,7 +190,7 @@ class SaleItemTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('product_name', $productName);
+            ->assertJsonPath('data.product_name', $productName);
 
         $this->product->update(['name' => 'Renamed Product']);
 

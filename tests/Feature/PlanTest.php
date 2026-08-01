@@ -206,11 +206,11 @@ class PlanTest extends TestCase
         $this->assertDatabaseMissing('plans', ['id' => $plan->id]);
     }
 
-    public function test_delete_non_existent_plan_returns_500(): void
+    public function test_delete_non_existent_plan_returns_404(): void
     {
         $response = $this->deleteJson('/api/v1/plans/999');
 
-        $response->assertStatus(500);
+        $response->assertStatus(404);
     }
 
     public function test_plan_features_is_array_not_string(): void

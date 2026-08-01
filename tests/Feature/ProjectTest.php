@@ -37,6 +37,8 @@ class ProjectTest extends TestCase
         ]);
         $this->user->update(['business_id' => $this->business->id]);
 
+        $this->ensureSubscription($this->business->id, \App\Models\Plan::where('slug', 'personal')->first()?->id);
+
         $this->seedAccountingForBusiness($this->business);
     }
 
@@ -60,7 +62,7 @@ class ProjectTest extends TestCase
                 ],
             ]);
 
-        $estimateId = $create->json('id');
+        $estimateId = $create->json('data.id');
 
         $this->withHeader('Authorization', "Bearer {$this->token}")
             ->postJson("/api/v1/estimates/{$estimateId}/send")
@@ -78,7 +80,7 @@ class ProjectTest extends TestCase
             ]);
 
         $convert->assertCreated();
-        $projectId = $convert->json('id');
+        $projectId = $convert->json('data.id');
 
         $this->assertDatabaseHas('projects', [
             'id' => $projectId,

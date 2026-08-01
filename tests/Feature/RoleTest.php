@@ -35,6 +35,8 @@ class RoleTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'enterprise')->first()?->id);
+
         $adminRole = Role::query()->whereNull('business_id')->where('slug', 'admin')->firstOrFail();
         $this->admin->role_id = $adminRole->id;
         $this->admin->save();
@@ -84,8 +86,8 @@ class RoleTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'slug', 'permissions'])
-            ->assertJsonPath('name', 'Manager');
+            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'permissions']])
+            ->assertJsonPath('data.name', 'Manager');
     }
 
     public function test_create_role_without_permissions_succeeds(): void
@@ -98,8 +100,8 @@ class RoleTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('name', 'Label Only Role')
-            ->assertJsonPath('permissions', []);
+            ->assertJsonPath('data.name', 'Label Only Role')
+            ->assertJsonPath('data.permissions', []);
     }
 
     public function test_update_role_permissions(): void
