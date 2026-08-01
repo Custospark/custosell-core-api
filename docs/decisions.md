@@ -342,3 +342,19 @@
 - `JournalEntryService::createEntry` now throws `ValidationException` (→ **422**) for unbalanced entries instead of `RuntimeException` (→ 500); `JournalEntryServiceTest::test_rejects_unbalanced_entry` updated to match the validation contract.
 
 **Tests:** `AccountingTest` — 21/21 (92 assertions); `ReportPeriodRangeTest` — 3/3 (10 assertions); `JournalEntryServiceTest` — 4/4. `BoardProgressTest`, `ForecastingAccountingCorrectnessTest`, `PipelineTest`, `ReportTest` failures verified **pre-existing on HEAD** (identical with these changes stashed).
+
+## ADR-022: Full-suite restoration to 608 green — module-gating test setup, storefront-buyer contract, HR test split
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** Full suite (`php artisan test`) had **110 failures** in three buckets: (1) ~20 `{data: ...}` sweep shape regressions in tests never re-run (Subscription/Shift/Stock/Invoice/Referral); (2) ~78 pre-existing 403s because test setUps created no subscription for `subscription.active`/`module:*` gated routes; (3) ~10 value mismatches (LedgerServiceTest double-posting, stale SupplyChainTest/StorefrontTest expectations, InvoiceCreateSaleLink send 404).
+
+**Decision:**
+- **Bucket 2:** Added `ensureSubscription(...)` to 10 setUps (`UserTest`, `HrModuleTest`, `ForecastingModuleTest`, `ProductServiceSalesTest`, `CompanyAssetsTest`, `EfrisFiscalizationTest`, `CustomerContactResolveTest`, `CustomerDocumentEmailTest`, `TaxTest`, `SupplyChainReceiveAndPartyTest`) — `enterprise` plan where routes are hr/documents/forecasting-gated, default otherwise.
+- **Bucket 1:** Updated remaining tests to the `{data: ...}` single-resource shape (`ShiftTest`, `StockMovementTest`, `SubscriptionBillingTest`, `ReferralBillingTest`, `SubscriptionTest`, `InvoiceCreateSaleLinkTest`, `TaxTest`, `ProductServiceSalesTest`, `SupplyChainTest`, `SupplyChainReceiveAndPartyTest`, `UserTest`). `POST /invoices/{id}/email` and `POST /auth/register` confirmed **flat by design** (raw service result / embedded resource) and tests aligned.
+- **Storefront-buyer contract:** `UserService::register` no longer creates a personal workspace for `storefront_buyer` (FE copy: "no business setup"); `UserResource::resolveModules()` returns `[]` for personal accounts without a business. FE `getAccessibleModules` seeds `account/guide/discover` client-side, so no FE change. Also exposed `default_vat_rate` on the user resource business section (FE already reads it).
+- **Bucket 3:** `LedgerServiceTest` — removed redundant `postEntryToLedger` calls (already run by `createAndPostEntry`; they double-posted 2x). `BusinessAccountDeletionTest` — `forgetGuards()` between requests (in-process auth-guard cache hid the revoked token). `PipelineBoardProgressService` — added `resolvePeriod()` forwarder (Refactor 4 moved it to `PipelineBoardProgressPeriodService`; `HrPerformanceService` still called it → 500s).
+- **File-size-500:** Split `HrModuleTest` (1048 lines) into `HrModuleTest` (500), `HrPerformanceTest`, `HrPayrollTest`, `HrPayrollAffordabilityTest` — never gutted, each reuses setUp + `authJson` helper.
+
+**Tests:** `composer vera:fast` — passed (php -l + 6 logic rules incl. file-size-500). `php artisan test` — **608 passed, 1 skipped, 0 failed** (was 110 failures).
