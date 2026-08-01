@@ -267,3 +267,22 @@
 **Tests:** `tests/Feature/SendWelcomeEmailTest.php` (with/without business, `Mail::assertSent`)
 
 **Full detail:** `docs/adr/2026-08-01-account-welcome-email.md`
+
+---
+
+## ADR-016: New products default to listed; bulk list/unlist endpoint
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** Products created or imported were unlisted by default on both the B2B supply marketplace (`listed_for_supply`) and the public storefront (`listed_for_storefront`). New inventory therefore never appeared on either shop until manually listed, and listing could only be toggled one product at a time.
+
+**Decision:**
+- **Default on** for new/imported products: migration sets both flags to `true` (with `change()`); `ProductService::create` sets `(bool)($data[$flag] ?? true)`; `ProductImportService` sets both flags `true` per row. Existing products keep current state (opt-in via bulk List).
+- **Bulk list/unlist**: `ProductService::bulkUpdateListing($ids, $businessId, $channel, $listed)` — business-scoped, channel `supply|storefront`. Supply list auto-fills `supply_price` from `wholesale_price ?? unit_price` (when null) and `supply_min_qty` to `1`; sets/clears `listed_at` / `storefront_listed_at`. Returns updated count.
+- `POST /products/bulk-listing` → `{ updated: int }`, validated by `ProductBulkListingRequest` (ids 1..5000, channel enum, listed boolean).
+- Listing mutations remain online-only (no offline queueing).
+
+**Tests:** `tests/Feature/ProductListingTest.php` — 6 tests, 31 assertions.
+
+**Full detail:** `docs/adr/2026-08-01-default-listed-products-bulk-listing.md`

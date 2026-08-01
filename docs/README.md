@@ -16,3 +16,4 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 | [2026-07-30-referral-discount-architecture.md](./adr/2026-07-30-referral-discount-architecture.md) | Referral discount architecture — dynamic discount base, discount applied at payment time |
 | [2026-07-31-referral-reward-economics.md](./adr/2026-07-31-referral-reward-economics.md) | Referral reward economics — reward = % of amount actually paid, 10% off / 15% reward split |
 | [2026-08-01-account-welcome-email.md](./adr/2026-08-01-account-welcome-email.md) | Welcome email on account creation — UserRegistered event + SendWelcomeEmail listener |
+| [2026-08-01-default-listed-products-bulk-listing.md](./adr/2026-08-01-default-listed-products-bulk-listing.md) | New products default to listed (supply + storefront); bulk list/unlist endpoint |
