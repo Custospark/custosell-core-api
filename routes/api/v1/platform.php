@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::post('/roles', [PlatformRoleController::class, 'store']);
         Route::put('/roles/{id}', [PlatformRoleController::class, 'update']);
         Route::delete('/roles/{id}', [PlatformRoleController::class, 'destroy']);
+        Route::get('/roles/{id}/members', [PlatformRoleController::class, 'members']);
         Route::post('/users/{id}/roles', [PlatformUserController::class, 'assignRole']);
         Route::delete('/users/{id}/roles/{role}', [PlatformUserController::class, 'revokeRole']);
         Route::post('/users/bulk-assign-roles', [PlatformUserController::class, 'bulkAssignRoles']);

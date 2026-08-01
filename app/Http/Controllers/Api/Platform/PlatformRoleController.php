@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PlatformUserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -20,6 +22,7 @@ class PlatformRoleController extends Controller
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name')->values(),
+                'users_count' => $role->users()->count(),
             ]);
 
         return response()->json(['data' => $roles]);
@@ -39,18 +42,22 @@ class PlatformRoleController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:platform_roles,name'],
-            'permissions' => ['required', 'array'],
+            'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:platform_permissions,name'],
         ]);
 
         $role = Role::create(['name' => $validated['name'], 'guard_name' => 'web']);
-        $role->syncPermissions($validated['permissions']);
+
+        if (! empty($validated['permissions'] ?? [])) {
+            $role->syncPermissions($validated['permissions']);
+        }
 
         return response()->json([
             'data' => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name'),
+                'users_count' => 0,
             ],
         ], 201);
     }
@@ -64,17 +71,28 @@ class PlatformRoleController extends Controller
         }
 
         $validated = $request->validate([
-            'permissions' => ['required', 'array'],
+            'name' => [
+                'sometimes', 'required', 'string', 'max:100',
+                Rule::unique('platform_roles', 'name')->where(fn ($q) => $q->where('guard_name', 'web'))->ignore($role->id),
+            ],
+            'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', 'exists:platform_permissions,name'],
         ]);
 
-        $role->syncPermissions($validated['permissions']);
+        if (! empty($validated['name'] ?? null)) {
+            $role->update(['name' => $validated['name']]);
+        }
+
+        if (array_key_exists('permissions', $validated)) {
+            $role->syncPermissions($validated['permissions']);
+        }
 
         return response()->json([
             'data' => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name'),
+                'users_count' => $role->users()->count(),
             ],
         ]);
     }
@@ -90,5 +108,24 @@ class PlatformRoleController extends Controller
         $role->delete();
 
         return response()->json(['message' => 'Role deleted.']);
+    }
+
+    public function members(Request $request, int $id): JsonResponse
+    {
+        $role = Role::where('guard_name', 'web')->findOrFail($id);
+
+        $query = $role->users()->with(['business:id,name', 'roles:id,guard_name']);
+
+        $search = trim((string) $request->query('search'));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $members = $query->orderBy('name')->paginate((int) $request->query('per_page', 50));
+
+        return PlatformUserResource::collection($members)->response();
     }
 }
