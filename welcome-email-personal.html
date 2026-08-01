@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Custosell, Jane!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                         'Helvetica Neue', Arial, sans-serif;
+            color: #333;
+        }
+
+        .email-container {
+            position: relative;
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .email-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+            z-index: 1;
+        }
+
+        .email-header {
+            padding: 32px 24px 0;
+            text-align: center;
+        }
+
+        .logo-rounded {
+            border-radius: 50%;
+            max-height: 64px;
+            margin-bottom: 12px;
+            background-color: white;
+            padding: 4px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .brand-section { margin-bottom: 16px; }
+        .brand-name { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; line-height: 1.2; letter-spacing: -0.3px; }
+        .tagline { font-size: 14px; color: #64748b; font-weight: 400; margin-bottom: 8px; }
+        .parent-brand { font-size: 11px; color: #94a3b8; font-style: italic; font-weight: 400; margin-bottom: 0; }
+        .parent-brand a { color: #94a3b8; }
+
+        .brand-divider {
+            border: 0;
+            height: 1px;
+            background: #e5e7eb;
+            margin: 16px 24px;
+        }
+
+        .email-header h1 {
+            margin: 20px 24px 0;
+            padding: 20px 0 0;
+            font-size: 20px;
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .email-body {
+            padding: 36px 28px;
+            font-size: 16px;
+            line-height: 1.75;
+            color: #111827;
+        }
+
+        .email-body p { margin-bottom: 1.5em; }
+
+        .cta-button {
+            display: inline-block;
+            margin: 24px 0;
+            padding: 14px 32px;
+            background: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+        }
+
+        .email-tip {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 8px;
+            font-size: 15px;
+            color: #1e40af;
+        }
+
+        .email-tip strong { color: #2563eb; }
+
+        .email-footer {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            padding: 32px 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #e2e8f0;
+            line-height: 1.8;
+        }
+
+        .footer-message { margin-bottom: 16px; }
+        .footer-message strong { color: #ffffff; font-weight: 600; }
+        .footer-attribution { font-size: 12px; font-style: italic; color: #f1f5f9; margin-bottom: 12px; }
+        .footer-attribution a { color: #f1f5f9; text-decoration: underline; }
+        .copyright { font-size: 12px; color: #cbd5e1; }
+
+        @media only screen and (max-width: 620px) {
+            .email-container { margin: 20px 10px; }
+            .email-body { padding: 24px 16px; }
+            .email-header h1 { font-size: 18px; }
+            .brand-name { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+
+        
+        <div class="email-header">
+                            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAT0klEQVR42u2ceXgUdZrHv++vqjvp7hwc4UggJNzhEmFAHDlEEC+G9RgVUdfdddURD9B1LuXB3XUePB5XeVZn0PVg8UBRHJdhdXRRwAtRBAEFgXDfEMhFkk7S6a53/6hfnV3dSSed6PMM/TwFSXelq+pT7/2+vyLWXzj7Sv1FRBBnMbTtdRbgWYBnAZ4FeBbg2VerX+qPGgbosUDCzxkMI8AiPgvQjJ3iQMk4NKYxzoSjKD8TRVVNFCSAUQOyQIL+tiXQC1pM07D3eD027arD5j212Hk4jKOnGlFbH4PGBAKBhcDa/xiKgrwMEBF+igG/2pHgYpqGLXtr8devK7B6czWOnmq0VFTXWccvgoCYpquvpcx/AwDt4JgZdQ0xLP+sDMvWnsa+Yw1OFEyACYgkPwKR/rsgfZcOt4FEQAskXm0veAxGXX0Mr350AktWlaHiTBQmI5bgbO7C2oR8h0AATPNHNgntAI0xTtGhGe0J0H7wWEzDii/L8NTyoyirjFpnBHKBk78a71lCaPFExxA0bzwz9lWfRLY/gLxAjn5qBAh422A13VJ3pKweDy3ej/Xba+JgWTC82JAV0ZCuxgz9PWIZ7bSTI7HgaVj0/ceYv/EtZPsDWD7tPozt3h9MgAbW93MdX6Tr4BprWPllGWbM34b122s94AkHR5LqQTLGI7vtkfA0UAeYOkvyXvhhNeZ/uwwQGmqaanH96oXYULbHZn85vZmIcfBINIoFS/fjgef3oTbMruOQdRgpRWQS1DcWBAgCC7s2MzL9QKafkgbb6YK3eMcaPLTxTTCxeWNrmmoxc/VCfF9x0FIW17mobT14TTiCOX/ajc+/qwFYuMCRw6sR6c6B5eesc8OAgkyMHhBCSZ8A+vbIQH5XPzqFFAQzBQJ+RVebNEO0w3t156f43cY3oAmANMdZoyZah9f3fo4nuhR5xrNq6w/OqKqN4LandmHLnrBLZS14ZOgqCEy6agoChvcN4sqfd8bUUbnolecDkfBM9ew2L132z27zXtv5KX79zevQSIOwX4MAmAgB1YerisalzwsbB6+tj+L2p93wbFJHhlPQwUE6hCkjc3DH9O4YPSAEEiKBi0HCdC+dkvdm6Rd44JvXESNNBk2anvEIBhMQUDLw+qS5+HmPgfLzNIUxkaYo7ltUis176l2ulEwPangJlvZvZP8Qfn9DPsYMDJmOIhG0VGERkRViJvlbO7y3d3+JuV8tQUwwiHV4ZlwvdHhLJ83FhQVDHPDc36+mfKKs4fFlB/HJ1hoQC5tvIktdSY/3GAKBDML91/TE31+cB1URcXakLZIV911JMgg7vHf2rMec9f+NmICEJ/cXuvQFlQy8Puk+TOpZYsJLdJ5qavAY7311Gq99dEoe2BZ52D2rVNvifB+enV2Mkj5BxwWkWxVP1lWic2Y2fIoqT8MJ0QLNWLFvA+7+8mVEBcvwRDPhQbCuthPn4sL85uGlGMYwDpWF8fCS/WCvGE+eOEl455UEsXzeIJT0CZoeNN3wNNbwbxveRsmbD+Dy9x9HRUOtVXggXSMc8PZuwJ3rXkKUDHhSdyS8DAOeTW2bO2fR0hOOxmKY9/I+1Mg4j5kkSGn3SOigBGHCsCy8eH8/dMpSTZVKP7wY/rBxOZ7Z9gGEwthSvhfXfbwQlY11tuKEZSbe2/8tfrXuJTQhZqDRNxl/6vDmYHIK8FoMkJnx7mdl+GpnncPjGqpLJHSPSoQxg0JYdG8xghmKZ+qTLrV9YstKLNz+IaBYlmPr6X249uOnUNlQa5o1Zsb7Bzbhts+eQwRRBzxd8oAMxY/XJszBRQVDU4LXIoBEhJpwExa+ewxmZm3+GYGEvoEIAwoysOjeYgQkPG4HeAAQZQ1/LP0IUGR+bN5TTZfEtU+jOlIHjRkfHNyM2z5/Ho0Uk3Bckqf68eqEe3FRr6EJQ5U2AWTW8MqqEzhVHXVUAMi0MQKAQChT4Jm7ipAbUtst6Tc9HwncOmAyNNbjNSZAIxmGQMPm03vwy7VPY9n+dfjHdc+h0VBbtntbwK/48er4ezGl1zCIJKFK0hubbDaGiFBd24ipv9mKqlq2JFDCE0Sm6j7yDwW4blKezHXRrlUTo7o9b8ObWFS6CnrARNKBaFLCFGikvydk0dYIP1nRHcZrE+7F1F7DksZ5zZ2PmtzvMpZ/WoaqOs0Gzwr1IPRfzh8SxLUTu5rwOuKlCIEF580CwFhUukp6Xj2uY12bocDKockWJGcIP14Zf0+b4DWrwkSEWEzDG2tOAZq9omJJIIEgBOG31+c70rL2Ul/39xoQZw+cBg0MhiarKQJseH5mgDU9txUMv1CxZPzdmNZ7eJvhNWsDN+48g0OnInHJqj1wvmR0NoYUhZrNZdtPEhU8Ou4mzB54CTSQ3ksmzZmlEIGJ4Rc+LB5/Ny4tPCct8JICZDDe33Daobr2Wp7uQBi3T+/hrDS3c+vR6/sVIfDouJtw16BLobG+DxsVZKm2qvBhyYS7cUWfkWmDlxAgEUGLMdZsrjIiJpv3NYoFwNjBIQztE+xw6WOPwFxX5xsxe/A0xORMg+6dAb/w4ZWJ9+DSwvTCSyqBpUfqcKIq6lRdWwBNAK68oLMpnD/Gywvio+fdjLtLLkMMQIxYSt49uLTwnFaHKklDqoT2b1c1mN1elUwJ9KnAlHNzO1R9k0E0bJ4iFCwYeyOCagBrTu7A70ZcicsKR6Rd8hICNE7k+/11IE3WCdjeCNI/H1YcQKeQ2qqT4haKbCrNdGZ2QJw/+peYb932dru5aiIXUnq03uF6XU4Nowe23PNyK3Xc3XunFFW6IzTDE6CmMQ6farJVKY2et9WLNJxHohPkdBtGcjX7+Mezvc0CDDfGUB3WPC/CgFjcMyNxtUT6beNC0w3TrdrUwo4dG6re3gAra5qgacZ0Crm8sH7CPTv7PC+gJhxBQ2NMnqz+D7vvgteIBrt2se/HzkDe82/sfyc1ghnQbGWt7JAPOSGfNfmQBtX2BFhdFwWx+7Kts1cUIJQZ39+ob2zC8Kv+jHBYk0NB5Jo4aJGmeoJu3aXaNYExfFA2Vr00o/1VuCGiJdYBYqgKQfGYGo1GNdTXR0As9Gq1OZomYbQAIntcfKvgsebQECK9FetW/bZKYUInwoz4AiNZHTjvDEboibyxiywn2cfWkpWompdKS5qaB0uWJZC3w2zec/pSJ0+APlV4mx154KYoQ/MQUiEIIEVWRIzBSXI4FPeZs6fqxu/Bqbh4ct5sg5fPp6bkdFoNMCeoxkmdHUI0CtQ2RJHhV5xfphCyQ37UhqN6sTWOCdlsmzV2Sua8jLebIa+g2QYmgZiCbTeNwCjsmZ32+NATYNccn+XMZIQv6xuy2kw4VtGErjnOUMbnE9i+8mqpYd5wkrjdVHyDlR61OIzUbXe7pnKGaGeHfAhlEOrq3YbfGl3bd7wRw4tCDnUgEDJ8Cn7Ki2fd7Qb3WG+qXUThXaQEeuf5daljlpJom7plxvaD4cSJPeKG234UUIneM6DZp7SYNcs5ka0B2dpqzMBeAew81GDzYnK5gX4L8e2ecAKPyvi/dUewYdtp28y9YfvJyiIoeVAdt5v5fnOz0hz3MzFj5vS+GFDYOU7yahuimPXoHuTl+DF6QBCjBwYxvDiA7IBiTVQkWSWgJrp/I/uHsHJ9ha0RbcuHmbH9QAPKayLIy4lP6VZ/fRgvv7sbQg4fmW0dcmY2zVlARgqj5abd5Xi/BcbYc/LQv3enOA+8flsVvt9XBUEKPt1aoXfaFAUDe2Vi1IAgppybjckjOyXMXhIWVMcMznZWfk011p1JNEZYvaXawyATbrumBKpgUy3YtAGywWMLcs23HU0gfSPjZ3BcZuSICVkDOCb/Z8uOyRbEkH65mDKut6fJWbWpQv9uTc7OsoZYLIpdh8N465NyzF9yxCHY7hsgErn1YcW56BwSejggewxs6pZ+QSu/rvaUj4FFnXHttGIrlHDPEELoiQkb8TZbg0DuTQhz7oZc9tXaZJBszOcYP0OAifCbfxoJRVDcxdfVR7FqY6WeKZFV4SHoz0IgMM4fEmpdSV9VCZNHdYrzShZIxoYdYew6Uh8nhUSEB2//GYKZqjknqMn0jkGuEREBsKJ3fowNtk02NhgCLD9n+wZF/0zub/7PAgzCeSPycPmkQk+dX7HuFGrCmhVpuPJ3IoGpo3JdDqfFA5aEK8d3w4p1lc7SlJQYgAENeGlVGZ68tTjur3v1yMJz/zoRm7aXmxKoaVZJjAjOprfTV8TZx2ZjSWMiS56jIIKiCFx/WZFrzE1/RZo0LP7guGPFgHlKcuIiK6hg4oic1nlhAJg4ogvyu/hwslJzxIPMbKwAxMr1Z3DHZWEMLAg6Y0IiTL+wCNMvLPJIyjpg3Zbd+3to0bI1J3CwLAJjvMtcu0wCQgK9bGwuQplq0iKISBZHqYrArCndwGTZQbf15ybGI28cg6ZpKUZo1M5b4tfpqkY8+z9HdHNB5HA4QkIkErhhsnNcxSuDEUn7B0S46eJ8BP2u+8e2/Zjx1bY6vLOuvNkUyVyDZDgQx8Yt2GB5Zru3hu19F0J7s8n4/bGlB1BRKx2X4YRgnzgjjBkUwLCiYOsDaTMvzs3ArKndsfiDU1aJy4ioZduOGHhs2UmMG5yFou6BhNWOtRuO4sH/3IiYpgGaXOAqHYtpi1yRIce1FOy1Qt0Wa6yP+/oUYNULVyA3OzNBuYyxcl0Z/rK+EvZnDjnhCUAQ7prRvVnpk0G693ib1d8AKs404qIHtqAmbM1BW85AelMilBQHsOzBfghmqp7DipGmGJ56dRv+tPQ7RCJRExxZMmCuKXHbHbIHymbUwbJapCE/L4gn7j8Pl4wvTHgDdxyswcw/bEddg2EhhRk6CWFM2iqYOCKE5+f2NSU0EcAWP/qpS7Yfc64uAFizbKHR72AN+qS7hh0H6nHfC4fR1KR5HtDnU/D7W8/BqhenY9oFhbLsb7Ot7gWINvW2ZxlWqkcIZKiYPXMoPl0yA5dM8IbHYBwvr8edC3ehroHjbq45LAUBn0r47XX5ui1sQdmr2QFL4743RWO4ev53+OFgo37H7ItqADloqcdhl5+fi6duK4RPFZ5rOYyKyJadp/Hyn3fhg88Poy4clSY5gRMQzqCmd88Qrr+kGLdcOQA9ugYccZpbbU9UNOKWx7Zj77Em22c26SMChD6WPHtGN8y5qmfL1JcoOUA3xB8OnME1D29DJCosVXZXN0iAScHEkdl4ZnYhsjLVpBVgZka4IYovN5/Eus1l2LqrEvuP1KKiuhHRqAYShMwMFT3yAhjQJwejSjpj4pgeOHdwFygKxQ2Fux3GgZP1+Ocnd+DgiQjMxUCOCTNhZjFDijLx1kP94ZeF4pasfEoJIMBY8uFRPPLKIenqyYy37BBZnlBJcRDPzi5EcY/MFpXRjX4ys942iDTFIATB7xNQFHIWJtwVao8VUOt3VGHuH3ejolqzYkOySZ8gCCiAEAgFFLw9ry/6FwRaPKbcIoBuiMyMf1m0Cyu+qLRU2S2FwkrVgkEV82b1xLUTukAIkZZ+hFfq6GivRpqwaMVR/Nd7xxGLURw8t/SRIvD0r3rh8rGdW6S6KQN0Q6xvjOHmBd/j29IwIBRr0YNDla3ylUYKxg/LxkOzeqKkd8BT1VLOMxI8wOeLbZVYsPQQ9hxp8CiWSY0R1uoCCIG5V3fHXTN6pDwg3yqABsTyM42Y9cg27D7SaKU/cRBhWzsnoCgqfnF+Lu64PA+DJchU+7Px4PQO4abdZ/D8/x7DZ1vP2JpJ8TmDVfXRU7ibpnbF/JsKrBnvFKf0KZVHgLrt4cnKBtyy4AeUJoNo5piG8dZXNY0dnIWrLuiEqedmo0u2mjI0ZuBUdQQfflOBdz8vxw8HwmD2kmj34m8jbhWYObkL/v2WXhBK6vBaBdALYvmZCG5/cge27A7bHAviCgtO1Yas1Qn4VIGhfQL42cAQhhVlol9+Bnp0VpEdUKAououKxhg19TEcL49g77F67DhYh42lNdhxqAFRjR0homcIZF/DLGuEd1zRDb++Lr9VktcmgPEQgfrGKOa9uAd/+aIcLBRbhgJviKZUAvYyKZvlLYYioFe1wYhGGbGYJmuJ9qCamm2LWisK9BjT5xN4+OYCzJycZ2U7rWxzthmgHSIzY+nHx/H40kOoj8AWc6EZkIjvk9hWWzpakNyKczSkHYTe3Xx4+s4ijBqQlZYVVa0GmBAiGKWH6/DQC/uwdW+dOd2fSBqTelTHE4xSMTFWA8tI94QgXDW+Mx68IR+dsvxtlry0AEwEEQCiMQ1vrD6BZ945isqaqIy7RFJgbS6f2iSO5YN7AGBoURDzbizAuJJsZwU8DdMJbQbYHMiquiYsfv8YXlt1UvYebFlAc8GylwR6rMWzngxiWE99n34FmbjzF93xd+d3gaKKtIJLO8BkEPXny0Sx/JMyvL22DPtPNMJ8REDSyrE1LuzpJmyPdTNVlYAxJVm4ZWo3XDw6F6oqnH2VNA+bpxWgl2q6vzWmadiypxZ//aoCazZX4ejpiPn8BY6bTU3QTnI5HUUhlBQGcfGoHFwxrjP652dIj+s91fWTBthSkAwGa8DBkw3YVFqD7/bVY+fhehw80Yiq2ihimhMlSxec4SN07+RH3/wABhVm4Nx+WRg7OAt5OapjBqS9wbU7wGSOgpO8wxpQH9FQVRvDmXAUTVEGERDwC+SEVOSGFPhVSjgU2FHgOgRgSzxuS47aosH8DgYXB7C9D0rU/oNuHb1Oz7im/wcZ1UCGDA2yuAAAAABJRU5ErkJggg==" alt="Custosell" class="logo-rounded" style="max-height:48px; width:auto;">
+            
+            <div class="brand-section">
+                <div class="brand-name">Custosell</div>
+                <div class="tagline">Your Business Operating System</div>
+                <div class="parent-brand">
+                    a product of
+                    <a href="https://www.custospark.com">Custospark Company Ltd</a>
+                </div>
+            </div>
+
+            <hr class="brand-divider">
+
+            <h1>Welcome to Custosell, Jane!</h1>
+        </div>
+
+        
+        <div class="email-body">
+
+            
+                            
+        <p>Hello <strong>Jane Doe</strong>,</p>
+        <p>Welcome aboard — your Custosell account is ready to go.</p>
+        <p>Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more — stay organized and productive, even offline.</p>
+        <ul style="margin:0 0 1.5em; padding-left:20px;"><li style="margin-bottom:8px;">Project Management</li><li style="margin-bottom:8px;">Productivity Tools</li><li style="margin-bottom:8px;">Expense Tracking</li><li style="margin-bottom:8px;">Bookkeeping</li><li style="margin-bottom:8px;">Document Management</li></ul>
+        <p>Here is what you can do right away:</p>
+        <ul style="margin:0 0 1.5em; padding-left:20px;">
+            <li style="margin-bottom:8px;">Organize your projects and tasks</li>
+           <li style="margin-bottom:8px;">Track expenses and keep your books tidy</li>
+           <li style="margin-bottom:8px;">Manage and store your documents</li>
+           <li style="margin-bottom:8px;">Stay productive, even when offline</li>
+        </ul>
+        <p>We are excited to have you on board. If you ever need a hand, our team is here for you.</p>
+    
+            
+            
+                            <div class="email-tip">
+                    <strong>Pro Tip:</strong> Custosell works fully offline — projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.
+                </div>
+            
+            
+                            <div style="text-align: center;">
+                    <a href="http://localhost:5173"
+                       class="cta-button"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        Get Started
+                    </a>
+                </div>
+            
+        </div>
+
+        
+        <div class="email-footer">
+            <div class="footer-message">
+                You're receiving this because you have an account with<br>
+                <strong>Custosell</strong> &mdash; Your Business Operating System.
+            </div>
+            <div class="footer-attribution">
+                a product of
+                <a href="https://www.custospark.com">Custospark Company Ltd</a>
+            </div>
+            <div class="copyright">
+                &copy; 2026 Custospark Company Ltd. All rights reserved.
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
