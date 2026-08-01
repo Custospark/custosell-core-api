@@ -24,16 +24,16 @@ class AccountingPeriodRepository implements AccountingPeriodRepositoryInterface
     {
         return AccountingPeriod::where('business_id', $businessId)
             ->where('is_closed', false)
-            ->where('start_date', '<=', now()->format('Y-m-d'))
-            ->where('end_date', '>=', now()->format('Y-m-d'))
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('end_date', '>=', now()->toDateString())
             ->first();
     }
 
     public function getPeriodByDate(int $businessId, string $date): ?AccountingPeriod
     {
         return AccountingPeriod::where('business_id', $businessId)
-            ->where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
             ->first();
     }
 
