@@ -14,6 +14,7 @@ class SendWelcomeEmail
         $user = $event->user;
         $business = $event->business ?? $user->business;
         $isBusiness = $user->account_type === 'business';
+        $isStorefrontBuyer = $user->account_type === 'storefront_buyer';
 
         $brandName = config('brand.name', 'Custosell');
         $firstName = trim(explode(' ', (string) $user->name, 2)[0] ?? $user->name);
@@ -23,23 +24,33 @@ class SendWelcomeEmail
 
         $intro = $isBusiness
             ? 'Everything your business needs to sell, manage, and grow — all in one system that works with or without the internet:'
-            : 'Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more — stay organized and productive, even offline.';
+            : ($isStorefrontBuyer
+                ? 'Browse and order from every business on the ' . $brandName . ' Discover marketplace — no setup, no fees:'
+                : 'Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more — stay organized and productive, even offline.');
 
-        $showcase = $isBusiness ? $this->businessShowcase() : $this->personalShowcase();
+        $showcase = $isBusiness
+            ? $this->businessShowcase()
+            : ($isStorefrontBuyer ? $this->shoppingShowcase() : $this->personalShowcase());
 
         $quickStart = $isBusiness
             ? '<li style="margin-bottom:8px;">Add your products and set up categories</li>
                <li style="margin-bottom:8px;">Record your first sale at the point of sale</li>
                <li style="margin-bottom:8px;">Track inventory and stock levels</li>
                <li style="margin-bottom:8px;">Invite your team and manage staff shifts</li>'
-            : '<li style="margin-bottom:8px;">Organize your projects and tasks</li>
-               <li style="margin-bottom:8px;">Track expenses and keep your books tidy</li>
-               <li style="margin-bottom:8px;">Manage and store your documents</li>
-               <li style="margin-bottom:8px;">Stay productive, even when offline</li>';
+            : ($isStorefrontBuyer
+                ? '<li style="margin-bottom:8px;">Browse products and services across all businesses</li>
+                   <li style="margin-bottom:8px;">Add items to your cart or wishlist</li>
+                   <li style="margin-bottom:8px;">Place orders and track them in My Orders</li>'
+                : '<li style="margin-bottom:8px;">Organize your projects and tasks</li>
+                   <li style="margin-bottom:8px;">Track expenses and keep your books tidy</li>
+                   <li style="margin-bottom:8px;">Manage and store your documents</li>
+                   <li style="margin-bottom:8px;">Stay productive, even when offline</li>');
 
         $tip = $isBusiness
             ? $brandName . ' works fully offline — sales, inventory, and customers keep running without internet, and everything syncs when you are back online.'
-            : $brandName . ' works fully offline — projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.';
+            : ($isStorefrontBuyer
+                ? 'Your cart and wishlist are saved to your account, so you can pick up where you left off on any device.'
+                : $brandName . ' works fully offline — projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.');
 
         $mailBody = '
             <p>Hello <strong>' . e($user->name) . '</strong>,</p>
@@ -104,6 +115,16 @@ class SendWelcomeEmail
         return '<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 1.5em;">'
             . $rows
             . '</table>';
+    }
+
+    protected function shoppingShowcase(): string
+    {
+        return '<ul style="margin:0 0 1.5em; padding-left:20px;">'
+            . '<li style="margin-bottom:8px;">Products &amp; Services from every listed business</li>'
+            . '<li style="margin-bottom:8px;">Businesses with a public storefront</li>'
+            . '<li style="margin-bottom:8px;">Cart &amp; Wishlist saved to your account</li>'
+            . '<li style="margin-bottom:8px;">Track every order in My Orders</li>'
+            . '</ul>';
     }
 
     protected function personalShowcase(): string

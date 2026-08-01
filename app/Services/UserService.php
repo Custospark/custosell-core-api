@@ -57,7 +57,10 @@ class UserService implements UserServiceInterface
 
         $accountType = $data['account_type'] ?? 'personal';
         $isPersonalType = in_array($accountType, ['personal', 'storefront_buyer'], true);
-        $data['account_type'] = $isPersonalType ? 'personal' : 'business';
+        // Preserve the distinct shopping (storefront_buyer) account type instead of
+        // flattening it to 'personal' — the frontend branches on it to show the
+        // Discover-only shopping experience (no dashboard, no subscriptions).
+        $data['account_type'] = $isPersonalType ? $accountType : 'business';
 
         if ($isPersonalType) {
             $data['role_id'] = null;
@@ -85,7 +88,8 @@ class UserService implements UserServiceInterface
 
         // Personal accounts get a minimal business record + Personal plan subscription.
         // Module access is gated by the subscription status, same as business accounts.
-        // Storefront buyers stay account-only (no workspace) — they shop, they don't sell.
+        // Storefront buyers (shopping accounts) stay account-only (no workspace, no
+        // subscription, no modules) — they shop, they don't sell.
         if ($accountType === 'personal') {
             DB::transaction(function () use ($user, $data) {
                 $business = Business::create([

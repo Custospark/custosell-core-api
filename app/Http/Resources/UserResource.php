@@ -121,17 +121,25 @@ class UserResource extends JsonResource
             ] : null),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'active_plans' => PlanResource::collection(
-                Plan::active()
-                    ->where('type', $this->account_type === 'personal' ? 'personal' : 'business')
-                    ->orderBy('sort_order')
-                    ->get(),
-            ),
+            'active_plans' => $this->account_type === 'storefront_buyer'
+                ? PlanResource::collection([])
+                : PlanResource::collection(
+                    Plan::active()
+                        ->where('type', $this->account_type === 'personal' ? 'personal' : 'business')
+                        ->orderBy('sort_order')
+                        ->get(),
+                ),
         ];
     }
 
     private function resolveModules(): array
     {
+        // Shopping accounts (storefront buyers) are Discover-only: account, guide,
+        // discover. They have no business, no subscription, and no dashboard.
+        if ($this->account_type === 'storefront_buyer') {
+            return ['account', 'guide', 'discover'];
+        }
+
         if ($this->account_type === 'personal') {
             if (! $this->business_id || ! $this->business) {
                 return [];

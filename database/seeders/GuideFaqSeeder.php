@@ -17,13 +17,13 @@ class GuideFaqSeeder extends Seeder
                 'sort_order' => 1,
             ],
             [
-                'question' => 'What is the difference between a Personal account and a Business account?',
-                'answer' => "A Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.",
+                'question' => 'What is the difference between a Personal, Business, and Shopping account?',
+                'answer' => "A Shopping account is free and designed for storefront buyers. It gives you access to Discover and My Orders only — browse products & services, follow businesses, save items to your wishlist, and place and track orders. There is no dashboard, no business setup, and no subscription or fees.\n\nA Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.",
                 'sort_order' => 2,
             ],
             [
                 'question' => 'How do I get started with Custosell?',
-                'answer' => "Create a free account and choose your account type:\n\n- Personal — pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n- Business — pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor both account types, you can upgrade, downgrade, or cancel anytime.",
+                'answer' => "Create a free account and choose your account type:\n\n- Shopping — free for storefront buyers. Start browsing and ordering from every business on Discover immediately. No plan, no setup, no fees.\n\n- Personal — pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n- Business — pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor Personal and Business accounts, you can upgrade, downgrade, or cancel anytime. You can also upgrade from a Shopping account later if you decide to start selling.",
                 'sort_order' => 3,
             ],
             [
@@ -81,6 +81,23 @@ class GuideFaqSeeder extends Seeder
                 'question' => 'Can I control what my staff see and do?',
                 'answer' => 'Yes. You have full control over staff permissions. Create custom roles and assign specific module access to each staff member. A cashier sees only the point of sale. Your inventory manager sees only stock-related sections. The business owner has unrestricted access to all modules.',
                 'sort_order' => 13,
+            ],
+
+            // ── For Shopping Accounts ────────────────────────────
+            [
+                'question' => 'What is a Shopping account?',
+                'answer' => 'A Shopping account is a free account for storefront buyers. It gives you access to Discover and My Orders only — browse products & services from every business on Custosell, follow businesses you like, save items to your wishlist, and place and track orders. Shopping accounts have no dashboard, no business setup, and no subscription or fees.',
+                'sort_order' => 14,
+            ],
+            [
+                'question' => 'Do Shopping accounts cost anything?',
+                'answer' => 'No. Shopping accounts are completely free. You never subscribe to a plan and there is nothing to pay — you only pay a business directly for the products or services you order from them.',
+                'sort_order' => 15,
+            ],
+            [
+                'question' => 'Can I upgrade from a Shopping account to a Personal or Business account?',
+                'answer' => 'Yes. If you later decide to manage projects on your own or sell your own products, you can upgrade from your Shopping account to a Personal or Business account at any time. Your existing order history and wishlist are preserved.',
+                'sort_order' => 16,
             ],
 
             // ── Technical & Data ─────────────────────────────────
