@@ -1,31 +1,35 @@
 <?php
 
+use App\Http\Controllers\Api\DocumentCabinetController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\DocumentFolderController;
+use App\Http\Controllers\Api\DocumentTagController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:documents'])->group(function () {
-    Route::get('/documents/cabinets', [DocumentController::class, 'indexCabinets']);
-    Route::post('/documents/cabinets', [DocumentController::class, 'storeCabinet']);
-    Route::get('/documents/cabinets/{id}', [DocumentController::class, 'showCabinet'])->whereNumber('id');
-    Route::patch('/documents/cabinets/{id}', [DocumentController::class, 'updateCabinet'])->whereNumber('id');
-    Route::delete('/documents/cabinets/{id}', [DocumentController::class, 'destroyCabinet'])->whereNumber('id');
+    Route::get('/documents/cabinets', [DocumentCabinetController::class, 'index']);
+    Route::post('/documents/cabinets', [DocumentCabinetController::class, 'store']);
+    Route::get('/documents/cabinets/{id}', [DocumentCabinetController::class, 'show'])->whereNumber('id');
+    Route::patch('/documents/cabinets/{id}', [DocumentCabinetController::class, 'update'])->whereNumber('id');
+    Route::delete('/documents/cabinets/{id}', [DocumentCabinetController::class, 'destroy'])->whereNumber('id');
 
-    Route::get('/documents/activity', [DocumentController::class, 'activity']);
-    Route::get('/documents/vault-appearance', [DocumentController::class, 'vaultAppearance']);
-    Route::patch('/documents/vault-appearance', [DocumentController::class, 'updateVaultAppearance']);
-    Route::get('/documents/accessible-members', [DocumentController::class, 'accessibleMembers']);
-    Route::get('/documents/tags', [DocumentController::class, 'tags']);
-    Route::post('/documents/tags', [DocumentController::class, 'storeTag']);
+    Route::get('/documents/activity', [DocumentCabinetController::class, 'activity']);
+    Route::get('/documents/vault-appearance', [DocumentCabinetController::class, 'vaultAppearance']);
+    Route::patch('/documents/vault-appearance', [DocumentCabinetController::class, 'updateVaultAppearance']);
+    Route::get('/documents/accessible-members', [DocumentCabinetController::class, 'accessibleMembers']);
 
-    Route::get('/documents/folders/tree', [DocumentController::class, 'folderTree']);
-    Route::get('/documents/folders/children', [DocumentController::class, 'folderChildren']);
-    Route::post('/documents/folders', [DocumentController::class, 'storeFolder']);
-    Route::get('/documents/folders/{id}', [DocumentController::class, 'showFolder'])->whereNumber('id');
-    Route::get('/documents/folders/{id}/contents', [DocumentController::class, 'folderContents'])->whereNumber('id');
-    Route::get('/documents/folders/{id}/export', [DocumentController::class, 'exportFolder'])->whereNumber('id');
-    Route::post('/documents/folders/{id}/email', [DocumentController::class, 'emailFolder'])->whereNumber('id');
-    Route::patch('/documents/folders/{id}', [DocumentController::class, 'updateFolder'])->whereNumber('id');
-    Route::delete('/documents/folders/{id}', [DocumentController::class, 'destroyFolder'])->whereNumber('id');
+    Route::get('/documents/tags', [DocumentTagController::class, 'index']);
+    Route::post('/documents/tags', [DocumentTagController::class, 'store']);
+
+    Route::get('/documents/folders/tree', [DocumentFolderController::class, 'tree']);
+    Route::get('/documents/folders/children', [DocumentFolderController::class, 'children']);
+    Route::post('/documents/folders', [DocumentFolderController::class, 'store']);
+    Route::get('/documents/folders/{id}', [DocumentFolderController::class, 'show'])->whereNumber('id');
+    Route::get('/documents/folders/{id}/contents', [DocumentFolderController::class, 'contents'])->whereNumber('id');
+    Route::get('/documents/folders/{id}/export', [DocumentFolderController::class, 'export'])->whereNumber('id');
+    Route::post('/documents/folders/{id}/email', [DocumentFolderController::class, 'email'])->whereNumber('id');
+    Route::patch('/documents/folders/{id}', [DocumentFolderController::class, 'update'])->whereNumber('id');
+    Route::delete('/documents/folders/{id}', [DocumentFolderController::class, 'destroy'])->whereNumber('id');
 
     Route::get('/documents', [DocumentController::class, 'index']);
     Route::post('/documents/upload', [DocumentController::class, 'upload']);
