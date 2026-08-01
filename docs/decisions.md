@@ -286,3 +286,20 @@
 **Tests:** `tests/Feature/ProductListingTest.php` — 6 tests, 31 assertions.
 
 **Full detail:** `docs/adr/2026-08-01-default-listed-products-bulk-listing.md`
+
+---
+
+## ADR-017: SupplyChainTest subscriptions + missing Customer import
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** `tests/Feature/SupplyChainTest.php` (12 tests) was written before `subscription.active` middleware landed on all operational route groups (`dc65716`). Without active subscriptions for the test businesses, every marketplace / purchase-order / supplier call returned 403 (and the failed PO `create` cascaded into 404s on `submit`/`accept`). A second, real production bug surfaced once the 403s cleared: accepting a purchase order threw `Class "App\Services\Customer" not found` (500) because `InvoiceService` lost the `Customer` import during a refactor.
+
+**Decision:**
+- `SupplyChainTest::setUp` now calls `ensureSubscription()` for the seller and buyer businesses (matching `ProductListingTest`/`DashboardTest`); the cross-tenant "other buyer" also gets a subscription so the test verifies authorization, not subscription gating.
+- Added `use App\Models\Customer;` to `app/Services/InvoiceService.php` — PO accept (`createFromPurchaseOrder`) creates/finds the seller's `Customer` by buyer name.
+
+**Tests:** `tests/Feature/SupplyChainTest.php` — 12/12 passing (81 assertions).
+
+**Note:** `InvoiceCreateSaleLinkTest` / `InvoiceSaleLinkTest` / `InvoiceLinkedSalePaymentSyncTest` have 6 **pre-existing** failures (missing accounting period + subscription setup) unrelated to this change; verified identical with these changes stashed.
