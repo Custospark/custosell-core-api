@@ -44,12 +44,12 @@ class ReferralCodeController extends Controller
                 ->where('owner_type', $data['owner_type'] ?? 'business')
                 ->first();
             if ($existing) {
-                return response()->json(new ReferralCodeResource($existing), 200);
+                return response()->json(['data' => new ReferralCodeResource($existing)], 200);
             }
         }
 
         $referralCode = $this->referralCodeService->create($data);
-        return response()->json(new ReferralCodeResource($referralCode), 201);
+        return response()->json(['data' => new ReferralCodeResource($referralCode)], 201);
     }
 
     public function update(ReferralCodeRequest $request, int $id): ReferralCodeResource

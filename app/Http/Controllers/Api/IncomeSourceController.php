@@ -39,7 +39,7 @@ class IncomeSourceController extends Controller
         $businessId = $request->user()->business_id;
         $userId = $request->user()->id;
         $incomeSource = $this->incomeSourceService->create($businessId, $userId, $request->validated());
-        return response()->json(new IncomeSourceResource($incomeSource), 201);
+        return response()->json(['data' => new IncomeSourceResource($incomeSource)], 201);
     }
 
     public function update(IncomeSourceRequest $request, int $id): IncomeSourceResource
