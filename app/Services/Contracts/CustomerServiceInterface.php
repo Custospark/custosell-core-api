@@ -9,6 +9,8 @@ interface CustomerServiceInterface
 {
     public function getAll(int $businessId): Collection;
 
+    public function getOverview(int $businessId): array;
+
     public function getById(int $id): ?Customer;
 
     public function create(int $businessId, array $data): Customer;

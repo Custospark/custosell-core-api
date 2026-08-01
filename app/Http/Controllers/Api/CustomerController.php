@@ -28,6 +28,12 @@ class CustomerController extends Controller
         return new CustomerCollection($this->customerService->getAll($businessId));
     }
 
+    public function overview(Request $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        return response()->json($this->customerService->getOverview($businessId));
+    }
+
     public function show(int $id): CustomerResource
     {
         $customer = $this->customerService->getById($id);
