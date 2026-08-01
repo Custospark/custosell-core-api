@@ -9,6 +9,7 @@ use App\Services\Platform\PlatformBusinessService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PlatformBusinessController extends Controller
 {
@@ -39,11 +40,47 @@ class PlatformBusinessController extends Controller
             'status' => $request->query('status'),
             'currency' => $request->query('currency'),
             'activity_status' => $request->query('activity_status'),
+            'subscription_status' => $request->query('subscription_status'),
             'sort' => $request->query('sort', 'gross_sales_30d'),
             'direction' => $request->query('direction', 'desc'),
         ], $perPage);
 
         return response()->json($paginator);
+    }
+
+    public function activateSubscription(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
+        ]);
+
+        $business = Business::findOrFail($id);
+
+        try {
+            $subscription = $this->businessService->activateSubscription(
+                $request->user(),
+                $business,
+                (int) $validated['plan_id'],
+                $validated['billing_cycle'] ?? 'monthly',
+            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => collect($e->errors())->flatten()->first(),
+            ], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => "Subscription activated for {$business->name}.",
+            'data' => [
+                'subscription_id' => $subscription->id,
+                'plan' => $subscription->plan?->name,
+                'status' => $subscription->status?->value ?? $subscription->status,
+                'billing_cycle' => $subscription->billing_cycle,
+            ],
+        ]);
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse
