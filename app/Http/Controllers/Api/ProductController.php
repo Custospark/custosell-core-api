@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\ProductBulkListingRequest;
 use App\Http\Requests\ProductStorefrontListingRequest;
 use App\Http\Requests\ProductSupplyListingRequest;
 use App\Http\Resources\ProductCollection;
@@ -70,6 +71,21 @@ class ProductController extends Controller
         $count = $this->productService->bulkDelete($data['ids'], $businessId);
 
         return response()->json(['deleted' => $count]);
+    }
+
+    public function bulkListing(ProductBulkListingRequest $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $data = $request->validated();
+
+        $count = $this->productService->bulkUpdateListing(
+            $data['ids'],
+            $businessId,
+            $data['channel'],
+            (bool) $data['listed'],
+        );
+
+        return response()->json(['updated' => $count]);
     }
 
     public function updateSupplyListing(ProductSupplyListingRequest $request, int $id): ProductResource

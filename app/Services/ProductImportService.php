@@ -113,6 +113,8 @@ class ProductImportService
                     }
 
                     $data['business_id'] = $businessId;
+                    $data['listed_for_supply'] = true;
+                    $data['listed_for_storefront'] = true;
                     $stockQty = (int) ($data['stock_quantity'] ?? 0);
                     unset($data['stock_quantity']);
 

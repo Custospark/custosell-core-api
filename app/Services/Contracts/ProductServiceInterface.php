@@ -19,6 +19,14 @@ interface ProductServiceInterface
 
     public function bulkDelete(array $ids, int $businessId): int;
 
+    /**
+     * Bulk list/unlist products for a sales channel (supply or storefront).
+     *
+     * @param  array<int>  $ids
+     * @return int Number of the business's products that were updated.
+     */
+    public function bulkUpdateListing(array $ids, int $businessId, string $channel, bool $listed): int;
+
     public function getActive(int $businessId): Collection;
 
     public function getLowStock(int $businessId): Collection;

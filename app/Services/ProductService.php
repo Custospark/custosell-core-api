@@ -43,6 +43,8 @@ class ProductService implements ProductServiceInterface
 
         $data['business_id'] = $businessId;
         $data = $this->normalizeCatalogType($data);
+        $data['listed_for_supply'] = (bool) ($data['listed_for_supply'] ?? true);
+        $data['listed_for_storefront'] = (bool) ($data['listed_for_storefront'] ?? true);
 
         return $this->productRepository->create($data);
     }
@@ -88,6 +90,41 @@ class ProductService implements ProductServiceInterface
         return \App\Models\Product::whereIn('id', $ids)
             ->where('business_id', $businessId)
             ->delete();
+    }
+
+    public function bulkUpdateListing(array $ids, int $businessId, string $channel, bool $listed): int
+    {
+        $products = Product::query()
+            ->where('business_id', $businessId)
+            ->whereIn('id', $ids)
+            ->get();
+
+        foreach ($products as $product) {
+            if ($channel === 'supply') {
+                $product->listed_for_supply = $listed;
+                if ($listed) {
+                    if ($product->supply_price === null) {
+                        $product->supply_price = $product->wholesale_price ?? $product->unit_price;
+                    }
+                    if ($product->supply_min_qty === null) {
+                        $product->supply_min_qty = 1;
+                    }
+                    $product->listed_at = $product->listed_at ?? now();
+                } else {
+                    $product->listed_at = null;
+                }
+            } else {
+                $product->listed_for_storefront = $listed;
+                if ($listed) {
+                    $product->storefront_listed_at = $product->storefront_listed_at ?? now();
+                } else {
+                    $product->storefront_listed_at = null;
+                }
+            }
+            $product->save();
+        }
+
+        return $products->count();
     }
 
     public function getActive(int $businessId): Collection
