@@ -358,3 +358,20 @@
 - **File-size-500:** Split `HrModuleTest` (1048 lines) into `HrModuleTest` (500), `HrPerformanceTest`, `HrPayrollTest`, `HrPayrollAffordabilityTest` — never gutted, each reuses setUp + `authJson` helper.
 
 **Tests:** `composer vera:fast` — passed (php -l + 6 logic rules incl. file-size-500). `php artisan test` — **608 passed, 1 skipped, 0 failed** (was 110 failures).
+
+---
+
+## ADR-023: Frontend hook response-shape hardening — hooks return the unwrapped resource
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** ADR-021 (audit) + ADR-022 (backend sweep) normalized every single-resource endpoint to `{data: ...}`. The frontend has no response unwrap interceptor — each hook unwraps itself. The FE audit found no flat-read bugs, but several hooks returned the `{data: T}` envelope instead of the resource; they only worked because every consumer read `.data`. Latent silent-break hazard for future consumers.
+
+**Decision:** All wrapper-returning hooks now return the **unwrapped resource**; consumers aligned. 12 files, commit `fa31ad3`:
+- Queries: `useBookingSettings`, `useBookingInfo`, `useBookingSlots`, `useCheckBooking`, `usePaymentInfo`, `usePayoutHistory` → return `data.data`.
+- Mutations: `useUserLookup`, `useRecordPayout`, `useCreateCampaignCode`, `useUpdateCampaignCode`, `useApproveBooking`, `useCompleteBooking`, `useRejectBooking`, `useScheduleMeeting`, `useCreateMeeting`, `useUpdateMeeting` → return the typed entity (`PipelineLead`, `PipelineLeadMeeting`, `CampaignCode`, `PayoutRecord`, `UserLookupResult`).
+- Consumers aligned: `BookingSettingsSection`, `LegacyBookingSection`, `CardBookingSection`, `BoardMemberPicker`, `AccountReferralsWinsTab`, `PublicBookingPage`, `PublicBookingCheckPage`.
+- **Not changed (correct as-is):** `useCreateBooking` (bespoke top-level `reference_code`/`check_url` contract), `useUpdatePaymentInfo` (`{message}` matches backend).
+
+**Tests:** `npx tsc --noEmit` — clean; `npm run vera:fast` — passed (12 files). Backend untouched.
