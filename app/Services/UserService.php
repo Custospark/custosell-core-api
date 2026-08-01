@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Enums\Billing\DiscountType;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\RewardType;
+use App\Events\UserRegistered;
 use App\Models\ReferralCode;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -114,6 +115,8 @@ class UserService implements UserServiceInterface
                 $user->setRelation('business', $business);
             });
         }
+
+        UserRegistered::dispatch($user, $user->business);
 
         return $user;
     }

@@ -21,7 +21,7 @@ class StandardEmail extends Mailable
         public readonly ?string $ctaUrl          = null,
         public readonly ?string $ctaLabel        = null,
         public readonly ?string $tip             = null,
-        public readonly ?string $logoPath        = null,
+        public readonly ?string $logoPath        = null, // URL or data-URI for the header logo
         public readonly bool    $isHtml          = true,
         public readonly array   $fileAttachments = [],
     ) {}
@@ -47,7 +47,7 @@ class StandardEmail extends Mailable
                 'ctaUrl'   => $this->ctaUrl,
                 'ctaLabel' => $this->ctaLabel,
                 'tip'      => $this->tip,
-                'logoPath' => $this->logoPath,
+                'logoUrl'  => $this->logoPath,
                 'isHtml'   => $this->isHtml,
             ]
         );

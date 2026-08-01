@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Billing\DiscountType;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\RewardType;
+use App\Events\UserRegistered;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Contracts\BusinessRepositoryInterface;
@@ -74,7 +75,7 @@ class BusinessService implements BusinessServiceInterface
 
     public function register(array $userData, array $businessData, ?string $referralCode = null): Business
     {
-        return DB::transaction(function () use ($userData, $businessData, $referralCode) {
+        $business = DB::transaction(function () use ($userData, $businessData, $referralCode) {
             // Strip referral_code so it's not passed to the business model
             unset($businessData['referral_code']);
 
@@ -143,6 +144,10 @@ class BusinessService implements BusinessServiceInterface
 
             return $business;
         });
+
+        UserRegistered::dispatch($business->owner, $business);
+
+        return $business;
     }
 
     public function update(int $id, array $data): Business

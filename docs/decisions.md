@@ -248,3 +248,22 @@
 - `ReferralService::markActive()` now computes `$paidBase` and applies it to PERCENTAGE/FREE_MONTH rewards and PERCENTAGE commissions
 - Defaults updated in `UserService`, `BusinessService`, `SimulateCreditDeduction`
 - Referrer incentive slightly reduced (20% → ~13.5% of base) but still exceeds the referee's 10% saving
+
+---
+
+## ADR-015: Welcome email on account creation
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** New users got no email after registering. The platform already had a standard transactional email (`emails.standard` + `StandardEmail` mailable) used for password resets, dormant-account warnings, and notification digests, but nothing fired on account creation.
+
+**Decision:**
+- `UserRegistered` domain event carrying `User` + optional `Business`, dispatched from `UserService::register` and `BusinessService::register` (the latter after the transaction commits)
+- Synchronous `SendWelcomeEmail` listener sends the existing `StandardEmail` mailable — brand name, logo, personalised greeting, feature list, "Get Started" CTA to `FRONTEND_URL`, offline-first pro tip
+- Email failures are caught and logged; they never fail or roll back registration
+- Fixed `StandardEmail::content()` passing `logoPath` where the view reads `logoUrl`, so the header logo now renders
+
+**Tests:** `tests/Feature/SendWelcomeEmailTest.php` (with/without business, `Mail::assertSent`)
+
+**Full detail:** `docs/adr/2026-08-01-account-welcome-email.md`
