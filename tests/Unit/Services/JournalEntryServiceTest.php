@@ -90,7 +90,7 @@ class JournalEntryServiceTest extends TestCase
 
     public function test_rejects_unbalanced_entry(): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
         $this->expectExceptionMessage('not balanced');
 
         $this->service->createEntry(

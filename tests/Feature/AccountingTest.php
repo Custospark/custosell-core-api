@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{AccountingPeriod, AccountType, Business, ChartOfAccount, Role, User};
+use App\Models\{AccountingPeriod, AccountType, Business, ChartOfAccount, Plan, Role, User};
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,6 +15,8 @@ class AccountingTest extends TestCase
     protected Business $business;
     protected string $adminToken;
     protected AccountingPeriod $period;
+    protected string $entryDate;
+    protected string $secondEntryDate;
 
     protected function setUp(): void
     {
@@ -33,6 +35,8 @@ class AccountingTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'enterprise')->first()?->id);
+
         $role = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -50,11 +54,14 @@ class AccountingTest extends TestCase
 
         $this->period = AccountingPeriod::create([
             'business_id' => $this->business->id,
-            'name' => 'July 2026',
-            'start_date' => '2026-07-01',
-            'end_date' => '2026-07-31',
+            'name' => now()->format('F Y'),
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->endOfMonth()->toDateString(),
             'is_closed' => false,
         ]);
+
+        $this->entryDate = now()->startOfMonth()->addDays(7)->toDateString();
+        $this->secondEntryDate = now()->startOfMonth()->addDays(8)->toDateString();
 
         $this->seedChartOfAccounts();
     }
@@ -84,6 +91,8 @@ class AccountingTest extends TestCase
             ['code' => '1101', 'name' => 'Cash', 'type_id' => $assetType->id, 'normal_balance' => 'debit', 'parent' => '1100'],
             ['code' => '1103', 'name' => 'Accounts Receivable', 'type_id' => $assetType->id, 'normal_balance' => 'debit', 'parent' => '1100'],
             ['code' => '1104', 'name' => 'Inventory', 'type_id' => $assetType->id, 'normal_balance' => 'debit', 'parent' => '1100'],
+            ['code' => '1200', 'name' => 'Non-Current Assets', 'type_id' => $assetType->id, 'normal_balance' => 'debit', 'parent' => '1000'],
+            ['code' => '1203', 'name' => 'Fixed Assets', 'type_id' => $assetType->id, 'normal_balance' => 'debit', 'parent' => '1200'],
             ['code' => '4000', 'name' => 'Revenue', 'type_id' => $revenueType->id, 'normal_balance' => 'credit'],
             ['code' => '4100', 'name' => 'Sales Revenue', 'type_id' => $revenueType->id, 'normal_balance' => 'credit', 'parent' => '4000'],
             ['code' => '5000', 'name' => 'Cost of Goods Sold', 'type_id' => $expenseType->id, 'normal_balance' => 'debit'],
@@ -168,7 +177,7 @@ class AccountingTest extends TestCase
     {
         $response = $this->getJson('/api/v1/accounting-periods/current', $this->apiHeaders());
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'July 2026');
+            ->assertJsonPath('data.name', now()->format('F Y'));
     }
 
     /** @test */
@@ -223,7 +232,7 @@ class AccountingTest extends TestCase
         $revenueAccount = ChartOfAccount::where('code', '4100')->first();
 
         $response = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Test journal entry',
             'lines' => [
                 [
@@ -250,7 +259,7 @@ class AccountingTest extends TestCase
         $revenueAccount = ChartOfAccount::where('code', '4100')->first();
 
         $response = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Unbalanced entry',
             'lines' => [
                 ['account_id' => $cashAccount->id, 'debit_amount' => 1000, 'credit_amount' => 0],
@@ -268,7 +277,7 @@ class AccountingTest extends TestCase
         $revenueAccount = ChartOfAccount::where('code', '4100')->first();
 
         $create = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Entry to post',
             'lines' => [
                 ['account_id' => $cashAccount->id, 'debit_amount' => 2000, 'credit_amount' => 0],
@@ -290,7 +299,7 @@ class AccountingTest extends TestCase
         $revenueAccount = ChartOfAccount::where('code', '4100')->first();
 
         $create = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Entry to reverse',
             'lines' => [
                 ['account_id' => $cashAccount->id, 'debit_amount' => 3000, 'credit_amount' => 0],
@@ -315,7 +324,7 @@ class AccountingTest extends TestCase
         $expense = ChartOfAccount::where('code', '6101')->first();
 
         $entry = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Data for ratios',
             'lines' => [
                 ['account_id' => $cash->id, 'debit_amount' => 50000, 'credit_amount' => 0],
@@ -325,7 +334,7 @@ class AccountingTest extends TestCase
         $this->postJson("/api/v1/journal-entries/{$entry->json('data.id')}/post", [], $this->apiHeaders());
 
         $expEntry = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-16',
+            'date' => $this->secondEntryDate,
             'description' => 'Expense for ratios',
             'lines' => [
                 ['account_id' => $expense->id, 'debit_amount' => 10000, 'credit_amount' => 0],
@@ -380,7 +389,7 @@ class AccountingTest extends TestCase
             'cost' => 5000000,
             'salvage_value' => 500000,
             'useful_life_months' => 36,
-            'purchase_date' => '2026-07-01',
+            'purchase_date' => $this->entryDate,
         ], $this->apiHeaders());
 
         $response->assertStatus(201)
@@ -395,7 +404,7 @@ class AccountingTest extends TestCase
         $revenue = ChartOfAccount::where('code', '4100')->first();
 
         $entry = $this->postJson('/api/v1/journal-entries', [
-            'date' => '2026-07-15',
+            'date' => $this->entryDate,
             'description' => 'Entry for period close test',
             'lines' => [
                 ['account_id' => $cash->id, 'debit_amount' => 1000, 'credit_amount' => 0],

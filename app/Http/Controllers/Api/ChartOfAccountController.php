@@ -44,7 +44,7 @@ class ChartOfAccountController extends Controller
     {
         $businessId = $request->user()->business_id;
         $account = $this->chartOfAccountService->create($businessId, $request->validated());
-        return response()->json(new ChartOfAccountResource($account), 201);
+        return response()->json(['data' => new ChartOfAccountResource($account)], 201);
     }
 
     public function update(StoreChartOfAccountRequest $request, int $id): ChartOfAccountResource

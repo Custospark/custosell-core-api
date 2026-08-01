@@ -10,6 +10,7 @@ use App\Repositories\Contracts\GeneralLedgerRepositoryInterface;
 use App\Repositories\Contracts\JournalEntryRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class JournalEntryService
 {
@@ -75,7 +76,9 @@ class JournalEntryService
             }
 
             if (abs($totalDebits - $totalCredits) > 0.01) {
-                throw new \RuntimeException("Journal entry is not balanced. Total debits: {$totalDebits}, Total credits: {$totalCredits}");
+                throw ValidationException::withMessages([
+                    'lines' => "Journal entry is not balanced. Total debits: {$totalDebits}, Total credits: {$totalCredits}",
+                ]);
             }
 
             $entryNumber = $this->journalEntryRepository->generateEntryNumber($businessId, $date);

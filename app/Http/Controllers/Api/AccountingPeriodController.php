@@ -37,20 +37,20 @@ class AccountingPeriodController extends Controller
         $businessId = $request->user()->business_id;
         $data = array_merge($request->validated(), ['business_id' => $businessId]);
         $period = $this->accountingPeriodService->create($data);
-        return response()->json(new AccountingPeriodResource($period), 201);
+        return response()->json(['data' => new AccountingPeriodResource($period)], 201);
     }
 
     public function close(Request $request, int $id): JsonResponse
     {
         $userId = $request->user()->id;
         $period = $this->accountingPeriodService->close($id, $userId);
-        return response()->json(new AccountingPeriodResource($period));
+        return response()->json(['data' => new AccountingPeriodResource($period)]);
     }
 
     public function reopen(Request $request, int $id): JsonResponse
     {
         $userId = $request->user()->id;
         $period = $this->accountingPeriodService->reopen($id, $userId);
-        return response()->json(new AccountingPeriodResource($period));
+        return response()->json(['data' => new AccountingPeriodResource($period)]);
     }
 }

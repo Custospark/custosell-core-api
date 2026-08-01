@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AccountingPeriod;
 use App\Models\Business;
+use App\Models\Plan;
 use App\Models\User;
 use App\Services\AccountingPeriodService;
 use Database\Seeders\PlanSeeder;
@@ -33,6 +34,8 @@ class ReportPeriodRangeTest extends TestCase
         ]);
         $this->user->business_id = $this->business->id;
         $this->user->save();
+
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'enterprise')->first()?->id);
 
         $this->seedAccountingForBusiness($this->business);
         Sanctum::actingAs($this->user);
