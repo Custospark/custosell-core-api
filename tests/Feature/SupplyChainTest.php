@@ -52,6 +52,9 @@ class SupplyChainTest extends TestCase
         $this->buyerOwner->save();
         $this->buyerToken = $this->buyerOwner->createToken('buyer')->plainTextToken;
 
+        $this->ensureSubscription($this->seller->id);
+        $this->ensureSubscription($this->buyer->id);
+
         $this->listedProduct = Product::factory()->create([
             'business_id' => $this->seller->id,
             'name' => 'Listed Rice 50kg',
@@ -249,6 +252,7 @@ class SupplyChainTest extends TestCase
         ]);
         $otherBuyerOwner->business_id = $otherBuyer->id;
         $otherBuyerOwner->save();
+        $this->ensureSubscription($otherBuyer->id);
         $otherBuyerToken = $otherBuyerOwner->createToken('other')->plainTextToken;
 
         $this->authJson($otherBuyerToken, 'GET', "/api/v1/purchase-orders/{$poId}")

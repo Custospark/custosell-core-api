@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\InvoiceSentForAccounting;
 use App\Models\Business;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Sale;
