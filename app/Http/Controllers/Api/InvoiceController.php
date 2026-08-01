@@ -50,7 +50,7 @@ class InvoiceController extends Controller
         $data = $request->validated();
 
         $invoice = $this->invoiceService->create($businessId, $userId, $data);
-        return response()->json(new InvoiceResource($invoice), 201);
+        return response()->json(['data' => new InvoiceResource($invoice)], 201);
     }
 
     public function update(StoreInvoiceRequest $request, int $id): InvoiceResource
@@ -84,7 +84,7 @@ class InvoiceController extends Controller
         }
 
         $invoice = $this->invoiceService->send($id);
-        return response()->json(new InvoiceResource($invoice));
+        return response()->json(['data' => new InvoiceResource($invoice)]);
     }
 
     public function downloadPdf(Request $request, int $id): Response

@@ -43,7 +43,7 @@ class SaleController extends Controller
         $businessId = $request->user()->business_id;
         $userId = $request->user()->id;
         $sale = $this->saleService->create($businessId, $userId, $request->validated());
-        return response()->json(new SaleResource($sale), 201);
+        return response()->json(['data' => new SaleResource($sale)], 201);
     }
 
     public function update(SaleRequest $request, int $id): SaleResource

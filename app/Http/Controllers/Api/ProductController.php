@@ -45,7 +45,7 @@ class ProductController extends Controller
     {
         $businessId = $request->user()->business_id;
         $product = $this->productService->create($businessId, $request->validated());
-        return response()->json(new ProductResource($product), 201);
+        return response()->json(['data' => new ProductResource($product)], 201);
     }
 
     public function update(ProductRequest $request, int $id): ProductResource

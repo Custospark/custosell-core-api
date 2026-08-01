@@ -37,7 +37,7 @@ class StockMovementController extends Controller
         $data = $request->validated();
         $data['created_by'] = $request->user()->id;
         $stockMovement = $this->stockMovementService->create($businessId, $data);
-        return response()->json(new StockMovementResource($stockMovement), 201);
+        return response()->json(['data' => new StockMovementResource($stockMovement)], 201);
     }
 
     public function update(StockMovementRequest $request, int $id): StockMovementResource

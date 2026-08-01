@@ -58,7 +58,7 @@ class EstimateController extends Controller
             $request->validated(),
         );
 
-        return response()->json(new EstimateResource($estimate), 201);
+        return response()->json(['data' => new EstimateResource($estimate)], 201);
     }
 
     public function update(StoreEstimateRequest $request, int $id): EstimateResource
@@ -87,7 +87,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new EstimateResource($estimate));
+        return response()->json(['data' => new EstimateResource($estimate)]);
     }
 
     public function approve(UpdateEstimateStatusRequest $request, int $id): JsonResponse
@@ -101,7 +101,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new EstimateResource($estimate));
+        return response()->json(['data' => new EstimateResource($estimate)]);
     }
 
     public function reject(UpdateEstimateStatusRequest $request, int $id): JsonResponse
@@ -115,7 +115,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new EstimateResource($estimate));
+        return response()->json(['data' => new EstimateResource($estimate)]);
     }
 
     public function email(SendDocumentEmailRequest $request, int $id): JsonResponse
@@ -187,7 +187,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new EstimateResource($estimate), 201);
+        return response()->json(['data' => new EstimateResource($estimate)], 201);
     }
 
     public function versions(int $id): AnonymousResourceCollection
@@ -212,7 +212,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new EstimateResource($estimate));
+        return response()->json(['data' => new EstimateResource($estimate)]);
     }
 
     public function convertToInvoice(Request $request, int $id): JsonResponse
@@ -233,7 +233,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new InvoiceResource($invoice), 201);
+        return response()->json(['data' => new InvoiceResource($invoice)], 201);
     }
 
     public function convertToProject(Request $request, int $id): JsonResponse
@@ -255,7 +255,7 @@ class EstimateController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(new ProjectResource($project), 201);
+        return response()->json(['data' => new ProjectResource($project)], 201);
     }
 
     public function analytics(Request $request): JsonResponse
@@ -289,7 +289,7 @@ class EstimateController extends Controller
             $data,
         );
 
-        return response()->json(new EstimateTemplateResource($template), 201);
+        return response()->json(['data' => new EstimateTemplateResource($template)], 201);
     }
 
     public function showTemplate(int $id): EstimateTemplateResource

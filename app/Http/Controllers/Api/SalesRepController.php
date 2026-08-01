@@ -38,7 +38,7 @@ class SalesRepController extends Controller
     public function store(SalesRepRequest $request): JsonResponse
     {
         $salesRep = $this->salesRepService->create($request->validated());
-        return response()->json(new SalesRepResource($salesRep), 201);
+        return response()->json(['data' => new SalesRepResource($salesRep)], 201);
     }
 
     public function update(SalesRepRequest $request, int $id): SalesRepResource

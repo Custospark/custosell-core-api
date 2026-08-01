@@ -32,14 +32,14 @@ class PlanController extends Controller
     public function store(PlanRequest $request): JsonResponse
     {
         $plan = $this->planService->create($request->validated());
-        return response()->json(new PlanResource($plan), 201);
+        return response()->json(['data' => new PlanResource($plan)], 201);
     }
 
     public function update(PlanRequest $request, int $id): JsonResponse
     {
         try {
             $plan = $this->planService->update($id, $request->validated());
-            return response()->json(new PlanResource($plan));
+            return response()->json(['data' => new PlanResource($plan)]);
         } catch (\RuntimeException $e) {
             abort(404, 'Plan not found');
         }

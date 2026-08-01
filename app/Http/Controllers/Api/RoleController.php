@@ -35,7 +35,7 @@ class RoleController extends Controller
     {
         $businessId = $request->user()->business_id;
         $role = $this->roleService->create($businessId, $request->validated());
-        return response()->json(new RoleResource($role), 201);
+        return response()->json(['data' => new RoleResource($role)], 201);
     }
 
     public function update(RoleRequest $request, int $id): RoleResource

@@ -299,10 +299,10 @@ class SaleTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('payment_status', 'paid')
-            ->assertJsonCount(1, 'payments');
+            ->assertJsonPath('data.payment_status', 'paid')
+            ->assertJsonCount(1, 'data.payments');
 
-        $saleId = $response->json('id');
+        $saleId = $response->json('data.id');
         $this->assertDatabaseHas('payments', [
             'payable_type' => 'sale',
             'payable_id' => $saleId,

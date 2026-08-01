@@ -97,8 +97,8 @@ class ProductTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'unit_price', 'stock_quantity'])
-            ->assertJsonPath('name', 'Test Product');
+            ->assertJsonStructure(['data' => ['id', 'name', 'unit_price', 'stock_quantity']])
+            ->assertJsonPath('data.name', 'Test Product');
     }
 
     public function test_create_product_with_category(): void
@@ -116,7 +116,7 @@ class ProductTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('category_id', $category->id);
+            ->assertJsonPath('data.category_id', $category->id);
     }
 
     public function test_create_product_negative_price_returns_422(): void

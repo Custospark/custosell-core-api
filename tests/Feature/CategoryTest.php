@@ -96,8 +96,8 @@ class CategoryTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'business_id'])
-            ->assertJsonPath('name', 'Beverages');
+            ->assertJsonStructure(['data' => ['id', 'name', 'business_id']])
+            ->assertJsonPath('data.name', 'Beverages');
     }
 
     public function test_create_duplicate_name_returns_422(): void

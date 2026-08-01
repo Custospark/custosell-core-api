@@ -39,7 +39,7 @@ class ShiftController extends Controller
         $businessId = $request->user()->business_id;
         $userId = $request->user()->id;
         $shift = $this->shiftService->create($businessId, $userId, $request->validated());
-        return response()->json(new ShiftResource($shift), 201);
+        return response()->json(['data' => new ShiftResource($shift)], 201);
     }
 
     public function update(ShiftRequest $request, int $id): ShiftResource
@@ -62,7 +62,7 @@ class ShiftController extends Controller
         if (!$shift) {
             return response()->json(null, 204);
         }
-        return response()->json(new ShiftResource($shift));
+        return response()->json(['data' => new ShiftResource($shift)]);
     }
 
     public function payments(Request $request, int $shiftId): JsonResponse

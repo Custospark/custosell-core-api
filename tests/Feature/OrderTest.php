@@ -77,8 +77,8 @@ class OrderTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('status', 'open')
-            ->assertJsonPath('customer_name', 'Table 4');
+            ->assertJsonPath('data.status', 'open')
+            ->assertJsonPath('data.customer_name', 'Table 4');
 
         $this->assertDatabaseHas('orders', [
             'business_id' => $this->business->id,
@@ -95,7 +95,7 @@ class OrderTest extends TestCase
             'items' => [
                 ['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000, 'subtotal' => 1000],
             ],
-        ])->json();
+        ])->json('data');
 
         $saleResponse = $this->authJson('POST', '/api/v1/sales', [
             'order_id' => $order['id'],
@@ -112,8 +112,8 @@ class OrderTest extends TestCase
         ]);
 
         $saleResponse->assertStatus(201)
-            ->assertJsonPath('order_id', $order['id'])
-            ->assertJsonPath('payment_status', 'partially_paid');
+            ->assertJsonPath('data.order_id', $order['id'])
+            ->assertJsonPath('data.payment_status', 'partially_paid');
 
         $this->assertDatabaseHas('orders', [
             'id' => $order['id'],
@@ -129,7 +129,7 @@ class OrderTest extends TestCase
             'items' => [
                 ['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000, 'subtotal' => 1000],
             ],
-        ])->json();
+        ])->json('data');
 
         $this->authJson('POST', '/api/v1/sales', [
             'order_id' => $order['id'],
@@ -163,7 +163,7 @@ class OrderTest extends TestCase
             'items' => [
                 ['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000, 'subtotal' => 1000],
             ],
-        ])->json();
+        ])->json('data');
 
         $sale = $this->authJson('POST', '/api/v1/sales', [
             'order_id' => $order['id'],
@@ -210,11 +210,11 @@ class OrderTest extends TestCase
             'items' => [
                 ['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000, 'subtotal' => 1000],
             ],
-        ])->json();
+        ])->json('data');
 
         $this->authJson('POST', "/api/v1/orders/{$order['id']}/cancel")
             ->assertStatus(200)
-            ->assertJsonPath('status', 'cancelled');
+            ->assertJsonPath('data.status', 'cancelled');
     }
 
     public function test_list_filters_open_orders(): void

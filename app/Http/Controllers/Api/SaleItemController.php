@@ -32,7 +32,7 @@ class SaleItemController extends Controller
     public function store(SaleItemRequest $request): JsonResponse
     {
         $saleItem = $this->saleItemService->create($request->validated());
-        return response()->json(new SaleItemResource($saleItem), 201);
+        return response()->json(['data' => new SaleItemResource($saleItem)], 201);
     }
 
     public function update(SaleItemRequest $request, int $id): SaleItemResource

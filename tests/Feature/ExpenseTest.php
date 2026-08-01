@@ -103,9 +103,9 @@ class ExpenseTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'business_id', 'is_system'])
-            ->assertJsonPath('name', 'Store Rent')
-            ->assertJsonPath('is_system', false);
+            ->assertJsonStructure(['data' => ['id', 'name', 'business_id', 'is_system']])
+            ->assertJsonPath('data.name', 'Store Rent')
+            ->assertJsonPath('data.is_system', false);
     }
 
     public function test_cannot_create_category_with_system_name(): void
@@ -168,8 +168,8 @@ class ExpenseTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'amount', 'description', 'expense_category_id'])
-            ->assertJsonPath('amount', '150000.00');
+            ->assertJsonStructure(['data' => ['id', 'amount', 'description', 'expense_category_id']])
+            ->assertJsonPath('data.amount', '150000.00');
     }
 
     public function test_create_shift_expense_and_filter_by_shift(): void
@@ -190,8 +190,8 @@ class ExpenseTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('shift_id', $shift->id)
-            ->assertJsonPath('amount', '25000.00');
+            ->assertJsonPath('data.shift_id', $shift->id)
+            ->assertJsonPath('data.amount', '25000.00');
 
         $list = $this->withHeader('Authorization', "Bearer $this->staffToken")
             ->getJson("/api/v1/expenses/by-shift/{$shift->id}");
@@ -352,7 +352,7 @@ class ExpenseTest extends TestCase
             ]);
 
         $create->assertStatus(201)
-            ->assertJsonPath('description', 'Lunch for team');
+            ->assertJsonPath('data.description', 'Lunch for team');
 
         $this->withHeader('Authorization', "Bearer $cashierToken")
             ->getJson("/api/v1/expenses/by-shift/{$shift->id}")

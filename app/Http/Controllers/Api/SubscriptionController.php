@@ -41,14 +41,14 @@ class SubscriptionController extends Controller
     public function store(SubscriptionRequest $request): JsonResponse
     {
         $subscription = $this->subscriptionService->create($request->validated());
-        return response()->json(new SubscriptionResource($subscription), 201);
+        return response()->json(['data' => new SubscriptionResource($subscription)], 201);
     }
 
     public function update(SubscriptionRequest $request, int $id): JsonResponse
     {
         try {
             $subscription = $this->subscriptionService->update($id, $request->validated());
-            return response()->json(new SubscriptionResource($subscription));
+            return response()->json(['data' => new SubscriptionResource($subscription)]);
         } catch (\RuntimeException $e) {
             abort(404, 'Subscription not found');
         }
@@ -81,7 +81,7 @@ class SubscriptionController extends Controller
                 $validated['referral_code'] ?? null
             );
 
-            return response()->json(new SubscriptionResource($subscription), 201);
+            return response()->json(['data' => new SubscriptionResource($subscription)], 201);
         } catch (\RuntimeException $e) {
             abort(422, $e->getMessage());
         }
@@ -113,7 +113,7 @@ class SubscriptionController extends Controller
         }
 
         $reactivated = $this->subscriptionService->reactivate($subscription);
-        return response()->json(new SubscriptionResource($reactivated));
+        return response()->json(['data' => new SubscriptionResource($reactivated)]);
     }
 
     public function upgrade(Request $request, int $id): JsonResponse

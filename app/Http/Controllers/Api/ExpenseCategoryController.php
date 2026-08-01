@@ -36,7 +36,7 @@ class ExpenseCategoryController extends Controller
     {
         $businessId = $request->user()->business_id;
         $expenseCategory = $this->expenseCategoryService->create($businessId, $request->validated());
-        return response()->json(new ExpenseCategoryResource($expenseCategory), 201);
+        return response()->json(['data' => new ExpenseCategoryResource($expenseCategory)], 201);
     }
 
     public function update(ExpenseCategoryRequest $request, int $id): ExpenseCategoryResource

@@ -81,7 +81,7 @@ class UserController extends Controller
         $data = $request->validated();
         $data['role_id'] = $request->role_id;
         $user = $this->userService->createStaff($businessId, $data);
-        return response()->json(new UserResource($user), 201);
+        return response()->json(['data' => new UserResource($user)], 201);
     }
 
     public function update(UpdateUserRequest $request, int $id): UserResource

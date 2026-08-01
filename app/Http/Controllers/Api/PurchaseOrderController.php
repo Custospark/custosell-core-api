@@ -34,7 +34,7 @@ class PurchaseOrderController extends Controller
             $request->validated(),
         );
 
-        return response()->json(new PurchaseOrderResource($po), 201);
+        return response()->json(['data' => new PurchaseOrderResource($po)], 201);
     }
 
     public function show(Request $request, int $id): JsonResponse
@@ -46,7 +46,7 @@ class PurchaseOrderController extends Controller
             abort(404, 'Purchase order not found');
         }
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -66,21 +66,21 @@ class PurchaseOrderController extends Controller
             $data,
         );
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function submit(Request $request, int $id): JsonResponse
     {
         $po = $this->purchaseOrderService->submit($id, $request->user()->business_id);
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function cancel(Request $request, int $id): JsonResponse
     {
         $po = $this->purchaseOrderService->cancel($id, $request->user()->business_id);
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function incoming(Request $request): PurchaseOrderCollection
@@ -99,7 +99,7 @@ class PurchaseOrderController extends Controller
             $request->user()->id,
         );
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function reject(PurchaseOrderRejectRequest $request, int $id): JsonResponse
@@ -110,7 +110,7 @@ class PurchaseOrderController extends Controller
             $request->validated('rejection_reason'),
         );
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -124,7 +124,7 @@ class PurchaseOrderController extends Controller
     {
         $po = $this->purchaseOrderService->fulfill($id, $request->user()->business_id, $request->user()->id);
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 
     public function receive(PurchaseOrderReceiveRequest $request, int $id): JsonResponse
@@ -136,6 +136,6 @@ class PurchaseOrderController extends Controller
             $request->validated('items'),
         );
 
-        return response()->json(new PurchaseOrderResource($po));
+        return response()->json(['data' => new PurchaseOrderResource($po)]);
     }
 }

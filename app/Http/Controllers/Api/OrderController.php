@@ -42,7 +42,7 @@ class OrderController extends Controller
             $request->validated(),
         );
 
-        return response()->json(new OrderResource($order), 201);
+        return response()->json(['data' => new OrderResource($order)], 201);
     }
 
     public function update(OrderRequest $request, int $id): JsonResponse
@@ -53,13 +53,13 @@ class OrderController extends Controller
             $request->validated(),
         );
 
-        return response()->json(new OrderResource($order));
+        return response()->json(['data' => new OrderResource($order)]);
     }
 
     public function cancel(Request $request, int $id): JsonResponse
     {
         $order = $this->orderService->cancel($id, $request->user()->business_id);
 
-        return response()->json(new OrderResource($order));
+        return response()->json(['data' => new OrderResource($order)]);
     }
 }

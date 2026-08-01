@@ -54,7 +54,7 @@ class ExpenseController extends Controller
         }
 
         $expense = $this->expenseService->create($businessId, $data);
-        return response()->json(new ExpenseResource($expense), 201);
+        return response()->json(['data' => new ExpenseResource($expense)], 201);
     }
 
     public function update(ExpenseRequest $request, int $id): ExpenseResource

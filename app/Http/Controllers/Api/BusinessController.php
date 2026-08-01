@@ -56,7 +56,7 @@ class BusinessController extends Controller
                 $business->subscription->load('referral.referralCode');
             }
         }
-        return response()->json(new BusinessResource($business), 201);
+        return response()->json(['data' => new BusinessResource($business)], 201);
     }
 
     public function update(BusinessRequest $request, int $id): BusinessResource

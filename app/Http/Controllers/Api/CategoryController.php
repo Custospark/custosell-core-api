@@ -35,7 +35,7 @@ class CategoryController extends Controller
     {
         $businessId = $request->user()->business_id;
         $category = $this->categoryService->create($businessId, $request->validated());
-        return response()->json(new CategoryResource($category), 201);
+        return response()->json(['data' => new CategoryResource($category)], 201);
     }
 
     public function update(CategoryRequest $request, int $id): CategoryResource

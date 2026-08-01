@@ -69,7 +69,7 @@ class ProjectController extends Controller
             $request->validated(),
         );
 
-        return response()->json(new ProjectResource($project), 201);
+        return response()->json(['data' => new ProjectResource($project)], 201);
     }
 
     public function update(StoreProjectRequest $request, int $id): ProjectResource
@@ -129,7 +129,7 @@ class ProjectController extends Controller
             return response()->json(['message' => $e->getMessage()], 404);
         }
 
-        return response()->json(new ProjectTaskResource($task), 201);
+        return response()->json(['data' => new ProjectTaskResource($task)], 201);
     }
 
     public function updateTask(Request $request, int $taskId): ProjectTaskResource
@@ -179,7 +179,7 @@ class ProjectController extends Controller
             return response()->json(['message' => $e->getMessage()], 404);
         }
 
-        return response()->json(new TimesheetEntryResource($entry), 201);
+        return response()->json(['data' => new TimesheetEntryResource($entry)], 201);
     }
 
     public function updateTimesheet(StoreTimesheetEntryRequest $request, int $entryId): TimesheetEntryResource
@@ -235,7 +235,7 @@ class ProjectController extends Controller
             return response()->json(['message' => $e->getMessage()], 404);
         }
 
-        return response()->json(new ProjectCostAllocationResource($allocation), 201);
+        return response()->json(['data' => new ProjectCostAllocationResource($allocation)], 201);
     }
 
     public function updateAllocation(Request $request, int $allocationId): ProjectCostAllocationResource
@@ -341,7 +341,7 @@ class ProjectController extends Controller
 
         $member = $this->projectService->addMember($id, $validated, (int) $request->user()->id);
 
-        return response()->json(new ProjectMemberResource($member), 201);
+        return response()->json(['data' => new ProjectMemberResource($member)], 201);
     }
 
     public function updateMember(Request $request, int $id, int $userId): ProjectMemberResource

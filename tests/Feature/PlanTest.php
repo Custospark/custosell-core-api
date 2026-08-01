@@ -124,8 +124,8 @@ class PlanTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'slug', 'price_monthly_usd'])
-            ->assertJsonPath('name', 'Enterprise Plus');
+            ->assertJsonStructure(['data' => ['id', 'name', 'slug', 'price_monthly_usd']])
+            ->assertJsonPath('data.name', 'Enterprise Plus');
     }
 
     public function test_create_plan_missing_name_returns_422(): void

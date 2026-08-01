@@ -85,8 +85,8 @@ class BusinessTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'owner_id', 'currency', 'status'])
-            ->assertJsonPath('name', 'My Shop');
+            ->assertJsonStructure(['data' => ['id', 'name', 'owner_id', 'currency', 'status']])
+            ->assertJsonPath('data.name', 'My Shop');
     }
 
     public function test_register_duplicate_email_returns_422(): void
@@ -190,8 +190,8 @@ class BusinessTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        $businessId = $response->json('id');
-        $ownerId = $response->json('owner_id');
+        $businessId = $response->json('data.id');
+        $ownerId = $response->json('data.owner_id');
 
         $user = User::find($ownerId);
         $this->assertEquals($businessId, $user->business_id);
@@ -210,6 +210,6 @@ class BusinessTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('currency', 'UGX');
+            ->assertJsonPath('data.currency', 'UGX');
     }
 }

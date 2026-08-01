@@ -64,8 +64,8 @@ class ProductListingTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertTrue($response->json('listed_for_supply'));
-        $this->assertTrue($response->json('listed_for_storefront'));
+        $this->assertTrue($response->json('data.listed_for_supply'));
+        $this->assertTrue($response->json('data.listed_for_storefront'));
         $this->assertDatabaseHas('products', [
             'name' => 'Default Listed Item',
             'listed_for_supply' => true,
