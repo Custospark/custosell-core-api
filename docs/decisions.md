@@ -303,3 +303,22 @@
 **Tests:** `tests/Feature/SupplyChainTest.php` — 12/12 passing (81 assertions).
 
 **Note:** `InvoiceCreateSaleLinkTest` / `InvoiceSaleLinkTest` / `InvoiceLinkedSalePaymentSyncTest` have 6 **pre-existing** failures (missing accounting period + subscription setup) unrelated to this change; verified identical with these changes stashed.
+
+---
+
+## ADR-018: Invoice link tests fixed — accounting period date lookup + subscriptions
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** `InvoiceCreateSaleLinkTest` (3) and `InvoiceLinkedSalePaymentSyncTest` (3) failed pre-existing:
+1. Every HTTP call returned **403** — the test businesses had no active subscription, but `subscription.active` middleware now guards all operational route groups (added in `dc65716`).
+2. Journal entry posting threw **"No open accounting period found"** even though `setUp` seeded one: `AccountingPeriodRepository::getPeriodByDate`/`getCurrentPeriod` compared a bare `Y-m-d` string against date columns Eloquent stores as `Y-m-d H:i:s`. In SQLite's string comparison, `'2026-08-01 00:00:00' <= '2026-08-01'` is **false**, so lookups silently failed **on the first day of a period** (e.g., journal entries posted on the 1st of the month).
+
+**Decision:**
+- `AccountingPeriodRepository::getPeriodByDate` + `getCurrentPeriod` now use `whereDate(...)` so only the date part is compared (SQLite `strftime`, MySQL `DATE()`). Real production bug fix.
+- Added `ensureSubscription($business->id)` to `setUp` in both test classes (same pattern as `ProductListingTest` / `SupplyChainTest`).
+
+**Tests:** `InvoiceCreateSaleLinkTest` + `InvoiceLinkedSalePaymentSyncTest` + `InvoiceSaleLinkTest` — **7/7 passing (35 assertions)**.
+
+**Note:** `AccountingTest` (20) and `ReportPeriodRangeTest` (3) have the same 403 root cause plus a July-vs-current period date mismatch — pre-existing, unchanged by this fix.
