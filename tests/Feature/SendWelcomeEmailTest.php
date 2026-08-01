@@ -30,6 +30,8 @@ class SendWelcomeEmailTest extends TestCase
             return $mail->to[0]['address'] === 'jane@example.com'
                 && str_contains($mail->mailBody, 'Jane Co')
                 && str_contains($mail->mailBody, 'Point of Sale')
+                && str_contains($mail->mailBody, 'B2B Marketplace')
+                && str_contains($mail->mailBody, 'Reports &amp; Analytics')
                 && str_contains($mail->title, 'Jane');
         });
     }
