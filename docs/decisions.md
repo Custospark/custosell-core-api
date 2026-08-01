@@ -375,3 +375,23 @@
 - **Not changed (correct as-is):** `useCreateBooking` (bespoke top-level `reference_code`/`check_url` contract), `useUpdatePaymentInfo` (`{message}` matches backend).
 
 **Tests:** `npx tsc --noEmit` — clean; `npm run vera:fast` — passed (12 files). Backend untouched.
+
+---
+
+## ADR-024: Third account type — Shopping (storefront_buyer)
+
+**Date:** 2026-08-01
+**Status:** Accepted
+
+**Context:** Online storefront buyers — visitors who browse Discover, add to cart, and place orders — were flattened into the Personal flow: `UserService::register` stored `storefront_buyer` as `account_type = 'personal'`, which auto-created a workspace + Personal-plan subscription. Every shopper silently became a workspace owner with a dashboard, plans, and billing surface they never asked for. Oscar asked for a distinct **shopping account** type: Discover & My Orders only, bottom nav hides Dashboard, register page shows it, store signup modals create it, FAQ seeder documents it.
+
+**Decision:**
+- Canonical type is **`storefront_buyer`** (already accepted by `RegisterRequest`), exposed as `account_type: 'storefront_buyer'`; FE labels it "Shopping". `UserService::register` preserves it (no flatten to personal) — same no-business branch: `role_id = null`, `modules = []`, no workspace/subscription.
+- `UserResource`: `active_plans` is `[]` for `storefront_buyer` (shoppers don't buy Custosell plans); `modules` stays `[]` (FE seeds `account/guide/discover` client-side + new `isStorefrontBuyer()` helper).
+- Migration `2026_08_01_000100_backfill_storefront_buyer_account_type.php` re-classifies legacy buyers: `personal AND business_id IS NULL` → `storefront_buyer` (reliable predicate — personal flow always sets `business_id`).
+- `SendWelcomeEmail` branches on `storefront_buyer` (shopping intro/showcase/quick-start/tip); `GuideFaqSeeder` gains a "For Shopping Accounts" section.
+- FE: `AccountTypeSelector`/`RegisterPage` third "For shopping" option via new reusable `SimpleAccountForm`; `ConnectedStorefrontStrip` hides the Dashboard tab (`onHome={undefined}`) for shopping accounts; `DiscoverAccountMenu` hides the App-home item; `Navbar` brand shows "Shopping". `getDefaultRoute` already lands shopping users on Discover.
+
+**Tests:** `composer vera:fast` passed (php -l + logic incl. file-size-500); new `StorefrontBuyerAccountTypeTest` 2/2 + existing StorefrontTest register test green. FE: `npx tsc --noEmit` clean, `npm run vera:fast` passed.
+
+**Full detail:** `docs/adr/2026-08-01-shopping-account-type.md`
