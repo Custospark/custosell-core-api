@@ -13,6 +13,7 @@ class SendWelcomeEmail
     {
         $user = $event->user;
         $business = $event->business ?? $user->business;
+        $isBusiness = $user->account_type === 'business';
 
         $brandName = config('brand.name', 'Custosell');
         $firstName = trim(explode(' ', (string) $user->name, 2)[0] ?? $user->name);
@@ -20,16 +21,31 @@ class SendWelcomeEmail
             ? ' for <strong>' . e($business->name) . '</strong>'
             : '';
 
+        $offerLine = $isBusiness
+            ? 'Point of Sale, E-commerce Storefront, Inventory, Accounting, HR &amp; Payroll, Invoicing, Expenses, CRM, Forecasting &amp; more — all in one system that works with or without the internet.'
+            : 'Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more — stay organized and productive, even offline.';
+
+        $actionList = $isBusiness
+            ? '<li style="margin-bottom:8px;">Add your products and set up categories</li>
+               <li style="margin-bottom:8px;">Record your first sale at the point of sale</li>
+               <li style="margin-bottom:8px;">Track inventory and stock levels</li>
+               <li style="margin-bottom:8px;">Manage customers and send invoices</li>'
+            : '<li style="margin-bottom:8px;">Organize your projects and tasks</li>
+               <li style="margin-bottom:8px;">Track expenses and keep your books tidy</li>
+               <li style="margin-bottom:8px;">Manage and store your documents</li>
+               <li style="margin-bottom:8px;">Stay productive, even when offline</li>';
+
+        $tip = $isBusiness
+            ? $brandName . ' works fully offline — sales, inventory, and customers keep running without internet, and everything syncs when you are back online.'
+            : $brandName . ' works fully offline — projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.';
+
         $mailBody = '
             <p>Hello <strong>' . e($user->name) . '</strong>,</p>
             <p>Welcome aboard — your ' . $brandName . ' account' . $businessLine . ' is ready to go.</p>
-            <p>' . $brandName . ' is your all-in-one business operating system: point of sale, inventory, customers, invoices, expenses, and more — all in one place. Built offline-first, it keeps working even when the internet drops.</p>
+            <p>' . $offerLine . '</p>
             <p>Here is what you can do right away:</p>
             <ul style="margin:0 0 1.5em; padding-left:20px;">
-                <li style="margin-bottom:8px;">Add your products and set up categories</li>
-                <li style="margin-bottom:8px;">Record your first sale at the point of sale</li>
-                <li style="margin-bottom:8px;">Track inventory and stock levels</li>
-                <li style="margin-bottom:8px;">Manage customers and send invoices</li>
+                ' . $actionList . '
             </ul>
             <p>We are excited to have you on board. If you ever need a hand, our team is here for you.</p>
         ';
@@ -40,7 +56,7 @@ class SendWelcomeEmail
                 mailBody: $mailBody,
                 ctaUrl: rtrim(config('app.frontend_url', 'http://localhost:5173'), '/'),
                 ctaLabel: 'Get Started',
-                tip: $brandName . ' works fully offline — sales, inventory, and customers keep running without internet, and everything syncs when you are back online.',
+                tip: $tip,
                 logoPath: $this->logoDataUri(),
                 isHtml: true,
             ));
