@@ -140,4 +140,17 @@ class User extends Authenticatable
 
         return app(\App\Services\ModuleAccessService::class)->canPerform($this, $permission);
     }
+
+    public function hasRolePermission(string $permission): bool
+    {
+        $role = $this->role;
+
+        if (! $role) {
+            return false;
+        }
+
+        $permissions = is_array($role->permissions) ? $role->permissions : [];
+
+        return (bool) ($permissions[$permission] ?? false);
+    }
 }

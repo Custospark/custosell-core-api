@@ -14,6 +14,31 @@ class PipelineNotificationService
         protected NotificationService $notifications,
     ) {}
 
+    /** @return list<User> */
+    public function boardRecipientsForNotifications(PipelineBoard $board, User $exclude): array
+    {
+        $ids = collect([(int) $board->created_by]);
+
+        if ($board->visibility === 'team') {
+            $ids = $ids->merge(
+                User::query()
+                    ->where('business_id', $board->business_id)
+                    ->where('is_active', true)
+                    ->pluck('id'),
+            );
+        } elseif ($board->visibility === 'shared') {
+            $ids = $ids->merge(
+                $board->members()->pluck('user_id'),
+            );
+        }
+
+        return User::query()
+            ->whereIn('id', $ids->unique()->reject(fn ($id) => (int) $id === (int) $exclude->id)->values())
+            ->where('is_active', true)
+            ->get()
+            ->all();
+    }
+
     /** @param  list<User>  $recipients */
     public function notifyAssignees(
         PipelineLead $lead,

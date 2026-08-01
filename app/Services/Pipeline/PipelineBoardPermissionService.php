@@ -247,4 +247,28 @@ class PipelineBoardPermissionService
     {
         return $role === 'manager';
     }
+
+    /** @return list<User> */
+    public function boardTeamMembers(PipelineBoard $board, User $include): array
+    {
+        $ids = collect([(int) $board->created_by, (int) $include->id]);
+
+        if ($board->visibility === 'team') {
+            $ids = $ids->merge(
+                User::query()
+                    ->where('business_id', $board->business_id)
+                    ->where('is_active', true)
+                    ->pluck('id'),
+            );
+        } elseif ($board->visibility === 'shared') {
+            $ids = $ids->merge($board->members()->pluck('user_id'));
+        }
+
+        return User::query()
+            ->whereIn('id', $ids->unique()->values())
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'avatar'])
+            ->all();
+    }
 }

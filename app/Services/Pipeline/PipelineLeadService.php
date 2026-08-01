@@ -134,6 +134,7 @@ class PipelineLeadService
         $boardId = (int) ($data['board_id'] ?? throw ValidationException::withMessages(['board_id' => 'The board_id field is required.']));
         $board = $this->lookup->findBoardForUser($user, $boardId);
         $this->permission->assertCanEditBoard($user, $board);
+        $board->loadMissing('business');
 
         if (empty($data['stage_id'])) {
             $stage = $board->stages()->orderBy('sort_order')->first();
@@ -156,7 +157,7 @@ class PipelineLeadService
             'customer_id' => $data['customer_id'] ?? null,
             'source_id' => $data['source_id'] ?? null,
             'estimated_value' => $data['estimated_value'] ?? null,
-            'currency' => $data['currency'] ?? null,
+            'currency' => $data['currency'] ?? $board->business?->currency ?? 'UGX',
             'expected_close_date' => $data['expected_close_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
             'start_date' => $data['start_date'] ?? null,
@@ -341,7 +342,11 @@ class PipelineLeadService
         $lead = $this->lookup->findLeadForUser($user, $leadId);
         $this->permission->assertCanEditBoard($user, $lead->board);
 
-        $customer = $this->customerContactService->createCustomerFromLead($lead, $data);
+        $customer = $this->customerContactService->resolve($lead->business_id, [
+            'name' => $data['name'] ?? $lead->contact_name,
+            'email' => $data['email'] ?? $lead->contact_email,
+            'phone' => $data['phone'] ?? $lead->contact_phone,
+        ]);
 
         $lead->update([
             'converted_to_customer_id' => $customer->id,
@@ -363,7 +368,7 @@ class PipelineLeadService
         $lead = $this->lookup->findLeadForUser($user, $leadId);
         $this->permission->assertCanEditBoard($user, $lead->board);
 
-        $lead->update(['is_archived' => true]);
+        $lead->update(['status' => 'archived']);
 
         $this->recordActivity($lead, $user->id, 'system', 'Card archived', [
             'action' => 'archived',

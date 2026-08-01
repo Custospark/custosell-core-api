@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\PipelineBoard;
 use App\Models\PipelineLead;
 use App\Models\PipelineStage;
+use App\Models\Plan;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 use Database\Seeders\SystemRoleSeeder;
@@ -36,6 +37,7 @@ class PipelineTest extends TestCase
             'status' => 'active',
         ]);
         $this->owner->update(['business_id' => $this->business->id]);
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'professional')->first()?->id);
         $this->token = $this->owner->createToken('owner')->plainTextToken;
     }
 
@@ -172,7 +174,7 @@ class PipelineTest extends TestCase
             ->deleteJson("/api/v1/pipeline/leads/{$leadId}")
             ->assertOk();
 
-        $this->assertSoftDeleted('pipeline_leads', ['id' => $leadId]);
+        $this->assertDatabaseHas('pipeline_leads', ['id' => $leadId, 'status' => 'archived']);
 
         $create2 = $this->withHeader('Authorization', "Bearer {$this->token}")
             ->postJson('/api/v1/pipeline/leads', [

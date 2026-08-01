@@ -2,148 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\BuildsReportResponses;
 use App\Http\Controllers\Controller;
-use App\Models\Business;
 use App\Models\Expense;
 use App\Models\Product;
-use App\Support\TaxJurisdictions;
 use App\Models\Sale;
-use App\Models\Shift;
-use App\Support\ReportDateRange;
+use App\Support\TaxJurisdictions;
 use App\Services\ReportExportService;
 use App\Services\ReportMetricsService;
 use Illuminate\Http\Request;
 
 class ReportsController extends Controller
 {
+    use BuildsReportResponses;
+
     public function __construct(
         private ReportMetricsService $metrics,
         private ReportExportService $export,
     ) {}
-
-    private function getDateRange(Request $request): array
-    {
-        return ReportDateRange::fromRequest(
-            $request->query('date_from'),
-            $request->query('date_to'),
-        );
-    }
-
-    private function businessId(Request $request): int
-    {
-        return (int) $request->user()->business_id;
-    }
-
-    private function getBusiness(Request $request): Business
-    {
-        return Business::findOrFail($this->businessId($request));
-    }
-
-    /** @return array{user_id: int|null, shift_id: int|null} */
-    private function filters(Request $request): array
-    {
-        return [
-            'user_id' => $request->filled('user_id') ? (int) $request->query('user_id') : null,
-            'shift_id' => $request->filled('shift_id') ? (int) $request->query('shift_id') : null,
-        ];
-    }
-
-    private function pdfData(Request $request, array $extra = []): array
-    {
-        return array_merge([
-            'business' => $this->getBusiness($request),
-            'formatter' => $this->export,
-            'metrics' => $this->metrics,
-            'brandTagline' => ReportMetricsService::BRAND_TAGLINE,
-            'brandFooter' => ReportMetricsService::BRAND_FOOTER,
-        ], $extra);
-    }
-
-    private function dateSubtitle(string $dateFrom, string $dateTo): string
-    {
-        return "{$dateFrom} - {$dateTo}";
-    }
-
-    /** @return list<list<mixed>> */
-    private function trendExportRows(array $trend): array
-    {
-        return array_map(fn ($day) => [
-            $day['date'],
-            $day['gross_sales'],
-            $day['refunds'],
-            $day['expenses'],
-            $day['net_sales'],
-            $day['transactions'],
-        ], $trend);
-    }
-
-    /** @return array{title: string, categoryCol: int, valueCol: int} */
-    private function trendChartConfig(): array
-    {
-        return [
-            'title' => 'Daily Net Sales',
-            'categoryCol' => 0,
-            'valueCol' => 4,
-        ];
-    }
-
-    /** @return array{title: string, headers: list<string>, rows: list<list<mixed>>, chart: array{title: string, categoryCol: int, valueCol: int}}|null */
-    private function trendBlock(array $trend): ?array
-    {
-        if ($trend === []) {
-            return null;
-        }
-
-        return [
-            'title' => 'Daily Performance Trend',
-            'headers' => ['Date', 'Gross Sales', 'Refunds', 'Expenses', 'Net Sales', 'Transactions'],
-            'rows' => $this->trendExportRows($trend),
-            'chart' => $this->trendChartConfig(),
-        ];
-    }
-
-    private function pdfOrientation(string $reportKey): string
-    {
-        return in_array($reportKey, [
-            'daily-sales',
-            'shift-reconciliation',
-            'inventory',
-            'sales-trend',
-            'payment-breakdown',
-        ], true) ? 'landscape' : 'portrait';
-    }
-
-    private function xlsx(
-        Business $business,
-        string $reportKey,
-        ?string $dateFrom,
-        ?string $dateTo,
-        string $reportTitle,
-        string $accentHex,
-        array $summaryCards,
-        array $headers,
-        array $rows,
-        ?string $subtitle = null,
-        ?string $purpose = null,
-        ?array $insightLines = null,
-        ?array $chart = null,
-        ?array $trendBlock = null,
-    ) {
-        return $this->export->downloadRichXlsx([
-            'filename' => $this->export->buildFilename($business, $reportKey, $dateFrom, $dateTo),
-            'business' => $business,
-            'reportTitle' => $reportTitle,
-            'reportSubtitle' => $subtitle,
-            'reportPurpose' => $purpose,
-            'accentHex' => $accentHex,
-            'summaryCards' => $summaryCards,
-            'insightLines' => $insightLines,
-            'headers' => $headers,
-            'rows' => $rows,
-            'chart' => $chart,
-            'trendBlock' => $trendBlock,
-        ]);
-    }
 
     public function businessSummary(Request $request)
     {
@@ -448,121 +324,6 @@ class ReportsController extends Controller
             ]), $filename, $this->pdfOrientation('payment-breakdown')),
             default => $this->export->downloadCsv($filename, $headers, $exportRows),
         };
-    }
-
-    public function shiftReconciliation(Request $request)
-    {
-        [$dateFrom, $dateTo] = $this->getDateRange($request);
-        $filters = $this->filters($request);
-        $business = $this->getBusiness($request);
-        $format = $request->query('format', 'pdf');
-
-        $shifts = $this->metrics->shiftReconciliation($business->id, $dateFrom, $dateTo, $filters['shift_id'], $filters['user_id']);
-
-        $headers = ['Shift', 'Cashier', 'Transactions', 'Gross', 'Refunds', 'Expenses', 'Net Sales', 'Cash Handover'];
-        $exportRows = array_map(fn ($row) => [
-            $row['shift']->clock_in->format('Y-m-d H:i'),
-            $row['cashier'],
-            $row['transaction_count'],
-            $row['gross_sales'],
-            $row['refunds'],
-            $row['shift_expenses'],
-            $row['net_sales'],
-            $row['cash_handover'],
-        ], $shifts);
-
-        $filename = $this->export->buildFilename($business, 'shift-reconciliation', $dateFrom, $dateTo);
-
-        $summaryCards = [
-            ['label' => 'Shifts', 'value' => (string) count($shifts)],
-            ['label' => 'Total Handover', 'value' => $this->export->formatMoney(collect($shifts)->sum('cash_handover'), $business->currency), 'tone' => 'positive'],
-            ['label' => 'Shift Expenses', 'value' => $this->export->formatMoney(collect($shifts)->sum('shift_expenses'), $business->currency), 'tone' => 'negative'],
-            ['label' => 'Transactions', 'value' => (string) collect($shifts)->sum('transaction_count')],
-        ];
-
-        return match ($format) {
-            'xlsx' => $this->xlsx($business, 'shift-reconciliation', $dateFrom, $dateTo, 'Shift Reconciliation', '#0f766e', $summaryCards, $headers, $exportRows, $this->dateSubtitle($dateFrom, $dateTo), 'Answers: How much cash should be at handover per shift?'),
-            'csv' => $this->export->downloadCsv($filename, $headers, $exportRows),
-            default => $this->export->downloadPdf('reports.shift-reconciliation', $this->pdfData($request, [
-                'shifts' => $shifts,
-                'dateFrom' => $dateFrom,
-                'dateTo' => $dateTo,
-                'accent' => '#0f766e',
-                'reportTitle' => 'Shift Reconciliation',
-                'reportPurpose' => 'Answers: How much cash should be at handover per shift?',
-                'reportSubtitle' => $this->dateSubtitle($dateFrom, $dateTo),
-                'summaryCards' => $summaryCards,
-            ]), $filename, $this->pdfOrientation('shift-reconciliation')),
-        };
-    }
-
-    public function shiftClose(Request $request)
-    {
-        $request->validate(['shift_id' => 'required|integer']);
-        $business = $this->getBusiness($request);
-        $shiftId = (int) $request->query('shift_id');
-        $user = $request->user();
-
-        $shift = Shift::where('business_id', $business->id)->where('id', $shiftId)->first();
-        if (! $shift) {
-            return response()->json(['message' => 'Shift not found'], 404);
-        }
-
-        if (! $this->canAccessShiftCloseReport($user, $shift)) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        $report = $this->metrics->shiftCloseReport($business->id, $shiftId);
-        $currency = $business->currency;
-
-        $summaryCards = [
-            ['label' => 'Cash at handover', 'value' => $this->export->formatMoney($report['cash_handover'], $currency), 'tone' => 'positive'],
-            ['label' => 'Net sales', 'value' => $this->export->formatMoney($report['net_sales'], $currency), 'tone' => 'positive'],
-            ['label' => 'Transactions', 'value' => (string) $report['transaction_count']],
-            ['label' => 'Shift expenses', 'value' => '-'.$this->export->formatMoney($report['shift_expenses'], $currency), 'tone' => 'negative'],
-        ];
-
-        $shift = $report['shift'];
-        $subtitle = $shift->clock_out
-            ? collect([
-                'Closed '.$shift->clock_out->format('M d, Y H:i'),
-                $report['duration'] ? 'Duration '.$report['duration'] : null,
-            ])->filter()->implode(' · ')
-            : 'Started '.$shift->clock_in->format('M d, Y H:i').' · Report as of '.now()->format('M d, Y H:i');
-
-        $filename = $this->export->buildShiftCloseFilename(
-            $business,
-            $report['cashier'],
-            $report['shift']->clock_out,
-        );
-
-        return $this->export->downloadPdf('reports.shift-close', $this->pdfData($request, [
-            'report' => $report,
-            'accent' => '#1e40af',
-            'reportTitle' => 'Shift Close Report',
-            'reportPurpose' => null,
-            'reportSubtitle' => $subtitle,
-            'summaryCards' => $summaryCards,
-        ]), $filename, 'portrait');
-    }
-
-    private function canAccessShiftCloseReport($user, Shift $shift): bool
-    {
-        if ((int) $shift->business_id !== (int) $user->business_id) {
-            return false;
-        }
-
-        $moduleAccess = app(\App\Services\ModuleAccessService::class);
-
-        if ($moduleAccess->canAccess($user, 'dashboard')) {
-            return true;
-        }
-
-        if ($moduleAccess->canAccess($user, 'sales')) {
-            return (int) $shift->user_id === (int) $user->id;
-        }
-
-        return false;
     }
 
     public function productPerformance(Request $request)

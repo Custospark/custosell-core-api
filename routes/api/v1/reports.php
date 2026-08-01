@@ -1,10 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\ReportsController;
+use App\Http\Controllers\Api\ShiftReportsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales'])->group(function () {
-    Route::get('/reports/shift-close', [ReportsController::class, 'shiftClose']);
+    Route::get('/reports/shift-close', [ShiftReportsController::class, 'shiftClose']);
 });
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:dashboard'])->group(function () {
@@ -14,7 +15,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
     Route::get('/reports/expenses', [ReportsController::class, 'expenses']);
     Route::get('/reports/inventory', [ReportsController::class, 'inventory']);
     Route::get('/reports/payment-breakdown', [ReportsController::class, 'paymentBreakdown']);
-    Route::get('/reports/shift-reconciliation', [ReportsController::class, 'shiftReconciliation']);
+    Route::get('/reports/shift-reconciliation', [ShiftReportsController::class, 'shiftReconciliation']);
     Route::get('/reports/product-performance', [ReportsController::class, 'productPerformance']);
     Route::get('/reports/vat-summary', [ReportsController::class, 'vatSummary']);
 });

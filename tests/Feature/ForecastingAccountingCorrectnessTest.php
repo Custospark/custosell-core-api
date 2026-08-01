@@ -9,6 +9,7 @@ use App\Models\ExpenseCategory;
 use App\Models\GeneralLedger;
 use App\Models\Hr\HrEmployee;
 use App\Models\Hr\HrEmployeeCompensation;
+use App\Models\Plan;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\Forecasting\BudgetVsActualService;
@@ -53,6 +54,7 @@ class ForecastingAccountingCorrectnessTest extends TestCase
         ]);
 
         $this->owner->update(['business_id' => $this->business->id]);
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'enterprise')->first()?->id);
         $this->ownerToken = $this->owner->createToken('owner')->plainTextToken;
     }
 

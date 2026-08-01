@@ -172,4 +172,9 @@ class PipelineLead extends Model
     {
         return $this->hasMany(PipelineLeadMeeting::class, 'lead_id')->orderBy('start_date');
     }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(PipelineReminder::class, 'lead_id');
+    }
 }

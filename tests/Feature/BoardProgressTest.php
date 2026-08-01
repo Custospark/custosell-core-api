@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Business;
 use App\Models\PipelineBoardTarget;
+use App\Models\Plan;
 use App\Models\User;
 use Carbon\Carbon;
 use Database\Seeders\PlanSeeder;
@@ -39,6 +40,7 @@ class BoardProgressTest extends TestCase
             'status' => 'active',
         ]);
         $this->owner->update(['business_id' => $this->business->id]);
+        $this->ensureSubscription($this->business->id, Plan::where('slug', 'professional')->first()?->id);
         $this->token = $this->owner->createToken('owner')->plainTextToken;
 
         $boards = $this->authGet('/api/v1/pipeline/boards')

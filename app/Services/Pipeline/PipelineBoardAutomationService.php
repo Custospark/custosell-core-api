@@ -9,12 +9,12 @@ use App\Models\PipelineBoardAutomation;
 use App\Models\PipelineLead;
 use App\Models\PipelineStage;
 use App\Models\User;
-use App\Services\PipelineService;
 
 class PipelineBoardAutomationService
 {
     public function __construct(
-        protected PipelineService $pipeline,
+        protected PipelineBoardService $boards,
+        protected PipelineBoardPermissionService $permission,
         protected PipelineBoardConversationService $conversation,
         protected PipelineBoardActivityService $activity,
     ) {}
@@ -22,7 +22,7 @@ class PipelineBoardAutomationService
     /** @return list<array<string, mixed>> */
     public function listAutomations(int $businessId, User $user, int $boardId): array
     {
-        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $board = $this->boards->getBoard($businessId, $user, $boardId);
 
         return PipelineBoardAutomation::query()
             ->where('board_id', $board->id)
@@ -42,8 +42,8 @@ class PipelineBoardAutomationService
      */
     public function syncBoardAutomations(int $businessId, User $user, int $boardId, array $rules): array
     {
-        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
-        $this->pipeline->userCanManageBoard($user, $board) || abort(403);
+        $board = $this->boards->getBoard($businessId, $user, $boardId);
+        $this->permission->userCanManageBoard($user, $board) || abort(403);
 
         $board->load('stages');
         $validStageIds = $board->stages->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -105,8 +105,8 @@ class PipelineBoardAutomationService
         string $actionBody,
         ?int $triggerStageId = null,
     ): array {
-        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
-        $this->pipeline->userCanManageBoard($user, $board) || abort(403);
+        $board = $this->boards->getBoard($businessId, $user, $boardId);
+        $this->permission->userCanManageBoard($user, $board) || abort(403);
 
         $automation = PipelineBoardAutomation::create([
             'business_id' => $businessId,
@@ -129,8 +129,8 @@ class PipelineBoardAutomationService
             ->where('business_id', $businessId)
             ->whereKey($automationId)
             ->firstOrFail();
-        $board = $this->pipeline->getBoard($businessId, $user, (int) $automation->board_id);
-        $this->pipeline->userCanManageBoard($user, $board) || abort(403);
+        $board = $this->boards->getBoard($businessId, $user, (int) $automation->board_id);
+        $this->permission->userCanManageBoard($user, $board) || abort(403);
         $automation->delete();
     }
 

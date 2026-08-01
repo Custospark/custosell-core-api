@@ -7,13 +7,12 @@ namespace App\Services\Pipeline;
 use App\Models\PipelineBoard;
 use App\Models\PipelineBoardActivityEvent;
 use App\Models\User;
-use App\Services\PipelineService;
 use Illuminate\Support\Collection;
 
 class PipelineBoardActivityService
 {
     public function __construct(
-        protected PipelineService $pipeline,
+        protected PipelineBoardService $boards,
     ) {}
 
     public function log(
@@ -42,7 +41,7 @@ class PipelineBoardActivityService
     /** @return list<array<string, mixed>> */
     public function listActivity(int $businessId, User $user, int $boardId, int $limit = 100): array
     {
-        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $board = $this->boards->getBoard($businessId, $user, $boardId);
 
         return PipelineBoardActivityEvent::query()
             ->where('board_id', $board->id)
@@ -72,7 +71,7 @@ class PipelineBoardActivityService
     /** @return array{activity_count: int} */
     public function activitySummary(int $businessId, User $user, int $boardId): array
     {
-        $board = $this->pipeline->getBoard($businessId, $user, $boardId);
+        $board = $this->boards->getBoard($businessId, $user, $boardId);
 
         return [
             'activity_count' => PipelineBoardActivityEvent::query()
