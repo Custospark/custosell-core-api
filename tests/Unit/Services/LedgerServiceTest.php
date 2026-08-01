@@ -78,8 +78,6 @@ class LedgerServiceTest extends TestCase
             ],
         );
 
-        $this->ledgerService->postEntryToLedger($entry->id);
-
         $cashLedger = GeneralLedger::where('business_id', $this->business->id)
             ->whereHas('chartOfAccount', fn ($q) => $q->where('code', '1101'))
             ->first();
@@ -99,8 +97,6 @@ class LedgerServiceTest extends TestCase
                 ['account_code' => '4100', 'debit' => 0, 'credit' => 5000, 'description' => 'Credit'],
             ],
         );
-
-        $this->ledgerService->postEntryToLedger($entry->id);
 
         $cashAccount = ChartOfAccount::where('business_id', $this->business->id)
             ->where('code', '1101')
@@ -122,7 +118,6 @@ class LedgerServiceTest extends TestCase
                 ['account_code' => '4100', 'debit' => 0, 'credit' => 3000, 'description' => 'Credit'],
             ],
         );
-        $this->ledgerService->postEntryToLedger($entry1->id);
 
         $trialBalance = $this->ledgerService->generateTrialBalance($this->business->id, $this->period->id);
 

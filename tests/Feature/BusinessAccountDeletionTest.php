@@ -124,6 +124,8 @@ class BusinessAccountDeletionTest extends TestCase
                 'password' => $this->password,
             ]);
 
+        $this->app['auth']->forgetGuards();
+
         $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
             ->getJson('/api/v1/businesses/mine');
 

@@ -45,6 +45,8 @@ class SupplyChainReceiveAndPartyTest extends TestCase
         $this->sellerOwner->save();
         $this->sellerToken = $this->sellerOwner->createToken('seller')->plainTextToken;
 
+        $this->ensureSubscription($this->seller->id);
+
         $this->buyerOwner = User::factory()->create(['is_active' => true]);
         $this->buyer = Business::factory()->create([
             'owner_id' => $this->buyerOwner->id,
@@ -54,6 +56,8 @@ class SupplyChainReceiveAndPartyTest extends TestCase
         $this->buyerOwner->business_id = $this->buyer->id;
         $this->buyerOwner->save();
         $this->buyerToken = $this->buyerOwner->createToken('buyer')->plainTextToken;
+
+        $this->ensureSubscription($this->buyer->id);
 
         $this->listedProduct = Product::factory()->create([
             'business_id' => $this->seller->id,
@@ -93,7 +97,7 @@ class SupplyChainReceiveAndPartyTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 1],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
 
@@ -116,7 +120,7 @@ class SupplyChainReceiveAndPartyTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 2],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/fulfill")->assertStatus(200);
@@ -157,7 +161,7 @@ class SupplyChainReceiveAndPartyTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 2],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
 

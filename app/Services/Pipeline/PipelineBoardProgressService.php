@@ -257,4 +257,12 @@ class PipelineBoardProgressService
     ): array {
         return $this->targetProgress->serializeTargetForHr($target, $board, $start, $end, $viewPeriodType);
     }
+
+    /**
+     * @return array{Carbon, Carbon}
+     */
+    public function resolvePeriod(string $periodType, ?string $from, ?string $to): array
+    {
+        return $this->period->resolvePeriod($periodType, $from, $to);
+    }
 }

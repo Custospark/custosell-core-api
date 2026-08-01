@@ -34,6 +34,8 @@ class UserTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         $adminRole = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -103,8 +105,8 @@ class UserTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'name', 'email', 'business_id'])
-            ->assertJsonPath('name', 'New Staff');
+            ->assertJsonStructure(['data' => ['id', 'name', 'email', 'business_id']])
+            ->assertJsonPath('data.name', 'New Staff');
     }
 
     public function test_create_staff_with_role(): void

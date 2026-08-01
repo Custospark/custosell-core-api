@@ -80,10 +80,10 @@ class ReferralBillingTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('business_id', $this->business->id)
-            ->assertJsonPath('plan_id', $this->essentialPlan->id);
+            ->assertJsonPath('data.business_id', $this->business->id)
+            ->assertJsonPath('data.plan_id', $this->essentialPlan->id);
 
-        $subscriptionId = $response->json('id');
+        $subscriptionId = $response->json('data.id');
 
         $this->assertDatabaseHas('subscriptions', [
             'id' => $subscriptionId,
@@ -107,10 +107,10 @@ class ReferralBillingTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('business_id', $this->business->id)
-            ->assertJsonPath('plan_id', $this->essentialPlan->id);
+            ->assertJsonPath('data.business_id', $this->business->id)
+            ->assertJsonPath('data.plan_id', $this->essentialPlan->id);
 
-        $subscriptionId = $response->json('id');
+        $subscriptionId = $response->json('data.id');
 
         $this->assertDatabaseHas('subscriptions', [
             'id' => $subscriptionId,

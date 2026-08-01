@@ -82,8 +82,8 @@ class ShiftTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'clock_in', 'status'])
-            ->assertJsonPath('status', 'active');
+            ->assertJsonStructure(['data' => ['id', 'clock_in', 'status']])
+            ->assertJsonPath('data.status', 'active');
     }
 
     public function test_clock_in_twice_returns_error(): void
@@ -137,8 +137,8 @@ class ShiftTest extends TestCase
             ->getJson('/api/v1/shifts/active');
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['id', 'status'])
-            ->assertJsonPath('status', 'active');
+            ->assertJsonStructure(['data' => ['id', 'status']])
+            ->assertJsonPath('data.status', 'active');
     }
 
     public function test_list_shifts(): void

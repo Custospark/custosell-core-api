@@ -102,8 +102,8 @@ class SubscriptionTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'business_id', 'plan_id', 'status'])
-            ->assertJsonPath('status', 'active');
+            ->assertJsonStructure(['data' => ['id', 'business_id', 'plan_id', 'status']])
+            ->assertJsonPath('data.status', 'active');
     }
 
     public function test_cannot_create_duplicate_subscription(): void

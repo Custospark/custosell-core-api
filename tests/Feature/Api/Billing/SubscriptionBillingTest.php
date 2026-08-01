@@ -156,10 +156,10 @@ class SubscriptionBillingTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'business_id', 'plan_id', 'status', 'trial_ends_at'])
-            ->assertJsonPath('status', 'trial')
-            ->assertJsonPath('business_id', $this->business->id)
-            ->assertJsonPath('plan_id', $this->essentialPlan->id);
+            ->assertJsonStructure(['data' => ['id', 'business_id', 'plan_id', 'status', 'trial_ends_at']])
+            ->assertJsonPath('data.status', 'trial')
+            ->assertJsonPath('data.business_id', $this->business->id)
+            ->assertJsonPath('data.plan_id', $this->essentialPlan->id);
     }
 
     public function test_subscribe_creates_subscription_with_correct_plan_id(): void
@@ -171,7 +171,7 @@ class SubscriptionBillingTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('plan_id', $this->professionalPlan->id);
+            ->assertJsonPath('data.plan_id', $this->professionalPlan->id);
     }
 
     public function test_subscribe_sets_trial_ends_at_correctly(): void
@@ -186,10 +186,10 @@ class SubscriptionBillingTest extends TestCase
 
         $response->assertStatus(201);
 
-        $trialEndsAt = $response->json('trial_ends_at');
+        $trialEndsAt = $response->json('data.trial_ends_at');
         $this->assertNotNull($trialEndsAt);
 
-        $startsAt = $response->json('starts_at');
+        $startsAt = $response->json('data.starts_at');
         $expectedEnd = now()->addDays(14)->startOfDay();
         $actualEnd = now()->parse($trialEndsAt)->startOfDay();
         $this->assertEquals($expectedEnd->toDateString(), $actualEnd->toDateString());
@@ -204,7 +204,7 @@ class SubscriptionBillingTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('billing_cycle', 'yearly');
+            ->assertJsonPath('data.billing_cycle', 'yearly');
     }
 
     // ─── SUBSCRIPTION QUERY ──────────────────────────────────────

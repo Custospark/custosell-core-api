@@ -85,7 +85,8 @@ class UserService implements UserServiceInterface
 
         // Personal accounts get a minimal business record + Personal plan subscription.
         // Module access is gated by the subscription status, same as business accounts.
-        if ($isPersonalType) {
+        // Storefront buyers stay account-only (no workspace) — they shop, they don't sell.
+        if ($accountType === 'personal') {
             DB::transaction(function () use ($user, $data) {
                 $business = Business::create([
                     'owner_id' => $user->id,

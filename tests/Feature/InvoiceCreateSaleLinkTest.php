@@ -113,9 +113,9 @@ class InvoiceCreateSaleLinkTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('sale_id', $sale->id)
-            ->assertJsonPath('status', 'draft')
-            ->assertJsonPath('amount_paid', '500.00');
+            ->assertJsonPath('data.sale_id', $sale->id)
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonPath('data.amount_paid', '500.00');
     }
 
     public function test_create_invoice_from_partially_paid_sale_inherits_amount_paid(): void
@@ -173,9 +173,9 @@ class InvoiceCreateSaleLinkTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('status', 'draft')
-            ->assertJsonPath('amount_paid', '400.00')
-            ->assertJsonCount(1, 'payments');
+            ->assertJsonPath('data.status', 'draft')
+            ->assertJsonPath('data.amount_paid', '400.00')
+            ->assertJsonCount(1, 'data.payments');
     }
 
     public function test_send_linked_fully_paid_invoice_sets_status_paid(): void
@@ -228,13 +228,13 @@ class InvoiceCreateSaleLinkTest extends TestCase
             ]);
 
         $create->assertStatus(201);
-        $invoiceId = $create->json('id');
+        $invoiceId = $create->json('data.id');
 
         $send = $this->withHeader('Authorization', "Bearer {$this->token}")
             ->postJson("/api/v1/invoices/{$invoiceId}/send");
 
         $send->assertOk()
-            ->assertJsonPath('status', 'paid')
-            ->assertJsonPath('amount_paid', '300.00');
+            ->assertJsonPath('data.status', 'paid')
+            ->assertJsonPath('data.amount_paid', '300.00');
     }
 }

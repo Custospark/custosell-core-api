@@ -48,6 +48,8 @@ class CustomerDocumentEmailTest extends TestCase
         $this->user->business_id = $this->business->id;
         $this->user->save();
 
+        $this->ensureSubscription($this->business->id);
+
         Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',

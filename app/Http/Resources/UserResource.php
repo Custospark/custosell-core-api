@@ -45,6 +45,7 @@ class UserResource extends JsonResource
                     'tax_id' => $this->business?->tax_id,
                     'tax_regime' => $this->business?->tax_regime ?? 'none',
                     'jurisdiction' => $this->business?->jurisdiction ?? 'UG',
+                    'default_vat_rate' => $this->business?->default_vat_rate,
                     'prices_include_tax' => (bool) ($this->business?->prices_include_tax ?? true),
                     'description' => $this->business?->description,
                     'business_email' => $this->business?->business_email,
@@ -132,6 +133,10 @@ class UserResource extends JsonResource
     private function resolveModules(): array
     {
         if ($this->account_type === 'personal') {
+            if (! $this->business_id || ! $this->business) {
+                return [];
+            }
+
             $planFeatures = $this->business?->relationLoaded('subscription')
                 && $this->business->subscription
                 && $this->business->subscription->relationLoaded('plan')

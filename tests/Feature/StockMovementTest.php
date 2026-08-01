@@ -111,11 +111,11 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['id', 'type', 'quantity_change', 'stock_before', 'stock_after', 'created_by', 'created_by_user'])
-            ->assertJsonPath('type', 'adjustment')
-            ->assertJsonPath('created_by', $this->admin->id)
-            ->assertJsonPath('created_by_user.id', $this->admin->id)
-            ->assertJsonPath('created_by_user.name', $this->admin->name);
+            ->assertJsonStructure(['data' => ['id', 'type', 'quantity_change', 'stock_before', 'stock_after', 'created_by', 'created_by_user']])
+            ->assertJsonPath('data.type', 'adjustment')
+            ->assertJsonPath('data.created_by', $this->admin->id)
+            ->assertJsonPath('data.created_by_user.id', $this->admin->id)
+            ->assertJsonPath('data.created_by_user.name', $this->admin->name);
     }
 
     public function test_purchase_stock_movement(): void
@@ -132,8 +132,8 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('type', 'purchase')
-            ->assertJsonPath('quantity_change', 50);
+            ->assertJsonPath('data.type', 'purchase')
+            ->assertJsonPath('data.quantity_change', 50);
     }
 
     public function test_stock_before_after_correct(): void
@@ -151,8 +151,8 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201);
-        $response->assertJsonPath('stock_before', $stockBefore);
-        $response->assertJsonPath('stock_after', $stockBefore + 5);
+        $response->assertJsonPath('data.stock_before', $stockBefore);
+        $response->assertJsonPath('data.stock_after', $stockBefore + 5);
     }
 
     public function test_movement_creates_record(): void
@@ -168,7 +168,7 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('stock_after', $this->product->stock_quantity + 20);
+            ->assertJsonPath('data.stock_after', $this->product->stock_quantity + 20);
     }
 
     public function test_sale_stock_movement_attributes_logged_in_user(): void

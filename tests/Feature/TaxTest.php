@@ -40,6 +40,8 @@ class TaxTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         $adminRole = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -85,9 +87,9 @@ class TaxTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('tax_total', '18000.00')
-            ->assertJsonPath('subtotal', '100000.00')
-            ->assertJsonPath('total_amount', '118000.00');
+            ->assertJsonPath('data.tax_total', '18000.00')
+            ->assertJsonPath('data.subtotal', '100000.00')
+            ->assertJsonPath('data.total_amount', '118000.00');
 
         $this->assertDatabaseHas('sale_items', [
             'product_id' => $product->id,
@@ -116,7 +118,7 @@ class TaxTest extends TestCase
             ]);
 
         $create->assertStatus(201);
-        $saleId = $create->json('id');
+        $saleId = $create->json('data.id');
         $itemId = SaleItem::where('sale_id', $saleId)->value('id');
 
         $this->withHeader('Authorization', "Bearer {$this->adminToken}")
@@ -273,13 +275,15 @@ class TaxTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-                'tax_total',
-                'subtotal',
-                'total_amount',
-                'sale_items' => [
-                    ['tax_amount', 'subtotal', 'unit_price', 'quantity'],
+                'data' => [
+                    'tax_total',
+                    'subtotal',
+                    'total_amount',
+                    'sale_items' => [
+                        ['tax_amount', 'subtotal', 'unit_price', 'quantity'],
+                    ],
                 ],
             ])
-            ->assertJsonPath('tax_total', '18000.00');
+            ->assertJsonPath('data.tax_total', '18000.00');
     }
 }

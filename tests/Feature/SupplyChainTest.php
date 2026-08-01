@@ -147,9 +147,9 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 10],
             ],
         ]);
-        $create->assertStatus(201)->assertJsonPath('status', 'draft');
-        $poId = $create->json('id');
-        $itemId = $create->json('items.0.id');
+        $create->assertStatus(201)->assertJsonPath('data.status', 'draft');
+        $poId = $create->json('data.id');
+        $itemId = $create->json('data.items.0.id');
 
         $this->assertDatabaseHas('purchase_orders', [
             'id' => $poId,
@@ -160,7 +160,7 @@ class SupplyChainTest extends TestCase
 
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")
             ->assertStatus(200)
-            ->assertJsonPath('status', 'submitted');
+            ->assertJsonPath('data.status', 'submitted');
 
         $this->asSeller('GET', '/api/v1/purchase-orders/incoming')
             ->assertStatus(200)
@@ -168,7 +168,7 @@ class SupplyChainTest extends TestCase
 
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")
             ->assertStatus(200)
-            ->assertJsonPath('status', 'accepted');
+            ->assertJsonPath('data.status', 'accepted');
 
         $this->assertDatabaseHas('invoices', [
             'purchase_order_id' => $poId,
@@ -185,7 +185,7 @@ class SupplyChainTest extends TestCase
 
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/fulfill")
             ->assertStatus(200)
-            ->assertJsonPath('status', 'fulfilled');
+            ->assertJsonPath('data.status', 'fulfilled');
 
         $this->assertSame(90, $this->listedProduct->fresh()->stock_quantity);
         $this->assertDatabaseHas('stock_movements', [
@@ -200,7 +200,7 @@ class SupplyChainTest extends TestCase
                 ['id' => $itemId, 'product_id' => $localProduct->id],
             ],
         ]);
-        $receive->assertStatus(200)->assertJsonPath('status', 'received');
+        $receive->assertStatus(200)->assertJsonPath('data.status', 'received');
 
         $this->assertSame(10, $localProduct->fresh()->stock_quantity);
         $this->assertDatabaseHas('stock_movements', [
@@ -219,7 +219,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 500],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
 
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
@@ -243,7 +243,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 1],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
 
         $otherBuyerOwner = User::factory()->create(['is_active' => true]);
         $otherBuyer = Business::factory()->create([
@@ -290,7 +290,7 @@ class SupplyChainTest extends TestCase
             ],
         ]);
         $draft->assertStatus(201);
-        $draftId = $draft->json('id');
+        $draftId = $draft->json('data.id');
 
         $this->asBuyer('DELETE', "/api/v1/purchase-orders/{$draftId}")
             ->assertStatus(204);
@@ -302,7 +302,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 1],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/reject", [
             'rejection_reason' => 'Out of stock this week',
@@ -321,7 +321,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 1],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/cancel")->assertStatus(200);
 
@@ -338,7 +338,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 1],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
 
@@ -407,7 +407,7 @@ class SupplyChainTest extends TestCase
                 ['product_id' => $this->listedProduct->id, 'quantity' => 2],
             ],
         ]);
-        $poId = $create->json('id');
+        $poId = $create->json('data.id');
         $this->asBuyer('POST', "/api/v1/purchase-orders/{$poId}/submit")->assertStatus(200);
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/accept")->assertStatus(200);
 

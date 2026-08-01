@@ -47,6 +47,8 @@ class ForecastingModuleTest extends TestCase
         ]);
 
         $this->owner->update(['business_id' => $this->business->id]);
+
+        $this->ensureSubscription($this->business->id, \App\Models\Plan::where('slug', 'enterprise')->first()?->id);
         $this->ownerToken = $this->owner->createToken('owner')->plainTextToken;
     }
 

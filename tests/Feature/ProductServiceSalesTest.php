@@ -47,6 +47,8 @@ class ProductServiceSalesTest extends TestCase
         $this->admin->business_id = $this->business->id;
         $this->admin->save();
 
+        $this->ensureSubscription($this->business->id);
+
         $adminRole = Role::create([
             'business_id' => $this->business->id,
             'name' => 'Admin',
@@ -142,7 +144,7 @@ class ProductServiceSalesTest extends TestCase
             ]);
 
         $response->assertStatus(201);
-        $saleId = $response->json('id');
+        $saleId = $response->json('data.id');
 
         $entry = JournalEntry::query()
             ->where('business_id', $this->business->id)
@@ -180,7 +182,7 @@ class ProductServiceSalesTest extends TestCase
                 'payment_method' => 'cash',
             ]);
         $create->assertStatus(201);
-        $saleId = $create->json('id');
+        $saleId = $create->json('data.id');
         $itemId = SaleItem::where('sale_id', $saleId)->value('id');
 
         $this->withHeader('Authorization', "Bearer {$this->adminToken}")
@@ -215,7 +217,7 @@ class ProductServiceSalesTest extends TestCase
         $create->assertStatus(201);
         $this->assertEquals(3, $product->fresh()->stock_quantity);
 
-        $saleId = $create->json('id');
+        $saleId = $create->json('data.id');
         $itemId = SaleItem::where('sale_id', $saleId)->value('id');
 
         $this->withHeader('Authorization', "Bearer {$this->adminToken}")
@@ -312,8 +314,8 @@ class ProductServiceSalesTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('type', 'service')
-            ->assertJsonPath('stock_quantity', 0);
+            ->assertJsonPath('data.type', 'service')
+            ->assertJsonPath('data.stock_quantity', 0);
     }
 
     protected function lineCredit(JournalEntry $entry, int $accountId): float
