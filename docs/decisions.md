@@ -395,3 +395,18 @@
 **Tests:** `composer vera:fast` passed (php -l + logic incl. file-size-500); new `StorefrontBuyerAccountTypeTest` 2/2 + existing StorefrontTest register test green. FE: `npx tsc --noEmit` clean, `npm run vera:fast` passed.
 
 **Full detail:** `docs/adr/2026-08-01-shopping-account-type.md`
+
+---
+
+## ADR-025: Branch stock transfer excludes service items
+
+**Date:** 2026-08-02
+**Status:** Accepted
+
+**Context:** `StockMovementService::transfer()` deducted/incremented `location_product` quantities and wrote a `type = transfer` movement for service lines — inconsistent with the receive path (`d484fca`), which skips stock movements for services because they are not quantitative.
+
+**Decision:** `transfer()` now loads each `Product` and, when `!$product->tracksStock()`, `continue`s the item (no stock validation, no movement). Frontend `BranchTransferModal` also filters services out via `isServiceItem()`. Rule now matches receipt semantics across stacks.
+
+**Tests:** `composer vera:fast` passed (php -l + logic incl. file-size-500). FE: `npx tsc --noEmit` clean, `npm run vera:fast` passed. Commits BE `78bbf16`, FE `32fd1d1`.
+
+**Full detail:** `docs/adr/2026-08-02-branch-stock-transfer-excludes-services.md`
