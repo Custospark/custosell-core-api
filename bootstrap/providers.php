@@ -32,6 +32,7 @@ use App\Providers\SubscriptionServiceProvider;
 use App\Providers\DocumentServiceProvider;
 use App\Providers\CurrencyServiceProvider;
 use App\Providers\PipelineServiceProvider;
+use App\Providers\StaffTransferServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
 
@@ -58,6 +59,7 @@ return [
     ExpenseServiceProvider::class,
     IncomeSourceServiceProvider::class,
     InvoiceServiceProvider::class,
+    StaffTransferServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
     BillingServiceProvider::class,

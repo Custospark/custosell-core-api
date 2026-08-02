@@ -15,6 +15,7 @@ use App\Models\Role;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Shift;
+use App\Models\StaffTransfer;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\Contracts\SyncServiceInterface;
@@ -43,6 +44,7 @@ class SyncService implements SyncServiceInterface
                 ->when($since, fn ($q) => $q->where('updated_at', '>', $since))
                 ->get(),
             'stock_movements' => $query(new StockMovement)->get(),
+            'staff_transfers' => $query(new StaffTransfer)->get(),
             'users' => User::where('business_id', $businessId)
                 ->when($since, fn ($q) => $q->where('updated_at', '>', $since))
                 ->get(),
@@ -52,7 +54,7 @@ class SyncService implements SyncServiceInterface
 
     public function push(int $businessId, array $payload): array
     {
-        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0, 'locations' => 0, 'location_products' => 0];
+        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0, 'locations' => 0, 'location_products' => 0, 'staff_transfers' => 0];
 
         DB::transaction(function () use ($businessId, $payload, &$imported) {
             foreach (['categories', 'products', 'customers', 'expenses'] as $type) {
@@ -132,6 +134,20 @@ class SyncService implements SyncServiceInterface
                 }
             }
 
+            if (isset($payload['staff_transfers'])) {
+                foreach ($payload['staff_transfers'] as $item) {
+                    $item['business_id'] = $businessId;
+                    if (!isset($item['id'])) {
+                        continue;
+                    }
+                    StaffTransfer::updateOrCreate(
+                        ['id' => $item['id'], 'business_id' => $businessId],
+                        $item,
+                    );
+                    $imported['staff_transfers']++;
+                }
+            }
+
             if (isset($payload['stock_movements'])) {
                 foreach ($payload['stock_movements'] as $movement) {
                     $movement['business_id'] = $businessId;
@@ -176,6 +192,7 @@ class SyncService implements SyncServiceInterface
             'shifts' => $business->shifts,
             'sales' => $sales,
             'stock_movements' => $stockMovements,
+            'staff_transfers' => StaffTransfer::where('business_id', $businessId)->get(),
             'synced_at' => now()->toDateTimeString(),
         ];
     }

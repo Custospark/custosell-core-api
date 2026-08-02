@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/storefront.php';
     require __DIR__ . '/api/v1/billing.php';
     require __DIR__ . '/api/v1/referral-codes.php';
+    require __DIR__ . '/api/v1/staff_transfers.php';
     require __DIR__ . '/api/v1/sales-reps.php';
     require __DIR__ . '/api/v1/referrals.php';
     require __DIR__ . '/api/v1/currency.php';

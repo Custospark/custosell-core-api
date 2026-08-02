@@ -36,9 +36,9 @@ class UserService implements UserServiceInterface
         protected SubscriptionServiceInterface $subscriptionService,
     ) {}
 
-    public function getAll(int $businessId): Collection
+    public function getAll(int $businessId, array $filters = []): Collection
     {
-        return $this->userRepository->all($businessId);
+        return $this->userRepository->all($businessId, $filters);
     }
 
     public function getById(int $id): ?User

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface UserServiceInterface
 {
-    public function getAll(int $businessId): Collection;
+    public function getAll(int $businessId, array $filters = []): Collection;
 
     public function getById(int $id): ?User;
 

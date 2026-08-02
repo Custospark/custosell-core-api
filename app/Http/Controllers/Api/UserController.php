@@ -65,7 +65,8 @@ class UserController extends Controller
     public function index(Request $request): UserCollection
     {
         $businessId = $request->user()->business_id;
-        return new UserCollection($this->userService->getAll($businessId));
+        $filters = array_intersect_key($request->only(['location_id', 'role_id', 'q']), array_flip(['location_id', 'role_id', 'q']));
+        return new UserCollection($this->userService->getAll($businessId, $filters));
     }
 
     public function show(Request $request, int $id): UserResource

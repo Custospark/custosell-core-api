@@ -25,5 +25,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Business-rule failures surface as 422 (validation-style) instead of a generic 500,
+        // e.g. the plan location-limit guard thrown by LocationService::create.
+        $exceptions->render(function (RuntimeException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => ['plan_limit' => [$e->getMessage()]],
+                ], 422);
+            }
+
+            return null;
+        });
     })->create();
