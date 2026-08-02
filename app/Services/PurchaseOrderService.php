@@ -413,23 +413,26 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 /** @var Product $product */
                 $product = $pair['product'];
 
-                $stockBefore = (int) $product->stock_quantity;
-                $stockAfter = $stockBefore + (int) $item->quantity;
+                // Services are not quantitative — skip stock movements for them.
+                if ($product->tracksStock()) {
+                    $stockBefore = (int) $product->stock_quantity;
+                    $stockAfter = $stockBefore + (int) $item->quantity;
 
-                StockMovement::create([
-                    'business_id' => $buyerBusinessId,
-                    'product_id' => $product->id,
-                    'type' => 'purchase',
-                    'quantity_change' => (int) $item->quantity,
-                    'stock_before' => $stockBefore,
-                    'stock_after' => $stockAfter,
-                    'reference' => $po->po_number,
-                    'notes' => 'Received purchase order '.$po->po_number,
-                    'created_by' => $userId,
-                ]);
+                    StockMovement::create([
+                        'business_id' => $buyerBusinessId,
+                        'product_id' => $product->id,
+                        'type' => 'purchase',
+                        'quantity_change' => (int) $item->quantity,
+                        'stock_before' => $stockBefore,
+                        'stock_after' => $stockAfter,
+                        'reference' => $po->po_number,
+                        'notes' => 'Received purchase order '.$po->po_number,
+                        'created_by' => $userId,
+                    ]);
 
-                $product->stock_quantity = $stockAfter;
-                $product->save();
+                    $product->stock_quantity = $stockAfter;
+                    $product->save();
+                }
 
                 $item->received_product_id = $product->id;
                 $item->save();
