@@ -21,6 +21,8 @@ class OrderResource extends JsonResource
             'delivery_address' => $this->delivery_address,
             'delivery_city' => $this->delivery_city,
             'shift_id' => $this->shift_id,
+            'location_id' => $this->location_id,
+            'location' => new LocationResource($this->whenLoaded('location')),
             'order_number' => $this->order_number,
             'status' => $this->status,
             'source' => $this->source ?? 'pos',

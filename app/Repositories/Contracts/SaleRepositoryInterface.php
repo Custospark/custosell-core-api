@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface SaleRepositoryInterface
 {
-    public function all(int $businessId): Collection;
+    public function all(int $businessId, ?int $locationId = null): Collection;
 
     public function find(int $id): ?Sale;
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface SaleServiceInterface
 {
-    public function getAll(int $businessId): Collection;
+    public function getAll(int $businessId, ?int $locationId = null): Collection;
 
     public function getById(int $id): ?Sale;
 

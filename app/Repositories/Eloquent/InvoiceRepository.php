@@ -49,6 +49,9 @@ class InvoiceRepository implements InvoiceRepositoryInterface
         if (!empty($filters['purchase_order_id'])) {
             $query->where('purchase_order_id', (int) $filters['purchase_order_id']);
         }
+        if (!empty($filters['location_id'])) {
+            $query->where('location_id', (int) $filters['location_id']);
+        }
 
         return $query->orderBy('created_at', 'desc')->get();
     }

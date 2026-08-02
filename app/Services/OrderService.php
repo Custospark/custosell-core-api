@@ -30,12 +30,16 @@ class OrderService implements OrderServiceInterface
     {
         $query = Order::query()
             ->where('business_id', $businessId)
-            ->with(['items', 'customer', 'user', 'sale'])
+            ->with(['items', 'customer', 'user', 'sale', 'location'])
             ->orderByDesc('held_at')
             ->orderByDesc('id');
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['location_id'])) {
+            $query->where('location_id', (int) $filters['location_id']);
         }
 
         if (!empty($filters['source'])) {
@@ -69,6 +73,7 @@ class OrderService implements OrderServiceInterface
 
             $order = Order::create([
                 'business_id' => $businessId,
+                'location_id' => $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null),
                 'user_id' => $userId,
                 'customer_id' => $data['customer_id'] ?? null,
                 'shift_id' => $this->resolveShiftId($businessId, $userId, $data['shift_id'] ?? null),
@@ -433,6 +438,27 @@ class OrderService implements OrderServiceInterface
         } while (Order::where('business_id', $business->id)->where('order_number', $number)->exists());
 
         return $number;
+    }
+
+    protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
+    {
+        if ($locationId) {
+            $exists = \App\Models\Location::forBusiness($businessId)->where('id', $locationId)->exists();
+            if ($exists) {
+                return $locationId;
+            }
+        }
+
+        $userLocation = User::query()
+            ->where('id', $userId)
+            ->where('business_id', $businessId)
+            ->value('location_id');
+
+        if ($userLocation && \App\Models\Location::forBusiness($businessId)->where('id', $userLocation)->exists()) {
+            return $userLocation;
+        }
+
+        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
     }
 
     protected function resolveShiftId(int $businessId, int $userId, mixed $shiftId): ?int

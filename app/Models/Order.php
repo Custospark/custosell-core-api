@@ -18,6 +18,7 @@ class Order extends Model
 
     protected $fillable = [
         'business_id',
+        'location_id',
         'user_id',
         'storefront_buyer_user_id',
         'customer_id',
@@ -52,6 +53,11 @@ class Order extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function user(): BelongsTo

@@ -153,6 +153,16 @@ class UserService implements UserServiceInterface
             $this->assertRoleAvailableForBusiness($businessId, (int) $data['role_id']);
         }
 
+        // Every staff member must be assigned to a branch — default to the business default location.
+        if (empty($data['location_id'])) {
+            $defaultLocationId = \App\Models\Location::forBusiness($businessId)
+                ->where('is_default', true)
+                ->value('id');
+            if ($defaultLocationId) {
+                $data['location_id'] = (int) $defaultLocationId;
+            }
+        }
+
         $user = $this->userRepository->create($data)->load('role');
 
         // Auto-generate a referral code for this staff member

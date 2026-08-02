@@ -8,12 +8,16 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SaleRepository implements SaleRepositoryInterface
 {
-    public function all(int $businessId): Collection
+    public function all(int $businessId, ?int $locationId = null): Collection
     {
-        return Sale::where('business_id', $businessId)
-            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'location', 'payments' => fn ($q) => $q->orderBy('paid_at')])
-            ->orderBy('sale_date', 'desc')
-            ->get();
+        $query = Sale::where('business_id', $businessId)
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'location', 'payments' => fn ($q) => $q->orderBy('paid_at')]);
+
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+
+        return $query->orderBy('sale_date', 'desc')->get();
     }
 
     public function find(int $id): ?Sale

@@ -28,7 +28,7 @@ class InvoiceController extends Controller
     public function index(Request $request): InvoiceCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['status', 'customer_id', 'date_from', 'date_to', 'direction', 'purchase_order_id']);
+        $filters = $request->only(['status', 'customer_id', 'date_from', 'date_to', 'direction', 'purchase_order_id', 'location_id']);
         return new InvoiceCollection(
             $this->invoiceService->getAll($businessId, $filters)
         );

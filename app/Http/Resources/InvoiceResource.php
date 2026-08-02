@@ -10,7 +10,7 @@ class InvoiceResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing(['business', 'customer']);
+        $this->resource->loadMissing(['business', 'customer', 'location']);
 
         $direction = $this->resolveDirection($request);
         $seller = $this->resolveSellerBusiness();
@@ -18,6 +18,7 @@ class InvoiceResource extends JsonResource
         return [
             'id' => $this->id,
             'business_id' => $this->business_id,
+            'location_id' => $this->location_id,
             'invoice_number' => $this->invoice_number,
             'customer_id' => $this->customer_id,
             'sale_id' => $this->sale_id,

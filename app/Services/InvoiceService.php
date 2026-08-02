@@ -48,6 +48,8 @@ class InvoiceService implements InvoiceServiceInterface
             $taxTotal = (float) ($data['tax_total'] ?? 0);
             $totalAmount = $subtotal + $taxTotal;
 
+            $locationId = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
+
             $invoice = $this->invoiceRepository->create([
                 'business_id' => $businessId,
                 'invoice_number' => $invoiceNumber,
@@ -56,6 +58,7 @@ class InvoiceService implements InvoiceServiceInterface
                 'estimate_id' => $data['estimate_id'] ?? null,
                 'purchase_order_id' => $data['purchase_order_id'] ?? null,
                 'buyer_business_id' => $data['buyer_business_id'] ?? null,
+                'location_id' => $locationId,
                 'issue_date' => $data['issue_date'],
                 'due_date' => $data['due_date'],
                 'status' => 'draft',
@@ -89,6 +92,20 @@ class InvoiceService implements InvoiceServiceInterface
 
             return $invoice->load(['customer', 'createdBy', 'items.product', 'payments', 'purchaseOrder']);
         });
+    }
+
+    protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
+    {
+        if ($locationId) {
+            return $locationId;
+        }
+
+        $userLocation = \App\Models\User::find($userId)?->location_id;
+        if ($userLocation) {
+            return $userLocation;
+        }
+
+        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
     }
 
     /**

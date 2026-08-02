@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
+
 class OrderRequest extends BaseFormRequest
 {
     public function authorize(): bool
@@ -16,6 +18,11 @@ class OrderRequest extends BaseFormRequest
         return [
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'customer_name' => ['nullable', 'string', 'max:120'],
+            'location_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('locations', 'id')->where(fn ($q) => $q->where('business_id', $this->user()->business_id)),
+            ],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'subtotal' => ['nullable', 'numeric', 'min:0'],

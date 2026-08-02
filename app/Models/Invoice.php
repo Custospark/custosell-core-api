@@ -14,6 +14,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'business_id',
+        'location_id',
         'invoice_number',
         'customer_id',
         'sale_id',
@@ -61,6 +62,11 @@ class Invoice extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function customer(): BelongsTo

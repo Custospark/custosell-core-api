@@ -26,7 +26,8 @@ class SaleController extends Controller
     public function index(Request $request): SaleCollection
     {
         $businessId = $request->user()->business_id;
-        return new SaleCollection($this->saleService->getAll($businessId));
+        $locationId = $request->query('location_id') ? (int) $request->query('location_id') : null;
+        return new SaleCollection($this->saleService->getAll($businessId, $locationId));
     }
 
     public function show(int $id): SaleResource

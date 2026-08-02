@@ -29,9 +29,9 @@ class SaleService implements SaleServiceInterface
         protected EfrisServiceInterface $efrisService,
     ) {}
 
-    public function getAll(int $businessId): Collection
+    public function getAll(int $businessId, ?int $locationId = null): Collection
     {
-        return $this->saleRepository->all($businessId);
+        return $this->saleRepository->all($businessId, $locationId);
     }
 
     public function getById(int $id): ?Sale
