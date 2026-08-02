@@ -212,7 +212,6 @@ class GatewayService
             'idempotency_key' => $idempotencyKey,
         ]);
 
-        $plan = $subscription->plan;
         $ourRef = "CUSTOSELL-{$payment->id}-" . now()->format('YmdHis');
         $business = $subscription->business;
         $countryCode = $business?->country ? mb_substr($business->country, 0, 2) : 'UG';
