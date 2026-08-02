@@ -22,6 +22,8 @@ class SaleResource extends JsonResource
             'shift_id' => $this->shift_id,
             'shift' => new ShiftResource($this->whenLoaded('shift')),
             'order_id' => $this->order_id,
+            'location_id' => $this->location_id,
+            'location' => new LocationResource($this->whenLoaded('location')),
             'business' => new BusinessResource($this->whenLoaded('business')),
             'receipt_number' => $this->receipt_number,
             'subtotal' => $this->subtotal,

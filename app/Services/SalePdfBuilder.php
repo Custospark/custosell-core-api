@@ -18,7 +18,7 @@ class SalePdfBuilder
      */
     public function build(Sale $sale, Business $business): array
     {
-        $sale->loadMissing(['saleItems', 'customer', 'user', 'payments']);
+        $sale->loadMissing(['saleItems', 'customer', 'user', 'payments', 'location']);
 
         $currency = $business->currency ?? 'UGX';
         $totalRefunded = $sale->saleItems->sum(fn ($i) => (float) $i->refunded_amount);
@@ -40,6 +40,7 @@ class SalePdfBuilder
             'data' => [
                 'business' => $business,
                 'sale' => $sale,
+                'branch' => $sale->location?->name ?? $business->defaultLocation?->name ?? null,
                 'formatter' => $this->export,
                 'currency' => $currency,
                 'balanceDue' => $balanceDue,

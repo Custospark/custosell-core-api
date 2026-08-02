@@ -97,7 +97,7 @@ return new class extends Migration
 
                 $locationId = DB::table('locations')->insertGetId([
                     'business_id' => $businessId,
-                    'name' => 'Main Store',
+                    'name' => 'Main Branch',
                     'code' => 'MAIN',
                     'country' => DB::table('businesses')->where('id', $businessId)->value('country') ?? 'UG',
                     'is_default' => true,

@@ -18,12 +18,13 @@ class InvoicePdfBuilder
      */
     public function build(Invoice $invoice, Business $business): array
     {
-        $invoice->loadMissing(['items.product', 'customer', 'createdBy', 'business']);
+        $invoice->loadMissing(['items.product', 'customer', 'createdBy', 'business', 'sale.location']);
 
         // Letterhead must be the issuing seller even when a buyer downloads the PDF.
         $issuer = $invoice->business ?? $business;
         $currency = $issuer->currency ?? $business->currency ?? 'UGX';
         $balanceDue = max(0, (float) $invoice->total_amount - (float) $invoice->amount_paid);
+        $branch = $invoice->sale?->location?->name ?? $issuer->defaultLocation?->name ?? null;
 
         $statusLabel = match ($invoice->status) {
             'partially_paid' => 'Partially Paid',
@@ -38,6 +39,7 @@ class InvoicePdfBuilder
             'data' => [
                 'business' => $issuer,
                 'invoice' => $invoice,
+                'branch' => $branch,
                 'formatter' => $this->export,
                 'currency' => $currency,
                 'balanceDue' => $balanceDue,

@@ -6,6 +6,7 @@
   $currency = $currency ?? ($business->currency ?? 'UGX');
   $cashierName = $sale->user?->name ?? '—';
   $customer = $sale->customer;
+  $branch = $branch ?? $sale->location?->name ?? null;
   $discount = (float) $sale->discount_amount;
   $taxTotal = (float) $sale->tax_total;
   $tenderedRaw = $sale->amount_tendered ? (float) $sale->amount_tendered : null;
@@ -42,6 +43,9 @@
     <td style="width:48%; vertical-align:top; text-align:right;">
       <p style="font-size:8.5px; font-weight:bold; color:#6b7280; text-transform:uppercase; margin:0 0 6px 0; letter-spacing:0.4px;">Receipt Details</p>
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Number:</strong> {{ $sale->receipt_number }}</p>
+      @if($branch)
+        <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Branch:</strong> {{ $branch }}</p>
+      @endif
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Date:</strong> {{ $sale->created_at?->format('M d, Y H:i') }}</p>
       <p style="font-size:9.5px; color:#374151; margin:0;">
         <strong>Status:</strong>

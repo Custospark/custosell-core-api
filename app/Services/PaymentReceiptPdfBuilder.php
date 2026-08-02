@@ -24,9 +24,9 @@ class PaymentReceiptPdfBuilder
         $payable = $payment->payable;
 
         if ($payment->payable_type === 'invoice') {
-            $payable?->load(['items', 'customer', 'business']);
+            $payable?->load(['items', 'customer', 'business', 'sale.location']);
         } else {
-            $payable?->load(['saleItems', 'customer']);
+            $payable?->load(['saleItems', 'customer', 'location']);
         }
 
         // Letterhead = issuing seller (invoice.business), not the viewer when a buyer downloads.
@@ -36,6 +36,9 @@ class PaymentReceiptPdfBuilder
         }
 
         $currency = $issuer->currency ?? $viewerBusiness->currency ?? 'UGX';
+        $branch = $payment->payable_type === 'invoice'
+            ? ($payable?->sale?->location?->name ?? $issuer->defaultLocation?->name ?? null)
+            : ($payable?->location?->name ?? $issuer->defaultLocation?->name ?? null);
 
         $referenceLabel = $payment->payable_type === 'invoice'
             ? ($payable->invoice_number ?? 'Invoice')
@@ -55,6 +58,7 @@ class PaymentReceiptPdfBuilder
                 'business' => $issuer,
                 'payment' => $payment,
                 'payable' => $payable,
+                'branch' => $branch,
                 'formatter' => $this->export,
                 'currency' => $currency,
                 'referenceLabel' => $referenceLabel,

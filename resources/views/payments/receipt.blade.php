@@ -22,6 +22,9 @@
     <td style="width:50%; vertical-align:top;">
       <p style="font-size:8.5px; font-weight:bold; color:#6b7280; text-transform:uppercase; margin:0 0 6px 0;">Payment Details</p>
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Receipt #:</strong> {{ $payment->receipt_number }}</p>
+      @if(!empty($branch))
+        <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Branch:</strong> {{ $branch }}</p>
+      @endif
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Date:</strong> {{ $payment->paid_at?->format('M d, Y H:i') }}</p>
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>Method:</strong> {{ $methodLabel }}</p>
       <p style="font-size:9.5px; color:#374151; margin:0 0 2px 0;"><strong>{{ $referenceType }}:</strong> {{ $referenceLabel }}</p>

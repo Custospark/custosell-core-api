@@ -11,14 +11,14 @@ class SaleRepository implements SaleRepositoryInterface
     public function all(int $businessId): Collection
     {
         return Sale::where('business_id', $businessId)
-            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'location', 'payments' => fn ($q) => $q->orderBy('paid_at')])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
 
     public function find(int $id): ?Sale
     {
-        return Sale::with(['user', 'customer', 'shift', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])->find($id);
+        return Sale::with(['user', 'customer', 'shift', 'saleItems', 'business', 'location', 'payments' => fn ($q) => $q->orderBy('paid_at')])->find($id);
     }
 
     public function findByReceipt(int $businessId, string $receiptNumber): ?Sale
@@ -48,7 +48,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->whereBetween('sale_date', [$start, $end])
-            ->with(['user', 'customer', 'shift', 'saleItems', 'business'])
+            ->with(['user', 'customer', 'shift', 'saleItems', 'business', 'location'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
@@ -57,7 +57,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->where('shift_id', $shiftId)
-            ->with(['user', 'customer', 'saleItems', 'business', 'payments' => fn ($q) => $q->orderBy('paid_at')])
+            ->with(['user', 'customer', 'saleItems', 'business', 'location', 'payments' => fn ($q) => $q->orderBy('paid_at')])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
@@ -66,7 +66,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('business_id', $businessId)
             ->where('customer_id', $customerId)
-            ->with(['user', 'saleItems', 'business'])
+            ->with(['user', 'saleItems', 'business', 'location'])
             ->orderBy('sale_date', 'desc')
             ->get();
     }
