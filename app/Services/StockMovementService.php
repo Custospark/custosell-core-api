@@ -156,11 +156,16 @@ class StockMovementService implements StockMovementServiceInterface
                     throw new \InvalidArgumentException('Transfer quantity must be greater than zero.');
                 }
 
-                $productBelongsToBusiness = \App\Models\Product::where('business_id', $businessId)
+                $product = \App\Models\Product::where('business_id', $businessId)
                     ->where('id', $productId)
-                    ->exists();
-                if (!$productBelongsToBusiness) {
+                    ->first();
+                if (!$product) {
                     throw new \RuntimeException("Product #{$productId} does not belong to this business.");
+                }
+
+                // Services are not quantitative — never hold branch stock, so skip transfers.
+                if (!$product->tracksStock()) {
+                    continue;
                 }
 
                 $source = LocationProduct::where('business_id', $businessId)
