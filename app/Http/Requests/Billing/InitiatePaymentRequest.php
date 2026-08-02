@@ -20,7 +20,7 @@ class InitiatePaymentRequest extends BaseFormRequest
             'payment_type' => ['required', 'string', 'in:onboarding,subscription,renewal,upgrade_proration,billing_cycle_change'],
             'phone' => ['sometimes', 'string'],
             'idempotency_key' => ['sometimes', 'string', 'max:255'],
-            'metadata' => ['sometimes', 'array'],
+            'metadata' => ['sometimes', 'nullable', 'array'],
         ];
     }
 }
