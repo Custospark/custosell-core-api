@@ -216,6 +216,16 @@ class GatewayService
         $business = $subscription->business;
         $countryCode = $business?->country ? mb_substr($business->country, 0, 2) : 'UG';
 
+        $paymentType = $data['payment_type'] ?? 'subscription';
+        $cycleSuffix = $paymentType === 'onboarding'
+            ? ''
+            : ' (' . ($subscription->billing_cycle === 'yearly' ? 'yearly' : 'monthly') . ')';
+        $typeLabel = match ($paymentType) {
+            'onboarding' => 'onboarding',
+            'renewal' => 'renewal',
+            default => 'subscription',
+        };
+
         $driverPayload = [
             'amount' => $data['amount'],
             'currency' => strtoupper($data['currency']),
@@ -223,7 +233,7 @@ class GatewayService
             'phone_number' => $data['phone_number'] ?? null,
             'email' => $data['email'] ?? null,
             'customer_name' => $data['customer_name'] ?? null,
-            'description' => 'Custosell subscription - ' . ($plan?->name ?? 'Plan'),
+            'description' => 'Custosell - ' . ($plan?->name ?? 'Plan') . ' ' . $typeLabel . $cycleSuffix,
             'payment_id' => $payment->id,
             'subscription_id' => $subscription->id,
             'country_code' => $countryCode,
