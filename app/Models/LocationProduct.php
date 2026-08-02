@@ -10,6 +10,8 @@ class LocationProduct extends Model
 {
     use HasFactory;
 
+    protected $table = 'location_product';
+
     protected $fillable = [
         'business_id',
         'location_id',
