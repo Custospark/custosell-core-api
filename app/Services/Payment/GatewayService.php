@@ -223,7 +223,7 @@ class GatewayService
             'phone_number' => $data['phone_number'] ?? null,
             'email' => $data['email'] ?? null,
             'customer_name' => $data['customer_name'] ?? null,
-            'description' => 'Custosell subscription — ' . ($plan?->name ?? 'Plan'),
+            'description' => 'Custosell subscription - ' . ($plan?->name ?? 'Plan'),
             'payment_id' => $payment->id,
             'subscription_id' => $subscription->id,
             'country_code' => $countryCode,
