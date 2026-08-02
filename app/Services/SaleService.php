@@ -46,6 +46,7 @@ class SaleService implements SaleServiceInterface
             $receiptNumber = $this->generateReceiptNumber($business);
 
             $shiftId = $this->resolveShiftId($businessId, $userId, $data['shift_id'] ?? null);
+            $locationId = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
 
             $saleItemsInput = [];
             foreach ($data['items'] as $item) {
@@ -82,6 +83,7 @@ class SaleService implements SaleServiceInterface
                 'user_id' => $userId,
                 'customer_id' => $data['customer_id'] ?? null,
                 'shift_id' => $shiftId,
+                'location_id' => $locationId,
                 'order_id' => $orderId,
                 'receipt_number' => $receiptNumber,
                 'subtotal' => $computed['subtotal'],
@@ -140,6 +142,7 @@ class SaleService implements SaleServiceInterface
                     'business_id' => $businessId,
                     'product_id' => $product->id,
                     'sale_item_id' => $saleItem->id,
+                    'location_id' => $locationId,
                     'type' => 'sale',
                     'quantity_change' => -$qty,
                     'stock_before' => $stockBefore,
@@ -408,6 +411,20 @@ class SaleService implements SaleServiceInterface
             ->whereNull('clock_out')
             ->where('status', 'active')
             ->value('id');
+    }
+
+    protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
+    {
+        if ($locationId) {
+            return $locationId;
+        }
+
+        $userLocation = \App\Models\User::find($userId)?->location_id;
+        if ($userLocation) {
+            return $userLocation;
+        }
+
+        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
     }
 
     protected function generateReceiptNumber(\App\Models\Business $business): string

@@ -15,6 +15,7 @@ class SaleRequest extends BaseFormRequest
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'order_id' => ['nullable', 'integer', 'exists:orders,id'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -38,6 +39,7 @@ class SaleRequest extends BaseFormRequest
         return array_merge(parent::messages(), [
             'customer_id.exists' => 'The selected customer does not exist.',
             'shift_id.exists' => 'The selected shift does not exist.',
+            'location_id.exists' => 'The selected branch does not exist.',
             'items.required' => 'Please add at least one item to the sale.',
             'items.array' => 'Items must be provided as a list.',
             'items.min' => 'Please add at least one item to the sale.',
