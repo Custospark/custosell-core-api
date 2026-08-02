@@ -32,12 +32,26 @@ trait HandlesPaymentApproval
 
         match ($paymentType) {
             'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
-            'subscription' => $this->subscriptionService->activateSubscription($subscription, $payment, null),
+            'subscription' => $this->handleSubscriptionPayment($subscription, $payment),
             'renewal' => $this->subscriptionService->renewSubscription($subscription, $payment),
             'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
             'billing_cycle_change' => $this->handleBillingCycleChange($payment, $subscription),
             default => null,
         };
+    }
+
+    /**
+     * A 'subscription' payment activates a fresh/onboarding subscription, but a
+     * suspended one resumes via reactivate (activateSubscription forbids suspended).
+     */
+    private function handleSubscriptionPayment(Subscription $subscription, BillingPayment $payment): void
+    {
+        if ($subscription->status === \App\Enums\Billing\SubscriptionStatus::SUSPENDED) {
+            $this->subscriptionService->reactivate($subscription);
+            return;
+        }
+
+        $this->subscriptionService->activateSubscription($subscription, $payment, null);
     }
 
     private function handleBillingCycleChange(BillingPayment $payment, Subscription $subscription): void
