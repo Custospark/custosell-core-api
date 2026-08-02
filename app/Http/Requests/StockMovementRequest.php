@@ -14,12 +14,13 @@ class StockMovementRequest extends BaseFormRequest
         return [
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'sale_item_id' => ['nullable', 'integer', 'exists:sale_items,id'],
-            'type' => ['required', 'string', 'in:purchase,sale,adjustment,return,initial'],
+            'type' => ['required', 'string', 'in:purchase,sale,adjustment,return,initial,transfer'],
             'quantity_change' => ['required', 'integer'],
             'stock_before' => ['required', 'integer', 'min:0'],
             'stock_after' => ['required', 'integer', 'min:0'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
+            'to_location_id' => ['nullable', 'integer', 'exists:locations,id'],
         ];
     }
 
@@ -30,7 +31,7 @@ class StockMovementRequest extends BaseFormRequest
             'product_id.exists' => 'The selected product does not exist.',
             'sale_item_id.exists' => 'The selected sale item does not exist.',
             'type.required' => 'Please select the movement type.',
-            'type.in' => 'Please select a valid movement type: purchase, sale, adjustment, return, or initial.',
+            'type.in' => 'Please select a valid movement type: purchase, sale, adjustment, return, initial, or transfer.',
             'quantity_change.required' => 'Please enter the quantity change.',
             'quantity_change.integer' => 'The quantity change must be a whole number.',
             'stock_before.required' => 'Please enter the stock level before the movement.',

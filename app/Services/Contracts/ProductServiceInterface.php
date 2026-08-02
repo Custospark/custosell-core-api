@@ -9,6 +9,8 @@ interface ProductServiceInterface
 {
     public function getAll(int $businessId): Collection;
 
+    public function getAllForLocation(int $businessId, ?int $locationId): Collection;
+
     public function getById(int $id): ?Product;
 
     public function create(int $businessId, array $data): Product;
@@ -37,4 +39,6 @@ interface ProductServiceInterface
     public function updateStorefrontListing(int $id, int $businessId, array $data): Product;
 
     public function updateImage(int $id, int $businessId, string $imagePath): Product;
+
+    public function getStockByLocation(int $businessId, int $locationId): Collection;
 }

@@ -9,6 +9,8 @@ interface ProductRepositoryInterface
 {
     public function all(int $businessId): Collection;
 
+    public function allWithLocationStock(int $businessId, ?int $locationId): Collection;
+
     public function find(int $id): ?Product;
 
     public function findBySku(int $businessId, string $sku): ?Product;

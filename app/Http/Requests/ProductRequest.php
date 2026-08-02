@@ -42,6 +42,7 @@ class ProductRequest extends BaseFormRequest
             'is_active' => ['boolean'],
             'is_recurring' => ['boolean'],
             'billing_interval' => ['nullable', 'string', 'max:50'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
         ];
     }
 

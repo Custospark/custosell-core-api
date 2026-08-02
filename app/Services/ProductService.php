@@ -21,6 +21,11 @@ class ProductService implements ProductServiceInterface
         return $this->productRepository->all($businessId);
     }
 
+    public function getAllForLocation(int $businessId, ?int $locationId): Collection
+    {
+        return $this->productRepository->allWithLocationStock($businessId, $locationId);
+    }
+
     public function getById(int $id): ?Product
     {
         return $this->productRepository->find($id);
@@ -46,7 +51,45 @@ class ProductService implements ProductServiceInterface
         $data['listed_for_supply'] = (bool) ($data['listed_for_supply'] ?? true);
         $data['listed_for_storefront'] = (bool) ($data['listed_for_storefront'] ?? true);
 
-        return $this->productRepository->create($data);
+        $locationId = isset($data['location_id'])
+            ? (int) $data['location_id']
+            : \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+
+        unset($data['location_id']);
+
+        $product = $this->productRepository->create($data);
+
+        $stockQty = (int) ($product->stock_quantity ?? 0);
+        if ($stockQty > 0 && $locationId) {
+            $this->recordInitialStock($businessId, $product->id, $locationId, $stockQty);
+        }
+
+        return $product;
+    }
+
+    private function recordInitialStock(int $businessId, int $productId, int $locationId, int $stockQty): void
+    {
+        \App\Models\LocationProduct::updateOrCreate(
+            [
+                'business_id' => $businessId,
+                'location_id' => $locationId,
+                'product_id' => $productId,
+            ],
+            ['stock_quantity' => $stockQty],
+        );
+
+        \App\Models\StockMovement::create([
+            'business_id' => $businessId,
+            'product_id' => $productId,
+            'location_id' => $locationId,
+            'type' => 'initial',
+            'quantity_change' => $stockQty,
+            'stock_before' => 0,
+            'stock_after' => $stockQty,
+            'reference' => 'product-create',
+            'notes' => 'Initial stock on creation',
+            'created_by' => auth()->id(),
+        ]);
     }
 
     public function update(int $id, array $data): Product
@@ -170,5 +213,13 @@ class ProductService implements ProductServiceInterface
         $product->save();
 
         return $product;
+    }
+
+    public function getStockByLocation(int $businessId, int $locationId): Collection
+    {
+        return \App\Models\LocationProduct::with('product')
+            ->where('business_id', $businessId)
+            ->where('location_id', $locationId)
+            ->get();
     }
 }

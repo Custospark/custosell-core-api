@@ -8,6 +8,7 @@ use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Support\TaxJurisdictions;
+use App\Services\BranchReportService;
 use App\Services\ReportExportService;
 use App\Services\ReportMetricsService;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class ReportsController extends Controller
     public function __construct(
         private ReportMetricsService $metrics,
         private ReportExportService $export,
+        private BranchReportService $branchReports,
     ) {}
 
     public function businessSummary(Request $request)
@@ -373,6 +375,23 @@ class ReportsController extends Controller
                 'summaryCards' => $summaryCards,
             ]), $filename, $this->pdfOrientation('product-performance')),
         };
+    }
+
+    public function branchPerformance(Request $request)
+    {
+        [$dateFrom, $dateTo] = $this->getDateRange($request);
+        $filters = $this->filters($request);
+        $business = $this->getBusiness($request);
+
+        return response()->json([
+            'data' => $this->branchReports->performance(
+                $business->id,
+                $dateFrom,
+                $dateTo,
+                $filters['user_id'],
+                $filters['shift_id'],
+            ),
+        ]);
     }
 
     public function vatSummary(Request $request)

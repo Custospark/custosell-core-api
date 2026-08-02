@@ -117,4 +117,124 @@ class StockMovementService implements StockMovementServiceInterface
     {
         return $this->stockMovementRepository->getByType($businessId, $type);
     }
+
+    public function transfer(
+        int $businessId,
+        int $fromLocationId,
+        int $toLocationId,
+        array $items,
+        ?int $userId = null
+    ): array {
+        return DB::transaction(function () use ($businessId, $fromLocationId, $toLocationId, $items, $userId) {
+            if ($fromLocationId === $toLocationId) {
+                throw new \InvalidArgumentException('Source and destination branch must be different.');
+            }
+
+            $fromLocation = \App\Models\Location::forBusiness($businessId)->find($fromLocationId);
+            $toLocation = \App\Models\Location::forBusiness($businessId)->find($toLocationId);
+            if (!$fromLocation) {
+                throw new \RuntimeException('Source branch not found.');
+            }
+            if (!$toLocation) {
+                throw new \RuntimeException('Destination branch not found.');
+            }
+            if (!$fromLocation->is_active && !$fromLocation->is_default) {
+                throw new \RuntimeException('Source branch is inactive.');
+            }
+            if (!$toLocation->is_active && !$toLocation->is_default) {
+                throw new \RuntimeException('Destination branch is inactive.');
+            }
+
+            $movements = [];
+            $verified = 0;
+
+            foreach ($items as $item) {
+                $productId = (int) ($item['product_id'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 0);
+
+                if ($quantity <= 0) {
+                    throw new \InvalidArgumentException('Transfer quantity must be greater than zero.');
+                }
+
+                $productBelongsToBusiness = \App\Models\Product::where('business_id', $businessId)
+                    ->where('id', $productId)
+                    ->exists();
+                if (!$productBelongsToBusiness) {
+                    throw new \RuntimeException("Product #{$productId} does not belong to this business.");
+                }
+
+                $source = LocationProduct::where('business_id', $businessId)
+                    ->where('location_id', $fromLocationId)
+                    ->where('product_id', $productId)
+                    ->first();
+
+                $available = $source ? (int) $source->stock_quantity : 0;
+                if ($available < $quantity) {
+                    throw new \RuntimeException(sprintf(
+                        'Insufficient stock in %s for product #%d. Available: %d, requested: %d.',
+                        $fromLocation->name,
+                        $productId,
+                        $available,
+                        $quantity
+                    ));
+                }
+
+                $destination = LocationProduct::where('business_id', $businessId)
+                    ->where('location_id', $toLocationId)
+                    ->where('product_id', $productId)
+                    ->first();
+
+                $sourceAfter = $available - $quantity;
+                $destinationAfter = $destination ? (int) $destination->stock_quantity : 0;
+
+                $sourceStock = $source ?? new LocationProduct([
+                    'business_id' => $businessId,
+                    'location_id' => $fromLocationId,
+                    'product_id' => $productId,
+                ]);
+                $sourceStock->stock_quantity = $sourceAfter;
+                $sourceStock->save();
+
+                $destinationStock = $destination ?? new LocationProduct([
+                    'business_id' => $businessId,
+                    'location_id' => $toLocationId,
+                    'product_id' => $productId,
+                ]);
+                $destinationStock->stock_quantity += $quantity;
+                $destinationStock->save();
+
+                $movement = $this->stockMovementRepository->create([
+                    'business_id' => $businessId,
+                    'location_id' => $fromLocationId,
+                    'to_location_id' => $toLocationId,
+                    'product_id' => $productId,
+                    'type' => 'transfer',
+                    'quantity_change' => -$quantity,
+                    'stock_before' => $available,
+                    'stock_after' => $sourceAfter,
+                    'reference' => 'branch-transfer',
+                    'notes' => "Transferred {$quantity} to {$toLocation->name}",
+                    'created_by' => $userId ?? auth()->id(),
+                ]);
+
+                $details = $destinationAfter + $quantity;
+                $movements[] = [
+                    'movement' => $movement,
+                    'product' => $productId,
+                    'from' => $fromLocationId,
+                    'from_qty' => $sourceAfter,
+                    'to' => $toLocationId,
+                    'to_qty' => $details,
+                ];
+                $verified++;
+            }
+
+            return [
+                'count' => $verified,
+                'from_location_id' => $fromLocationId,
+                'to_location_id' => $toLocationId,
+                'movements' => $movements,
+            ];
+        });
+    }
 }

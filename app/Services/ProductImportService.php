@@ -21,14 +21,18 @@ class ProductImportService
 
     protected const HEADERS = [
         'Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price',
-        'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description',
+        'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Branch', 'Description',
     ];
 
     protected const REQUIRED = ['name', 'unit_price'];
 
     protected const CATEGORY_CACHE = [];
 
-    public function generateTemplate(): Spreadsheet
+    protected const BRANCH_COLUMN_INDEX = 12;
+
+    protected const DESCRIPTION_COLUMN_INDEX = 13;
+
+    public function generateTemplate(int $businessId): Spreadsheet
     {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
@@ -44,7 +48,8 @@ class ProductImportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', '', '', '18', 'standard', 'Premium maize flour (delete this example row)'];
+        $branch = \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        $example = ['Maize Flour', 'Kg', 'Grains', '4000', '3500', '2500', '100', '10', '18', 'standard', ($branch ?: ''), 'Premium maize flour (delete this example row)'];
         foreach ($example as $i => $val) {
             $sheet->setCellValue(chr(65 + $i) . '2', $val);
         }
@@ -56,7 +61,39 @@ class ProductImportService
 
         $sheet->freezePane('A2');
 
+        $this->addBranchesSheet($spreadsheet, $businessId);
+
         return $spreadsheet;
+    }
+
+    protected function addBranchesSheet(Spreadsheet $spreadsheet, int $businessId): void
+    {
+        $branches = \App\Models\Location::forBusiness($businessId)
+            ->orderBy('is_default', 'desc')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'is_default']);
+
+        if ($branches->isEmpty()) {
+            return;
+        }
+
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Branches');
+        $sheet->setCellValue('A1', 'Branch ID');
+        $sheet->setCellValue('B1', 'Branch Name');
+        $sheet->setCellValue('C1', 'Code');
+        $sheet->setCellValue('D1', 'Default?');
+
+        foreach ($branches as $i => $branch) {
+            $row = $i + 2;
+            $sheet->setCellValue("A{$row}", $branch->id);
+            $sheet->setCellValue("B{$row}", $branch->name);
+            $sheet->setCellValue("C{$row}", $branch->code ?? '—');
+            $sheet->setCellValue("D{$row}", $branch->is_default ? 'Yes' : '');
+        }
+
+        $sheet->getColumnDimension('B')->setAutoSize(true);
+        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
     }
 
     public function import(int $businessId, string $filePath, ?int $actorUserId = null): array
@@ -112,23 +149,24 @@ class ProductImportService
                         continue;
                     }
 
+                    $locationId = $this->resolveLocationId($businessId, $data['location_id'] ?? null, $rowNum, $results);
+                    if ($locationId === null) {
+                        continue;
+                    }
+
                     $data['business_id'] = $businessId;
                     $data['listed_for_supply'] = true;
                     $data['listed_for_storefront'] = true;
                     $stockQty = (int) ($data['stock_quantity'] ?? 0);
-                    unset($data['stock_quantity']);
+                    unset($data['stock_quantity'], $data['location_id']);
 
                     $product = Product::create($data);
 
                     if ($stockQty > 0) {
-                        $defaultLocationId = \App\Models\Location::forBusiness($businessId)
-                            ->where('is_default', true)
-                            ->value('id');
-
                         StockMovement::create([
                             'business_id' => $businessId,
                             'product_id' => $product->id,
-                            'location_id' => $defaultLocationId,
+                            'location_id' => $locationId,
                             'type' => 'initial',
                             'quantity_change' => $stockQty,
                             'stock_before' => 0,
@@ -137,16 +175,14 @@ class ProductImportService
                             'created_by' => $actorUserId ?? auth()->id(),
                         ]);
 
-                        if ($defaultLocationId) {
-                            \App\Models\LocationProduct::updateOrCreate(
-                                [
-                                    'business_id' => $businessId,
-                                    'location_id' => $defaultLocationId,
-                                    'product_id' => $product->id,
-                                ],
-                                ['stock_quantity' => $stockQty],
-                            );
-                        }
+                        \App\Models\LocationProduct::updateOrCreate(
+                            [
+                                'business_id' => $businessId,
+                                'location_id' => $locationId,
+                                'product_id' => $product->id,
+                            ],
+                            ['stock_quantity' => $stockQty],
+                        );
 
                         $product->stock_quantity = $stockQty;
                         $product->save();
@@ -176,6 +212,7 @@ class ProductImportService
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'sku' => [
                 'nullable',
                 'string',
@@ -226,8 +263,30 @@ class ProductImportService
             'barcode' => $get(9),
             'tax_percentage' => $get(10),
             'tax_class' => $this->normalizeTaxClass($get(11)),
-            'description' => $get(12),
+            'location_id' => $get(self::BRANCH_COLUMN_INDEX) !== null
+                ? (int) trim((string) $row[self::BRANCH_COLUMN_INDEX])
+                : null,
+            'description' => $get(self::DESCRIPTION_COLUMN_INDEX),
         ];
+    }
+
+    /**
+     * Resolve the target branch for an imported product. Missing or empty maps to
+     * the business default branch. A supplied id must belong to the business.
+     */
+    protected function resolveLocationId(int $businessId, ?int $locationId, int $rowNum, array &$results): ?int
+    {
+        if ($locationId !== null) {
+            $exists = \App\Models\Location::forBusiness($businessId)->where('id', $locationId)->exists();
+            if (!$exists) {
+                $results['errors'][] = ['row' => $rowNum, 'errors' => ['location_id' => ["Branch #{$locationId} does not belong to this business."]]];
+                return null;
+            }
+
+            return $locationId;
+        }
+
+        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
     }
 
     protected function normalizeTaxClass(?string $value): string

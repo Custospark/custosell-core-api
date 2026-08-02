@@ -15,6 +15,32 @@ class ProductRepository implements ProductRepositoryInterface
             ->get();
     }
 
+    public function allWithLocationStock(int $businessId, ?int $locationId): Collection
+    {
+        $query = Product::where('business_id', $businessId)->with('category');
+
+        if ($locationId) {
+            $query->with([
+                'locationStock' => fn ($q) => $q->where('location_id', $locationId),
+            ]);
+        }
+
+        $products = $query->get();
+
+        if ($locationId) {
+            foreach ($products as $product) {
+                $local = $product->locationStock->first();
+                if (!$local) {
+                    continue;
+                }
+                $product->stock_quantity = (int) $local->stock_quantity;
+                $product->low_stock_threshold = (int) $local->low_stock_threshold;
+            }
+        }
+
+        return $products;
+    }
+
     public function find(int $id): ?Product
     {
         return Product::with('category')->find($id);

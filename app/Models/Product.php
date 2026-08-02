@@ -130,6 +130,12 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    /** Per-branch stock rows (location_product). Scope with where('location_id', ...). */
+    public function locationStock(): HasMany
+    {
+        return $this->hasMany(LocationProduct::class);
+    }
+
     public function purchaseOrderItems(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class);

@@ -29,7 +29,30 @@ class ProductController extends Controller
     public function index(Request $request): ProductCollection
     {
         $businessId = $request->user()->business_id;
-        return new ProductCollection($this->productService->getAll($businessId));
+        $locationId = $this->resolveLocationId($request);
+        return new ProductCollection($this->productService->getAllForLocation($businessId, $locationId));
+    }
+
+    public function active(Request $request): ProductCollection
+    {
+        $businessId = $request->user()->business_id;
+        return new ProductCollection($this->productService->getActive($businessId));
+    }
+
+    /** Resolve the branch a product listing should be scoped to: ?location_id, then the caller's branch, then the default branch. */
+    private function resolveLocationId(Request $request): ?int
+    {
+        if ($request->filled('location_id')) {
+            return (int) $request->query('location_id');
+        }
+
+        if ($request->user()->location_id) {
+            return (int) $request->user()->location_id;
+        }
+
+        return \App\Models\Location::forBusiness($request->user()->business_id)
+            ->where('is_default', true)
+            ->value('id');
     }
 
     public function show(int $id): ProductResource
@@ -127,16 +150,26 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
-    public function active(Request $request): ProductCollection
-    {
-        $businessId = $request->user()->business_id;
-        return new ProductCollection($this->productService->getActive($businessId));
-    }
-
     public function lowStock(Request $request): ProductCollection
     {
         $businessId = $request->user()->business_id;
         return new ProductCollection($this->productService->getLowStock($businessId));
+    }
+
+    public function stockByLocation(Request $request, int $locationId): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $stocks = $this->productService->getStockByLocation($businessId, $locationId);
+
+        return response()->json([
+            'data' => $stocks->map(fn ($row) => [
+                'location_id' => (int) $row->location_id,
+                'product_id' => (int) $row->product_id,
+                'product_name' => $row->product?->name,
+                'stock_quantity' => (int) $row->stock_quantity,
+                'low_stock_threshold' => (int) $row->low_stock_threshold,
+            ])->values(),
+        ]);
     }
 
     public function stockMovements(Request $request, int $id): StockMovementCollection

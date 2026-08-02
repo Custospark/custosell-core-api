@@ -14,9 +14,10 @@ class ProductImportController extends Controller
         protected ProductImportService $importService,
     ) {}
 
-    public function downloadTemplate()
+    public function downloadTemplate(Request $request)
     {
-        $spreadsheet = $this->importService->generateTemplate();
+        $businessId = (int) ($request->user()->business_id ?? 0);
+        $spreadsheet = $this->importService->generateTemplate($businessId);
         $writer = new Xlsx($spreadsheet);
 
         $fileName = 'product-import-template.xlsx';

@@ -124,7 +124,12 @@ class SaleService implements SaleServiceInterface
                     continue;
                 }
 
-                $stockBefore = $product->stock_quantity;
+                $branchStock = \App\Models\LocationProduct::where('business_id', $businessId)
+                    ->where('location_id', $locationId)
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                $stockBefore = $branchStock ? (int) $branchStock->stock_quantity : 0;
 
                 if ($qty > $stockBefore) {
                     throw new \Illuminate\Validation\ValidationException(
@@ -137,6 +142,18 @@ class SaleService implements SaleServiceInterface
                 }
 
                 $stockAfter = $stockBefore - $qty;
+
+                if ($branchStock) {
+                    $branchStock->stock_quantity = $stockAfter;
+                    $branchStock->save();
+                } else {
+                    \App\Models\LocationProduct::create([
+                        'business_id' => $businessId,
+                        'location_id' => $locationId,
+                        'product_id' => $product->id,
+                        'stock_quantity' => $stockAfter,
+                    ]);
+                }
 
                 StockMovement::create([
                     'business_id' => $businessId,
@@ -356,17 +373,38 @@ class SaleService implements SaleServiceInterface
                 $pi['saleItem']->save();
                 $pi['saleItem']->refresh();
 
-                // Restore stock only for tracked products
+                // Restore stock only for tracked products, back to the branch where the sale happened.
                 $product = Product::find($pi['saleItem']->product_id);
                 if ($product && $product->tracksStock()) {
+                    $locationId = $sale->location_id;
                     $stockBefore = $product->stock_quantity;
                     $product->stock_quantity += $pi['refundQty'];
                     $product->save();
+
+                    $branchStock = $locationId
+                        ? \App\Models\LocationProduct::where('business_id', $sale->business_id)
+                            ->where('location_id', $locationId)
+                            ->where('product_id', $product->id)
+                            ->first()
+                        : null;
+
+                    if ($branchStock) {
+                        $branchStock->stock_quantity += $pi['refundQty'];
+                        $branchStock->save();
+                    } elseif ($locationId) {
+                        \App\Models\LocationProduct::create([
+                            'business_id' => $sale->business_id,
+                            'location_id' => $locationId,
+                            'product_id' => $product->id,
+                            'stock_quantity' => $pi['refundQty'],
+                        ]);
+                    }
 
                     StockMovement::create([
                         'business_id' => $sale->business_id,
                         'product_id' => $product->id,
                         'sale_item_id' => $pi['saleItem']->id,
+                        'location_id' => $locationId,
                         'type' => 'return',
                         'quantity_change' => $pi['refundQty'],
                         'stock_before' => $stockBefore,

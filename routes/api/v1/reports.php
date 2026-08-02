@@ -17,5 +17,6 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
     Route::get('/reports/payment-breakdown', [ReportsController::class, 'paymentBreakdown']);
     Route::get('/reports/shift-reconciliation', [ShiftReportsController::class, 'shiftReconciliation']);
     Route::get('/reports/product-performance', [ReportsController::class, 'productPerformance']);
+    Route::get('/reports/branch-performance', [ReportsController::class, 'branchPerformance']);
     Route::get('/reports/vat-summary', [ReportsController::class, 'vatSummary']);
 });

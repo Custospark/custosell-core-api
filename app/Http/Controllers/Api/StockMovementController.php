@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StockMovementRequest;
+use App\Http\Requests\StockTransferRequest;
 use App\Http\Resources\StockMovementCollection;
 use App\Http\Resources\StockMovementResource;
 use App\Services\Contracts\StockMovementServiceInterface;
@@ -63,5 +64,28 @@ class StockMovementController extends Controller
         $count = $this->stockMovementService->bulkDelete($data['ids'], $businessId);
 
         return response()->json(['deleted' => $count]);
+    }
+
+    public function transfer(StockTransferRequest $request): JsonResponse
+    {
+        $businessId = $request->user()->business_id;
+        $data = $request->validated();
+
+        $result = $this->stockMovementService->transfer(
+            $businessId,
+            $data['from_location_id'],
+            $data['to_location_id'],
+            $data['items'],
+            $request->user()->id,
+        );
+
+        return response()->json([
+            'data' => array_merge($result, [
+                'movements' => array_map(
+                    fn ($row) => new StockMovementResource($row['movement']),
+                    $result['movements'],
+                ),
+            ]),
+        ]);
     }
 }

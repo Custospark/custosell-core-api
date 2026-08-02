@@ -11,6 +11,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:inventory'])->group(function () {
     Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
+    Route::get('/products/stock/{locationId}', [ProductController::class, 'stockByLocation'])->whereNumber('locationId');
     Route::get('/products/import-template', [ProductImportController::class, 'downloadTemplate']);
     Route::post('/products/import', [ProductImportController::class, 'import']);
     Route::get('/products/export', [ProductController::class, 'export']);

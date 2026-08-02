@@ -22,4 +22,12 @@ interface StockMovementServiceInterface
     public function getByProduct(int $businessId, int $productId): Collection;
 
     public function getByType(int $businessId, string $type): Collection;
+
+    public function transfer(
+        int $businessId,
+        int $fromLocationId,
+        int $toLocationId,
+        array $items,
+        ?int $userId = null
+    ): array;
 }
