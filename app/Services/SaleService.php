@@ -181,7 +181,7 @@ class SaleService implements SaleServiceInterface
             // EFRIS: never blocks checkout — sync attempt or queue when offline/fail.
             $sale = $this->efrisService->fiscalizeSale($sale->fresh() ?? $sale);
 
-            return $sale->load(['saleItems', 'business', 'user', 'payments']);
+            return $sale->load(['saleItems', 'business', 'location', 'customer', 'user', 'payments']);
         });
     }
 

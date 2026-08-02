@@ -6,7 +6,7 @@
   $currency = $currency ?? ($business->currency ?? 'UGX');
   $cashierName = $sale->user?->name ?? '—';
   $customer = $sale->customer;
-  $branch = $branch ?? $sale->location?->name ?? null;
+  $branch = $branch ?? $sale->location?->name ?? $business->defaultLocation?->name ?? null;
   $discount = (float) $sale->discount_amount;
   $taxTotal = (float) $sale->tax_total;
   $tenderedRaw = $sale->amount_tendered ? (float) $sale->amount_tendered : null;
