@@ -4,7 +4,7 @@
 @php
   $items = $sale->saleItems ?? collect();
   $currency = $currency ?? ($business->currency ?? 'UGX');
-  $cashierName = $sale->user?->name ?? '—';
+  $salesPersonName = $sale->user?->name ?? '—';
   $customer = $sale->customer;
   $branch = $branch ?? $sale->location?->name ?? $business->defaultLocation?->name ?? null;
   $discount = (float) $sale->discount_amount;
@@ -38,7 +38,7 @@
       @else
         <p style="font-size:10px; color:#6b7280; margin:0;">Walk-in Customer</p>
       @endif
-      <p style="font-size:8.5px; color:#9ca3af; margin-top:6px;">Cashier: {{ $cashierName }}</p>
+      <p style="font-size:8.5px; color:#9ca3af; margin-top:6px;">Sales Person: {{ $salesPersonName }}</p>
     </td>
     <td style="width:48%; vertical-align:top; text-align:right;">
       <p style="font-size:8.5px; font-weight:bold; color:#6b7280; text-transform:uppercase; margin:0 0 6px 0; letter-spacing:0.4px;">Receipt Details</p>
@@ -182,7 +182,7 @@
 @endif
 
 <p style="margin-top:12px;font-size:8.5px;color:#9ca3af;">
-  Prepared by {{ $cashierName }}
+  Prepared by {{ $salesPersonName }}
   @if($location)
     · {{ $location }}
   @endif
