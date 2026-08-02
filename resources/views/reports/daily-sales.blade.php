@@ -18,7 +18,7 @@
       <tr>
         <th class="text-left">Receipt</th>
         <th class="text-left">Date</th>
-        <th class="text-left">Cashier</th>
+        <th class="text-left">Sales Person</th>
         <th class="col-center">Items</th>
         <th class="text-left">Payment</th>
         <th class="text-left">Status</th>

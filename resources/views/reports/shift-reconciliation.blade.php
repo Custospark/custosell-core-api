@@ -16,7 +16,7 @@
     <thead>
       <tr>
         <th class="text-left">Shift Started</th>
-        <th class="text-left">Cashier</th>
+        <th class="text-left">Sales Person</th>
         <th class="col-num">Txns</th>
         <th class="col-money">Gross ({{ $ccy }})</th>
         <th class="col-money">Refunds ({{ $ccy }})</th>
