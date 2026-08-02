@@ -121,9 +121,14 @@ class ProductImportService
                     $product = Product::create($data);
 
                     if ($stockQty > 0) {
+                        $defaultLocationId = \App\Models\Location::forBusiness($businessId)
+                            ->where('is_default', true)
+                            ->value('id');
+
                         StockMovement::create([
                             'business_id' => $businessId,
                             'product_id' => $product->id,
+                            'location_id' => $defaultLocationId,
                             'type' => 'initial',
                             'quantity_change' => $stockQty,
                             'stock_before' => 0,
@@ -131,6 +136,17 @@ class ProductImportService
                             'notes' => 'Initial stock from import',
                             'created_by' => $actorUserId ?? auth()->id(),
                         ]);
+
+                        if ($defaultLocationId) {
+                            \App\Models\LocationProduct::updateOrCreate(
+                                [
+                                    'business_id' => $businessId,
+                                    'location_id' => $defaultLocationId,
+                                    'product_id' => $product->id,
+                                ],
+                                ['stock_quantity' => $stockQty],
+                            );
+                        }
 
                         $product->stock_quantity = $stockQty;
                         $product->save();

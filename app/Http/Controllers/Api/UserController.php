@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\Contracts\LocationServiceInterface;
 use App\Services\ModuleAccessService;
 use App\Services\StaffMembershipService;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +25,7 @@ class UserController extends Controller
         protected UserServiceInterface $userService,
         protected ModuleAccessService $moduleAccess,
         protected StaffMembershipService $staffMembership,
+        protected LocationServiceInterface $locationService,
     ) {}
 
     public function lookup(Request $request): JsonResponse
@@ -81,6 +83,14 @@ class UserController extends Controller
         $data = $request->validated();
         $data['role_id'] = $request->role_id;
         $user = $this->userService->createStaff($businessId, $data);
+
+        if ($request->filled('location_id')) {
+            $user->update(['location_id' => $request->input('location_id')]);
+        }
+        if ($request->filled('location_ids')) {
+            $this->locationService->assignUserToLocations($user->id, $request->input('location_ids'));
+        }
+
         return response()->json(['data' => new UserResource($user)], 201);
     }
 
@@ -92,6 +102,14 @@ class UserController extends Controller
             $request->user()->id,
             $request->validated(),
         );
+
+        if ($request->has('location_id')) {
+            $user->update(['location_id' => $request->input('location_id')]);
+        }
+        if ($request->has('location_ids')) {
+            $this->locationService->assignUserToLocations($user->id, $request->input('location_ids'));
+        }
+
         return new UserResource($user);
     }
 

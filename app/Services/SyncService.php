@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Invoice;
+use App\Models\Location;
+use App\Models\LocationProduct;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\Sale;
@@ -33,6 +35,8 @@ class SyncService implements SyncServiceInterface
             'expenses' => $query(new Expense)->get(),
             'invoices' => $query(new Invoice)->with('items')->get(),
             'roles' => $query(new Role)->get(),
+            'locations' => $query(new Location)->get(),
+            'location_products' => $query(new LocationProduct)->get(),
             'shifts' => $query(new Shift)->get(),
             'sales' => $query(new Sale)->get(),
             'sale_items' => SaleItem::whereIn('sale_id', Sale::where('business_id', $businessId)->pluck('id'))
@@ -48,7 +52,7 @@ class SyncService implements SyncServiceInterface
 
     public function push(int $businessId, array $payload): array
     {
-        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0];
+        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0, 'locations' => 0, 'location_products' => 0];
 
         DB::transaction(function () use ($businessId, $payload, &$imported) {
             foreach (['categories', 'products', 'customers', 'expenses'] as $type) {
@@ -68,6 +72,31 @@ class SyncService implements SyncServiceInterface
                         $item,
                     );
                     $imported[$type]++;
+                }
+            }
+
+            if (isset($payload['locations'])) {
+                foreach ($payload['locations'] as $item) {
+                    $item['business_id'] = $businessId;
+                    Location::updateOrCreate(
+                        ['id' => $item['id'] ?? null, 'business_id' => $businessId],
+                        $item,
+                    );
+                    $imported['locations']++;
+                }
+            }
+
+            if (isset($payload['location_products'])) {
+                foreach ($payload['location_products'] as $item) {
+                    $item['business_id'] = $businessId;
+                    if (!isset($item['id'])) {
+                        continue;
+                    }
+                    LocationProduct::updateOrCreate(
+                        ['id' => $item['id']],
+                        $item,
+                    );
+                    $imported['location_products']++;
                 }
             }
 
@@ -142,6 +171,8 @@ class SyncService implements SyncServiceInterface
             'invoices' => $invoices,
             'roles' => $business->roles,
             'users' => $business->users,
+            'locations' => Location::forBusiness($businessId)->get(),
+            'location_products' => LocationProduct::where('business_id', $businessId)->get(),
             'shifts' => $business->shifts,
             'sales' => $sales,
             'stock_movements' => $stockMovements,

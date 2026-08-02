@@ -115,6 +115,16 @@ class Business extends Model
         return $this->hasMany(User::class);
     }
 
+    public function locations(): HasMany
+    {
+        return $this->hasMany(Location::class);
+    }
+
+    public function defaultLocation()
+    {
+        return $this->hasOne(Location::class)->where('is_default', true);
+    }
+
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class);

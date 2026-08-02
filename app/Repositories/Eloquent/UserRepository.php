@@ -10,7 +10,7 @@ class UserRepository implements UserRepositoryInterface
 {
     public function all(int $businessId): Collection
     {
-        return User::with('role')->where('business_id', $businessId)->get();
+        return User::with(['role', 'location', 'locations'])->where('business_id', $businessId)->get();
     }
 
     public function find(int $id): ?User
@@ -20,7 +20,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function findForBusiness(int $id, int $businessId): ?User
     {
-        return User::with('role')
+        return User::with(['role', 'location', 'locations'])
             ->where('business_id', $businessId)
             ->whereKey($id)
             ->first();

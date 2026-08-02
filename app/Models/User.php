@@ -23,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'account_type',
         'business_id',
+        'location_id',
         'role_id',
         'name',
         'email',
@@ -75,6 +76,18 @@ class User extends Authenticatable
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    public function locations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'location_user')
+            ->withPivot('business_id')
+            ->withTimestamps();
     }
 
     public function ownedBusiness(): HasMany

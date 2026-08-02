@@ -22,6 +22,9 @@ class RegisterRequest extends BaseFormRequest
             'account_type' => ['sometimes', 'string', Rule::in(['personal', 'storefront_buyer'])],
             'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
+            'location_ids' => ['nullable', 'array'],
+            'location_ids.*' => ['integer', 'exists:locations,id'],
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];
