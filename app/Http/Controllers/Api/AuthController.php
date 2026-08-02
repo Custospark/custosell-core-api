@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Password;
 use App\Models\Shift;
 use App\Services\Contracts\UserServiceInterface;
+use App\Services\Contracts\SubscriptionStateMachineServiceInterface;
 use App\Services\Platform\PlatformAdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class AuthController extends Controller
     public function __construct(
         protected UserServiceInterface $userService,
         protected PlatformAdminService $platformAdminService,
+        protected SubscriptionStateMachineServiceInterface $subscriptionStateMachine,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -62,6 +64,7 @@ class AuthController extends Controller
         }
 
         $user->load(['business.subscription.plan', 'business.subscription.referral.referralCode', 'role', 'roles', 'location', 'locations']);
+        $this->reconcileSubscription($user);
         $this->platformAdminService->assignIfEligible($user);
 
         if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
@@ -146,6 +149,7 @@ class AuthController extends Controller
     public function me(Request $request): UserResource
     {
         $user = $request->user()->load(['role', 'business.subscription.plan', 'business.subscription.referral.referralCode', 'roles', 'location', 'locations']);
+        $this->reconcileSubscription($user);
         $this->platformAdminService->assignIfEligible($user);
 
         $activeShift = Shift::where('business_id', $user->business_id)
@@ -159,5 +163,29 @@ class AuthController extends Controller
         }
 
         return new UserResource($user);
+    }
+
+    /**
+     * Reconcile the subscription lifecycle on the auth path so the client
+     * immediately resolves modules and access from the true status (trial →
+     * past_due → suspended) instead of a stale persisted status.
+     */
+    private function reconcileSubscription($user): void
+    {
+        if (!$user->business_id) {
+            return;
+        }
+
+        $subscription = $user->business?->subscription;
+        if (!$subscription) {
+            return;
+        }
+
+        $this->subscriptionStateMachine->processDueTransitions($subscription);
+
+        $user->setRelation('business', $user->business->fresh()->load([
+            'subscription.plan',
+            'subscription.referral.referralCode',
+        ]));
     }
 }
