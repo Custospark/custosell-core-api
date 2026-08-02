@@ -14,6 +14,8 @@ class ShiftResource extends JsonResource
             'business_id' => $this->business_id,
             'user_id' => $this->user_id,
             'user' => new UserResource($this->whenLoaded('user')),
+            'location_id' => $this->location_id,
+            'location' => new LocationResource($this->whenLoaded('location')),
             'clock_in' => $this->clock_in?->toISOString(),
             'clock_out' => $this->clock_out?->toISOString(),
             'total_sales' => $this->total_sales,

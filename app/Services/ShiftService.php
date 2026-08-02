@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Location;
 use App\Models\Shift;
+use App\Models\User;
 use App\Repositories\Contracts\ShiftRepositoryInterface;
 use App\Services\Contracts\ShiftServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +29,7 @@ class ShiftService implements ShiftServiceInterface
     {
         $data['business_id'] = $businessId;
         $data['user_id'] = $userId;
+        $data['location_id'] = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
         return $this->shiftRepository->create($data);
     }
 
@@ -56,5 +59,26 @@ class ShiftService implements ShiftServiceInterface
     public function getByDateRange(int $businessId, string $start, string $end): Collection
     {
         return $this->shiftRepository->getByDateRange($businessId, $start, $end);
+    }
+
+    protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
+    {
+        if ($locationId) {
+            $exists = Location::forBusiness($businessId)->where('id', $locationId)->exists();
+            if ($exists) {
+                return $locationId;
+            }
+        }
+
+        $userLocation = User::query()
+            ->where('id', $userId)
+            ->where('business_id', $businessId)
+            ->value('location_id');
+
+        if ($userLocation && Location::forBusiness($businessId)->where('id', $userLocation)->exists()) {
+            return $userLocation;
+        }
+
+        return Location::forBusiness($businessId)->where('is_default', true)->value('id');
     }
 }

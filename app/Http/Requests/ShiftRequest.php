@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
+
 class ShiftRequest extends BaseFormRequest
 {
     public function authorize(): bool
@@ -16,6 +18,11 @@ class ShiftRequest extends BaseFormRequest
         return [
             'clock_in' => $isUpdate ? ['nullable', 'date'] : ['required', 'date'],
             'clock_out' => ['nullable', 'date', 'after:clock_in'],
+            'location_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('locations', 'id')->where(fn ($q) => $q->where('business_id', $this->user()->business_id)),
+            ],
             'total_sales' => ['numeric', 'min:0'],
             'total_cash' => ['numeric', 'min:0'],
             'total_mobile_money' => ['numeric', 'min:0'],
