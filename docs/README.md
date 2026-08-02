@@ -18,3 +18,4 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 | [2026-08-01-account-welcome-email.md](./adr/2026-08-01-account-welcome-email.md) | Welcome email on account creation — UserRegistered event + SendWelcomeEmail listener |
 | [2026-08-01-default-listed-products-bulk-listing.md](./adr/2026-08-01-default-listed-products-bulk-listing.md) | New products default to listed (supply + storefront); bulk list/unlist endpoint |
 | [2026-08-02-branch-stock-transfer-excludes-services.md](./adr/2026-08-02-branch-stock-transfer-excludes-services.md) | Branch stock transfer excludes service items (no branch stock for non-inventory services) |
+| [2026-08-02-subscription-state-machine-date-driven.md](./adr/2026-08-02-subscription-state-machine-date-driven.md) | Subscription state machine — date-driven transitions, date-setting points, access fairness |
