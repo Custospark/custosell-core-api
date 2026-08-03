@@ -64,7 +64,7 @@ class StockMovementService implements StockMovementServiceInterface
             }
         }
 
-        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 
     private function syncLocationStock(int $businessId, int $productId, ?int $locationId, int $stockAfter): void

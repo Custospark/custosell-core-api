@@ -458,7 +458,7 @@ class OrderService implements OrderServiceInterface
             return $userLocation;
         }
 
-        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 
     protected function resolveShiftId(int $businessId, int $userId, mixed $shiftId): ?int

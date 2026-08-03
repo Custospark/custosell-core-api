@@ -50,9 +50,7 @@ class ProductController extends Controller
             return (int) $request->user()->location_id;
         }
 
-        return \App\Models\Location::forBusiness($request->user()->business_id)
-            ->where('is_default', true)
-            ->value('id');
+        return \App\Services\LocationService::ensureDefault($request->user()->business_id)?->id;
     }
 
     public function show(int $id): ProductResource

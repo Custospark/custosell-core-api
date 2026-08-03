@@ -286,7 +286,7 @@ class ProductImportService
             return $locationId;
         }
 
-        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 
     protected function normalizeTaxClass(?string $value): string

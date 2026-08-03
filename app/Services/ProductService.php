@@ -53,7 +53,7 @@ class ProductService implements ProductServiceInterface
 
         $locationId = isset($data['location_id'])
             ? (int) $data['location_id']
-            : \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+            : \App\Services\LocationService::ensureDefault($businessId)?->id;
 
         unset($data['location_id']);
 

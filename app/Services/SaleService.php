@@ -462,7 +462,7 @@ class SaleService implements SaleServiceInterface
             return $userLocation;
         }
 
-        return \App\Models\Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 
     protected function generateReceiptNumber(\App\Models\Business $business): string

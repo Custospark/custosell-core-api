@@ -79,6 +79,6 @@ class ShiftService implements ShiftServiceInterface
             return $userLocation;
         }
 
-        return Location::forBusiness($businessId)->where('is_default', true)->value('id');
+        return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 }

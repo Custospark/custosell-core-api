@@ -16,6 +16,8 @@ interface LocationServiceInterface
 
     public function getDefault(int $businessId): ?Location;
 
+    public function ensureDefaultLocation(int $businessId): ?Location;
+
     public function create(int $businessId, array $data): Location;
 
     public function update(int $id, array $data): Location;

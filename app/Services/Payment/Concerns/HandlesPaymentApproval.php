@@ -148,6 +148,10 @@ trait HandlesPaymentApproval
                         'modules' => ModuleAccessService::BUSINESS_MODULES,
                     ]);
                     $business->update(['business_type' => 'retail']);
+
+                    // A business upgraded from personal has no branch yet — ensure the
+                    // default branch exists (and backfills orphaned location_id rows).
+                    \App\Services\LocationService::ensureDefault($subscription->business_id);
                 }
             }
         });

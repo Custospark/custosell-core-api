@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Models\Location;
 use App\Models\Subscription;
 use App\Repositories\Contracts\LocationRepositoryInterface;
 use App\Services\Contracts\LocationServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 class LocationService implements LocationServiceInterface
@@ -15,6 +17,76 @@ class LocationService implements LocationServiceInterface
     public function __construct(
         protected LocationRepositoryInterface $locationRepository,
     ) {}
+
+    /**
+     * Static, callable-from-anywhere accessor that guarantees a business has a
+     * default branch. Returns the existing default location, or creates a
+     * "Main Branch" and backfills location_id on orphaned rows, mirroring the
+     * locations backfill migration. Safe for businesses created after the
+     * migration ran (e.g. personal accounts upgraded to business).
+     */
+    public static function ensureDefault(int $businessId): ?Location
+    {
+        return app(self::class)->ensureDefaultLocation($businessId);
+    }
+
+    public function ensureDefaultLocation(int $businessId): ?Location
+    {
+        $default = $this->locationRepository->default($businessId);
+        if ($default) {
+            return $default;
+        }
+
+        return DB::transaction(function () use ($businessId) {
+            $now = now();
+            $country = Business::find($businessId)?->country ?? 'UG';
+
+            $location = $this->locationRepository->create([
+                'business_id' => $businessId,
+                'name' => 'Main Branch',
+                'code' => 'MAIN',
+                'country' => $country,
+                'is_default' => true,
+                'is_active' => true,
+            ]);
+
+            foreach (['users', 'shifts', 'sales', 'stock_movements', 'invoices', 'orders'] as $table) {
+                if (Schema::hasTable($table) && Schema::hasColumn($table, 'location_id')) {
+                    DB::table($table)
+                        ->where('business_id', $businessId)
+                        ->whereNull('location_id')
+                        ->update(['location_id' => $location->id]);
+                }
+            }
+
+            $userIds = DB::table('users')->where('business_id', $businessId)->pluck('id');
+            foreach ($userIds as $userId) {
+                DB::table('location_user')->updateOrInsert(
+                    ['location_id' => $location->id, 'user_id' => $userId],
+                    ['business_id' => $businessId, 'created_at' => $now, 'updated_at' => $now],
+                );
+            }
+
+            $products = DB::table('products')
+                ->where('business_id', $businessId)
+                ->get(['id', 'stock_quantity', 'low_stock_threshold']);
+
+            foreach ($products as $product) {
+                DB::table('location_product')->updateOrInsert(
+                    ['location_id' => $location->id, 'product_id' => $product->id],
+                    [
+                        'business_id' => $businessId,
+                        'stock_quantity' => $product->stock_quantity,
+                        'low_stock_threshold' => $product->low_stock_threshold,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                );
+            }
+
+            return $location;
+        });
+    }
 
     public function getAll(int $businessId): Collection
     {
