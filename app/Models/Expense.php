@@ -14,6 +14,7 @@ class Expense extends Model
         'business_id',
         'expense_category_id',
         'recorded_by',
+        'location_id',
         'shift_id',
         'project_id',
         'fixed_asset_id',
@@ -58,6 +59,11 @@ class Expense extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function shift(): BelongsTo

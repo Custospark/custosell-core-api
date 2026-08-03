@@ -12,13 +12,16 @@ class ExpenseRepository implements ExpenseRepositoryInterface
     public function all(int $businessId, array $filters = []): LengthAwarePaginator
     {
         $query = Expense::where('business_id', $businessId)
-            ->with(['expenseCategory', 'recordedBy']);
+            ->with(['expenseCategory', 'recordedBy', 'location']);
 
         if (!empty($filters['category_id'])) {
             $query->where('expense_category_id', $filters['category_id']);
         }
         if (!empty($filters['shift_id'])) {
             $query->where('shift_id', $filters['shift_id']);
+        }
+        if (!empty($filters['location_id'])) {
+            $query->where('location_id', $filters['location_id']);
         }
         if (!empty($filters['date_from'])) {
             $query->where('expense_date', '>=', $filters['date_from']);
@@ -33,7 +36,7 @@ class ExpenseRepository implements ExpenseRepositoryInterface
 
     public function find(int $id): ?Expense
     {
-        return Expense::with(['expenseCategory', 'recordedBy'])->find($id);
+        return Expense::with(['expenseCategory', 'recordedBy', 'location'])->find($id);
     }
 
     public function create(array $data): Expense
@@ -56,7 +59,7 @@ class ExpenseRepository implements ExpenseRepositoryInterface
     {
         return Expense::where('business_id', $businessId)
             ->whereBetween('expense_date', [$start, $end])
-            ->with(['expenseCategory', 'recordedBy'])
+            ->with(['expenseCategory', 'recordedBy', 'location'])
             ->orderBy('expense_date', 'desc')
             ->get();
     }
@@ -94,6 +97,9 @@ class ExpenseRepository implements ExpenseRepositoryInterface
         }
         if (!empty($filters['shift_id'])) {
             $query->where('shift_id', $filters['shift_id']);
+        }
+        if (!empty($filters['location_id'])) {
+            $query->where('location_id', $filters['location_id']);
         }
 
         $totalAmount = (float) $query->sum('amount');

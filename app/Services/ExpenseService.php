@@ -44,6 +44,7 @@ class ExpenseService implements ExpenseServiceInterface
         $data['business_id'] = $businessId;
         $this->assertCategoryAvailable($businessId, $data['expense_category_id'] ?? null);
         $this->assertFixedAssetBelongsToBusiness($businessId, $data['fixed_asset_id'] ?? null);
+        $this->assertLocationBelongsToBusiness($businessId, $data['location_id'] ?? null);
 
         $expense = $this->expenseRepository->create($data);
 
@@ -69,6 +70,10 @@ class ExpenseService implements ExpenseServiceInterface
 
         if (array_key_exists('fixed_asset_id', $data)) {
             $this->assertFixedAssetBelongsToBusiness($expense->business_id, $data['fixed_asset_id']);
+        }
+
+        if (array_key_exists('location_id', $data)) {
+            $this->assertLocationBelongsToBusiness($expense->business_id, $data['location_id']);
         }
 
         return $this->expenseRepository->update($expense, $data);
@@ -300,6 +305,24 @@ class ExpenseService implements ExpenseServiceInterface
         if (!$asset) {
             throw ValidationException::withMessages([
                 'fixed_asset_id' => 'Invalid fixed asset for this business.',
+            ]);
+        }
+    }
+
+    protected function assertLocationBelongsToBusiness(int $businessId, mixed $locationId): void
+    {
+        if ($locationId === null || $locationId === '') {
+            return;
+        }
+
+        $location = \App\Models\Location::query()
+            ->where('id', (int) $locationId)
+            ->where('business_id', $businessId)
+            ->first();
+
+        if (!$location) {
+            throw ValidationException::withMessages([
+                'location_id' => 'Invalid branch for this business.',
             ]);
         }
     }

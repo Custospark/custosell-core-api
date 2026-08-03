@@ -15,6 +15,11 @@ class ExpenseRequest extends BaseFormRequest
     {
         return [
             'expense_category_id' => ['nullable', 'integer', 'exists:expense_categories,id'],
+            'location_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('locations', 'id')->where(fn($query) => $query->where('business_id', $this->user()?->business_id)),
+            ],
             'shift_id' => [
                 'nullable',
                 'integer',
@@ -50,6 +55,7 @@ class ExpenseRequest extends BaseFormRequest
     {
         return array_merge(parent::messages(), [
             'expense_category_id.exists' => 'The selected expense category does not exist.',
+            'location_id.exists' => 'The selected branch does not exist or is not part of your business.',
             'shift_id.exists' => 'The selected shift does not exist or is not part of your business.',
             'amount.required' => 'Please enter the expense amount.',
             'amount.numeric' => 'The expense amount must be a number.',

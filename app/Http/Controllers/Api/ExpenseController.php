@@ -21,7 +21,7 @@ class ExpenseController extends Controller
     public function index(Request $request): ExpenseCollection
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['category_id', 'date_from', 'date_to', 'shift_id']);
+        $filters = $request->only(['category_id', 'date_from', 'date_to', 'shift_id', 'location_id']);
         return new ExpenseCollection(
             $this->expenseService->getAll($businessId, $filters)
         );
@@ -96,7 +96,7 @@ class ExpenseController extends Controller
     public function summary(Request $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
-        $filters = $request->only(['date_from', 'date_to', 'category_id', 'shift_id']);
+        $filters = $request->only(['date_from', 'date_to', 'category_id', 'shift_id', 'location_id']);
         $summary = $this->expenseService->getSummary($businessId, $filters);
         return response()->json($summary);
     }

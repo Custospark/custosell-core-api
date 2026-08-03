@@ -16,6 +16,8 @@ class ExpenseResource extends JsonResource
             'expense_category' => new ExpenseCategoryResource($this->whenLoaded('expenseCategory')),
             'recorded_by' => $this->recorded_by,
             'recorded_by_user' => new UserResource($this->whenLoaded('recordedBy')),
+            'location_id' => $this->location_id,
+            'location' => new LocationResource($this->whenLoaded('location')),
             'shift_id' => $this->shift_id,
             'project_id' => $this->project_id,
             'project' => new ProjectResource($this->whenLoaded('project')),

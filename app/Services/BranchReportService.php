@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Expense;
 use App\Models\Location;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -36,40 +37,62 @@ class BranchReportService
 
         $sales = $salesQuery->get()->groupBy('location_id');
 
+        $expenseQuery = Expense::selectRaw('location_id, SUM(amount) as total')
+            ->where('business_id', $businessId)
+            ->whereDate('expense_date', '>=', $dateFrom)
+            ->whereDate('expense_date', '<=', $dateTo)
+            ->whereNotNull('location_id')
+            ->groupBy('location_id');
+
+        if ($userId) {
+            $expenseQuery->where('recorded_by', $userId);
+        }
+        if ($shiftId) {
+            $expenseQuery->where('shift_id', $shiftId);
+        }
+
+        $expenseTotals = $expenseQuery->get()->keyBy('location_id');
+
         $locations = Location::forBusiness($businessId)->get()->keyBy('id');
 
+        $branchIds = collect($sales->keys())
+            ->merge($expenseTotals->keys())
+            ->filter(fn($id) => (int) $id !== 0)
+            ->unique()
+            ->values();
+
         $rows = [];
-        foreach ($sales as $locationId => $group) {
-            if ((int) $locationId === 0) {
-                continue;
-            }
-            $location = $locations->get((int) $locationId);
+        foreach ($branchIds as $branchId) {
+            $locationId = (int) $branchId;
+            $group = collect($sales->get($locationId, []));
+            $location = $locations->get($locationId);
             $gross = (float) $group->sum('total_amount');
             $refunds = (float) $group->sum(function ($sale) {
                 return $sale->saleItems->sum('refunded_amount');
             });
+            $expenses = (float) ($expenseTotals->get($locationId)->total ?? 0);
             $itemsSold = (int) $group->sum(function ($sale) {
                 return $sale->saleItems->count();
             });
 
             $rows[] = [
-                'location_id' => (int) $locationId,
+                'location_id' => $locationId,
                 'name' => $location?->name ?? 'Unknown Branch',
                 'is_default' => (bool) ($location?->is_default ?? false),
                 'gross_sales' => $gross,
                 'refunds' => $refunds,
                 'net_after_refunds' => max(0, $gross - $refunds),
-                'expenses' => 0.0,
-                'net_sales' => max(0, $gross - $refunds),
+                'expenses' => $expenses,
+                'net_sales' => max(0, $gross - $refunds - $expenses),
                 'transactions' => $group->count(),
                 'items_sold' => $itemsSold,
                 'share_pct' => 0.0,
             ];
         }
 
-        $totalNet = (float) collect($rows)->sum('net_after_refunds');
+        $totalNet = (float) collect($rows)->sum('net_sales');
         foreach ($rows as &$row) {
-            $row['share_pct'] = $totalNet > 0 ? round(($row['net_after_refunds'] / $totalNet) * 100, 1) : 0.0;
+            $row['share_pct'] = $totalNet > 0 ? round(($row['net_sales'] / $totalNet) * 100, 1) : 0.0;
         }
 
         return [
