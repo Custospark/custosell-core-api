@@ -705,7 +705,7 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 |-------|-----------|-------------|------------|
 | Staff accounts | 3 | 20 | ∞ |
 | Products | 500 | 5,000 | ∞ |
-| Business locations | 1 | 1 | 5 |
+| Business locations | 1 | 3 | 5 |
 
 ### Test Results
 - Vera Fast: ✅ php -l + logic passed

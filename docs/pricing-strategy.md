@@ -97,7 +97,7 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | Advanced Reporting | Exports, filterable reports, VAT summaries |
 | Data Export | PDF / CSV / XLSX |
 | **Staff/Users** | **Up to 20** |
-| **Businesses/Locations** | **1** |
+| **Businesses/Locations** | **Up to 3** |
 | Support | Email + In-app Chat (24 hr response) |
 
 | Pricing | UGX | USD |

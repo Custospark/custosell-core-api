@@ -71,9 +71,9 @@ class PlanSeeder extends Seeder
             'limits' => [
                 'max_staff' => 20,
                 'max_products' => 5000,
-                'max_businesses' => 1,
+                'max_businesses' => 3,
                 'max_board_members' => 50,
-                'max_locations' => 1,
+                'max_locations' => 3,
             ],
             'sort_order' => 2,
             'is_active' => true,
