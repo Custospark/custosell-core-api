@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'business.active'])->prefix('billing')->group(function () {
     Route::get('payments', [PaymentController::class, 'index'])->name('billing.payments.index');
     Route::get('payments/{id}', [PaymentController::class, 'show'])->name('billing.payments.show');
+    Route::get('payments/{id}/receipt', [PaymentController::class, 'downloadReceipt'])->name('billing.payments.receipt');
+    Route::post('payments/{id}/receipt/email', [PaymentController::class, 'emailReceipt'])->name('billing.payments.receipt.email');
+    Route::get('history', [PaymentController::class, 'history'])->name('billing.history');
     Route::post('payments/initiate', [PaymentController::class, 'initiateGateway'])->name('billing.payments.initiate');
     Route::post('payments/{id}/confirm', [PaymentController::class, 'confirm'])->name('billing.payments.confirm');
 });

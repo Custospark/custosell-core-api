@@ -67,6 +67,11 @@ class BillingPayment extends Model
         return $this->belongsTo(User::class, 'approved_by_user_id');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', PaymentStatus::PENDING);

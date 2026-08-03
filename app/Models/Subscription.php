@@ -83,6 +83,11 @@ class Subscription extends Model
         return $this->hasMany(BillingPayment::class, 'subscription_id');
     }
 
+    public function creditApplications(): HasMany
+    {
+        return $this->hasMany(CreditApplication::class, 'subscription_id');
+    }
+
     public function scheduledChanges(): HasMany
     {
         return $this->hasMany(SubscriptionScheduledChange::class);

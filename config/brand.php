@@ -28,4 +28,14 @@ return [
 
     'company_url' => 'https://www.custospark.com',
 
+    'company_address' => 'Kampala, Uganda',
+
+    'company_city' => 'Kampala',
+
+    'company_country' => 'Uganda',
+
+    'company_phone' => '+256 756 697 871',
+
+    'company_email' => 'support@custosell.com',
+
 ];
