@@ -30,3 +30,6 @@ prod-custospark.env
 
 # Scratch/dev session notes (not versioned)
 /scratch/
+
+# Local DB test snapshots (restore-only; contain live dev data, not versioned)
+/database/snapshots/
