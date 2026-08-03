@@ -65,12 +65,21 @@ class GatewayService
         }
 
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
-        // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone
+        // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone.
+        // The billing cycle is taken from the request when the user picked one (e.g. resubscribing
+        // yearly), but renewals always follow the subscription's stored cycle — a user on yearly
+        // must not be switched to monthly (or vice versa) through a renewal payment.
         $paymentType = $data['payment_type'] ?? 'subscription';
+        $effectiveCycle = $paymentType === 'renewal'
+            ? ($subscription->billing_cycle ?? 'monthly')
+            : (in_array($data['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
+                ? $data['billing_cycle']
+                : ($subscription->billing_cycle ?? 'monthly'));
+        $data['billing_cycle'] = $effectiveCycle;
         $plan = $this->resolveEffectivePlan($subscription, $data);
         $data['amount'] = match ($paymentType) {
             'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
-            'subscription', 'renewal' => $subscription->billing_cycle === 'yearly'
+            'subscription', 'renewal' => $effectiveCycle === 'yearly'
                 ? (float) ($plan?->price_yearly_usd ?? 0)
                 : (float) ($plan?->price_monthly_usd ?? 0),
             default => (float) ($data['amount'] ?? 0),
@@ -204,6 +213,7 @@ class GatewayService
             'metadata' => array_merge(
                 $data['metadata'] ?? [],
                 [
+                    'billing_cycle' => $data['billing_cycle'] ?? $subscription->billing_cycle ?? 'monthly',
                     'original_amount' => $originalAmount,
                     'referral_discount_applied' => $referralDiscount,
                     'credit_used' => $creditResult['credit_used'] ?? 0,

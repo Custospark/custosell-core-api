@@ -21,6 +21,11 @@ class PaymentValidator
         $paymentType = $data['payment_type'] ?? 'subscription';
         $amount = (float) ($data['amount'] ?? 0);
         $currency = strtoupper($data['currency'] ?? 'USD');
+        $effectiveCycle = $paymentType === 'renewal'
+            ? ($subscription->billing_cycle ?? 'monthly')
+            : (in_array($data['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
+                ? $data['billing_cycle']
+                : ($subscription->billing_cycle ?? 'monthly'));
 
         $plan = $subscription->plan;
 
@@ -36,10 +41,10 @@ class PaymentValidator
 
         $expectedUsd = match ($paymentType) {
             'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
-            'subscription' => $subscription->billing_cycle === 'yearly'
+            'subscription' => $effectiveCycle === 'yearly'
                 ? (float) ($plan?->price_yearly_usd ?? 0)
                 : (float) ($plan?->price_monthly_usd ?? 0),
-            'renewal' => $subscription->billing_cycle === 'yearly'
+            'renewal' => $effectiveCycle === 'yearly'
                 ? (float) ($plan?->price_yearly_usd ?? 0)
                 : (float) ($plan?->price_monthly_usd ?? 0),
             'upgrade_proration' => (float) ($subscription->metadata['pending_upgrade_amount_usd'] ?? $amount),

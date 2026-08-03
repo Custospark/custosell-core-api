@@ -381,7 +381,64 @@ The POS app shows a lock screen: *"Your subscription has been suspended. Please 
 
 ---
 
-## Middleware — EnsureActiveSubscription
+## Scenario 9: Oscar Resubscribes Yearly (Billing-Cycle Selection)
+
+**Oscar** was suspended on **Personal** (stored `billing_cycle = monthly`). He
+re-subscribes and picks the **Yearly** toggle in the Plans tab. The UI shows the
+yearly price ($100/yr), and the charge must match.
+
+### Request
+```
+POST /api/v1/billing/payments/initiate
+{
+    "gateway_name": "pesapal",
+    "amount": 100,          // yearly price shown in UI
+    "currency": "USD",
+    "payment_type": "subscription",
+    "billing_cycle": "yearly"   // ← user's chosen cycle, sent by the modal
+}
+```
+
+### What happens (authoritative, server-side)
+1. `GatewayService::initiatePayment()` resolves the **effective cycle**:
+   - `subscription` type → uses request `billing_cycle` (`yearly`), falling back to
+     the stored cycle if absent.
+2. The **authoritative amount** is computed from the effective cycle:
+   `price_yearly_usd = 100`.
+3. `PaymentValidator` validates against the **same** effective cycle, so the expected
+   amount is `$100` (this was the bug: the validator used the stored `monthly` cycle
+   and rejected `$100` against an expected `$10`).
+4. The provider receives `{"amount":100.0,"currency":"USD","billing_cycle":"yearly"}`.
+
+### On approval
+5. `handleSubscriptionPayment()` calls `persistPaidBillingCycle()`. Since the paid
+   cycle (`yearly`) differs from the stored one (`monthly`), the subscription is
+   updated to `billing_cycle = yearly` and `next_billing_date` advances **one year**.
+
+### Final subscription state
+```json
+{
+    "status": "active",
+    "billing_cycle": "yearly",
+    "next_billing_date": "2027-08-03"
+}
+```
+
+### Renewal lock (important)
+For `payment_type = renewal`, the effective cycle **always** comes from the
+subscription's stored cycle, never the request. A user on yearly cannot be silently
+switched to monthly by renewing — the dedicated billing-cycle-change flow
+(`billing_cycle_change` + proration) is the only way to change it.
+
+### Failure states
+| Condition | Result | How it's handled |
+|-----------|--------|-------------------|
+| Yearly chosen but validator used stored monthly | 502 | Fixed — validator now uses the same effective cycle as the amount |
+| No `billing_cycle` sent | Falls back to stored cycle | `?? stored_billing_cycle` fallback |
+| Renewal with mismatched request cycle | Request ignored | `payment_type === 'renewal'` → stored cycle always wins |
+| Paid cycle differs from stored on approval | Subscription cycle updated | `persistPaidBillingCycle()` → `applyBillingCycleChange()` |
+
+---
 
 Registered as `subscription.active` in `bootstrap/app.php`. Applied to all core POS route files:
 

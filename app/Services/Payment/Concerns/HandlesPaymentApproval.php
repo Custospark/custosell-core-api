@@ -33,11 +33,17 @@ trait HandlesPaymentApproval
         match ($paymentType) {
             'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
             'subscription' => $this->handleSubscriptionPayment($subscription, $payment),
-            'renewal' => $this->subscriptionService->renewSubscription($subscription, $payment),
+            'renewal' => $this->handleRenewalPayment($subscription, $payment),
             'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
             'billing_cycle_change' => $this->handleBillingCycleChange($payment, $subscription),
             default => null,
         };
+    }
+
+    private function handleRenewalPayment(Subscription $subscription, BillingPayment $payment): void
+    {
+        $this->persistPaidBillingCycle($subscription, $payment);
+        $this->subscriptionService->renewSubscription($subscription, $payment);
     }
 
     /**
@@ -46,12 +52,43 @@ trait HandlesPaymentApproval
      */
     private function handleSubscriptionPayment(Subscription $subscription, BillingPayment $payment): void
     {
+        $this->persistPaidBillingCycle($subscription, $payment);
+
         if ($subscription->status === \App\Enums\Billing\SubscriptionStatus::SUSPENDED) {
             $this->subscriptionService->reactivate($subscription);
             return;
         }
 
         $this->subscriptionService->activateSubscription($subscription, $payment, null);
+    }
+
+    /**
+     * When a user paid for a billing cycle different from the subscription's stored
+     * one (e.g. resubscribing yearly while the subscription was stored as monthly),
+     * persist the paid cycle so renewals and next_billing_date stay consistent.
+     */
+    private function persistPaidBillingCycle(Subscription $subscription, BillingPayment $payment): void
+    {
+        $paidCycle = $payment->metadata['billing_cycle'] ?? null;
+        if (!in_array($paidCycle, ['monthly', 'yearly'], true)) {
+            return;
+        }
+
+        $currentCycle = $subscription->billing_cycle ?? 'monthly';
+        if ($paidCycle === $currentCycle) {
+            return;
+        }
+
+        try {
+            $this->subscriptionService->applyBillingCycleChange($subscription, $paidCycle);
+        } catch (\RuntimeException $e) {
+            Log::warning('[GatewayService] Could not persist paid billing cycle', [
+                'subscription_id' => $subscription->id,
+                'payment_id' => $payment->id,
+                'paid_cycle' => $paidCycle,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function handleBillingCycleChange(BillingPayment $payment, Subscription $subscription): void

@@ -79,6 +79,7 @@ class PaymentController extends Controller
                     'amount' => $validated['amount'],
                     'currency' => strtoupper($validated['currency']),
                     'payment_type' => $validated['payment_type'],
+                    'billing_cycle' => $validated['billing_cycle'] ?? null,
                     'email' => $request->user()->email,
                     'customer_name' => $request->user()->name,
                     'phone_number' => $validated['phone'] ?? $request->user()->phone ?? '',

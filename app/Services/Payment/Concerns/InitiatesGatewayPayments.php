@@ -24,9 +24,14 @@ trait InitiatesGatewayPayments
         array $creditApplications,
     ): array {
         $paymentType = $data['payment_type'] ?? 'subscription';
+        $effectiveCycle = $paymentType === 'renewal'
+            ? ($subscription->billing_cycle ?? 'monthly')
+            : (in_array($data['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
+                ? $data['billing_cycle']
+                : ($subscription->billing_cycle ?? 'monthly'));
         $cycleSuffix = $paymentType === 'onboarding'
             ? ''
-            : ' (' . ($subscription->billing_cycle === 'yearly' ? 'yearly' : 'monthly') . ')';
+            : ' (' . ($effectiveCycle === 'yearly' ? 'yearly' : 'monthly') . ')';
         $typeLabel = match ($paymentType) {
             'onboarding' => 'onboarding',
             'renewal' => 'renewal',
@@ -62,7 +67,7 @@ trait InitiatesGatewayPayments
                 'subscription_id' => $subscription->id,
                 'business_id' => $subscription->business_id,
                 'payment_type' => $paymentType,
-                'billing_cycle' => $subscription->billing_cycle,
+                'billing_cycle' => $effectiveCycle,
                 'plan_id' => $subscription->plan_id,
                 'plan_name' => $plan?->name,
                 'original_amount_usd' => $originalAmount,
