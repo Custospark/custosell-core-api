@@ -137,9 +137,13 @@ class SubscriptionController extends Controller
         $effective = $validated['effective'] ?? 'immediate';
         $billingCycle = $validated['billing_cycle'] ?? null;
 
-        $this->assertUpgradeCycleAllowed($subscription->billing_cycle, $billingCycle);
-
         $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId, $billingCycle);
+
+        $this->assertUpgradeAllowed(
+            $subscription->billing_cycle,
+            $billingCycle,
+            $quote['proration'] ?? [],
+        );
 
         if ($effective === 'immediate') {
             $prorationDue = $quote['proration']['proration_due'] ?? 0;
@@ -219,15 +223,16 @@ class SubscriptionController extends Controller
             abort(403);
         }
 
-        $this->assertUpgradeCycleAllowed(
-            $subscription->billing_cycle,
-            $validated['billing_cycle'] ?? null,
-        );
-
         $quote = $this->paymentQuoteService->getQuote(
             $subscription,
             (int) $validated['to_plan_id'],
             $validated['billing_cycle'] ?? null,
+        );
+
+        $this->assertUpgradeAllowed(
+            $subscription->billing_cycle,
+            $validated['billing_cycle'] ?? null,
+            $quote['proration'] ?? [],
         );
 
         return response()->json(['data' => $quote]);
@@ -347,10 +352,21 @@ class SubscriptionController extends Controller
         }
     }
 
-    protected function assertUpgradeCycleAllowed(?string $currentCycle, ?string $targetCycle): void
+    protected function assertUpgradeAllowed(?string $currentCycle, ?string $targetCycle, array $proration): void
     {
-        if ($currentCycle === 'yearly' && $targetCycle === 'monthly') {
-            abort(422, 'You cannot upgrade to a monthly plan while on an annual plan. Please choose the yearly option to continue upgrading.');
+        if ($currentCycle !== 'yearly' || $targetCycle !== 'monthly') {
+            return;
+        }
+
+        $credit = (float) ($proration['credit_usd'] ?? $proration['credit'] ?? 0);
+        $charge = (float) ($proration['charge_usd'] ?? $proration['charge'] ?? 0);
+
+        if ($credit > $charge) {
+            abort(422, sprintf(
+                'Your unused annual credit ($%.2f) exceeds the monthly upgrade price ($%.2f). Please choose the yearly option to continue upgrading, or wait until your annual period ends.',
+                $credit,
+                $charge,
+            ));
         }
     }
 }

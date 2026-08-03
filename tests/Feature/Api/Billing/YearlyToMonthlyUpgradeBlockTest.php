@@ -13,12 +13,17 @@ use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * Guards the yearly→monthly upgrade anomaly.
+ * Guards the yearly→monthly upgrade anomaly, amount-based.
  *
- * A user on an annual plan holds prepaid credit (e.g. Personal $100/yr). Upgrading
- * to a monthly higher plan (e.g. Professional $54/mo) yields proration due $0 while
- * the user still holds ~$100 of unused credit — a revenue-loss path where they would
- * effectively demand money back. All yearly→monthly upgrades are therefore blocked.
+ * The block applies ONLY when a user on an annual plan upgrades to a monthly
+ * higher plan whose monthly charge is LOWER than their remaining annual credit
+ * (e.g. Personal $100/yr credit → Professional $54/mo). That path yields $0 due
+ * while the user still holds more credit than the plan costs — a revenue-loss /
+ * chargeback scenario.
+ *
+ * When the monthly charge EXCEEDS the unused credit (e.g. $20 credit → $35/mo),
+ * the upgrade is allowed: the user pays the difference and no money is demanded
+ * back from the company.
  */
 class YearlyToMonthlyUpgradeBlockTest extends TestCase
 {
@@ -69,7 +74,7 @@ class YearlyToMonthlyUpgradeBlockTest extends TestCase
         return ['Authorization' => "Bearer {$this->token}"];
     }
 
-    protected function createYearlySubscription(Plan $plan): Subscription
+    protected function createYearlySubscription(Plan $plan, Carbon $nextBillingDate): Subscription
     {
         return Subscription::create([
             'business_id' => $this->business->id,
@@ -77,16 +82,19 @@ class YearlyToMonthlyUpgradeBlockTest extends TestCase
             'status' => 'active',
             'billing_cycle' => 'yearly',
             'starts_at' => now()->subYear(),
-            'next_billing_date' => Carbon::now()->addYear()->startOfDay(),
+            'next_billing_date' => $nextBillingDate,
             'price_monthly_usd' => $plan->price_monthly_usd,
             'price_yearly_usd' => $plan->price_yearly_usd,
             'onboarding_fee_usd' => $plan->onboarding_fee_usd,
         ]);
     }
 
-    public function test_yearly_subscription_cannot_upgrade_to_monthly_plan(): void
+    public function test_yearly_subscription_with_large_credit_cannot_upgrade_to_monthly(): void
     {
-        $subscription = $this->createYearlySubscription($this->essential);
+        $subscription = $this->createYearlySubscription(
+            $this->essential,
+            Carbon::now()->addYear()->startOfDay(),
+        );
 
         $response = $this->withHeaders($this->authHeaders())
             ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
@@ -96,15 +104,41 @@ class YearlyToMonthlyUpgradeBlockTest extends TestCase
             ]);
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('cannot upgrade to a monthly plan', $response->json('message'));
+        $this->assertStringContainsString('exceeds the monthly upgrade price', $response->json('message'));
 
         $subscription->refresh();
         $this->assertSame($this->essential->id, (int) $subscription->plan_id);
     }
 
+    public function test_yearly_subscription_with_small_credit_can_upgrade_to_monthly(): void
+    {
+        // One day left on Essential yearly ($200/yr) → credit ≈ $0.55, well under
+        // Professional monthly ($54). The upgrade is allowed and charges the difference.
+        $subscription = $this->createYearlySubscription(
+            $this->essential,
+            Carbon::now()->addDay()->startOfDay(),
+        );
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
+                'to_plan_id' => $this->professional->id,
+                'effective' => 'immediate',
+                'billing_cycle' => 'monthly',
+            ]);
+
+        $response->assertStatus(200);
+        $proration = $response->json('proration.proration');
+        $this->assertLessThan($this->professional->price_monthly_usd, (float) $proration['credit']);
+        $this->assertGreaterThan(0, (float) $proration['proration_due']);
+        $this->assertSame('monthly', $response->json('proration.billing_cycle'));
+    }
+
     public function test_yearly_subscription_can_upgrade_to_yearly_plan(): void
     {
-        $subscription = $this->createYearlySubscription($this->essential);
+        $subscription = $this->createYearlySubscription(
+            $this->essential,
+            Carbon::now()->addYear()->startOfDay(),
+        );
 
         $response = $this->withHeaders($this->authHeaders())
             ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
@@ -117,15 +151,32 @@ class YearlyToMonthlyUpgradeBlockTest extends TestCase
         $this->assertSame('yearly', $response->json('proration.billing_cycle'));
     }
 
-    public function test_yearly_subscription_monthly_proration_quote_is_blocked(): void
+    public function test_yearly_subscription_large_credit_monthly_quote_is_blocked(): void
     {
-        $subscription = $this->createYearlySubscription($this->essential);
+        $subscription = $this->createYearlySubscription(
+            $this->essential,
+            Carbon::now()->addYear()->startOfDay(),
+        );
 
         $response = $this->withHeaders($this->authHeaders())
             ->getJson("/api/v1/subscriptions/{$subscription->id}/proration-quote?to_plan_id={$this->professional->id}&billing_cycle=monthly");
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('cannot upgrade to a monthly plan', $response->json('message'));
+        $this->assertStringContainsString('exceeds the monthly upgrade price', $response->json('message'));
+    }
+
+    public function test_yearly_subscription_small_credit_monthly_quote_is_allowed(): void
+    {
+        $subscription = $this->createYearlySubscription(
+            $this->essential,
+            Carbon::now()->addDay()->startOfDay(),
+        );
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->getJson("/api/v1/subscriptions/{$subscription->id}/proration-quote?to_plan_id={$this->professional->id}&billing_cycle=monthly");
+
+        $response->assertStatus(200);
+        $this->assertSame('monthly', $response->json('data.billing_cycle'));
     }
 
     public function test_monthly_subscription_can_still_upgrade_to_monthly_plan(): void
