@@ -78,10 +78,11 @@ class PaymentReceiptService
         );
     }
 
-    public function email(BillingPayment $payment): bool
+    public function email(BillingPayment $payment, ?string $to = null): bool
     {
         $business = $payment->business ?: $payment->business()->first();
-        $receiverEmail = $payment->user?->email
+        $receiverEmail = $to
+            ?? $payment->user?->email
             ?? $business?->email
             ?? $business?->owner?->email;
 

@@ -87,6 +87,20 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         });
     }
 
+    public function test_receipt_email_uses_explicit_recipient_when_provided(): void
+    {
+        Mail::fake();
+        $payment = $this->makeCompletedTopUpPayment();
+
+        $sent = $this->receiptService()->email($payment, 'accounts@example.com');
+
+        $this->assertTrue($sent);
+        Mail::assertSent(StandardEmail::class, function (StandardEmail $mail) {
+            $this->assertSame('accounts@example.com', $mail->to[0]['address']);
+            return true;
+        });
+    }
+
     public function test_history_feed_merges_payments_changes_and_credits_newest_first(): void
     {
         $subscription = $this->subscribeAndActivateEssential($this->enigmaTech);

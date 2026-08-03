@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Billing\EmailReceiptRequest;
 use App\Http\Requests\Billing\InitiatePaymentRequest;
 use App\Http\Resources\Billing\PaymentCollection;
 use App\Http\Resources\Billing\PaymentResource;
@@ -78,8 +79,10 @@ class PaymentController extends Controller
         return $this->receiptService->download($payment);
     }
 
-    public function emailReceipt(int $id, Request $request): JsonResponse
+    public function emailReceipt(int $id, EmailReceiptRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+
         $payment = $this->paymentService->getById($id);
 
         if (!$payment) {
@@ -90,7 +93,7 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
         }
 
-        $sent = $this->receiptService->email($payment);
+        $sent = $this->receiptService->email($payment, $validated['email'] ?? null);
 
         if (!$sent) {
             return response()->json([
