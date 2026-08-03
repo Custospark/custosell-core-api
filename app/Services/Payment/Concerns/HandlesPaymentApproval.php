@@ -43,6 +43,14 @@ trait HandlesPaymentApproval
     private function handleRenewalPayment(Subscription $subscription, BillingPayment $payment): void
     {
         $this->persistPaidBillingCycle($subscription, $payment);
+
+        // An early renewal (paid while the current period is still running) extends
+        // the existing next_billing_date instead of resetting it from today.
+        if ($subscription->next_billing_date?->isFuture() ?? false) {
+            $this->subscriptionService->renewEarly($subscription);
+            return;
+        }
+
         $this->subscriptionService->renewSubscription($subscription, $payment);
     }
 

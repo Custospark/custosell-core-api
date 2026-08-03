@@ -19,6 +19,7 @@ interface SubscriptionServiceInterface
     public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null): Subscription;
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription;
     public function renewSubscription(Subscription $subscription, $payment = null): Subscription;
+    public function renewEarly(Subscription $subscription): Subscription;
     public function markPastDue(Subscription $subscription): Subscription;
     public function suspend(Subscription $subscription): Subscription;
     public function cancel(int $id, bool $immediate = false): Subscription;

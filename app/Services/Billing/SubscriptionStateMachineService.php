@@ -71,6 +71,40 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
         });
     }
 
+    public function renewEarly(Subscription $subscription): Subscription
+    {
+        if ($subscription->status !== SubscriptionStatus::ACTIVE) {
+            throw new \RuntimeException(
+                "Cannot renew subscription early with status '{$subscription->status->value}'. Only active subscriptions can be renewed early."
+            );
+        }
+
+        if ($subscription->isCancelAtPeriodEnd()) {
+            throw new \RuntimeException(
+                'Cannot renew a subscription that is set to cancel at the end of the billing period.'
+            );
+        }
+
+        return DB::transaction(function () use ($subscription) {
+            // Extend from the existing schedule so the billing date does not drift.
+            // Fall back to now only if a stale past date is already stored.
+            $from = $subscription->next_billing_date?->isFuture() ?? false
+                ? $subscription->next_billing_date
+                : Carbon::now();
+
+            $data = [
+                'status' => SubscriptionStatus::ACTIVE,
+                'next_billing_date' => $this->nextBillingDate($from, $subscription->billing_cycle ?? 'monthly'),
+                'grace_period_ends_at' => null,
+                'metadata' => array_merge($subscription->metadata ?? [], [
+                    'renewed_early_at' => Carbon::now()->toDateTimeString(),
+                ]),
+            ];
+
+            return $this->subscriptionRepository->update($subscription, $data);
+        });
+    }
+
     public function markPastDue(Subscription $subscription): Subscription
     {
         if ($subscription->status !== SubscriptionStatus::ACTIVE) {

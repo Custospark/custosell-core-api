@@ -261,6 +261,11 @@ class SubscriptionService implements SubscriptionServiceInterface
         return $this->stateMachineService->renewSubscription($subscription, $payment);
     }
 
+    public function renewEarly(Subscription $subscription): Subscription
+    {
+        return $this->stateMachineService->renewEarly($subscription);
+    }
+
     public function markPastDue(Subscription $subscription): Subscription
     {
         return $this->stateMachineService->markPastDue($subscription);

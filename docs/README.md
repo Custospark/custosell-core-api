@@ -21,3 +21,4 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 | [2026-08-02-subscription-state-machine-date-driven.md](./adr/2026-08-02-subscription-state-machine-date-driven.md) | Subscription state machine — date-driven transitions, date-setting points, access fairness |
 | [2026-08-03-billing-cycle-authoritative.md](./adr/2026-08-03-billing-cycle-authoritative.md) | Billing cycle is authoritative server-side — yearly/monthly charges, renewal lock, persistence |
 | [2026-08-03-block-yearly-to-monthly-upgrade.md](./adr/2026-08-03-block-yearly-to-monthly-upgrade.md) | Block yearly→monthly upgrade when unused credit exceeds the new monthly charge (amount-based) |
+| [2026-08-03-early-renewal.md](./adr/2026-08-03-early-renewal.md) | Allow active subscriptions to renew early — advance-pay to keep next_billing_date in the future |
