@@ -34,6 +34,7 @@ trait HandlesPaymentApproval
             'onboarding' => $this->subscriptionService->activateAfterOnboarding($subscription),
             'subscription' => $this->handleSubscriptionPayment($subscription, $payment),
             'renewal' => $this->handleRenewalPayment($subscription, $payment),
+            'topup' => $this->handleTopUpPayment($subscription, $payment),
             'upgrade_proration' => $this->handleUpgradeProration($payment, $subscription),
             'billing_cycle_change' => $this->handleBillingCycleChange($payment, $subscription),
             default => null,
@@ -52,6 +53,15 @@ trait HandlesPaymentApproval
         }
 
         $this->subscriptionService->renewSubscription($subscription, $payment);
+    }
+
+    private function handleTopUpPayment(Subscription $subscription, BillingPayment $payment): void
+    {
+        $this->persistPaidBillingCycle($subscription, $payment);
+
+        $months = (int) ($payment->metadata['topup_months'] ?? 1);
+
+        $this->subscriptionService->renewEarly($subscription, $months);
     }
 
     /**

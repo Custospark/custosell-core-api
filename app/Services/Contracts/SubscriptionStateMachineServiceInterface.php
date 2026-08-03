@@ -8,7 +8,7 @@ interface SubscriptionStateMachineServiceInterface
 {
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription;
     public function renewSubscription(Subscription $subscription, $payment = null): Subscription;
-    public function renewEarly(Subscription $subscription): Subscription;
+    public function renewEarly(Subscription $subscription, ?int $months = null): Subscription;
     public function markPastDue(Subscription $subscription): Subscription;
     public function suspend(Subscription $subscription): Subscription;
     public function reactivate(Subscription $subscription): Subscription;

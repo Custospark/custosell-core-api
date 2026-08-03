@@ -21,7 +21,7 @@ class PaymentValidator
         $paymentType = $data['payment_type'] ?? 'subscription';
         $amount = (float) ($data['amount'] ?? 0);
         $currency = strtoupper($data['currency'] ?? 'USD');
-        $effectiveCycle = $paymentType === 'renewal'
+        $effectiveCycle = in_array($paymentType, ['renewal', 'topup'], true)
             ? ($subscription->billing_cycle ?? 'monthly')
             : (in_array($data['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
                 ? $data['billing_cycle']
@@ -39,18 +39,26 @@ class PaymentValidator
             }
         }
 
-        $expectedUsd = match ($paymentType) {
-            'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
-            'subscription' => $effectiveCycle === 'yearly'
-                ? (float) ($plan?->price_yearly_usd ?? 0)
-                : (float) ($plan?->price_monthly_usd ?? 0),
-            'renewal' => $effectiveCycle === 'yearly'
-                ? (float) ($plan?->price_yearly_usd ?? 0)
-                : (float) ($plan?->price_monthly_usd ?? 0),
-            'upgrade_proration' => (float) ($subscription->metadata['pending_upgrade_amount_usd'] ?? $amount),
-            'billing_cycle_change' => (float) ($subscription->metadata['pending_cycle_change_amount_usd'] ?? $amount),
-            default => $amount,
-        };
+        if ($paymentType === 'topup') {
+            $topupMonths = (int) ($data['topup_months'] ?? 0);
+            $monthlyRate = $effectiveCycle === 'yearly'
+                ? ((float) ($plan?->price_yearly_usd ?? 0) / 12)
+                : (float) ($plan?->price_monthly_usd ?? 0);
+            $expectedUsd = round($topupMonths * $monthlyRate, 2);
+        } else {
+            $expectedUsd = match ($paymentType) {
+                'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
+                'subscription' => $effectiveCycle === 'yearly'
+                    ? (float) ($plan?->price_yearly_usd ?? 0)
+                    : (float) ($plan?->price_monthly_usd ?? 0),
+                'renewal' => $effectiveCycle === 'yearly'
+                    ? (float) ($plan?->price_yearly_usd ?? 0)
+                    : (float) ($plan?->price_monthly_usd ?? 0),
+                'upgrade_proration' => (float) ($subscription->metadata['pending_upgrade_amount_usd'] ?? $amount),
+                'billing_cycle_change' => (float) ($subscription->metadata['pending_cycle_change_amount_usd'] ?? $amount),
+                default => $amount,
+            };
+        }
 
         if ($currency === 'USD') {
             $expected = $expectedUsd;

@@ -71,7 +71,7 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
         });
     }
 
-    public function renewEarly(Subscription $subscription): Subscription
+    public function renewEarly(Subscription $subscription, ?int $months = null): Subscription
     {
         if ($subscription->status !== SubscriptionStatus::ACTIVE) {
             throw new \RuntimeException(
@@ -85,7 +85,14 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
             );
         }
 
-        return DB::transaction(function () use ($subscription) {
+        // Default to one full stored period (monthly=1, yearly=12) when no months given.
+        $months = $months ?? ($subscription->billing_cycle === 'yearly' ? 12 : 1);
+
+        if ($months < 1) {
+            throw new \RuntimeException('Cannot renew early with fewer than 1 month.');
+        }
+
+        return DB::transaction(function () use ($subscription, $months) {
             // Extend from the existing schedule so the billing date does not drift.
             // Fall back to now only if a stale past date is already stored.
             $from = $subscription->next_billing_date?->isFuture() ?? false
@@ -94,10 +101,11 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
 
             $data = [
                 'status' => SubscriptionStatus::ACTIVE,
-                'next_billing_date' => $this->nextBillingDate($from, $subscription->billing_cycle ?? 'monthly'),
+                'next_billing_date' => $from->copy()->addMonths($months),
                 'grace_period_ends_at' => null,
                 'metadata' => array_merge($subscription->metadata ?? [], [
                     'renewed_early_at' => Carbon::now()->toDateTimeString(),
+                    'topup_months' => $months,
                 ]),
             ];
 

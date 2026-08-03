@@ -70,13 +70,28 @@ class GatewayService
         // yearly), but renewals always follow the subscription's stored cycle — a user on yearly
         // must not be switched to monthly (or vice versa) through a renewal payment.
         $paymentType = $data['payment_type'] ?? 'subscription';
-        $effectiveCycle = $paymentType === 'renewal'
+        $effectiveCycle = $paymentType === 'renewal' || $paymentType === 'topup'
             ? ($subscription->billing_cycle ?? 'monthly')
             : (in_array($data['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
                 ? $data['billing_cycle']
                 : ($subscription->billing_cycle ?? 'monthly'));
         $data['billing_cycle'] = $effectiveCycle;
         $plan = $this->resolveEffectivePlan($subscription, $data);
+
+        // Top-up: charge the chosen number of months prorated to the stored
+        // billing cycle — monthly rate on monthly subs, yearly/12 on yearly subs.
+        if ($paymentType === 'topup') {
+            $topupMonths = (int) ($data['topup_months'] ?? 0);
+            if ($topupMonths < 1) {
+                throw new GatewayException('topup_months must be a positive integer (1..60).', $gatewayName);
+            }
+            $monthlyRate = $effectiveCycle === 'yearly'
+                ? ((float) ($plan?->price_yearly_usd ?? 0) / 12)
+                : (float) ($plan?->price_monthly_usd ?? 0);
+            $data['amount'] = round($topupMonths * $monthlyRate, 2);
+            $data['topup_months'] = $topupMonths;
+        }
+
         $data['amount'] = match ($paymentType) {
             'onboarding' => (float) ($plan?->onboarding_fee_usd ?? 0),
             'subscription', 'renewal' => $effectiveCycle === 'yearly'
@@ -154,6 +169,7 @@ class GatewayService
                             'original_amount' => $originalAmount,
                             'referral_discount_applied' => $referralDiscount,
                             'credit_application_ids' => array_map(fn ($a) => $a->id, array_filter($creditApplications)),
+                            'topup_months' => $data['topup_months'] ?? null,
                         ]
                     ),
                 ]);
@@ -218,6 +234,7 @@ class GatewayService
                     'referral_discount_applied' => $referralDiscount,
                     'credit_used' => $creditResult['credit_used'] ?? 0,
                     'credit_application_ids' => array_map(fn ($a) => $a->id, $creditApplications),
+                    'topup_months' => $data['topup_months'] ?? null,
                 ]
             ),
             'idempotency_key' => $idempotencyKey,
