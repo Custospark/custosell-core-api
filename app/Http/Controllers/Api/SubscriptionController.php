@@ -137,6 +137,8 @@ class SubscriptionController extends Controller
         $effective = $validated['effective'] ?? 'immediate';
         $billingCycle = $validated['billing_cycle'] ?? null;
 
+        $this->assertUpgradeCycleAllowed($subscription->billing_cycle, $billingCycle);
+
         $quote = $this->paymentQuoteService->getQuote($subscription, $toPlanId, $billingCycle);
 
         if ($effective === 'immediate') {
@@ -216,6 +218,11 @@ class SubscriptionController extends Controller
         if ($subscription->business_id !== $request->user()->business_id) {
             abort(403);
         }
+
+        $this->assertUpgradeCycleAllowed(
+            $subscription->billing_cycle,
+            $validated['billing_cycle'] ?? null,
+        );
 
         $quote = $this->paymentQuoteService->getQuote(
             $subscription,
@@ -337,6 +344,13 @@ class SubscriptionController extends Controller
             return response()->json(null, 204);
         } catch (\RuntimeException $e) {
             abort(404, 'Subscription not found');
+        }
+    }
+
+    protected function assertUpgradeCycleAllowed(?string $currentCycle, ?string $targetCycle): void
+    {
+        if ($currentCycle === 'yearly' && $targetCycle === 'monthly') {
+            abort(422, 'You cannot upgrade to a monthly plan while on an annual plan. Please choose the yearly option to continue upgrading.');
         }
     }
 }
