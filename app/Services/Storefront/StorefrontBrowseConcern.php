@@ -175,11 +175,8 @@ trait StorefrontBrowseConcern
 
         $businessCategories = BusinessCategory::query()
             ->select('business_categories.id', 'business_categories.slug', 'business_categories.name')
-            ->selectRaw('COUNT(businesses.id) as cnt')
+            ->selectRaw('SUM(CASE WHEN businesses.id IS NOT NULL AND businesses.deleted_at IS NULL AND businesses.storefront_enabled = true AND businesses.status NOT IN ('.implode(',', array_map(fn ($s) => "'".$s."'", $blocked)).') THEN 1 ELSE 0 END) as cnt')
             ->leftJoin('businesses', 'businesses.business_category_id', '=', 'business_categories.id')
-            ->whereNull('businesses.deleted_at')
-            ->where('businesses.storefront_enabled', true)
-            ->whereNotIn('businesses.status', $blocked)
             ->groupBy('business_categories.id', 'business_categories.slug', 'business_categories.name')
             ->orderBy('business_categories.sort_order')
             ->orderBy('business_categories.name')
@@ -256,7 +253,7 @@ trait StorefrontBrowseConcern
 
         return [
             'business_categories' => $businessCategories
-                ->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name, 'count' => (int) $c->cnt])
+                ->map(fn ($c) => ['id' => (int) $c->id, 'slug' => $c->slug, 'name' => $c->name, 'count' => (int) $c->cnt])
                 ->values(),
             'locations' => [
                 'countries' => $mergedCountries,
