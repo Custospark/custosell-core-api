@@ -22,6 +22,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    |
+    | When REQUIRE_EMAIL_VERIFICATION is enabled in the environment, a user
+    | whose email has not been verified must complete email verification
+    | during login before an auth token is issued.
+    |
+    */
+
+    'verification' => [
+        'required' => (bool) env('REQUIRE_EMAIL_VERIFICATION', false),
+        'code_ttl_minutes' => (int) env('VERIFICATION_CODE_TTL_MINUTES', 10),
+        'code_digits' => 6,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |

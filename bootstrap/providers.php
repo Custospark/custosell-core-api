@@ -15,6 +15,7 @@ use App\Providers\OrderServiceProvider;
 use App\Providers\PlanServiceProvider;
 use App\Providers\PurchaseOrderServiceProvider;
 use App\Providers\AccountingServiceProvider;
+use App\Providers\AccountSecurityServiceProvider;
 use App\Providers\BillingServiceProvider;
 use App\Providers\PaymentGatewayServiceProvider;
 use App\Providers\EstimateServiceProvider;
@@ -62,6 +63,7 @@ return [
     StaffTransferServiceProvider::class,
     SyncServiceProvider::class,
     AccountingServiceProvider::class,
+    AccountSecurityServiceProvider::class,
     BillingServiceProvider::class,
     PaymentGatewayServiceProvider::class,
     PipelineServiceProvider::class,

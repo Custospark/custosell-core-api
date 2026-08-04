@@ -37,6 +37,8 @@ class UserResource extends JsonResource
                 'is_default' => $loc->is_default,
             ])),
             'is_active' => (bool) ($this->is_active ?? true),
+            'email_verified_at' => $this->email_verified_at?->toISOString(),
+            'two_factor_enabled' => (bool) $this->two_factor_enabled,
             'is_business_owner' => $this->is_business_owner ?? $this->business?->owner_id === $this->id,
             'business_name' => $this->whenLoaded('business', fn () => $this->business?->name),
             'business' => $this->whenLoaded('business', function () {

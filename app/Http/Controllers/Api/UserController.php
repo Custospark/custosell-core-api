@@ -11,6 +11,7 @@ use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\Contracts\LocationServiceInterface;
+use App\Services\Contracts\AccountAuditLogServiceInterface;
 use App\Services\ModuleAccessService;
 use App\Services\StaffMembershipService;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ class UserController extends Controller
         protected ModuleAccessService $moduleAccess,
         protected StaffMembershipService $staffMembership,
         protected LocationServiceInterface $locationService,
+        protected AccountAuditLogServiceInterface $auditLogService,
     ) {}
 
     public function lookup(Request $request): JsonResponse
@@ -139,6 +141,7 @@ class UserController extends Controller
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->input('password'));
+            $this->auditLogService->log($user, 'password_changed', [], $request->ip(), $request->userAgent());
         }
 
         if ($request->has('modules')) {

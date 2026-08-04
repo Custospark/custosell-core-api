@@ -28,6 +28,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'email_verified_at',
+        'two_factor_enabled',
         'is_active',
         'phone',
         'avatar',
@@ -56,6 +58,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',

@@ -7,9 +7,14 @@ use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Requests\SendVerificationCodeRequest;
+use App\Http\Requests\VerifyCodeRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Password;
 use App\Models\Shift;
+use App\Models\User;
+use App\Services\Contracts\AccountAuditLogServiceInterface;
+use App\Services\Contracts\AccountVerificationServiceInterface;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\Contracts\SubscriptionStateMachineServiceInterface;
 use App\Services\Platform\PlatformAdminService;
@@ -23,6 +28,8 @@ class AuthController extends Controller
         protected UserServiceInterface $userService,
         protected PlatformAdminService $platformAdminService,
         protected SubscriptionStateMachineServiceInterface $subscriptionStateMachine,
+        protected AccountVerificationServiceInterface $verificationService,
+        protected AccountAuditLogServiceInterface $auditLogService,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -63,60 +70,121 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        $user->load(['business.subscription.plan', 'business.subscription.referral.referralCode', 'role', 'roles', 'location', 'locations']);
-        $this->reconcileSubscription($user);
-        $this->platformAdminService->assignIfEligible($user);
+        if (config('auth.verification.required') && !$user->email_verified_at) {
+            $this->verificationService->issue(
+                $user,
+                AccountVerificationServiceInterface::PURPOSE_EMAIL_VERIFICATION,
+                $request->ip(),
+                $request->userAgent(),
+            );
 
-        if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
-            $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
-            $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
-            if ($business && in_array($business->status, $blocked, true)) {
-                $message = $business->status === 'suspended'
-                    ? 'Your business account has been suspended.'
-                    : 'Your business account has been restricted.';
-
-                return response()->json(['message' => $message], 403);
-            }
+            return response()->json([
+                'message' => 'Please verify your email address to continue.',
+                'requires_email_verification' => true,
+                'email' => $user->email,
+            ], 403);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
+        if ($user->two_factor_enabled) {
+            $this->verificationService->issue(
+                $user,
+                AccountVerificationServiceInterface::PURPOSE_TWO_FACTOR,
+                $request->ip(),
+                $request->userAgent(),
+            );
+            $this->auditLogService->log($user, 'two_factor_challenge', [], $request->ip(), $request->userAgent());
 
-        if ($user->business_id) {
-            $user->business?->forceFill(['last_activity_at' => now()])->save();
+            return response()->json([
+                'message' => 'Enter the security code sent to your email to finish signing in.',
+                'requires_two_factor' => true,
+                'email' => $user->email,
+            ], 403);
         }
 
-        if ($user->business_id) {
-            $activeShift = Shift::where('business_id', $user->business_id)
-                ->where('user_id', $user->id)
-                ->whereNull('clock_out')
-                ->where('status', 'active')
-                ->first();
+        return $this->authResponse($request, $user);
+    }
 
-            if (!$activeShift) {
-                $activeShift = Shift::create([
-                    'business_id' => $user->business_id,
-                    'user_id' => $user->id,
-                    'clock_in' => now(),
-                    'status' => 'active',
-                ]);
-            }
+    public function sendVerificationCode(SendVerificationCodeRequest $request): JsonResponse
+    {
+        $user = $this->userService->findByEmail($request->email);
 
-            $user->setRelation('activeShift', $activeShift);
-        } else {
-            $user->setRelation('activeShift', null);
+        if (!$user) {
+            return response()->json(['message' => 'Invalid credentials'], 404);
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        if ($request->purpose === AccountVerificationServiceInterface::PURPOSE_EMAIL_VERIFICATION && $user->email_verified_at) {
+            return response()->json(['message' => 'Your email is already verified.'], 422);
+        }
 
-        return response()->json([
-            'user' => new UserResource($user),
-            'token' => $token,
-        ]);
+        $this->verificationService->issue(
+            $user,
+            $request->purpose,
+            $request->ip(),
+            $request->userAgent(),
+        );
+
+        return response()->json(['message' => 'If that email address is associated with an account, a security code has been sent.']);
+    }
+
+    public function verify(VerifyCodeRequest $request): JsonResponse
+    {
+        $user = $this->userService->findByEmail($request->email);
+
+        if (!$user) {
+            return response()->json(['message' => 'That security code is invalid or has expired.'], 422);
+        }
+
+        if ($request->purpose === AccountVerificationServiceInterface::PURPOSE_EMAIL_VERIFICATION) {
+            return $this->verifyEmail($request, $user);
+        }
+
+        if (!$user->two_factor_enabled) {
+            return response()->json(['message' => 'Two-factor authentication is not enabled on this account.'], 422);
+        }
+
+        if (!$this->verificationService->verify($user, $request->purpose, $request->code)) {
+            return response()->json(['message' => 'That security code is invalid or has expired.'], 422);
+        }
+
+        $this->auditLogService->log($user, 'two_factor_passed', [], $request->ip(), $request->userAgent());
+
+        return $this->authResponse($request, $user->refresh());
+    }
+
+    private function verifyEmail(Request $request, User $user): JsonResponse
+    {
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Your email is already verified.'], 422);
+        }
+
+        if (!$this->verificationService->verify($user, AccountVerificationServiceInterface::PURPOSE_EMAIL_VERIFICATION, $request->code)) {
+            return response()->json(['message' => 'That security code is invalid or has expired.'], 422);
+        }
+
+        $user->forceFill(['email_verified_at' => now()])->save();
+        $this->auditLogService->log($user, 'email_verified', [], $request->ip(), $request->userAgent());
+
+        // Email verification only opens the account — if 2FA is enabled, the
+        // sign-in still needs the second factor before completing.
+        if ($user->refresh()->two_factor_enabled) {
+            $this->verificationService->issue($user, AccountVerificationServiceInterface::PURPOSE_TWO_FACTOR, $request->ip(), $request->userAgent());
+            $this->auditLogService->log($user, 'two_factor_challenge', [], $request->ip(), $request->userAgent());
+
+            return response()->json([
+                'message' => 'Enter the security code sent to your email to finish signing in.',
+                'requires_two_factor' => true,
+                'email' => $user->email,
+            ], 403);
+        }
+
+        return $this->authResponse($request, $user);
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $this->auditLogService->log($user, 'logout', [], $request->ip(), $request->userAgent());
+        $user->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
     }
 
@@ -163,6 +231,65 @@ class AuthController extends Controller
         }
 
         return new UserResource($user);
+    }
+
+    /**
+     * Build the success auth payload (loads relations, reconciles subscription,
+     * reopens the active shift, issues a token) shared by login and verify.
+     */
+    private function authResponse(Request $request, User $user): JsonResponse
+    {
+        $user->load(['business.subscription.plan', 'business.subscription.referral.referralCode', 'role', 'roles', 'location', 'locations']);
+        $this->reconcileSubscription($user);
+        $this->platformAdminService->assignIfEligible($user);
+
+        if (! $this->platformAdminService->isPlatformAdmin($user) && $user->business_id) {
+            $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
+            $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+            if ($business && in_array($business->status, $blocked, true)) {
+                $message = $business->status === 'suspended'
+                    ? 'Your business account has been suspended.'
+                    : 'Your business account has been restricted.';
+
+                return response()->json(['message' => $message], 403);
+            }
+        }
+
+        $user->forceFill(['last_login_at' => now()])->save();
+
+        if ($user->business_id) {
+            $user->business?->forceFill(['last_activity_at' => now()])->save();
+        }
+
+        if ($user->business_id) {
+            $activeShift = Shift::where('business_id', $user->business_id)
+                ->where('user_id', $user->id)
+                ->whereNull('clock_out')
+                ->where('status', 'active')
+                ->first();
+
+            if (!$activeShift) {
+                $activeShift = Shift::create([
+                    'business_id' => $user->business_id,
+                    'user_id' => $user->id,
+                    'clock_in' => now(),
+                    'status' => 'active',
+                ]);
+            }
+
+            $user->setRelation('activeShift', $activeShift);
+        } else {
+            $user->setRelation('activeShift', null);
+        }
+
+        $this->auditLogService->log($user, 'login', ['via' => $request->purpose ?? 'password'], $request->ip(), $request->userAgent());
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => new UserResource($user),
+            'token' => $token,
+        ]);
     }
 
     /**

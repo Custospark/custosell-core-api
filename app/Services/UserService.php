@@ -135,6 +135,11 @@ class UserService implements UserServiceInterface
         return $user;
     }
 
+    public function findByEmail(string $email): ?User
+    {
+        return $this->userRepository->findByEmail($email);
+    }
+
     public function createStaff(int $businessId, array $data, bool $mirrorEmployee = true): User
     {
         $this->assertWithinStaffLimit($businessId);
