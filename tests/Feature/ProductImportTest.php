@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Business;
+use App\Models\Location;
+use App\Models\LocationProduct;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
@@ -65,6 +67,55 @@ class ProductImportTest extends TestCase
         $this->assertSame(150, Product::where('business_id', $this->business->id)->count());
 
         @unlink($path);
+    }
+
+    public function test_import_maps_products_to_logged_in_user_branch_by_default(): void
+    {
+        $main = Location::create(['business_id' => $this->business->id, 'name' => 'Main', 'is_default' => true, 'is_active' => true]);
+        $annex = Location::create(['business_id' => $this->business->id, 'name' => 'Annex', 'is_default' => false, 'is_active' => true]);
+        $this->admin->location_id = $annex->id;
+        $this->admin->save();
+
+        $path = $this->makeStockImportFile('Mapped-1', 5);
+        $results = app(ProductImportService::class)->import($this->business->id, $path, $this->admin->id);
+
+        $this->assertSame(1, $results['imported']);
+        $product = Product::where('business_id', $this->business->id)->firstOrFail();
+        $this->assertSame($annex->id, LocationProduct::where('product_id', $product->id)->value('location_id'));
+
+        @unlink($path);
+    }
+
+    public function test_import_honours_branch_chosen_in_upload_modal(): void
+    {
+        $main = Location::create(['business_id' => $this->business->id, 'name' => 'Main', 'is_default' => true, 'is_active' => true]);
+        $annex = Location::create(['business_id' => $this->business->id, 'name' => 'Annex', 'is_default' => false, 'is_active' => true]);
+        $this->admin->location_id = $main->id;
+        $this->admin->save();
+
+        $path = $this->makeStockImportFile('Mapped-2', 3);
+        $results = app(ProductImportService::class)->import($this->business->id, $path, $this->admin->id, $annex->id);
+
+        $this->assertSame(1, $results['imported']);
+        $product = Product::where('business_id', $this->business->id)->firstOrFail();
+        $this->assertSame($annex->id, LocationProduct::where('product_id', $product->id)->value('location_id'));
+
+        @unlink($path);
+    }
+
+    protected function makeStockImportFile(string $name, int $qty): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description'],
+        ]);
+        $sheet->fromArray([[$name, 'Pieces', '', '1000', '', '', $qty, '5', 'SKU-MAP', '', '18', 'standard', '']], null, 'A2');
+
+        $path = tempnam(sys_get_temp_dir(), 'product-import-') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return $path;
     }
 
     protected function makeImportFile(int $rows): string

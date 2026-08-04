@@ -33,6 +33,7 @@ class ProductImportController extends Controller
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+            'location_id' => ['nullable', 'integer'],
         ]);
 
         $businessId = $request->user()->business_id;
@@ -51,6 +52,7 @@ class ProductImportController extends Controller
             $businessId,
             $request->file('file')->getPathname(),
             $request->user()->id,
+            $request->integer('location_id') ?: null,
         );
 
         return response()->json($results);
