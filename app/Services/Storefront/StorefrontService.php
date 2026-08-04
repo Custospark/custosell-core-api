@@ -57,6 +57,7 @@ class StorefrontService
         ])->values();
 
         return [
+            'id' => (int) $business->id,
             'name' => $business->name,
             'slug' => $business->slug,
             'description' => $business->description,
