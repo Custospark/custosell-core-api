@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\PasswordChangeRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\SendVerificationCodeRequest;
 use App\Http\Requests\VerifyCodeRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\StandardEmail;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use App\Models\Shift;
 use App\Models\User;
@@ -186,6 +190,57 @@ class AuthController extends Controller
         $this->auditLogService->log($user, 'logout', [], $request->ip(), $request->userAgent());
         $user->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
+    }
+
+    public function initiatePasswordChange(PasswordChangeRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Your current password is incorrect.'], 422);
+        }
+
+        $this->verificationService->issue(
+            $user,
+            AccountVerificationServiceInterface::PURPOSE_PASSWORD_CHANGE,
+            $request->ip(),
+            $request->userAgent(),
+            ['password' => Hash::make($request->password)],
+        );
+
+        return response()->json([
+            'message' => 'Enter the security code sent to your email to confirm the password change.',
+            'requires_password_confirmation' => true,
+        ]);
+    }
+
+    public function confirmPasswordChange(Request $request): JsonResponse
+    {
+        $request->validate(['code' => ['required', 'string', 'digits:6']]);
+
+        $user = $request->user();
+        $context = $this->verificationService->verify(
+            $user,
+            AccountVerificationServiceInterface::PURPOSE_PASSWORD_CHANGE,
+            $request->code,
+        );
+
+        if ($context === null || empty($context['password'])) {
+            return response()->json(['message' => 'That security code is invalid or has expired.'], 422);
+        }
+
+        $user->forceFill(['password' => $context['password']])->save();
+        $this->auditLogService->log($user, 'password_changed', [], $request->ip(), $request->userAgent());
+
+        Mail::to($user->email)->send(new StandardEmail(
+            title: 'Your Custosell password was changed',
+            mailBody: 'Your account password was changed successfully. If this was you, no further action is needed.',
+            ctaLabel: 'Sign in to Custosell',
+            ctaUrl: config('app.frontend_url', config('app.url')),
+            tip: "This change was made from {$request->ip()}.",
+        ));
+
+        return response()->json(['message' => 'Your password has been updated.']);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse

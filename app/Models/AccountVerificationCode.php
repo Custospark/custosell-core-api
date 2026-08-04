@@ -11,6 +11,7 @@ class AccountVerificationCode extends Model
         'user_id',
         'purpose',
         'code_hash',
+        'context',
         'expires_at',
         'used_at',
     ];
@@ -18,6 +19,7 @@ class AccountVerificationCode extends Model
     protected function casts(): array
     {
         return [
+            'context' => 'array',
             'expires_at' => 'datetime',
             'used_at' => 'datetime',
         ];

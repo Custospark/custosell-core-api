@@ -213,22 +213,84 @@ class AccountSecurityTest extends TestCase
         ]);
     }
 
-    public function test_password_change_is_audited(): void
+    public function test_password_change_requires_confirmation_code(): void
     {
-        $user = $this->user(['email_verified_at' => now()]);
+        $user = $this->user(['email_verified_at' => now(), 'password' => bcrypt('currentpass1')]);
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        $this->putJson('/api/v1/auth/profile', [
-            'name' => $user->name,
-            'email' => $user->email,
+        $this->postJson('/api/v1/auth/password/initiate', [
+            'current_password' => 'currentpass1',
             'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()
+            ->assertJson(['requires_password_confirmation' => true]);
+
+        $this->assertTrue(Hash::check('currentpass1', $user->fresh()->password));
+        $this->assertDatabaseHas('account_verification_codes', [
+            'user_id' => $user->id,
+            'purpose' => 'password_change',
+            'used_at' => null,
+        ]);
+    }
+
+    public function test_password_change_rejects_wrong_current_password(): void
+    {
+        $user = $this->user(['email_verified_at' => now(), 'password' => bcrypt('currentpass1')]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->postJson('/api/v1/auth/password/initiate', [
+            'current_password' => 'wrongpass',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(422);
+    }
+
+    public function test_password_change_confirm_applies_and_audits(): void
+    {
+        $user = $this->user(['email_verified_at' => now(), 'password' => bcrypt('currentpass1')]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        AccountVerificationCode::create([
+            'user_id' => $user->id,
+            'purpose' => 'password_change',
+            'code_hash' => Hash::make('123456'),
+            'context' => ['password' => Hash::make('newpassword123')],
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $this->postJson('/api/v1/auth/password/confirm', [
+            'code' => '123456',
+        ], ['Authorization' => 'Bearer '.$token])
             ->assertOk();
 
+        $this->assertTrue(Hash::check('newpassword123', $user->fresh()->password));
         $this->assertDatabaseHas('account_audit_logs', [
             'user_id' => $user->id,
             'action' => 'password_changed',
         ]);
     }
+
+    public function test_password_change_confirm_rejects_bad_code(): void
+    {
+        $user = $this->user(['email_verified_at' => now(), 'password' => bcrypt('currentpass1')]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        AccountVerificationCode::create([
+            'user_id' => $user->id,
+            'purpose' => 'password_change',
+            'code_hash' => Hash::make('123456'),
+            'context' => ['password' => Hash::make('newpassword123')],
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $this->postJson('/api/v1/auth/password/confirm', [
+            'code' => '999999',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(422);
+
+        $this->assertTrue(Hash::check('currentpass1', $user->fresh()->password));
+    }
 }
+
