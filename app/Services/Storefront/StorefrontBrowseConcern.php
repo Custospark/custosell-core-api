@@ -338,9 +338,19 @@ trait StorefrontBrowseConcern
     /** Effective price SQL — mirrors Product::effectiveUnitPrice(). */
     private function effectivePriceSql(): string
     {
+        $driver = $this->connectionDriver();
+        $clamp = $driver === 'sqlite'
+            ? 'MIN(100, MAX(0, products.discount_percent))'
+            : 'LEAST(100, GREATEST(0, products.discount_percent))';
         return '(CASE WHEN COALESCE(products.discount_percent, 0) > 0 '
-            .'THEN ROUND(products.unit_price * (1 - LEAST(100, GREATEST(0, products.discount_percent)) / 100), 2) '
+            ."THEN ROUND(products.unit_price * (1 - {$clamp} / 100), 2) "
             .'ELSE products.unit_price END)';
+    }
+
+    /** DB driver name — SQLite lacks LEAST()/GREATEST(), so facets clamp differently. */
+    private function connectionDriver(): string
+    {
+        return (string) \Illuminate\Support\Facades\DB::connection()->getDriverName();
     }
 
     private function applyPriceRangeFilter(Builder $query, mixed $min, mixed $max): void
