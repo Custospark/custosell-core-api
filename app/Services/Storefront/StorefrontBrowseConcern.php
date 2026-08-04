@@ -174,7 +174,7 @@ trait StorefrontBrowseConcern
         $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
 
         $businessCategories = BusinessCategory::query()
-            ->select('business_categories.slug', 'business_categories.name')
+            ->select('business_categories.id', 'business_categories.slug', 'business_categories.name')
             ->selectRaw('COUNT(businesses.id) as cnt')
             ->leftJoin('businesses', 'businesses.business_category_id', '=', 'business_categories.id')
             ->whereNull('businesses.deleted_at')
