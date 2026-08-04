@@ -158,8 +158,13 @@ class StorefrontService
             ]);
     }
 
-    public function shopProducts(Business $business, ?string $category = null, ?int $viewerUserId = null): Collection
-    {
+    public function shopProducts(
+        Business $business,
+        ?string $category = null,
+        ?int $viewerUserId = null,
+        int $perPage = 24,
+        int $page = 1,
+    ): LengthAwarePaginator {
         $query = Product::query()
             ->where('business_id', $business->id)
             ->where('listed_for_storefront', true)
@@ -179,7 +184,9 @@ class StorefrontService
 
         $this->withProductStorefrontRatingAggregates($query, $viewerUserId);
 
-        return $query->orderBy('name')->get();
+        return $query
+            ->orderBy('name')
+            ->paginate(min(48, max(1, $perPage)), ['*'], 'page', max(1, $page));
     }
 
     /**

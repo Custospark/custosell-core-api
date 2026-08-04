@@ -202,12 +202,26 @@ class StorefrontController
         $business = $this->storefront->findEnabledShop($slug);
         $viewerId = Auth::guard('sanctum')->id();
         $viewer = $viewerId ? (int) $viewerId : null;
-        $products = $this->storefront->shopProducts($business, $request->query('category'), $viewer);
+        $paginator = $this->storefront->shopProducts(
+            $business,
+            $request->query('category'),
+            $viewer,
+            (int) $request->query('per_page', 24),
+            (int) $request->query('page', 1),
+        );
         $shop = $this->storefront->shopWithRatings((int) $business->id, $viewer);
 
         return response()->json([
-            'data' => $products->map(fn ($p) => $this->storefront->publicProductPayload($p, $viewer))->values(),
+            'data' => collect($paginator->items())->map(
+                fn ($p) => $this->storefront->publicProductPayload($p, $viewer)
+            )->values(),
             'shop' => $this->storefront->publicShopPayload($shop, $viewer),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
         ]);
     }
 
