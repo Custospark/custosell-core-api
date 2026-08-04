@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Models\BusinessCategory;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\StorefrontLocations;
 use App\Support\StorefrontSlug;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,7 +56,7 @@ trait StorefrontBrowseConcern
     }
 
     /**
-     * @param  array<string, mixed>  $filters  keys: business_category, type, price_min, price_max,
+     * @param  array<string, mixed>  $filters  keys: business_category, type, currency, price_min, price_max,
      *                                         in_stock, min_rating, city, country, sort
      */
     public function discoverProducts(
@@ -91,6 +92,7 @@ trait StorefrontBrowseConcern
             );
         }
         $this->applyProductTypeFilter($query, $filters['type'] ?? null);
+        $this->applyCurrencyFilter($query, $filters['currency'] ?? null);
         $this->applyPriceRangeFilter($query, $filters['price_min'] ?? null, $filters['price_max'] ?? null);
         $this->applyInStockFilter($query, $filters['in_stock'] ?? null);
         $this->applyRatingFilter($query, $filters['min_rating'] ?? null, 'product');
@@ -128,7 +130,7 @@ trait StorefrontBrowseConcern
     }
 
     /**
-     * @param  array<string, mixed>  $filters  keys: type, price_min, price_max, in_stock, min_rating, sort
+     * @param  array<string, mixed>  $filters  keys: type, currency, price_min, price_max, in_stock, min_rating, sort
      */
     public function shopProducts(
         Business $business,
@@ -155,6 +157,7 @@ trait StorefrontBrowseConcern
 
         $this->applyProductCategoryFilter($query, $category);
         $this->applyProductTypeFilter($query, $filters['type'] ?? null);
+        $this->applyCurrencyFilter($query, $filters['currency'] ?? null);
         $this->applyPriceRangeFilter($query, $filters['price_min'] ?? null, $filters['price_max'] ?? null);
         $this->applyInStockFilter($query, $filters['in_stock'] ?? null);
         $this->applyRatingFilter($query, $filters['min_rating'] ?? null, 'product');
@@ -189,7 +192,8 @@ trait StorefrontBrowseConcern
             ->selectRaw('COUNT(*) as count')
             ->groupBy('name')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->keyBy(fn ($r) => mb_strtolower((string) $r->name));
 
         $cities = Business::query()->publicStorefront()
             ->whereNotNull('city')
@@ -198,7 +202,42 @@ trait StorefrontBrowseConcern
             ->selectRaw('COUNT(*) as count')
             ->groupBy('name')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->keyBy(fn ($r) => mb_strtolower((string) $r->name));
+
+        $currencies = Business::query()->publicStorefront()
+            ->whereNotNull('currency')
+            ->whereRaw('TRIM(currency) <> ?', [''])
+            ->selectRaw('TRIM(currency) as name')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('name')
+            ->orderBy('name')
+            ->get()
+            ->keyBy(fn ($r) => strtoupper((string) $r->name));
+
+        // Merge the authoritative reference list (never empty, East Africa first)
+        // with live counts so businesses already showing options keep their counts.
+        $mergedCountries = collect(StorefrontLocations::countries())
+            ->map(fn (string $name) => [
+                'name' => $name,
+                'count' => (int) ($countries[mb_strtolower($name)]->count ?? 0),
+            ])
+            ->values();
+
+        $mergedCities = collect(StorefrontLocations::cities())
+            ->map(fn (string $name) => [
+                'name' => $name,
+                'count' => (int) ($cities[mb_strtolower($name)]->count ?? 0),
+            ])
+            ->values();
+
+        $mergedCurrencies = collect(StorefrontLocations::currencies())
+            ->map(fn (string $label, string $code) => [
+                'code' => $code,
+                'name' => $label,
+                'count' => (int) ($currencies[strtoupper($code)]->count ?? 0),
+            ])
+            ->values();
 
         $types = $this->listedProductsQuery()
             ->select('products.type')
@@ -220,13 +259,10 @@ trait StorefrontBrowseConcern
                 ->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name, 'count' => (int) $c->cnt])
                 ->values(),
             'locations' => [
-                'countries' => $countries
-                    ->map(fn ($r) => ['name' => $r->name, 'count' => (int) $r->count])
-                    ->values(),
-                'cities' => $cities
-                    ->map(fn ($r) => ['name' => $r->name, 'count' => (int) $r->count])
-                    ->values(),
+                'countries' => $mergedCountries,
+                'cities' => $mergedCities,
             ],
+            'currencies' => $mergedCurrencies,
             'product_types' => $types
                 ->map(fn ($t) => ['value' => $t->type, 'name' => $typeLabels[$t->type] ?? $t->type, 'count' => (int) $t->count])
                 ->values(),
@@ -287,6 +323,19 @@ trait StorefrontBrowseConcern
         if (in_array($type, [Product::TYPE_PRODUCT, Product::TYPE_SERVICE], true)) {
             $query->where('products.type', $type);
         }
+    }
+
+    /** Match products whose owning business trades in the given currency (case-insensitive). */
+    private function applyCurrencyFilter(Builder $query, mixed $currency): void
+    {
+        if ($currency === null || trim((string) $currency) === '') {
+            return;
+        }
+        $needle = mb_strtoupper(trim((string) $currency));
+        $query->whereHas(
+            'business',
+            fn (Builder $b) => $b->whereRaw('UPPER(TRIM(businesses.currency)) = ?', [$needle])
+        );
     }
 
     /** Effective price SQL — mirrors Product::effectiveUnitPrice(). */
