@@ -176,7 +176,7 @@ class ProductTest extends TestCase
             ->deleteJson("/api/v1/products/{$product->id}");
 
         $response->assertStatus(204);
-        $this->assertSoftDeleted('products', ['id' => $product->id]);
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
     }
 
     public function test_low_stock_products_endpoint(): void

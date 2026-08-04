@@ -125,14 +125,16 @@ class ProductService implements ProductServiceInterface
         if (!$product) {
             throw new \RuntimeException('Product not found');
         }
-        return $this->productRepository->delete($product);
+        $product->forceDelete();
+
+        return true;
     }
 
     public function bulkDelete(array $ids, int $businessId): int
     {
         return \App\Models\Product::whereIn('id', $ids)
             ->where('business_id', $businessId)
-            ->delete();
+            ->forceDelete();
     }
 
     public function bulkUpdateListing(array $ids, int $businessId, string $channel, bool $listed): int
