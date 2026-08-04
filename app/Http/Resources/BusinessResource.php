@@ -32,6 +32,8 @@ class BusinessResource extends JsonResource
             'business_phone' => $this->business_phone,
             'timezone' => $this->timezone,
             'business_type' => $this->business_type,
+            'business_category_id' => $this->business_category_id,
+            'business_category' => $this->whenLoaded('businessCategory', fn () => $this->businessCategory?->name),
             'currency' => $this->currency,
             'receipt_footer' => $this->receipt_footer,
             'payment_bank_name' => $this->payment_bank_name,

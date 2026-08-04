@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             DefaultAccountingTemplateSeeder::class,
             AccountingModuleSeeder::class,
             GuideFaqSeeder::class,
+            BusinessCategorySeeder::class,
         ];
 
         if (app()->environment('staging')) {

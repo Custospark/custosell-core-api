@@ -34,6 +34,7 @@ class BusinessRequest extends BaseFormRequest
             'business_phone' => ['nullable', 'string', 'max:50'],
             'timezone' => ['nullable', 'string', 'max:50'],
             'business_type' => ['nullable', 'string', 'max:50'],
+            'business_category_id' => ['nullable', 'integer', 'exists:business_categories,id'],
             'currency' => ['nullable', 'string', 'max:10'],
             'receipt_footer' => ['nullable', 'string'],
             'payment_bank_name' => ['nullable', 'string', 'max:150'],

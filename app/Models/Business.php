@@ -75,6 +75,7 @@ class Business extends Model
         'is_open_for_supply',
         'supply_headline',
         'storefront_enabled',
+        'business_category_id',
         'primary_intent',
         'secondary_intent',
         'intent_completed_at',
@@ -128,6 +129,11 @@ class Business extends Model
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class);
+    }
+
+    public function businessCategory(): BelongsTo
+    {
+        return $this->belongsTo(BusinessCategory::class);
     }
 
     public function categories(): HasMany
