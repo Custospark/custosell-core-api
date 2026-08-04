@@ -187,7 +187,7 @@ trait StorefrontBrowseConcern
             ->whereRaw('TRIM(country) <> ?', [''])
             ->selectRaw('TRIM(country) as name')
             ->selectRaw('COUNT(*) as count')
-            ->groupBy('name')
+            ->groupByRaw('TRIM(country)')
             ->orderBy('name')
             ->get()
             ->keyBy(fn ($r) => mb_strtolower((string) $r->name));
@@ -197,7 +197,7 @@ trait StorefrontBrowseConcern
             ->whereRaw('TRIM(city) <> ?', [''])
             ->selectRaw('TRIM(city) as name')
             ->selectRaw('COUNT(*) as count')
-            ->groupBy('name')
+            ->groupByRaw('TRIM(city)')
             ->orderBy('name')
             ->get()
             ->keyBy(fn ($r) => mb_strtolower((string) $r->name));
@@ -207,7 +207,7 @@ trait StorefrontBrowseConcern
             ->whereRaw('TRIM(currency) <> ?', [''])
             ->selectRaw('TRIM(currency) as name')
             ->selectRaw('COUNT(*) as count')
-            ->groupBy('name')
+            ->groupByRaw('TRIM(currency)')
             ->orderBy('name')
             ->get()
             ->keyBy(fn ($r) => strtoupper((string) $r->name));
