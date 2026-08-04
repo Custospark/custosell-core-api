@@ -20,6 +20,7 @@ use Illuminate\Validation\ValidationException;
 class StorefrontService
 {
     use StorefrontCatalogConcern;
+    use StorefrontBrowseConcern;
 
     public function __construct(
         private readonly OrderServiceInterface $orderService,
@@ -50,7 +51,7 @@ class StorefrontService
             $my = $business->myStorefrontRating?->rating;
         }
 
-        $business->loadMissing('socialLinks');
+        $business->loadMissing(['socialLinks', 'businessCategory']);
         $socialLinks = $business->socialLinks->map(fn ($link) => [
             'platform' => $link->platform,
             'url' => $link->url,
@@ -72,131 +73,11 @@ class StorefrontService
             'rating_avg' => $count > 0 ? round((float) $avg, 1) : 0,
             'rating_count' => $count,
             'my_rating' => $my !== null ? (int) $my : null,
+            'category' => $business->businessCategory
+                ? ['slug' => $business->businessCategory->slug, 'name' => $business->businessCategory->name]
+                : null,
             'social_links' => $socialLinks,
         ];
-    }
-
-    public function discoverShops(?string $q, int $perPage = 24, ?int $viewerUserId = null): LengthAwarePaginator
-    {
-        $query = Business::query()->publicStorefront();
-
-        if ($q !== null && trim($q) !== '') {
-            // Discover invites "@username" — strip so slug LIKE matches.
-            $normalized = ltrim(trim($q), '@');
-            $term = '%'.$normalized.'%';
-            $slugTerm = '%'.StorefrontSlug::normalize($normalized).'%';
-            $query->where(function (Builder $b) use ($term, $slugTerm) {
-                $b->where('name', 'like', $term)
-                    ->orWhere('city', 'like', $term)
-                    ->orWhere('description', 'like', $term)
-                    ->orWhere('slug', 'like', $term)
-                    ->orWhere('slug', 'like', $slugTerm);
-            });
-        }
-
-        $this->withShopStorefrontRatingAggregates($query, $viewerUserId);
-
-        return $query
-            ->orderBy('name')
-            ->paginate(min(48, max(1, $perPage)));
-    }
-
-    public function discoverProducts(?string $q, ?string $category, int $perPage = 24, ?int $viewerUserId = null): LengthAwarePaginator
-    {
-        $query = $this->listedProductsQuery();
-
-        if ($q !== null && trim($q) !== '') {
-            $term = '%'.trim($q).'%';
-            $query->where(function (Builder $b) use ($term) {
-                $b->where('products.name', 'like', $term)
-                    ->orWhere('products.description', 'like', $term)
-                    ->orWhereHas('business', fn (Builder $bb) => $bb->where('name', 'like', $term));
-            });
-        }
-
-        if ($category !== null && trim($category) !== '') {
-            $cat = trim($category);
-            $query->whereHas('category', function (Builder $b) use ($cat) {
-                if (ctype_digit($cat)) {
-                    $b->where('categories.id', (int) $cat);
-                } else {
-                    $b->where('categories.name', 'like', '%'.$cat.'%');
-                }
-            });
-        }
-
-        $this->withProductStorefrontRatingAggregates($query, $viewerUserId);
-
-        return $query
-            ->with(['category:id,name', 'business:id,name,slug,logo_path,city,currency,storefront_enabled'])
-            ->orderByDesc('products.storefront_listed_at')
-            ->orderByDesc('products.id')
-            ->paginate(min(48, max(1, $perPage)));
-    }
-
-    /** @return Collection<int, array{id: int|null, name: string, product_count: int}> */
-    public function discoverCategories(): Collection
-    {
-        $query = Category::query()
-            ->select('categories.id', 'categories.name')
-            ->selectRaw('COUNT(products.id) as product_count')
-            ->join('products', 'products.category_id', '=', 'categories.id')
-            ->join('businesses', 'businesses.id', '=', 'products.business_id');
-        Business::constrainJoinedPublicStorefront($query);
-
-        return $query
-            ->whereNull('businesses.deleted_at')
-            ->where('products.listed_for_storefront', true)
-            ->where('products.is_active', true)
-            ->whereNull('products.deleted_at')
-            ->groupBy('categories.id', 'categories.name')
-            ->orderBy('categories.name')
-            ->get()
-            ->map(fn (Category $c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'product_count' => (int) $c->product_count,
-            ]);
-    }
-
-    public function shopProducts(
-        Business $business,
-        ?string $category = null,
-        ?int $viewerUserId = null,
-        int $perPage = 24,
-        int $page = 1,
-        ?string $q = null,
-    ): LengthAwarePaginator {
-        $query = Product::query()
-            ->where('business_id', $business->id)
-            ->where('listed_for_storefront', true)
-            ->where('is_active', true)
-            ->with(['category:id,name']);
-
-        if ($q !== null && trim($q) !== '') {
-            $term = '%'.trim($q).'%';
-            $query->where(function (Builder $b) use ($term) {
-                $b->where('products.name', 'like', $term)
-                    ->orWhere('products.description', 'like', $term);
-            });
-        }
-
-        if ($category !== null && trim($category) !== '') {
-            $cat = trim($category);
-            $query->whereHas('category', function (Builder $b) use ($cat) {
-                if (ctype_digit($cat)) {
-                    $b->where('categories.id', (int) $cat);
-                } else {
-                    $b->where('categories.name', 'like', '%'.$cat.'%');
-                }
-            });
-        }
-
-        $this->withProductStorefrontRatingAggregates($query, $viewerUserId);
-
-        return $query
-            ->orderBy('name')
-            ->paginate(min(48, max(1, $perPage)), ['*'], 'page', max(1, $page));
     }
 
     /**
@@ -236,6 +117,48 @@ class StorefrontService
         $product = $fresh->firstOrFail();
 
         return $this->publicProductPayload($product, $userId);
+    }
+
+    /** @return array<string, mixed> */
+    public function buyerOrderPayload(Order $order): array
+    {
+        $business = $order->business;
+        $sale = $order->relationLoaded('sale') ? $order->sale : null;
+        $invoice = $sale && $sale->relationLoaded('linkedInvoice') ? $sale->linkedInvoice : null;
+
+        $items = $order->relationLoaded('items')
+            ? $order->items->map(static fn ($item) => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'product_name' => $item->product_name,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => $item->unit_price,
+                'subtotal' => $item->subtotal,
+            ])->values()->all()
+            : [];
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'total_amount' => $order->total_amount,
+            'items_count' => count($items) > 0 ? count($items) : ($order->items?->count() ?? 0),
+            'items' => $items,
+            'customer_name' => $order->customer_name,
+            'customer_phone' => $order->customer_phone,
+            'delivery_address' => $order->delivery_address,
+            'delivery_city' => $order->delivery_city,
+            'notes' => $order->notes,
+            'created_at' => $order->created_at?->toISOString(),
+            'shop_name' => $business?->name,
+            'shop_slug' => $business?->slug,
+            'currency' => $business?->currency ?? 'UGX',
+            'sale_id' => $sale?->id,
+            'receipt_number' => $sale?->receipt_number,
+            'payment_status' => $sale?->payment_status,
+            'invoice_id' => $invoice?->id,
+            'invoice_number' => $invoice?->invoice_number,
+        ];
     }
 
     /**
@@ -383,48 +306,6 @@ class StorefrontService
         }
 
         return $query->paginate(min(48, max(1, $perPage)));
-    }
-
-    /** @return array<string, mixed> */
-    public function buyerOrderPayload(Order $order): array
-    {
-        $business = $order->business;
-        $sale = $order->relationLoaded('sale') ? $order->sale : null;
-        $invoice = $sale && $sale->relationLoaded('linkedInvoice') ? $sale->linkedInvoice : null;
-
-        $items = $order->relationLoaded('items')
-            ? $order->items->map(static fn ($item) => [
-                'id' => $item->id,
-                'product_id' => $item->product_id,
-                'product_name' => $item->product_name,
-                'quantity' => (int) $item->quantity,
-                'unit_price' => $item->unit_price,
-                'subtotal' => $item->subtotal,
-            ])->values()->all()
-            : [];
-
-        return [
-            'id' => $order->id,
-            'order_number' => $order->order_number,
-            'status' => $order->status,
-            'total_amount' => $order->total_amount,
-            'items_count' => count($items) > 0 ? count($items) : ($order->items?->count() ?? 0),
-            'items' => $items,
-            'customer_name' => $order->customer_name,
-            'customer_phone' => $order->customer_phone,
-            'delivery_address' => $order->delivery_address,
-            'delivery_city' => $order->delivery_city,
-            'notes' => $order->notes,
-            'created_at' => $order->created_at?->toISOString(),
-            'shop_name' => $business?->name,
-            'shop_slug' => $business?->slug,
-            'currency' => $business?->currency ?? 'UGX',
-            'sale_id' => $sale?->id,
-            'receipt_number' => $sale?->receipt_number,
-            'payment_status' => $sale?->payment_status,
-            'invoice_id' => $invoice?->id,
-            'invoice_number' => $invoice?->invoice_number,
-        ];
     }
 
     public function findBuyerOrder(int $buyerUserId, int $orderId): ?Order

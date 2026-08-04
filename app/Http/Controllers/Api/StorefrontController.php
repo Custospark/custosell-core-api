@@ -138,6 +138,7 @@ class StorefrontController
         $viewer = $viewerId ? (int) $viewerId : null;
         $paginator = $this->storefront->discoverShops(
             $request->query('q'),
+            $this->shopFilters($request),
             (int) $request->query('per_page', 24),
             $viewer,
         );
@@ -163,6 +164,7 @@ class StorefrontController
         $paginator = $this->storefront->discoverProducts(
             $request->query('q'),
             $request->query('category'),
+            $this->productFilters($request),
             (int) $request->query('per_page', 24),
             $viewerId ? (int) $viewerId : null,
         );
@@ -190,6 +192,13 @@ class StorefrontController
         ]);
     }
 
+    public function facets(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->storefront->discoverFacets(),
+        ]);
+    }
+
     public function show(string $slug): JsonResponse
     {
         $viewerId = Auth::guard('sanctum')->id();
@@ -208,6 +217,7 @@ class StorefrontController
         $paginator = $this->storefront->shopProducts(
             $business,
             $request->query('category'),
+            $this->shopProductFilters($request),
             $viewer,
             (int) $request->query('per_page', 24),
             (int) $request->query('page', 1),
@@ -374,5 +384,56 @@ class StorefrontController
             'total_amount' => $order->total_amount,
             'order' => new OrderResource($order),
         ], 201);
+    }
+
+    /** @return array{category?: string, city?: string, country?: string, min_rating?: string, sort?: string} */
+    private function shopFilters(Request $request): array
+    {
+        return $this->present([
+            'category' => $request->query('category'),
+            'city' => $request->query('city'),
+            'country' => $request->query('country'),
+            'min_rating' => $request->query('min_rating'),
+            'sort' => $request->query('sort'),
+        ]);
+    }
+
+    /** @return array<string, string> */
+    private function productFilters(Request $request): array
+    {
+        return $this->present([
+            'business_category' => $request->query('business_category'),
+            'type' => $request->query('type'),
+            'price_min' => $request->query('price_min'),
+            'price_max' => $request->query('price_max'),
+            'in_stock' => $request->query('in_stock'),
+            'min_rating' => $request->query('min_rating'),
+            'city' => $request->query('city'),
+            'country' => $request->query('country'),
+            'sort' => $request->query('sort'),
+        ]);
+    }
+
+    /** @return array<string, string> */
+    private function shopProductFilters(Request $request): array
+    {
+        return $this->present([
+            'type' => $request->query('type'),
+            'price_min' => $request->query('price_min'),
+            'price_max' => $request->query('price_max'),
+            'in_stock' => $request->query('in_stock'),
+            'min_rating' => $request->query('min_rating'),
+            'sort' => $request->query('sort'),
+        ]);
+    }
+
+    /** @param  array<string, mixed>  $values
+     *  @return array<string, string> */
+    private function present(array $values): array
+    {
+        return array_filter(
+            $values,
+            static fn ($v) => $v !== null && $v !== '',
+        );
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('storefront')->group(function () {
     Route::get('/discover', [StorefrontController::class, 'discover']);
     Route::get('/categories', [StorefrontController::class, 'categories']);
+    Route::get('/facets', [StorefrontController::class, 'facets']);
     Route::get('/shops', [StorefrontController::class, 'shops']);
     Route::get('/my-orders', [StorefrontController::class, 'myOrders'])
         ->middleware('auth:sanctum');
