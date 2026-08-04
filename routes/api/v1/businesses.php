@@ -16,7 +16,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'module:settings'])->group
     Route::get('/businesses/settings', [BusinessController::class, 'settings']);
     Route::put('/businesses/settings', [BusinessController::class, 'updateSettings']);
     Route::get('/businesses/export', [BusinessExportController::class, 'export']);
-    Route::delete('/businesses/account', [BusinessAccountController::class, 'destroy']);
+    Route::post('/businesses/account/initiate', [BusinessAccountController::class, 'initiateDestroy']);
+    Route::post('/businesses/account/confirm', [BusinessAccountController::class, 'confirmDestroy']);
     // Parameterized routes
     Route::get('/businesses/{id}', [BusinessController::class, 'show']);
     Route::put('/businesses/{id}', [BusinessController::class, 'update']);

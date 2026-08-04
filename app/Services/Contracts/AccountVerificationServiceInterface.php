@@ -10,6 +10,7 @@ interface AccountVerificationServiceInterface
     public const PURPOSE_TWO_FACTOR = 'two_factor';
     public const PURPOSE_PASSWORD_CHANGE = 'password_change';
     public const PURPOSE_PROFILE_CHANGE = 'profile_change';
+    public const PURPOSE_DELETE_ACCOUNT = 'delete_account';
 
     public function issue(User $user, string $purpose, ?string $ip = null, ?string $userAgent = null, array $context = []): void;
 

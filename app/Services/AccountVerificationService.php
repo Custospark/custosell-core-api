@@ -35,6 +35,7 @@ class AccountVerificationService implements AccountVerificationServiceInterface
             self::PURPOSE_TWO_FACTOR => 'Your Custosell sign-in code',
             self::PURPOSE_PASSWORD_CHANGE => 'Confirm your Custosell password change',
             self::PURPOSE_PROFILE_CHANGE => 'Confirm your Custosell profile change',
+            self::PURPOSE_DELETE_ACCOUNT => 'Confirm your Custosell account deletion',
             default => 'Verify your Custosell email',
         };
 
