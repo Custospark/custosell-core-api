@@ -36,6 +36,14 @@ Route::prefix('storefront')->group(function () {
         ->middleware(['auth:sanctum', 'throttle:60,1'])
         ->whereNumber('wishlist');
 
+    Route::get('/favorites', [StorefrontController::class, 'favorites'])
+        ->middleware('auth:sanctum');
+    Route::post('/favorites', [StorefrontController::class, 'addToFavorites'])
+        ->middleware(['auth:sanctum', 'throttle:60,1']);
+    Route::delete('/favorites/{business}', [StorefrontController::class, 'removeFromFavorites'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->whereNumber('business');
+
     Route::get('/{slug}', [StorefrontController::class, 'show'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::get('/{slug}/products', [StorefrontController::class, 'products'])->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
     Route::post('/{slug}/ratings', [StorefrontController::class, 'rateShop'])

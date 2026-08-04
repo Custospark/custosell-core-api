@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StorefrontPlaceOrderRequest;
+use App\Http\Requests\StorefrontFavoriteRequest;
 use App\Http\Requests\StorefrontWishlistRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\SaleResource;
 use App\Services\InvoicePdfBuilder;
 use App\Services\ReportExportService;
+use App\Services\Storefront\FavoriteService;
 use App\Services\Storefront\StorefrontBuyerDocumentService;
 use App\Services\Storefront\StorefrontService;
 use App\Services\Storefront\WishlistService;
@@ -27,6 +29,7 @@ class StorefrontController
         private readonly InvoicePdfBuilder $invoicePdfBuilder,
         private readonly ReportExportService $export,
         private readonly WishlistService $wishlist,
+        private readonly FavoriteService $favorites,
     ) {}
 
     public function myOrders(Request $request): JsonResponse
@@ -309,6 +312,41 @@ class StorefrontController
         }
 
         return response()->json(['message' => 'Removed from wishlist']);
+    }
+
+    public function favorites(Request $request): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $items = $this->favorites->list($userId, $userId);
+
+        return response()->json([
+            'data' => $items->values(),
+            'count' => $this->favorites->count($userId),
+        ]);
+    }
+
+    public function addToFavorites(StorefrontFavoriteRequest $request): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $businessId = (int) $request->validated()['business_id'];
+        $item = $this->favorites->add($userId, $businessId, $userId);
+
+        return response()->json([
+            'message' => 'Added to favorites',
+            'data' => $item,
+        ], 201);
+    }
+
+    public function removeFromFavorites(Request $request, int $business): JsonResponse
+    {
+        $userId = $this->requireBuyerId($request);
+        $deleted = $this->favorites->remove($userId, $business);
+
+        if (!$deleted) {
+            return response()->json(['message' => 'Favorite not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Removed from favorites']);
     }
 
     public function placeOrder(StorefrontPlaceOrderRequest $request, string $slug): JsonResponse
