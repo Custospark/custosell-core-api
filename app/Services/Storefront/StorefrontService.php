@@ -164,12 +164,21 @@ class StorefrontService
         ?int $viewerUserId = null,
         int $perPage = 24,
         int $page = 1,
+        ?string $q = null,
     ): LengthAwarePaginator {
         $query = Product::query()
             ->where('business_id', $business->id)
             ->where('listed_for_storefront', true)
             ->where('is_active', true)
             ->with(['category:id,name']);
+
+        if ($q !== null && trim($q) !== '') {
+            $term = '%'.trim($q).'%';
+            $query->where(function (Builder $b) use ($term) {
+                $b->where('products.name', 'like', $term)
+                    ->orWhere('products.description', 'like', $term);
+            });
+        }
 
         if ($category !== null && trim($category) !== '') {
             $cat = trim($category);

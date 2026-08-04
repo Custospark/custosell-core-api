@@ -208,6 +208,7 @@ class StorefrontController
             $viewer,
             (int) $request->query('per_page', 24),
             (int) $request->query('page', 1),
+            $request->query('q'),
         );
         $shop = $this->storefront->shopWithRatings((int) $business->id, $viewer);
 
