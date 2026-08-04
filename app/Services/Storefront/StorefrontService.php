@@ -50,6 +50,12 @@ class StorefrontService
             $my = $business->myStorefrontRating?->rating;
         }
 
+        $business->loadMissing('socialLinks');
+        $socialLinks = $business->socialLinks->map(fn ($link) => [
+            'platform' => $link->platform,
+            'url' => $link->url,
+        ])->values();
+
         return [
             'name' => $business->name,
             'slug' => $business->slug,
@@ -65,6 +71,7 @@ class StorefrontService
             'rating_avg' => $count > 0 ? round((float) $avg, 1) : 0,
             'rating_count' => $count,
             'my_rating' => $my !== null ? (int) $my : null,
+            'social_links' => $socialLinks,
         ];
     }
 

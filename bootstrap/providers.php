@@ -2,6 +2,7 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\BusinessServiceProvider;
+use App\Providers\BusinessSocialLinkServiceProvider;
 use App\Providers\CategoryServiceProvider;
 use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
@@ -42,6 +43,7 @@ return [
     PlanServiceProvider::class,
     UserServiceProvider::class,
     BusinessServiceProvider::class,
+    BusinessSocialLinkServiceProvider::class,
     RoleServiceProvider::class,
     CategoryServiceProvider::class,
     ProductServiceProvider::class,

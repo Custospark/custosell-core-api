@@ -1407,6 +1407,41 @@ Standard CRUD.
 
 ---
 
+## Business Social Links
+
+Owner-only (middleware: `auth:sanctum` + `business.active` + `business.owner` + `module:settings`).
+`platform` is free text (trimmed + lowercased); adding an existing platform **upserts**.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/business-social-links` | List my business's social links |
+| POST | `/business-social-links` | Create (or upsert by platform) |
+| GET | `/business-social-links/{id}` | Get one (404 if not owned) |
+| PUT | `/business-social-links/{id}` | Update URL / sort_order |
+| DELETE | `/business-social-links/{id}` | Delete |
+
+**Request body (POST/PUT):**
+```json
+{
+  "platform": "facebook",
+  "url": "https://facebook.com/my-business",
+  "sort_order": 0
+}
+```
+Validation: `platform` required string ≤50; `url` required valid URL ≤255; `sort_order` optional integer ≥0.
+201 on create; 200 on update; 204 on delete; 422 on validation failure; 404 for cross-business access.
+
+The public storefront payload (`GET /storefront/{slug}`) now also includes:
+```json
+{
+  "social_links": [
+    { "platform": "facebook", "url": "https://facebook.com/my-business" }
+  ]
+}
+```
+
+---
+
 ## Error Reference
 
 ### 401 Unauthenticated

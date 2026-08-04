@@ -714,3 +714,55 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 ---
 
 
+
+## BusinessSocialLink - 2026-08-04
+
+### Fields
+- id: bigint unsigned - PK
+- business_id: bigint unsigned - FK to businesses (cascade on delete)
+- platform: string - free-text platform name (lowercased+trimmed; no enum)
+- url: string - full URL (validated `url`)
+- sort_order: unsigned int - display order (default 0)
+- created_at / updated_at: timestamps
+
+### Files Generated/Updated
+- [x] Migration: `database/migrations/2026_08_04_140000_create_business_social_links_table.php`
+- [x] Model: `app/Models/BusinessSocialLink.php` (hasMany on Business: `socialLinks()`)
+- [x] Repository Interface: `app/Repositories/Contracts/BusinessSocialLinkRepositoryInterface.php`
+- [x] Repository: `app/Repositories/Eloquent/BusinessSocialLinkRepository.php`
+- [x] Service Interface: `app/Services/Contracts/BusinessSocialLinkServiceInterface.php`
+- [x] Service: `app/Services/BusinessSocialLinkService.php`
+- [x] Request: `app/Http/Requests/BusinessSocialLinkRequest.php`
+- [x] Resource: `app/Http/Resources/BusinessSocialLinkResource.php`
+- [x] Collection: `app/Http/Resources/BusinessSocialLinkCollection.php`
+- [x] Controller: `app/Http/Controllers/Api/BusinessSocialLinkController.php`
+- [x] API Routes: `routes/api/v1/business-social-links.php`
+- [x] Registered in: `routes/api.php`
+- [x] Provider: `app/Providers/BusinessSocialLinkServiceProvider.php` + registered in `bootstrap/providers.php`
+- [x] Factory: `database/factories/BusinessSocialLinkFactory.php`
+- [x] Storefront exposure: `app/Services/Storefront/StorefrontService.php::publicShopPayload()`
+
+### Provider Bindings
+- `BusinessSocialLinkRepositoryInterface` → `BusinessSocialLinkRepository`
+- `BusinessSocialLinkServiceInterface` → `BusinessSocialLinkService`
+
+### API Endpoints (owner-only: `business.owner` + `business.active` + `module:settings`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/business-social-links` | List all for my business |
+| GET | `/api/v1/business-social-links/{id}` | Get one (404 if not owned) |
+| POST | `/api/v1/business-social-links` | Create / upsert by platform |
+| PUT | `/api/v1/business-social-links/{id}` | Update |
+| DELETE | `/api/v1/business-social-links/{id}` | Delete |
+
+### Test Results
+- Lint: ✅ Passed
+- Migration: ✅ migrate --pretend OK
+- PHPUnit: ✅ BusinessSocialLinkTest 12/12 passed
+
+### SOLID Compliance Checklist
+- [x] Single Responsibility
+- [x] Open/Closed (free-text platform => no enum change per new network)
+- [x] Liskov Substitution
+- [x] Interface Segregation
+- [x] Dependency Inversion

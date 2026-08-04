@@ -223,6 +223,13 @@ class Business extends Model
         return $this->hasMany(BusinessStorefrontRating::class);
     }
 
+    public function socialLinks(): HasMany
+    {
+        return $this->hasMany(BusinessSocialLink::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
     /** Eager-load with a user_id constraint for the signed-in viewer. */
     public function myStorefrontRating(): HasOne
     {
