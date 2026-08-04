@@ -19,6 +19,7 @@ use App\Services\Storefront\WishlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class StorefrontController
@@ -236,6 +237,25 @@ class StorefrontController
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Single storefront product by slug. Public — guests can open shared links.
+     */
+    public function product(Request $request, string $slug, string $productSlug): JsonResponse
+    {
+        $business = $this->storefront->findEnabledShop($slug);
+        $viewerId = Auth::guard('sanctum')->id();
+        $viewer = $viewerId ? (int) $viewerId : null;
+
+        $product = $this->storefront->findListedProductForShop($business, $productSlug);
+        if ($product === null) {
+            throw ValidationException::withMessages(['product' => 'Product not found']);
+        }
+
+        return response()->json([
+            'data' => $this->storefront->publicProductPayload($product, $viewer),
         ]);
     }
 

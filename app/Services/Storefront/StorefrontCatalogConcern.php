@@ -31,6 +31,7 @@ trait StorefrontCatalogConcern
 
         return [
             'id' => $product->id,
+            'slug' => $product->slug,
             'name' => $product->name,
             'description' => $product->description,
             'unit_price' => $product->unit_price,

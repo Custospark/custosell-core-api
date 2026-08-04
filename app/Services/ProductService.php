@@ -50,6 +50,7 @@ class ProductService implements ProductServiceInterface
         $data = $this->normalizeCatalogType($data);
         $data['listed_for_supply'] = (bool) ($data['listed_for_supply'] ?? true);
         $data['listed_for_storefront'] = (bool) ($data['listed_for_storefront'] ?? true);
+        $data['slug'] = $data['slug'] ?? Product::makeUniqueSlug($businessId, (string) $data['name']);
 
         $locationId = isset($data['location_id'])
             ? (int) $data['location_id']
@@ -99,6 +100,12 @@ class ProductService implements ProductServiceInterface
             throw new \RuntimeException('Product not found');
         }
         $data = $this->normalizeCatalogType($data, $product);
+        $nameChanged = isset($data['name']) && $data['name'] !== $product->name;
+        if ($nameChanged && empty($data['slug'])) {
+            $data['slug'] = Product::makeUniqueSlug((int) $product->business_id, (string) $data['name'], $product->id);
+        } else {
+            unset($data['slug']);
+        }
 
         return $this->productRepository->update($product, $data);
     }

@@ -25,6 +25,7 @@ class Product extends Model
         'unit',
         'description',
         'sku',
+        'slug',
         'barcode',
         'unit_price',
         'discount_percent',
@@ -108,6 +109,28 @@ class Product extends Model
     public function isService(): bool
     {
         return ($this->type ?? self::TYPE_PRODUCT) === self::TYPE_SERVICE;
+    }
+
+    /**
+     * Build a business-unique slug from the product name (or fall back to id).
+     * Never user-entered — always derived from the name.
+     */
+    public static function makeUniqueSlug(int $businessId, string $name, ?int $ignoreId = null): string
+    {
+        $base = \Illuminate\Support\Str::slug($name);
+        $base = $base !== '' ? $base : 'product';
+        $slug = $base;
+        $n = 2;
+        while (static::query()
+            ->where('business_id', $businessId)
+            ->where('slug', $slug)
+            ->when($ignoreId !== null, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $slug = $base.'-'.$n;
+            $n++;
+        }
+
+        return $slug;
     }
 
     public function business(): BelongsTo

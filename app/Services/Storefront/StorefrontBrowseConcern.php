@@ -168,6 +168,22 @@ trait StorefrontBrowseConcern
             ->paginate(min(48, max(1, $perPage)), ['*'], 'page', max(1, $page));
     }
 
+    /**
+     * Resolve a single listed product by its storefront slug within an enabled
+     * shop. Returns null when the shop is unavailable or the product is not
+     * currently listed/active on the storefront.
+     */
+    public function findListedProductForShop(Business $business, string $productSlug): ?Product
+    {
+        return Product::query()
+            ->where('business_id', $business->id)
+            ->where('listed_for_storefront', true)
+            ->where('is_active', true)
+            ->where('slug', $productSlug)
+            ->with(['category:id,name', 'business:id,name,slug,logo_path,city,currency'])
+            ->first();
+    }
+
     /** @return array<string, mixed> */
     public function discoverFacets(): array
     {
