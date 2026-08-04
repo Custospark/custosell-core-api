@@ -22,6 +22,11 @@ class TestBusinessSeeder extends Seeder
         ['name' => 'business2', 'email' => 'tester2@custosell.com'],
         ['name' => 'business3', 'email' => 'tester3@custosell.com'],
         ['name' => 'business4', 'email' => 'tester4@custosell.com'],
+        ['name' => 'opiyo1', 'email' => 'opiyo1@custospark.com'],
+        ['name' => 'opiyo2', 'email' => 'opiyo2@custospark.com'],
+        ['name' => 'opiyo3', 'email' => 'opiyo3@custospark.com'],
+        ['name' => 'opiyo4', 'email' => 'opiyo4@custospark.com'],
+        ['name' => 'opiyo5', 'email' => 'opiyo5@custospark.com'],
     ];
 
     /** Password applied to every seeded test account. */
