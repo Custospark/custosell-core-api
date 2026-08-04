@@ -34,6 +34,7 @@ class AccountVerificationService implements AccountVerificationServiceInterface
         $title = match ($purpose) {
             self::PURPOSE_TWO_FACTOR => 'Your Custosell sign-in code',
             self::PURPOSE_PASSWORD_CHANGE => 'Confirm your Custosell password change',
+            self::PURPOSE_PROFILE_CHANGE => 'Confirm your Custosell profile change',
             default => 'Verify your Custosell email',
         };
 

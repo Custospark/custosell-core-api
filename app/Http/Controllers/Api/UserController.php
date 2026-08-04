@@ -118,24 +118,6 @@ class UserController extends Controller
         $user = $request->user();
         $data = [];
 
-        if ($request->has('name')) {
-            $data['name'] = $request->input('name');
-        }
-        if ($request->has('email')) {
-            $data['email'] = $request->input('email');
-        }
-        if ($request->has('phone')) {
-            $data['phone'] = $request->input('phone');
-        }
-
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                $oldPath = str_replace('/storage/', '', $user->avatar);
-                Storage::disk('public')->delete($oldPath);
-            }
-            $data['avatar'] = '/storage/' . $request->file('avatar')->store('avatars', 'public');
-        }
-
         if ($request->has('modules')) {
             if (! $this->moduleAccess->isBusinessOwner($user)) {
                 abort(403, 'Only the business owner can update module access from profile settings.');

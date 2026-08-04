@@ -292,5 +292,93 @@ class AccountSecurityTest extends TestCase
 
         $this->assertTrue(Hash::check('currentpass1', $user->fresh()->password));
     }
+
+    public function test_profile_change_requires_confirmation_code(): void
+    {
+        $user = $this->user(['email_verified_at' => now()]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->postJson('/api/v1/auth/profile/initiate', [
+            'name' => 'Updated Name',
+            'email' => 'newemail@example.com',
+            'phone' => '+256700000001',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()
+            ->assertJson(['requires_profile_confirmation' => true]);
+
+        $this->assertSame('security@example.com', $user->fresh()->email);
+        $this->assertDatabaseHas('account_verification_codes', [
+            'user_id' => $user->id,
+            'purpose' => 'profile_change',
+            'used_at' => null,
+        ]);
+    }
+
+    public function test_profile_change_confirm_applies_and_audits(): void
+    {
+        $user = $this->user(['email_verified_at' => now()]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        AccountVerificationCode::create([
+            'user_id' => $user->id,
+            'purpose' => 'profile_change',
+            'code_hash' => Hash::make('123456'),
+            'context' => [
+                'name' => 'Updated Name',
+                'email' => 'newemail@example.com',
+                'phone' => '+256700000001',
+            ],
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $this->postJson('/api/v1/auth/profile/confirm', [
+            'code' => '123456',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()
+            ->assertJson(['data' => ['name' => 'Updated Name', 'email' => 'newemail@example.com']]);
+
+        $fresh = $user->fresh();
+        $this->assertSame('newemail@example.com', $fresh->email);
+        $this->assertNull($fresh->email_verified_at);
+        $this->assertDatabaseHas('account_audit_logs', [
+            'user_id' => $user->id,
+            'action' => 'profile_updated',
+        ]);
+    }
+
+    public function test_profile_change_confirm_rejects_bad_code(): void
+    {
+        $user = $this->user(['email_verified_at' => now()]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        AccountVerificationCode::create([
+            'user_id' => $user->id,
+            'purpose' => 'profile_change',
+            'code_hash' => Hash::make('123456'),
+            'context' => ['name' => 'Updated Name', 'email' => 'newemail@example.com'],
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $this->postJson('/api/v1/auth/profile/confirm', [
+            'code' => '999999',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(422);
+
+        $this->assertSame('security@example.com', $user->fresh()->email);
+    }
+
+    public function test_profile_change_rejects_duplicate_email(): void
+    {
+        $this->user(['email_verified_at' => now()]);
+        User::factory()->create(['email' => 'taken@example.com', 'password' => bcrypt('password123')]);
+        $owner = $this->user(['email' => 'owner@example.com', 'email_verified_at' => now()]);
+        $token = $owner->createToken('auth-token')->plainTextToken;
+
+        $this->postJson('/api/v1/auth/profile/initiate', [
+            'name' => 'Updated Name',
+            'email' => 'taken@example.com',
+        ], ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(422);
+    }
 }
 

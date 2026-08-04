@@ -19,6 +19,8 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('/auth/two-factor', [AccountSecurityController::class, 'toggleTwoFactor']);
     Route::post('/auth/password/initiate', [AuthController::class, 'initiatePasswordChange']);
     Route::post('/auth/password/confirm', [AuthController::class, 'confirmPasswordChange']);
+    Route::post('/auth/profile/initiate', [AuthController::class, 'initiateProfileChange']);
+    Route::post('/auth/profile/confirm', [AuthController::class, 'confirmProfileChange']);
     Route::get('/auth/activity', [AccountSecurityController::class, 'activity']);
     Route::get('/auth/onboarding', [\App\Http\Controllers\Api\OnboardingController::class, 'show']);
     Route::patch('/auth/onboarding', [\App\Http\Controllers\Api\OnboardingController::class, 'update']);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\PasswordChangeRequest;
+use App\Http\Requests\ProfileChangeRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\SendVerificationCodeRequest;
@@ -25,6 +26,7 @@ use App\Services\Platform\PlatformAdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -241,6 +243,82 @@ class AuthController extends Controller
         ));
 
         return response()->json(['message' => 'Your password has been updated.']);
+    }
+
+    public function initiateProfileChange(ProfileChangeRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $context = [
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone'),
+        ];
+
+        if ($request->hasFile('avatar')) {
+            $context['avatar'] = '/storage/' . $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $this->verificationService->issue(
+            $user,
+            AccountVerificationServiceInterface::PURPOSE_PROFILE_CHANGE,
+            $request->ip(),
+            $request->userAgent(),
+            $context,
+        );
+
+        return response()->json([
+            'message' => 'Enter the security code sent to your email to confirm your profile changes.',
+            'requires_profile_confirmation' => true,
+        ]);
+    }
+
+    public function confirmProfileChange(Request $request): UserResource
+    {
+        $request->validate(['code' => ['required', 'string', 'digits:6']]);
+
+        $user = $request->user();
+        $context = $this->verificationService->verify(
+            $user,
+            AccountVerificationServiceInterface::PURPOSE_PROFILE_CHANGE,
+            $request->code,
+        );
+
+        if ($context === null || ! isset($context['name'], $context['email'])) {
+            abort(422, 'That security code is invalid or has expired.');
+        }
+
+        $data = [
+            'name' => $context['name'],
+            'email' => $context['email'],
+        ];
+
+        if (array_key_exists('phone', $context)) {
+            $data['phone'] = $context['phone'];
+        }
+
+        if (isset($context['avatar'])) {
+            $data['avatar'] = $context['avatar'];
+        }
+
+        if (($user->email ?? null) !== $context['email']) {
+            $data['email_verified_at'] = null;
+        }
+
+        $user->update($data);
+        $this->auditLogService->log($user, 'profile_updated', [], $request->ip(), $request->userAgent());
+
+        Mail::to($user->email)->send(new StandardEmail(
+            title: 'Your Custosell profile was updated',
+            mailBody: 'Your account profile details were updated successfully. If this was you, no further action is needed.',
+            ctaLabel: 'View your profile',
+            ctaUrl: config('app.frontend_url', config('app.url')) . '/account/profile',
+            tip: "This change was made from {$request->ip()}.",
+        ));
+
+        $user->load('business');
+
+        return new UserResource($user);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
