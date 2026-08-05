@@ -106,6 +106,21 @@
   {{ config('brand.company_email', 'support@custosell.com') }}.
 </p>
 
+<div class="section-title" style="margin-top:16px;">Questions? Contact Us</div>
+
+<table class="data">
+  <tbody>
+    <tr>
+      <td class="text-left">Email</td>
+      <td class="text-right">{{ $business->contact_email }}</td>
+    </tr>
+    <tr>
+      <td class="text-left">Website</td>
+      <td class="text-right">{{ $business->contact_website }}</td>
+    </tr>
+  </tbody>
+</table>
+
 <p style="margin-top:10px; font-size:9px; color:#047857; text-align:center; font-weight:bold;">
   PAID IN FULL — Thank you for your business.
 </p>

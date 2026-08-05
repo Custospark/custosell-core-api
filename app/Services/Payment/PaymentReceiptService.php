@@ -145,6 +145,8 @@ class PaymentReceiptService
             'website' => config('brand.url', 'https://www.custosell.com'),
             'tax_id' => null,
             'receipt_footer' => null,
+            'contact_email' => 'info@custospark.com',
+            'contact_website' => 'www.custospark.com',
         ];
     }
 }
