@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\ModuleAccessService;
+use App\Services\Platform\PlatformAdminService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,9 +19,13 @@ use Illuminate\Support\Facades\Hash;
  * on the Enterprise plan with billing through December 2030.
  *
  * Replaces the legacy info@custospark.com owner account (mirrors how we seed
- * test businesses): if the target email already exists it is reused; if only the
- * legacy email exists it is renamed; if neither exists the account + business are
- * created. Idempotent — safe to re-run.
+ * test businesses): if the target email already exists it is updated in place
+ * (update-or-create), if only the legacy email exists it is renamed, and if
+ * neither exists the account + business are created. Idempotent — safe to re-run.
+ *
+ * Platform admin access is granted through PlatformAdminService::assignIfEligible()
+ * only when the owner email is listed in config('platform.admin_emails')
+ * (PLATFORM_ADMIN_EMAILS), so the frontend surfaces the admin platform module.
  *
  * Only runs in production and local development (not staging/other envs).
  */
@@ -64,23 +69,43 @@ class PromoteOwnerBusinessSeeder extends Seeder
         );
     }
 
-    /** Find the target account; rename the legacy one or create a fresh owner. */
+    /** Find the target account (update-or-create); rename the legacy one if needed. */
     private function resolveOwner(): User
     {
+        $role = Role::where('slug', 'owner')->whereNull('business_id')->first();
+        $modules = [
+            ...ModuleAccessService::BUSINESS_MODULES,
+            ModuleAccessService::ESTIMATES_FULL_SLUG,
+            ModuleAccessService::HR_FULL_SLUG,
+        ];
+
         $owner = User::where('email', self::OWNER_EMAIL)->first();
+
         if ($owner) {
+            $owner->update([
+                'name' => self::OWNER_NAME,
+                'is_active' => true,
+                'account_type' => 'business',
+                'role_id' => $role?->id,
+                'modules' => $modules,
+            ]);
+
             return $owner;
         }
 
         $legacy = User::where('email', self::LEGACY_EMAIL)->first();
         if ($legacy) {
             $legacy->email = self::OWNER_EMAIL;
-            $legacy->save();
+            $legacy->update([
+                'name' => self::OWNER_NAME,
+                'is_active' => true,
+                'account_type' => 'business',
+                'role_id' => $role?->id,
+                'modules' => $modules,
+            ]);
 
             return $legacy;
         }
-
-        $role = Role::where('slug', 'owner')->whereNull('business_id')->first();
 
         return User::create([
             'name' => self::OWNER_NAME,
@@ -89,11 +114,7 @@ class PromoteOwnerBusinessSeeder extends Seeder
             'is_active' => true,
             'account_type' => 'business',
             'role_id' => $role?->id,
-            'modules' => [
-                ...ModuleAccessService::BUSINESS_MODULES,
-                ModuleAccessService::ESTIMATES_FULL_SLUG,
-                ModuleAccessService::HR_FULL_SLUG,
-            ],
+            'modules' => $modules,
         ]);
     }
 
@@ -146,9 +167,8 @@ class PromoteOwnerBusinessSeeder extends Seeder
             $owner->save();
         }
 
-        if (!$owner->hasRole('platform-admin')) {
-            $owner->assignRole('platform-admin');
-        }
+        // Grant admin access only when the owner email is configured as a platform admin.
+        app(PlatformAdminService::class)->assignIfEligible($owner);
     }
 
     private function ensureSubscription(Business $business, Plan $plan): void
