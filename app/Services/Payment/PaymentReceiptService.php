@@ -6,6 +6,7 @@ use App\Mail\StandardEmail;
 use App\Models\BillingPayment;
 use App\Models\Business;
 use App\Services\ReportExportService;
+use App\Support\BrandLogo;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -42,6 +43,8 @@ class PaymentReceiptService
 
         return [
             'business' => $this->companyBrand(),
+            'headerLogoDataUri' => BrandLogo::custosparkDataUri(),
+            'reportTitleLogoDataUri' => BrandLogo::custosellDataUri(),
             'reportTitle' => 'Custosell Subscription Receipt',
             'reportPurpose' => null,
             'accent' => '#1e40af',

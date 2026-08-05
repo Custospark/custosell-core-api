@@ -47,6 +47,9 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
 
         $this->assertStringContainsString('Custospark Company Ltd', $html);
         $this->assertStringContainsString('Custosell Subscription Receipt', $html);
+        $this->assertStringContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('header-logo', $html);
+        $this->assertStringContainsString('report-title-logo', $html);
         $this->assertStringContainsString('Custosell — Essential', $html);
         $this->assertStringContainsString('CUSTO-RCPT-1', $html);
         $this->assertStringContainsString('TXN-RCPT-1', $html);

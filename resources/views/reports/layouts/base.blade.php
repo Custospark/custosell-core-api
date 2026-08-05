@@ -41,6 +41,12 @@
     }
     .header p { margin: 1px 0; color: #4b5563; font-size: 9.5px; }
     .report-title { text-align: center; margin-bottom: 8px; }
+    .report-title-logo {
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
     .report-title h2 {
       font-family: DejaVu Sans, sans-serif;
       font-size: 15px;
@@ -231,9 +237,9 @@
 </head>
 <body>
   @php
-    $logoDataUri = null;
+    $logoDataUri = $headerLogoDataUri ?? null;
     $logoPath = isset($business->logo_path) ? $business->logo_path : null;
-    if ($logoPath) {
+    if (!$logoDataUri && $logoPath) {
       $relative = ltrim(str_replace('/storage/', '', (string) $logoPath), '/');
       $disk = \Illuminate\Support\Facades\Storage::disk('public');
       if ($relative !== '' && $disk->exists($relative)) {
@@ -257,6 +263,9 @@
   </div>
 
   <div class="report-title">
+    @if(!empty($reportTitleLogoDataUri))
+      <img class="report-title-logo" src="{{ $reportTitleLogoDataUri }}" alt="">
+    @endif
     <h2>{{ $reportTitle }}</h2>
     @if(!empty($reportSubtitle))<p>{{ $reportSubtitle }}</p>@endif
   </div>
