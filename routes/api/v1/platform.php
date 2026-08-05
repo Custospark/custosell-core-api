@@ -43,8 +43,10 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
 
     Route::middleware(['platform:platform.users.manage'])->group(function () {
         Route::patch('/users/{id}/status', [PlatformUserController::class, 'updateStatus']);
+        Route::patch('/users/{id}/privileges', [PlatformUserController::class, 'updatePrivileges']);
         Route::delete('/users/{id}', [PlatformUserController::class, 'destroy']);
         Route::post('/users/bulk-delete', [PlatformUserController::class, 'bulkDelete']);
+        Route::post('/users/bulk-privileges', [PlatformUserController::class, 'bulkUpdatePrivileges']);
         Route::post('/users/notify', [PlatformUserController::class, 'notify']);
     });
 

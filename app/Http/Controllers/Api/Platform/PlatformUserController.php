@@ -20,10 +20,69 @@ class PlatformUserController extends Controller
         $paginator = $this->userService->paginateTenantUsers([
             'search' => $request->query('search'),
             'is_active' => $request->query('is_active'),
+            'account_type' => $request->query('account_type'),
             'business_id' => $request->query('business_id'),
         ], (int) $request->query('per_page', 15));
 
         return PlatformUserResource::collection($paginator)->response();
+    }
+
+    public function updatePrivileges(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'account_type' => ['sometimes', 'in:business,personal,storefront_buyer'],
+            'email' => ['sometimes', 'email', 'max:255'],
+            'password' => ['sometimes', 'string', 'min:8', 'max:255'],
+            'plan_id' => ['sometimes', 'integer', 'exists:plans,id'],
+            'billing_cycle' => ['sometimes', 'in:monthly,yearly'],
+            'subscription_status' => ['sometimes', 'in:trial,active,past_due,suspended,cancelled,expired'],
+            'onboarding_fee_paid' => ['sometimes', 'boolean'],
+            'next_billing_date' => ['sometimes', 'date'],
+        ]);
+
+        $target = User::findOrFail($id);
+        $updated = $this->userService->updatePrivileges($request->user(), $target, $validated);
+
+        return response()->json([
+            'data' => new PlatformUserResource($updated),
+            'message' => 'Account privileges updated.',
+        ]);
+    }
+
+    public function bulkUpdatePrivileges(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:users,id'],
+            'account_type' => ['sometimes', 'in:business,personal,storefront_buyer'],
+            'plan_id' => ['sometimes', 'integer', 'exists:plans,id'],
+            'billing_cycle' => ['sometimes', 'in:monthly,yearly'],
+            'subscription_status' => ['sometimes', 'in:trial,active,past_due,suspended,cancelled,expired'],
+            'onboarding_fee_paid' => ['sometimes', 'boolean'],
+            'next_billing_date' => ['sometimes', 'date'],
+        ]);
+
+        $changes = array_diff_key($validated, ['ids' => true]);
+
+        $result = $this->userService->bulkUpdatePrivileges(
+            $request->user(),
+            $validated['ids'],
+            $changes,
+        );
+
+        $message = "Privileges updated for {$result['processed']} user(s).";
+        if (count($result['errors']) > 0) {
+            $message .= ' '.count($result['errors']).' failed.';
+        }
+
+        $variant = count($result['errors']) > 0 ? 'warning' : 'success';
+
+        return response()->json([
+            'message' => $message,
+            'processed' => $result['processed'],
+            'errors' => $result['errors'],
+            'variant' => $variant,
+        ]);
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse

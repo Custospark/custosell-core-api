@@ -19,8 +19,12 @@ class PlatformUserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
+            'account_type' => $this->account_type ?? 'business',
             'business_id' => $this->business_id,
             'business_name' => $this->whenLoaded('business', fn () => $this->business?->name),
+            'subscription' => $this->whenLoaded('business', fn () => $this->business?->relationLoaded('subscription')
+                ? $this->buildSubscription()
+                : null),
             'role_name' => $this->whenLoaded('role', fn () => $this->role?->name),
             'platform_roles' => $this->relationLoaded('roles')
                 ? $this->roles->pluck('name')->values()->all()
@@ -31,6 +35,26 @@ class PlatformUserResource extends JsonResource
                 ? (int) $this->last_login_at->diffInDays(now())
                 : null,
             'created_at' => $this->created_at?->toIso8601String(),
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function buildSubscription(): ?array
+    {
+        $subscription = $this->business->subscription;
+        if (! $subscription) {
+            return null;
+        }
+
+        return [
+            'id' => $subscription->id,
+            'plan_id' => $subscription->plan_id,
+            'plan_name' => $subscription->plan?->name,
+            'plan_slug' => $subscription->plan?->slug,
+            'status' => $subscription->status?->value ?? $subscription->status,
+            'billing_cycle' => $subscription->billing_cycle,
+            'onboarding_fee_paid' => (bool) ($subscription->onboarding_fee_paid ?? false),
+            'next_billing_date' => $subscription->next_billing_date?->toIso8601String(),
         ];
     }
 }
