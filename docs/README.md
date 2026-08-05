@@ -23,3 +23,5 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 | [2026-08-03-block-yearly-to-monthly-upgrade.md](./adr/2026-08-03-block-yearly-to-monthly-upgrade.md) | Block yearly→monthly upgrade when unused credit exceeds the new monthly charge (amount-based) |
 | [2026-08-03-early-renewal.md](./adr/2026-08-03-early-renewal.md) | Allow active subscriptions to renew early — advance-pay to keep next_billing_date in the future |
 | [2026-08-03-renewal-top-up.md](./adr/2026-08-03-renewal-top-up.md) | Renewal top-up — pay in advance for any duration, amount prorated to the stored billing cycle |
+| [2026-08-05-owner-business-seeder.md](./adr/2026-08-05-owner-business-seeder.md) | Owner business seeder (Enterprise, Dec 2030) — update-or-create, admin via eligibility |
+| [2026-08-05-platform-user-privileges-and-server-pagination.md](./adr/2026-08-05-platform-user-privileges-and-server-pagination.md) | Platform-admin user privileges endpoints + server-side Users/Businesses pagination |
