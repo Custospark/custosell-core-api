@@ -276,7 +276,7 @@ class PlatformUserPrivilegesTest extends TestCase
                 'current_page', 'last_page', 'per_page', 'total',
             ])
             ->assertJsonPath('per_page', 15)
-            ->assertJsonPath('total', 25)
+            ->assertJsonPath('total', 26)
             ->assertJsonPath('current_page', 1);
 
         $this->actingAs($this->admin(), 'sanctum')

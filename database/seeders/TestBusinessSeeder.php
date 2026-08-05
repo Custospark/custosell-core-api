@@ -99,19 +99,7 @@ class TestBusinessSeeder extends Seeder
             ]
         );
 
-        if (!$owner->business_id) {
-            $business = Business::create([
-                'owner_id' => $owner->id,
-                'name' => $name,
-                'slug' => $name,
-                'email' => $email,
-                'currency' => 'UGX',
-                'status' => 'active',
-            ]);
-            $owner->update(['business_id' => $business->id]);
-        }
-
-        $business = $owner->business;
+        $business = $this->resolveBusiness($owner, $name, $email);
 
         app(DocumentCabinetService::class)->seedDefaultCabinets(
             (int) $business->id,
@@ -141,5 +129,40 @@ class TestBusinessSeeder extends Seeder
         if (!$owner->hasRole('platform-admin')) {
             $owner->assignRole('platform-admin');
         }
+    }
+
+    /** Use the owner's current or owned business, else update-or-create by email. */
+    private function resolveBusiness(User $owner, string $name, string $email): Business
+    {
+        $business = $owner->business
+            ?? $owner->ownedBusiness()->first()
+            ?? Business::where('email', $email)->first();
+
+        if ($business) {
+            $business->update([
+                'owner_id' => $owner->id,
+                'name' => $name,
+                'slug' => $name,
+                'email' => $email,
+                'currency' => 'UGX',
+                'status' => 'active',
+            ]);
+        } else {
+            $business = Business::create([
+                'owner_id' => $owner->id,
+                'name' => $name,
+                'slug' => $name,
+                'email' => $email,
+                'currency' => 'UGX',
+                'status' => 'active',
+            ]);
+        }
+
+        if ((int) $owner->business_id !== (int) $business->id) {
+            $owner->business_id = $business->id;
+            $owner->save();
+        }
+
+        return $business;
     }
 }

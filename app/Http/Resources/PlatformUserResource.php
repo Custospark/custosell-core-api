@@ -19,6 +19,8 @@ class PlatformUserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
+            'status' => $this->status ?? ($this->is_active ? 'active' : 'deactivated'),
+            'status_changed_at' => $this->status_changed_at?->toIso8601String(),
             'account_type' => $this->account_type ?? 'business',
             'business_id' => $this->business_id,
             'business_name' => $this->whenLoaded('business', fn () => $this->business?->name),

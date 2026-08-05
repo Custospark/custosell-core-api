@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Platform;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PlatformUserResource;
 use App\Models\User;
+use App\Services\Platform\PlatformUserMetricsService;
 use App\Services\Platform\PlatformUserService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +15,22 @@ class PlatformUserController extends Controller
 {
     public function __construct(
         protected PlatformUserService $userService,
+        protected PlatformUserMetricsService $metrics,
     ) {}
+
+    public function stats(Request $request): JsonResponse
+    {
+        $rangeFrom = $request->query('date_from')
+            ? Carbon::parse($request->query('date_from'))->startOfDay()
+            : null;
+        $rangeTo = $request->query('date_to')
+            ? Carbon::parse($request->query('date_to'))->endOfDay()
+            : null;
+
+        return response()->json([
+            'data' => $this->metrics->onboardingDashboard($rangeFrom, $rangeTo),
+        ]);
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -24,6 +41,10 @@ class PlatformUserController extends Controller
             'is_active' => $request->query('is_active'),
             'account_type' => $request->query('account_type'),
             'business_id' => $request->query('business_id'),
+            'status' => $request->query('status'),
+            'status_duration_days' => $request->query('status_duration_days'),
+            'login_activity' => $request->query('login_activity'),
+            'business' => $request->query('business'),
         ], $perPage);
 
         $paginator->getCollection()->transform(fn (User $user) => new PlatformUserResource($user));

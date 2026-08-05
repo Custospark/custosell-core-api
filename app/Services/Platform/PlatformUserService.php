@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 class PlatformUserService
 {
     public function __construct(
+        protected PlatformUserQueryBuilder $queries,
         protected PlatformAdminService $adminService,
         protected PlatformNotificationService $notifications,
         protected PlatformAuditService $audit,
@@ -21,33 +22,7 @@ class PlatformUserService
 
     public function paginateTenantUsers(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = User::query()
-            ->with(['business:id,name,owner_id,status', 'business.subscription.plan:id,name,slug', 'role:id,name,slug', 'roles:id,name'])
-            ->whereNotNull('business_id');
-
-        if (! empty($filters['search'])) {
-            $search = '%'.$filters['search'].'%';
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', $search)
-                    ->orWhere('email', 'like', $search)
-                    ->orWhere('phone', 'like', $search)
-                    ->orWhereHas('business', fn ($b) => $b->where('name', 'like', $search));
-            });
-        }
-
-        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
-            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
-        }
-
-        if (! empty($filters['account_type'])) {
-            $query->where('account_type', $filters['account_type']);
-        }
-
-        if (! empty($filters['business_id'])) {
-            $query->where('business_id', (int) $filters['business_id']);
-        }
-
-        return $query->orderByDesc('created_at')->paginate($perPage);
+        return $this->queries->paginateTenantUsers($filters, $perPage);
     }
 
     public function delete(User $actor, User $target, string $reason): void
@@ -375,7 +350,11 @@ class PlatformUserService
 
         $wasActive = (bool) $target->is_active;
 
-        $target->update(['is_active' => $isActive]);
+        $target->update([
+            'is_active' => $isActive,
+            'status' => $isActive ? 'active' : 'deactivated',
+            'status_changed_at' => now(),
+        ]);
 
         $this->audit->log(
             $actor,

@@ -38,6 +38,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
     });
 
     Route::middleware(['platform:platform.users.view'])->group(function () {
+        Route::get('/users/stats', [PlatformUserController::class, 'stats']);
         Route::get('/users', [PlatformUserController::class, 'index']);
     });
 
