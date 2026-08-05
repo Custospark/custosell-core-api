@@ -447,3 +447,18 @@
 **Tests:** `PlatformUserPrivilegesTest` 15/15 (was 14 with a rejection test, now includes auto-creation coverage). Full platform suites 32 passed. `composer vera:fast` passed (php -l + logic incl. file-size-500).
 
 **Full detail:** `docs/adr/2026-08-05-platform-grants-auto-create-business.md`
+
+---
+
+## ADR-028: Account type ↔ plan pairing guard on privilege endpoints
+
+**Date:** 2026-08-05
+**Status:** Accepted
+
+**Context:** Platform privilege grants could assign a plan whose `type` disagreed with the chosen `account_type` (or give a `storefront_buyer` any subscription), causing contradictory state and a hidden workspace on the frontend.
+
+**Decision:** `PlatformUserController::validateAccountPlanPairing()` rejects on both single and bulk privilege updates: `storefront_buyer` + any subscription field fails with 422, and a `plan_id` whose `type` doesn't match `account_type` fails with 422. Mirrors the frontend modal guard.
+
+**Tests:** `PlatformUserPrivilegesTest` 15/15 + `PlatformPrivilegeAccountTypeTest` 5/5. `composer vera:fast` passed.
+
+**Full detail:** `docs/adr/2026-08-05-account-type-plan-guard-billing-privileges.md`
