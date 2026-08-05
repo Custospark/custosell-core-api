@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PlatformUserResource;
+use App\Models\Plan;
 use App\Models\User;
 use App\Services\Platform\PlatformUserMetricsService;
 use App\Services\Platform\PlatformUserService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PlatformUserController extends Controller
 {
@@ -70,6 +72,7 @@ class PlatformUserController extends Controller
         ]);
 
         $target = User::findOrFail($id);
+        $this->validateAccountPlanPairing($validated);
         $updated = $this->userService->updatePrivileges($request->user(), $target, $validated);
 
         return response()->json([
@@ -97,6 +100,8 @@ class PlatformUserController extends Controller
 
         $changes = array_diff_key($validated, ['ids' => true]);
 
+        $this->validateAccountPlanPairing($changes);
+
         $result = $this->userService->bulkUpdatePrivileges(
             $request->user(),
             $validated['ids'],
@@ -116,6 +121,45 @@ class PlatformUserController extends Controller
             'errors' => $result['errors'],
             'variant' => $variant,
         ]);
+    }
+
+    /**
+     * Keep account type and subscription consistent:
+     * - storefront buyer accounts have no subscription at all.
+     * - when both an account type and a plan are given, the plan must match
+     *   the account type (business plans for business, personal for personal).
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function validateAccountPlanPairing(array $validated): void
+    {
+        $accountType = $validated['account_type'] ?? null;
+
+        $subscriptionKeys = [
+            'plan_id', 'billing_cycle', 'subscription_status', 'onboarding_fee_paid',
+            'next_billing_date', 'trial_ends_at', 'grace_period_ends_at',
+            'suspended_at', 'ends_at',
+        ];
+
+        if ($accountType === 'storefront_buyer') {
+            if (count(array_intersect($subscriptionKeys, array_keys($validated))) > 0) {
+                throw ValidationException::withMessages([
+                    'account_type' => 'Storefront buyer accounts cannot have a subscription.',
+                ]);
+            }
+
+            return;
+        }
+
+        if ($accountType !== null && isset($validated['plan_id'])) {
+            $plan = Plan::find($validated['plan_id']);
+
+            if ($plan && $plan->type !== $accountType) {
+                throw ValidationException::withMessages([
+                    'plan_id' => "Selected plan is for {$plan->type} accounts, not {$accountType}.",
+                ]);
+            }
+        }
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse

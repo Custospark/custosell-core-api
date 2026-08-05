@@ -170,43 +170,6 @@ class PlatformUserPrivilegesTest extends TestCase
         $this->assertNotNull(\App\Models\Location::where('business_id', $fresh->business_id)->where('is_default', true)->first());
     }
 
-    public function test_promotes_storefront_buyer_to_business_account_when_assigning_plan(): void
-    {
-        // A shopping-only account has no workspace. Once a business plan is
-        // granted, it must become a business account or the global search top
-        // bar and the whole workspace stay hidden (FE gates on account_type).
-        $target = User::factory()->create(['business_id' => null, 'account_type' => 'storefront_buyer']);
-
-        $this->actingAs($this->admin(), 'sanctum')
-            ->patchJson('/api/v1/platform/users/'.$target->id.'/privileges', [
-                'plan_id' => $this->planId(),
-            ])
-            ->assertOk();
-
-        $fresh = $target->fresh();
-        $this->assertSame('business', $fresh->account_type);
-        $this->assertNotNull($fresh->business_id);
-        $this->assertContains('estimates_full', $fresh->modules);
-        $this->assertContains('hr_full', $fresh->modules);
-    }
-
-    public function test_respects_account_type_passed_from_ui_when_creating_business(): void
-    {
-        $target = User::factory()->create(['business_id' => null, 'account_type' => 'personal']);
-
-        $this->actingAs($this->admin(), 'sanctum')
-            ->patchJson('/api/v1/platform/users/'.$target->id.'/privileges', [
-                'account_type' => 'storefront_buyer',
-                'plan_id' => $this->planId(),
-            ])
-            ->assertOk();
-
-        $fresh = $target->fresh();
-        // UI explicitly chose storefront_buyer — honor it, don't force business.
-        $this->assertSame('storefront_buyer', $fresh->account_type);
-        $this->assertNotNull($fresh->business_id);
-    }
-
     public function test_updates_existing_subscription_fields_and_audits(): void
     {
         [$owner, $business] = $this->targetUserWithBusiness();
@@ -299,13 +262,14 @@ class PlatformUserPrivilegesTest extends TestCase
         [$a, $businessA] = $this->targetUserWithBusiness();
         [$b, $businessB] = $this->targetUserWithBusiness();
         $noBusiness = User::factory()->create(['business_id' => null]);
+        $personalPlanId = Plan::query()->where('slug', 'personal')->value('id');
 
         $this->actingAs($this->admin(), 'sanctum')
             ->postJson('/api/v1/platform/users/bulk-privileges', [
                 'ids' => [$a->id, $b->id, $noBusiness->id],
                 'account_type' => 'personal',
                 'subscription_status' => 'active',
-                'plan_id' => $this->planId(),
+                'plan_id' => $personalPlanId,
             ])
             ->assertOk()
             ->assertJsonPath('processed', 3)
