@@ -89,10 +89,8 @@ class StorefrontProductShareTest extends TestCase
 
     public function test_shared_link_404s_for_unknown_shop(): void
     {
-        // Project-wide: the global RuntimeException renderer maps api 404 -> 422
-        // (see bootstrap/app.php), matching existing storefront 404 behavior.
         $this->getJson('/api/v1/storefront/unknown-shop/products/chicken-plate')
-            ->assertStatus(422);
+            ->assertNotFound();
     }
 
     public function test_shared_link_hides_unlisted_product(): void

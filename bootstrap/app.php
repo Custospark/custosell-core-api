@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,7 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Business-rule failures surface as 422 (validation-style) instead of a generic 500,
         // e.g. the plan location-limit guard thrown by LocationService::create.
+        // HttpException (incl. NotFoundHttpException 404) extends RuntimeException; let Laravel
+        // render those with their real status code instead of collapsing them to 422.
         $exceptions->render(function (RuntimeException $e, \Illuminate\Http\Request $request) {
+            if ($e instanceof HttpException) {
+                return null;
+            }
             if ($request->is('api/*')) {
                 return response()->json([
                     'message' => $e->getMessage(),
