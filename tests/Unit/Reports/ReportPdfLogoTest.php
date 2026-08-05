@@ -45,7 +45,6 @@ class ReportPdfLogoTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('class="header-logo"', $html);
-        $this->assertStringContainsString('border-radius: 6px', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
     }
 

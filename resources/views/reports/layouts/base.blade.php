@@ -26,9 +26,6 @@
       max-width: 180px;
       margin: 0 auto 8px auto;
       display: block;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 4px;
     }
     .header h1 {
       font-family: DejaVu Sans, sans-serif;
