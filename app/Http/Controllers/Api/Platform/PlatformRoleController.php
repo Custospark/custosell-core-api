@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PlatformUserResource;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -125,7 +126,8 @@ class PlatformRoleController extends Controller
         }
 
         $members = $query->orderBy('name')->paginate((int) $request->query('per_page', 50));
+        $members->getCollection()->transform(fn (User $user) => new PlatformUserResource($user));
 
-        return PlatformUserResource::collection($members)->response();
+        return response()->json($members);
     }
 }

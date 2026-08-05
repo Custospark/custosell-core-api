@@ -50,6 +50,17 @@ filtering on server-computed fields (`account_type`, `subscription_status`).
   users and restricted/suspended businesses from privileged actions; platform
   admins pass; adds `X-Account-Status` response header.
 
+### Pagination contract (uniform top-level shape)
+
+- Users (`/platform/users`) and role members (`/platform/roles/{id}/members`)
+  previously returned a Laravel resource-collection shape
+  (`{ data, links, meta: {...} }`). Businesses (`/platform/businesses`) already
+  returned the raw paginator shape (`{ data, current_page, per_page, total, last_page, ... }`).
+- Both are now aligned on the **raw paginator top-level shape** to match the
+  frontend `PaginatedPlatformResponse` contract: each row is transformed through
+  `PlatformUserResource` before the paginator is serialized.
+- `per_page` is clamped to `[15, 500]` on users to match businesses.
+
 ## Consequences
 
 - Platform admins can self-service subscription/privilege corrections; fully

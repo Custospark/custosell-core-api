@@ -17,14 +17,18 @@ class PlatformUserController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(500, max(15, (int) $request->query('per_page', 15)));
+
         $paginator = $this->userService->paginateTenantUsers([
             'search' => $request->query('search'),
             'is_active' => $request->query('is_active'),
             'account_type' => $request->query('account_type'),
             'business_id' => $request->query('business_id'),
-        ], (int) $request->query('per_page', 15));
+        ], $perPage);
 
-        return PlatformUserResource::collection($paginator)->response();
+        $paginator->getCollection()->transform(fn (User $user) => new PlatformUserResource($user));
+
+        return response()->json($paginator);
     }
 
     public function updatePrivileges(Request $request, int $id): JsonResponse
