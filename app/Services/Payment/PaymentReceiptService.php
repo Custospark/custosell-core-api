@@ -129,6 +129,34 @@ class PaymentReceiptService
     }
 
     /**
+     * Send a receipt immediately for a completed, paid payment. Guards against
+     * duplicate sends and skips zero-amount payments (free onboarding, zero-cost
+     * upgrades). Returns false when there is nothing to send or sending failed.
+     */
+    public function sendReceiptIfDue(BillingPayment $payment): bool
+    {
+        if (!$payment->isCompleted()) {
+            return false;
+        }
+
+        if ((float) $payment->amount <= 0) {
+            return false;
+        }
+
+        if ($payment->receipt_sent_at !== null) {
+            return false;
+        }
+
+        $sent = $this->email($payment);
+
+        if ($sent) {
+            $payment->forceFill(['receipt_sent_at' => now()])->save();
+        }
+
+        return $sent;
+    }
+
+    /**
      * A branded "company" object used as the top-of-receipt merchant header,
      * so the receipt announces Custospark Company Ltd as the seller.
      */

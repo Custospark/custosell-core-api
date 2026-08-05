@@ -15,7 +15,6 @@ use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
 use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
 use App\Services\Payment\Validation\PaymentValidator;
-use App\Jobs\SendPaymentReceiptJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +32,7 @@ class GatewayService
         private readonly CurrencyExchangeServiceInterface $currencyExchange,
         private readonly ReferralServiceInterface $referralService,
         private readonly PaymentValidator $paymentValidator,
+        private readonly PaymentReceiptService $receiptService,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array
@@ -189,7 +189,7 @@ class GatewayService
 
                 $this->handlePaymentType($payment);
 
-                $this->dispatchReceiptIfDue($payment);
+                $this->sendReceiptIfDue($payment);
 
                 Log::info('[GatewayService] Payment completed via credit (no gateway)', [
                     'subscription_id' => $subscription->id,

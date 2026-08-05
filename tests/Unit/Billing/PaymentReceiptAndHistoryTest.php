@@ -208,8 +208,9 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         $payment = $this->makeCompletedTopUpPayment();
         $payment->forceFill(['receipt_sent_at' => now()])->save();
 
-        \App\Jobs\SendPaymentReceiptJob::dispatchSync($payment->id);
+        $sent = $this->receiptService()->sendReceiptIfDue($payment);
 
+        $this->assertFalse($sent);
         $payment->refresh();
         $this->assertNotNull($payment->receipt_sent_at);
 

@@ -236,7 +236,7 @@ trait HandlesPaymentApproval
 
             $this->handlePaymentType($payment);
 
-            $this->dispatchReceiptIfDue($payment);
+            $this->sendReceiptIfDue($payment);
 
             Log::info('[GatewayService] Payment auto-approved', [
                 'payment_id' => $payment->id,
@@ -247,12 +247,8 @@ trait HandlesPaymentApproval
         });
     }
 
-    private function dispatchReceiptIfDue(BillingPayment $payment): void
+    private function sendReceiptIfDue(BillingPayment $payment): void
     {
-        if (!$payment->isCompleted() || (float) $payment->amount <= 0) {
-            return;
-        }
-
-        \App\Jobs\SendPaymentReceiptJob::dispatch($payment->id);
+        $this->receiptService->sendReceiptIfDue($payment);
     }
 }

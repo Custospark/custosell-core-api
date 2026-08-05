@@ -420,12 +420,12 @@
 
 **Context:** Receipts were only emailed via the manual resend endpoint (`POST /billing/payments/{id}/email`). After a successful subscription payment (webhook, callback, confirm, credit, or test bypass) users never received an automatic receipt, driving "I paid but got no receipt" support tickets.
 
-**Decision:** Dispatch a queued `SendPaymentReceiptJob` right after a payment is completed in the success paths:
+**Decision:** Send the receipt synchronously right after a payment is completed in the success paths:
 - `autoApprove()` (covers webhook / callback / `confirmPayment`)
 - credit-only completion path in `GatewayService::initiatePayment()`
 - gateway test bypass path in `InitiatesGatewayPayments`
 
-The job only sends when the payment is **completed**, **amount > 0**, and **`receipt_sent_at` is null**; on a successful send it stamps `receipt_sent_at` so webhook + confirm firing together cannot double-email. Zero-amount payments (free onboarding, zero-cost upgrades) are skipped. The manual resend endpoint remains for retries. Non-blocking via the queue; `QUEUE_CONNECTION=database` in prod, `sync` in tests.
+`PaymentReceiptService::sendReceiptIfDue()` only sends when the payment is **completed**, **amount > 0**, and **`receipt_sent_at` is null**; on a successful send it stamps `receipt_sent_at` so webhook + confirm firing together cannot double-email. Zero-amount payments (free onboarding, zero-cost upgrades) are skipped. The manual resend endpoint remains for retries. Sending is synchronous (no queue) — `email()` already catches and logs failures, so it never breaks payment completion.
 
 **Migration:** `2026_08_05_000001_add_receipt_sent_at_to_billing_payments.php` (nullable `receipt_sent_at` timestamp).
 
