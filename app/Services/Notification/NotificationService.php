@@ -5,6 +5,7 @@ namespace App\Services\Notification;
 use App\Mail\StandardEmail;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\WebPush\Contracts\WebPushServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\Mail;
 class NotificationService
 {
     private const EMAIL_DEDUPE_HOURS = 24;
+
+    public function __construct(
+        private readonly WebPushServiceInterface $webPush,
+    ) {}
 
     /** @return list<string> */
     public function allowedChannels(): array
@@ -211,8 +216,10 @@ class NotificationService
         $plainBody = $this->plainTextFromHtml($body);
         $contentKey = $this->buildContentDedupeKey($businessId, $type, $intention, $title, $plainBody);
 
+        $persistedInApp = false;
+
         if (in_array($channel, ['in_app', 'both'], true)) {
-            $this->persistInAppIfNew(
+            $persistedInApp = $this->persistInAppIfNew(
                 $user->id,
                 $title,
                 $plainBody,
@@ -235,6 +242,18 @@ class NotificationService
                 $tip,
             );
         }
+
+        if ($persistedInApp) {
+            $this->webPush->sendToUser($user->id, $title, $plainBody, [
+                'url' => $ctaUrl !== null ? $ctaUrl : $this->webPushDefaultRoute(),
+                'tag' => $contentKey,
+            ]);
+        }
+    }
+
+    private function webPushDefaultRoute(): string
+    {
+        return (string) config('webpush.route', '/account/notifications');
     }
 
     private function hasInAppDuplicate(int $userId, string $dedupeKey): bool

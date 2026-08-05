@@ -37,6 +37,7 @@ use App\Providers\PipelineServiceProvider;
 use App\Providers\StaffTransferServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
+use App\Providers\WebPushServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -76,4 +77,5 @@ return [
     EventServiceProvider::class,
     EfrisServiceProvider::class,
     StorefrontServiceProvider::class,
+    WebPushServiceProvider::class,
 ];
