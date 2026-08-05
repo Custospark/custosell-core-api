@@ -3,7 +3,6 @@
 namespace App\Services\Platform;
 
 use App\Models\Business;
-use App\Models\Sale;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Contracts\SubscriptionServiceInterface;
@@ -93,12 +92,15 @@ class PlatformBusinessAdminService
     public function delete(User $actor, Business $business, string $reason): void
     {
         DB::transaction(function () use ($actor, $business, $reason): void {
-            $salesDeleted = $this->purgeSalesData($business);
+            $counts = $this->purgeBusinessData($business->id);
+
+            $salesDeleted = $counts['sales'] ?? 0;
 
             $this->audit->log($actor, 'business.deleted', 'business', $business->id, $reason, [
                 'name' => $business->name,
                 'status' => $business->status,
                 'sales_deleted' => $salesDeleted,
+                'purge_counts' => $counts,
             ]);
 
             $business->forceDelete();
@@ -110,7 +112,38 @@ class PlatformBusinessAdminService
         $businessId = $business->id;
         $counts = [];
 
-        DB::transaction(function () use ($businessId, $actor, $business, &$counts): void {
+        DB::transaction(function () use ($businessId, $actor, &$counts): void {
+            $counts = $this->purgeBusinessData($businessId);
+
+            $this->audit->log(
+                $actor,
+                'business.data_reset',
+                'business',
+                $businessId,
+                'Business data reset for fresh start',
+                ['reset_counts' => $counts],
+            );
+        });
+
+        return $counts;
+    }
+
+    /**
+     * Delete all rows owned by a business across every dependent table, in FK
+     * order, so a hard `forceDelete` of the business cannot trip a foreign-key
+     * constraint (e.g. accounting_periods, journal_entries).
+     *
+     * @return array<string, int>
+     */
+    private function purgeBusinessData(int $businessId): array
+    {
+        $counts = [];
+
+        DB::transaction(function () use ($businessId, &$counts): void {
+            // ── 0. Sales you then journal entries reference ──
+            // (sales deleted here so accounting/journal entries below are safe)
+            $counts['sales'] = DB::table('sales')->where('business_id', $businessId)->delete();
+
             // ── 1. Invoices (before payments since payments reference invoices) ─
             $counts['invoice_items'] = DB::table('invoice_items')
                 ->whereIn('invoice_id', fn($q) => $q->select('id')->from('invoices')->where('business_id', $businessId))
@@ -127,11 +160,9 @@ class PlatformBusinessAdminService
             $counts['orders'] = DB::table('orders')
                 ->where('business_id', $businessId)->delete();
 
-            // ── 4. Sales ──────────────────────────────────────────
+            // ── 4. Sales (soft-deleted rows too) ──────────────────
             // sale_items cascade from sales
             $counts['shifts'] = DB::table('shifts')
-                ->where('business_id', $businessId)->delete();
-            $counts['sales'] = DB::table('sales')
                 ->where('business_id', $businessId)->delete();
 
             // ── 5. Purchase orders (buyer + seller) ───────────────
@@ -205,15 +236,6 @@ class PlatformBusinessAdminService
             // ── 18. Notifications ─────────────────────────────────
             DB::table('notifications')
                 ->where('business_id', $businessId)->delete();
-
-            $this->audit->log(
-                $actor,
-                'business.data_reset',
-                'business',
-                $businessId,
-                'Business data reset for fresh start',
-                ['reset_counts' => $counts],
-            );
         });
 
         return $counts;
@@ -314,23 +336,6 @@ class PlatformBusinessAdminService
         ]);
 
         return $activated->fresh(['plan']);
-    }
-
-    private function purgeSalesData(Business $business): int
-    {
-        $deleted = 0;
-
-        Sale::withTrashed()
-            ->where('business_id', $business->id)
-            ->orderBy('id')
-            ->chunkById(200, function ($sales) use (&$deleted): void {
-                foreach ($sales as $sale) {
-                    $sale->forceDelete();
-                    $deleted++;
-                }
-            });
-
-        return $deleted;
     }
 
     private function auditActionForStatus(string $status): string
