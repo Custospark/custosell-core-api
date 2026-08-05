@@ -81,7 +81,7 @@ class PlatformSubscriptionPrivilegeService
         $business = $target->business ?? $target->ownedBusiness()->first();
 
         if (! $business) {
-            $business = $this->createBusinessForUser($target);
+            $business = $this->createBusinessForUser($target, $changes);
         }
 
         $subscription = $business->subscription ?? $business->subscription()->first();
@@ -100,8 +100,12 @@ class PlatformSubscriptionPrivilegeService
     /**
      * A platform admin granting a plan to a user with no business gets one
      * auto-created and linked, so the grant succeeds instead of erroring.
+     * The target account type comes from the UI when provided, else it falls
+     * back to a business account (the only type that owns a workspace).
+     *
+     * @param  array{account_type?: string}  $changes
      */
-    private function createBusinessForUser(User $target): Business
+    private function createBusinessForUser(User $target, array $changes): Business
     {
         $name = trim((string) ($target->name ?? '')) ?: 'My Business';
         $slug = Str::slug($name);
@@ -121,14 +125,18 @@ class PlatformSubscriptionPrivilegeService
         ]);
 
         $target->business_id = $business->id;
-        $target->account_type = $target->account_type === 'personal'
-            ? 'business'
-            : ($target->account_type ?? 'business');
+        // The UI may set the account type in the same request; honor it. When the
+        // UI omits it, grant a business account so the workspace top bar shows.
+        $target->account_type = $changes['account_type'] ?? 'business';
+        // Mirror the standard owner module set exactly as BusinessService::register
+        // does: full business catalog plus the full Estimates and HR workspaces.
         $target->modules = array_values(array_unique(array_merge(
             (array) ($target->modules ?? []),
-            ModuleAccessService::BUSINESS_MODULES,
+            ModuleAccessService::assignableModuleSlugs(),
         )));
         $target->save();
+
+        \App\Services\LocationService::ensureDefault($business->id);
 
         return $business;
     }

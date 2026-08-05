@@ -158,6 +158,53 @@ class PlatformUserPrivilegesTest extends TestCase
         $this->assertSame('business', $fresh->account_type);
         $this->assertNotNull($fresh->business->subscription()->first());
         $this->assertEquals($this->planId(), $fresh->business->subscription()->first()->plan_id);
+
+        // The owner must get the full standard module set (business catalog +
+        // full Estimates and HR workspaces) so the UI shows every feature.
+        $this->assertContains('estimates_full', $fresh->modules);
+        $this->assertContains('hr_full', $fresh->modules);
+        $this->assertContains('sales', $fresh->modules);
+        $this->assertContains('accounting', $fresh->modules);
+
+        // The owner's business gets a default branch so POS flows work.
+        $this->assertNotNull(\App\Models\Location::where('business_id', $fresh->business_id)->where('is_default', true)->first());
+    }
+
+    public function test_promotes_storefront_buyer_to_business_account_when_assigning_plan(): void
+    {
+        // A shopping-only account has no workspace. Once a business plan is
+        // granted, it must become a business account or the global search top
+        // bar and the whole workspace stay hidden (FE gates on account_type).
+        $target = User::factory()->create(['business_id' => null, 'account_type' => 'storefront_buyer']);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->patchJson('/api/v1/platform/users/'.$target->id.'/privileges', [
+                'plan_id' => $this->planId(),
+            ])
+            ->assertOk();
+
+        $fresh = $target->fresh();
+        $this->assertSame('business', $fresh->account_type);
+        $this->assertNotNull($fresh->business_id);
+        $this->assertContains('estimates_full', $fresh->modules);
+        $this->assertContains('hr_full', $fresh->modules);
+    }
+
+    public function test_respects_account_type_passed_from_ui_when_creating_business(): void
+    {
+        $target = User::factory()->create(['business_id' => null, 'account_type' => 'personal']);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->patchJson('/api/v1/platform/users/'.$target->id.'/privileges', [
+                'account_type' => 'storefront_buyer',
+                'plan_id' => $this->planId(),
+            ])
+            ->assertOk();
+
+        $fresh = $target->fresh();
+        // UI explicitly chose storefront_buyer — honor it, don't force business.
+        $this->assertSame('storefront_buyer', $fresh->account_type);
+        $this->assertNotNull($fresh->business_id);
     }
 
     public function test_updates_existing_subscription_fields_and_audits(): void
@@ -267,7 +314,7 @@ class PlatformUserPrivilegesTest extends TestCase
 
         $this->assertDatabaseHas('users', ['id' => $a->id, 'account_type' => 'personal']);
         $this->assertDatabaseHas('users', ['id' => $b->id, 'account_type' => 'personal']);
-        $this->assertDatabaseHas('users', ['id' => $noBusiness->id, 'account_type' => 'business']);
+        $this->assertDatabaseHas('users', ['id' => $noBusiness->id, 'account_type' => 'personal']);
         $this->assertNotNull($businessA->subscription()->first());
         $this->assertNotNull($businessB->subscription()->first());
 
