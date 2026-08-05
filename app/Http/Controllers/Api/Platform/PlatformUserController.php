@@ -63,6 +63,10 @@ class PlatformUserController extends Controller
             'subscription_status' => ['sometimes', 'in:trial,active,past_due,suspended,cancelled,expired'],
             'onboarding_fee_paid' => ['sometimes', 'boolean'],
             'next_billing_date' => ['sometimes', 'date'],
+            'trial_ends_at' => ['sometimes', 'date'],
+            'grace_period_ends_at' => ['sometimes', 'date'],
+            'suspended_at' => ['sometimes', 'date'],
+            'ends_at' => ['sometimes', 'date'],
         ]);
 
         $target = User::findOrFail($id);
@@ -85,6 +89,10 @@ class PlatformUserController extends Controller
             'subscription_status' => ['sometimes', 'in:trial,active,past_due,suspended,cancelled,expired'],
             'onboarding_fee_paid' => ['sometimes', 'boolean'],
             'next_billing_date' => ['sometimes', 'date'],
+            'trial_ends_at' => ['sometimes', 'date'],
+            'grace_period_ends_at' => ['sometimes', 'date'],
+            'suspended_at' => ['sometimes', 'date'],
+            'ends_at' => ['sometimes', 'date'],
         ]);
 
         $changes = array_diff_key($validated, ['ids' => true]);

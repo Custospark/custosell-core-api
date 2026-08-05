@@ -174,14 +174,14 @@ class PlatformUserPrivilegesTest extends TestCase
             ->patchJson('/api/v1/platform/users/'.$owner->id.'/privileges', [
                 'onboarding_fee_paid' => true,
                 'subscription_status' => 'suspended',
-                'next_billing_date' => '2030-01-01',
+                'suspended_at' => '2030-01-01',
             ])
             ->assertOk();
 
         $fresh = $subscription->fresh();
         $this->assertTrue((bool) $fresh->onboarding_fee_paid);
         $this->assertEquals('suspended', $fresh->status->value);
-        $this->assertEquals('2030-01-01', $fresh->next_billing_date->toDateString());
+        $this->assertEquals('2030-01-01', $fresh->suspended_at->toDateString());
 
         $this->assertDatabaseHas('platform_audit_logs', [
             'actor_id' => $admin->id,
@@ -200,6 +200,44 @@ class PlatformUserPrivilegesTest extends TestCase
                 'subscription_status' => 'bogus',
             ])
             ->assertUnprocessable();
+    }
+
+    public function test_trial_status_uses_trial_ends_at_and_audits_diff(): void
+    {
+        [$owner, $business] = $this->targetUserWithBusiness();
+        $admin = $this->admin();
+        $subscription = Subscription::create([
+            'business_id' => $business->id,
+            'plan_id' => $this->planId(),
+            'billing_cycle' => 'monthly',
+            'status' => 'active',
+            'starts_at' => now(),
+            'next_billing_date' => now()->addMonth(),
+            'onboarding_fee_paid' => false,
+        ]);
+
+        $this->actingAs($admin, 'sanctum')
+            ->patchJson('/api/v1/platform/users/'.$owner->id.'/privileges', [
+                'subscription_status' => 'trial',
+                'trial_ends_at' => '2030-02-01',
+            ])
+            ->assertOk();
+
+        $fresh = $subscription->fresh();
+        $this->assertEquals('trial', $fresh->status->value);
+        $this->assertEquals('2030-02-01', $fresh->trial_ends_at?->toDateString());
+
+        $audit = PlatformAuditLog::where('action', 'user.privileges.subscription')
+            ->where('target_id', $subscription->id)
+            ->latest()
+            ->firstOrFail();
+
+        $metadata = $audit->metadata ?? [];
+        $this->assertArrayHasKey('diff', $metadata);
+        $this->assertSame([
+            'from' => 'active',
+            'to' => 'trial',
+        ], $metadata['diff']['status'] ?? null);
     }
 
     public function test_bulk_update_processes_users_and_reports_errors(): void

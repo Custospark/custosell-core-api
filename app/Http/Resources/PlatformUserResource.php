@@ -21,7 +21,7 @@ class PlatformUserResource extends JsonResource
             'is_active' => $this->is_active,
             'status' => $this->status ?? ($this->is_active ? 'active' : 'deactivated'),
             'status_changed_at' => $this->status_changed_at?->toIso8601String(),
-            'account_type' => $this->account_type ?? 'business',
+            'account_type' => $this->account_type ?? 'storefront_buyer',
             'business_id' => $this->business_id,
             'business_name' => $this->whenLoaded('business', fn () => $this->business?->name),
             'subscription' => $this->whenLoaded('business', fn () => $this->business?->relationLoaded('subscription')
@@ -56,7 +56,13 @@ class PlatformUserResource extends JsonResource
             'status' => $subscription->status?->value ?? $subscription->status,
             'billing_cycle' => $subscription->billing_cycle,
             'onboarding_fee_paid' => (bool) ($subscription->onboarding_fee_paid ?? false),
+            'starts_at' => $subscription->starts_at?->toIso8601String(),
+            'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String(),
             'next_billing_date' => $subscription->next_billing_date?->toIso8601String(),
+            'grace_period_ends_at' => $subscription->grace_period_ends_at?->toIso8601String(),
+            'suspended_at' => $subscription->suspended_at?->toIso8601String(),
+            'ends_at' => $subscription->ends_at?->toIso8601String(),
+            'cancelled_at' => $subscription->cancelled_at?->toIso8601String(),
         ];
     }
 }

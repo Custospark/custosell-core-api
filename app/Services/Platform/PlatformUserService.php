@@ -2,9 +2,7 @@
 
 namespace App\Services\Platform;
 
-use App\Models\Subscription;
 use App\Models\User;
-use App\Services\Contracts\SubscriptionServiceInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +15,7 @@ class PlatformUserService
         protected PlatformNotificationService $notifications,
         protected PlatformAuditService $audit,
         protected PlatformNotificationDispatchService $dispatches,
-        protected SubscriptionServiceInterface $subscriptionService,
+        protected PlatformSubscriptionPrivilegeService $subscriptionPrivileges,
     ) {}
 
     public function paginateTenantUsers(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -111,7 +109,7 @@ class PlatformUserService
      * Each field is optional; only provided fields are changed. Platform admins use
      * this as the last line of defense for wrong-emails and lost passwords.
      *
-     * @param  array{account_type?: string, email?: string, password?: string, plan_id?: int, billing_cycle?: string, subscription_status?: string, onboarding_fee_paid?: bool, next_billing_date?: string}  $changes
+     * @param  array{account_type?: string, email?: string, password?: string, plan_id?: int, billing_cycle?: string, subscription_status?: string, onboarding_fee_paid?: bool, next_billing_date?: string, trial_ends_at?: string, grace_period_ends_at?: string, suspended_at?: string, ends_at?: string}  $changes
      */
     public function updatePrivileges(User $actor, User $target, array $changes): User
     {
@@ -119,8 +117,10 @@ class PlatformUserService
 
         if (isset($changes['plan_id']) || isset($changes['billing_cycle'])
             || isset($changes['subscription_status']) || isset($changes['onboarding_fee_paid'])
-            || isset($changes['next_billing_date'])) {
-            $this->applySubscriptionChanges($actor, $target, $changes);
+            || isset($changes['next_billing_date']) || isset($changes['trial_ends_at'])
+            || isset($changes['grace_period_ends_at']) || isset($changes['suspended_at'])
+            || isset($changes['ends_at'])) {
+            $this->subscriptionPrivileges->apply($actor, $target, $changes);
         }
 
         return $target->fresh(['business.subscription.plan', 'role', 'roles']);
@@ -156,7 +156,10 @@ class PlatformUserService
     /** @param  array{account_type?: string, email?: string, password?: string}  $changes */
     private function applyUserFields(User $actor, User $target, array $changes): User
     {
-        if (isset($changes['account_type'])) {
+        $diff = [];
+
+        if (isset($changes['account_type']) && $changes['account_type'] !== $target->account_type) {
+            $diff['account_type'] = ['from' => $target->account_type, 'to' => $changes['account_type']];
             $target->update(['account_type' => $changes['account_type']]);
         }
 
@@ -170,6 +173,7 @@ class PlatformUserService
                 throw ValidationException::withMessages(['email' => 'That email is already in use.']);
             }
 
+            $diff['email'] = ['from' => $target->email, 'to' => $normalized];
             $target->update(['email' => $normalized]);
         }
 
@@ -178,92 +182,11 @@ class PlatformUserService
         }
 
         $this->audit->log($actor, 'user.privileges.fields', 'user', $target->id, null, [
-            'account_type' => $changes['account_type'] ?? null,
-            'email' => $changes['email'] ?? null,
+            'diff' => $diff,
             'password_changed' => isset($changes['password']) && $changes['password'] !== '',
         ]);
 
         return $target;
-    }
-
-    /**
-     * @param  array{plan_id?: int, billing_cycle?: string, subscription_status?: string, onboarding_fee_paid?: bool, next_billing_date?: string}  $changes
-     */
-    private function applySubscriptionChanges(User $actor, User $target, array $changes): void
-    {
-        $business = $target->business ?? $target->ownedBusiness()->first();
-
-        if (! $business) {
-            throw ValidationException::withMessages(['business' => 'This account has no linked business.']);
-        }
-
-        $subscription = $business->subscription ?? $business->subscription()->first();
-
-        if ($subscription === null && isset($changes['plan_id'])) {
-            $subscription = $this->buildSubscription($business, $changes);
-        }
-
-        if ($subscription === null) {
-            throw ValidationException::withMessages(['subscription' => 'No subscription exists. Select a plan to create one.']);
-        }
-
-        $updates = [];
-
-        if (isset($changes['plan_id']) && (int) $changes['plan_id'] !== $subscription->plan_id) {
-            $plan = \App\Models\Plan::find((int) $changes['plan_id']);
-            if (! $plan) {
-                throw ValidationException::withMessages(['plan_id' => 'Selected plan not found.']);
-            }
-
-            $updates['plan_id'] = $plan->id;
-            $updates['price_monthly_usd'] = $plan->price_monthly_usd;
-            $updates['price_yearly_usd'] = $plan->price_yearly_usd;
-            $updates['onboarding_fee_usd'] = $plan->onboarding_fee_usd;
-        }
-
-        if (isset($changes['billing_cycle'])) {
-            $updates['billing_cycle'] = $changes['billing_cycle'];
-            $this->resetNextBilling($updates);
-        }
-
-        if (isset($changes['subscription_status'])) {
-            $updates['status'] = $changes['subscription_status'];
-        }
-
-        if (isset($changes['onboarding_fee_paid'])) {
-            $updates['onboarding_fee_paid'] = (bool) $changes['onboarding_fee_paid'];
-        }
-
-        if (isset($changes['next_billing_date']) && $changes['next_billing_date'] !== '') {
-            $updates['next_billing_date'] = \Illuminate\Support\Carbon::parse($changes['next_billing_date']);
-        }
-
-        if ($updates !== []) {
-            $subscription->update($updates);
-        }
-
-        $this->audit->log($actor, 'user.privileges.subscription', 'subscription', $subscription->id, null, [
-            'changes' => array_keys($updates),
-        ]);
-    }
-
-    /** @param  array{plan_id?: int, billing_cycle?: string}  $changes */
-    private function buildSubscription(\App\Models\Business $business, array $changes): Subscription
-    {
-        $planId = (int) ($changes['plan_id'] ?? null);
-        $billingCycle = $changes['billing_cycle'] ?? 'monthly';
-
-        $subscription = $this->subscriptionService->subscribe($business->id, $planId, $billingCycle);
-
-        return $this->subscriptionService->activateAfterOnboarding($subscription);
-    }
-
-    private function resetNextBilling(array &$updates): void
-    {
-        $cycle = $updates['billing_cycle'] ?? 'monthly';
-        $updates['next_billing_date'] = $cycle === 'yearly'
-            ? now()->addYear()
-            : now()->addMonth();
     }
 
     /**
