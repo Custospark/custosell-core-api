@@ -7,7 +7,6 @@ use App\Models\BillingPayment;
 use App\Services\Billing\BillingHistoryService;
 use App\Services\Payment\PaymentReceiptService;
 use Illuminate\Support\Facades\Mail;
-
 class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
 {
     protected function receiptService(): PaymentReceiptService
@@ -139,5 +138,81 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         $paymentItem = $feed->firstWhere('type', 'payment');
         $this->assertSame('Early renewal top-up', $paymentItem['event']);
         $this->assertSame(20.0, $paymentItem['amount']);
+    }
+
+    public function test_successful_payment_auto_sends_receipt_via_gateway_confirm(): void
+    {
+        Mail::fake();
+
+        $subscription = $this->subscribeAndActivateEssential($this->apolloSoft);
+        $subscription = $subscription->fresh();
+
+        $payment = $this->paymentService->createPending([
+            'business_id' => $this->apolloSoft->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $this->margaret->id,
+            'amount' => 60.0,
+            'currency' => 'USD',
+            'method' => 'gateway',
+            'payment_type' => 'topup',
+            'gateway_name' => 'pesapal',
+            'gateway_transaction_id' => 'mock-txn-auto-receipt',
+            'metadata' => ['topup_months' => 3],
+        ]);
+
+        $this->mock(\App\Services\Payment\Gateways\PesaPalGateway::class, function ($mock) {
+            $mock->shouldReceive('verify')->andReturn([
+                'success' => true,
+                'status' => 'successful',
+                'transaction_id' => 'mock-txn-auto-receipt',
+                'message' => 'Verified',
+            ]);
+        });
+
+        $this->gatewayService->confirmPayment($payment->id);
+
+        $payment->refresh();
+        $this->assertTrue($payment->isCompleted());
+        $this->assertNotNull($payment->receipt_sent_at);
+
+        Mail::assertSent(StandardEmail::class, function (StandardEmail $mail) use ($payment) {
+            $this->assertSame($this->margaret->email, $mail->to[0]['address']);
+            $this->assertCount(1, $mail->attachments());
+            return true;
+        });
+    }
+
+    public function test_auto_receipt_skipped_for_zero_amount_payment(): void
+    {
+        Mail::fake();
+
+        $subscription = $this->subscribeAndActivateEssential($this->webFoundation);
+        $subscription = $subscription->fresh();
+
+        $this->gatewayService->processZeroCostUpgrade($subscription, $this->professional->id, 'monthly');
+
+        $payment = $this->paymentService->getByBusiness($this->webFoundation->id)->first();
+
+        $this->assertNotNull($payment);
+        $this->assertTrue($payment->isCompleted());
+        $this->assertSame(0.0, (float) $payment->amount);
+        $this->assertNull($payment->receipt_sent_at);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_auto_receipt_does_not_resend_when_already_sent(): void
+    {
+        Mail::fake();
+
+        $payment = $this->makeCompletedTopUpPayment();
+        $payment->forceFill(['receipt_sent_at' => now()])->save();
+
+        \App\Jobs\SendPaymentReceiptJob::dispatchSync($payment->id);
+
+        $payment->refresh();
+        $this->assertNotNull($payment->receipt_sent_at);
+
+        Mail::assertNothingSent();
     }
 }

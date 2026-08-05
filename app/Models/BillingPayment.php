@@ -35,6 +35,7 @@ class BillingPayment extends Model
         'rejection_reason',
         'metadata',
         'idempotency_key',
+        'receipt_sent_at',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class BillingPayment extends Model
             'status' => PaymentStatus::class,
             'paid_at' => 'datetime',
             'approved_at' => 'datetime',
+            'receipt_sent_at' => 'datetime',
             'gateway_request' => 'array',
             'gateway_response' => 'array',
             'metadata' => 'array',

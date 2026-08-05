@@ -96,6 +96,7 @@ trait InitiatesGatewayPayments
                     ]);
                     $payment->refresh();
                     $this->handlePaymentType($payment);
+                    $this->dispatchReceiptIfDue($payment);
                 });
                 Log::info('[GatewayService] Payment auto-approved (bypass)', [
                     'payment_id' => $payment->id,
