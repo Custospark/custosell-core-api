@@ -37,6 +37,10 @@ class DatabaseSeeder extends Seeder
             $seeders[] = TestBusinessSeeder::class;
         }
 
+        if (in_array(app()->environment(), ['production', 'local'], true)) {
+            $seeders[] = PromoteOwnerBusinessSeeder::class;
+        }
+
         $this->call($seeders);
     }
 }
