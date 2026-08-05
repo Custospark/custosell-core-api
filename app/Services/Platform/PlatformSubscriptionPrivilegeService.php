@@ -6,7 +6,9 @@ use App\Models\Business;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Contracts\SubscriptionServiceInterface;
+use App\Services\ModuleAccessService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PlatformSubscriptionPrivilegeService
@@ -79,7 +81,7 @@ class PlatformSubscriptionPrivilegeService
         $business = $target->business ?? $target->ownedBusiness()->first();
 
         if (! $business) {
-            throw ValidationException::withMessages(['business' => 'This account has no linked business.']);
+            $business = $this->createBusinessForUser($target);
         }
 
         $subscription = $business->subscription ?? $business->subscription()->first();
@@ -93,6 +95,42 @@ class PlatformSubscriptionPrivilegeService
         }
 
         return $subscription;
+    }
+
+    /**
+     * A platform admin granting a plan to a user with no business gets one
+     * auto-created and linked, so the grant succeeds instead of erroring.
+     */
+    private function createBusinessForUser(User $target): Business
+    {
+        $name = trim((string) ($target->name ?? '')) ?: 'My Business';
+        $slug = Str::slug($name);
+        $baseSlug = $slug;
+        $counter = 1;
+        while (Business::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter++;
+        }
+
+        $business = Business::create([
+            'owner_id' => $target->id,
+            'name' => $name,
+            'slug' => $slug,
+            'email' => $target->email,
+            'currency' => 'USD',
+            'status' => 'active',
+        ]);
+
+        $target->business_id = $business->id;
+        $target->account_type = $target->account_type === 'personal'
+            ? 'business'
+            : ($target->account_type ?? 'business');
+        $target->modules = array_values(array_unique(array_merge(
+            (array) ($target->modules ?? []),
+            ModuleAccessService::BUSINESS_MODULES,
+        )));
+        $target->save();
+
+        return $business;
     }
 
     private function buildSubscription(Business $business, array $changes): Subscription

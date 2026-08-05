@@ -432,3 +432,18 @@
 **Tests:** `PaymentReceiptAndHistoryTest` 8/8 — includes new auto-send, zero-amount skip, and duplicate-guard tests. Full billing lifecycle suites 79 passed. `composer vera:fast` passed (php -l + logic incl. file-size-500), `migrate --pretend` clean.
 
 **Full detail:** `docs/adr/2026-08-05-auto-send-subscription-receipts.md`
+
+---
+
+## ADR-027: Platform grants auto-create a business for users without one
+
+**Date:** 2026-08-05
+**Status:** Accepted
+
+**Context:** When a platform admin assigned a plan under Platform > All users to a user who had no linked business, the request failed with "This account has no linked business." — blocking legitimate grants for incomplete sign-ups.
+
+**Decision:** `PlatformSubscriptionPrivilegeService::resolveSubscription()` now auto-creates and links a business for the target user instead of throwing. The business is owned by the user, named after them (unique slug), defaulted to USD, and the user's `business_id`, `account_type` (personal -> business), and business modules are set before the subscription is created. Bulk grants now process these users successfully too.
+
+**Tests:** `PlatformUserPrivilegesTest` 15/15 (was 14 with a rejection test, now includes auto-creation coverage). Full platform suites 32 passed. `composer vera:fast` passed (php -l + logic incl. file-size-500).
+
+**Full detail:** `docs/adr/2026-08-05-platform-grants-auto-create-business.md`

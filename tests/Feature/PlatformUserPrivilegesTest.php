@@ -141,16 +141,23 @@ class PlatformUserPrivilegesTest extends TestCase
             ->assertJsonPath('message', 'No subscription exists. Select a plan to create one.');
     }
 
-    public function test_rejects_when_user_has_no_business(): void
+    public function test_creates_business_for_user_without_one_when_assigning_plan(): void
     {
-        $target = User::factory()->create(['business_id' => null]);
+        $target = User::factory()->create(['business_id' => null, 'account_type' => 'personal']);
 
         $this->actingAs($this->admin(), 'sanctum')
             ->patchJson('/api/v1/platform/users/'.$target->id.'/privileges', [
                 'plan_id' => $this->planId(),
             ])
-            ->assertUnprocessable()
-            ->assertJsonPath('message', 'This account has no linked business.');
+            ->assertOk()
+            ->assertJsonPath('message', 'Account privileges updated.');
+
+        $fresh = $target->fresh();
+        $this->assertNotNull($fresh->business_id);
+        $this->assertNotNull($fresh->ownedBusiness()->first());
+        $this->assertSame('business', $fresh->account_type);
+        $this->assertNotNull($fresh->business->subscription()->first());
+        $this->assertEquals($this->planId(), $fresh->business->subscription()->first()->plan_id);
     }
 
     public function test_updates_existing_subscription_fields_and_audits(): void
@@ -254,15 +261,19 @@ class PlatformUserPrivilegesTest extends TestCase
                 'plan_id' => $this->planId(),
             ])
             ->assertOk()
-            ->assertJsonPath('processed', 2)
-            ->assertJsonCount(1, 'errors')
-            ->assertJsonPath('variant', 'warning');
+            ->assertJsonPath('processed', 3)
+            ->assertJsonCount(0, 'errors')
+            ->assertJsonPath('variant', 'success');
 
         $this->assertDatabaseHas('users', ['id' => $a->id, 'account_type' => 'personal']);
         $this->assertDatabaseHas('users', ['id' => $b->id, 'account_type' => 'personal']);
-        $this->assertDatabaseHas('users', ['id' => $noBusiness->id, 'account_type' => 'personal']);
+        $this->assertDatabaseHas('users', ['id' => $noBusiness->id, 'account_type' => 'business']);
         $this->assertNotNull($businessA->subscription()->first());
         $this->assertNotNull($businessB->subscription()->first());
+
+        $noBusinessFresh = $noBusiness->fresh();
+        $this->assertNotNull($noBusinessFresh->business_id);
+        $this->assertNotNull($noBusinessFresh->business->subscription()->first());
     }
 
     public function test_bulk_update_all_success_returns_success_variant(): void
