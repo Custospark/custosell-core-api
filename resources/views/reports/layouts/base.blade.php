@@ -296,14 +296,11 @@
 
   <div class="footer">
     @if($business->receipt_footer)<p>{{ $business->receipt_footer }}</p>@endif
-    <p class="brand-tagline">
-      <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSELL_URL }}">{{ $brandTagline ?? config('brand.tagline') }}</a>
-    </p>
     <p class="brand-footer">
       Powered by <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSELL_URL }}">Custosell</a>
       | A product of <a href="{{ \App\Services\ReportMetricsService::BRAND_CUSTOSPARK_URL }}">Custospark Company Ltd</a>
     </p>
-    <p>Generated on {{ now()->format('M d, Y H:i:s') }} - {{ $business->name }}</p>
+    <p>Generated on {{ now()->format('M d, Y') }}</p>
   </div>
 </body>
 </html>
