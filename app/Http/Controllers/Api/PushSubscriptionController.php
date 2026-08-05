@@ -20,6 +20,7 @@ class PushSubscriptionController extends Controller
         return response()->json([
             'data' => [
                 'enabled' => $this->webPush->isEnabled(),
+                'public_key' => $this->webPush->isEnabled() ? (string) config('webpush.public_key') : null,
                 'subscription_count' => $this->webPush->countForUser($user->id),
             ],
         ]);

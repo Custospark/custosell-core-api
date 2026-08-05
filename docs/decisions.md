@@ -462,3 +462,18 @@
 **Tests:** `PlatformUserPrivilegesTest` 15/15 + `PlatformPrivilegeAccountTypeTest` 5/5. `composer vera:fast` passed.
 
 **Full detail:** `docs/adr/2026-08-05-account-type-plan-guard-billing-privileges.md`
+
+---
+
+## ADR-029: Web Push (VAPID) notifications
+
+**Date:** 2026-08-05
+**Status:** Accepted
+
+**Context:** Notifications were delivered in-app only (bell polling every 60s while the app is open) plus email. For a POS, urgent signals like a new open order are lost the moment the tab is closed.
+
+**Decision:** Add Web Push via `minishlink/web-push` (VAPID, aes128gcm). A `push_subscriptions` table stores per-user subscriptions (`endpoint` unique per user, `p256dh`, `auth_secret`). `GET /api/v1/webpush/status` exposes `enabled` + the VAPID `public_key`; `POST /webpush/subscribe` stores a subscription; `DELETE /webpush/unsubscribe` removes it. `NotificationService::sendToUser` now also pushes newly-persisted in-app notifications to the user's active subscriptions (deduped by the existing contentKey; 410-expired endpoints pruned). Push is additive — email and in-app channels are unchanged.
+
+**Tests:** `WebPushSubscriptionTest` 7/7 (status, store, idempotency, validation, unsubscribe, auth). `composer vera:fast` passed; `migrate --pretend` verified the `push_subscriptions` schema.
+
+**Full detail:** `Frontend/docs/adr/2026-08-05-web-push-notifications.md`
