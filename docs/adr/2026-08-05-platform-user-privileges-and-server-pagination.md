@@ -69,9 +69,43 @@ filtering on server-computed fields (`account_type`, `subscription_status`).
   server-computed fields.
 - Email is normalized (lowercase/trimmed) and uniqueness enforced case-insensitively.
 
+## Update — Status-Aware Subscription Dates & Before/After Diffs (2026-08-05)
+
+### Context
+
+The privileges editor previously sent a single `next_billing_date` regardless of
+status. An admin picking "trial" expected to see the trial end date, but the UI
+and service only handled "next billing" — the date shown and written did not
+match the status being selected.
+
+### Decision
+
+- **Status → date mapping** (`PlatformSubscriptionPrivilegeService`):
+  - `trial` → `trial_ends_at`
+  - `active` → `next_billing_date`
+  - `past_due` → `grace_period_ends_at`
+  - `suspended` → `suspended_at`
+  - `cancelled`/`expired` → `ends_at`
+- Only the date field for the effective status is written; the endpoint now
+  accepts `trial_ends_at`, `grace_period_ends_at`, `suspended_at`, `ends_at` in
+  addition to `next_billing_date` (single + bulk validation).
+- **Before/after audit**: every privilege change is recorded as a `diff` map of
+  `field => { from, to }` in audit metadata (`user.privileges.fields` for account
+  fields, `user.privileges.subscription` for subscription fields). Password is
+  recorded only as `password_changed` — the stored hash cannot be read back.
+- Extracted the subscription change logic from `PlatformUserService` into
+  `PlatformSubscriptionPrivilegeService` to keep both files ≤500 lines.
+- `PlatformUserResource` now exposes all lifecycle dates
+  (`starts_at`, `trial_ends_at`, `next_billing_date`, `grace_period_ends_at`,
+  `suspended_at`, `ends_at`, `cancelled_at`) and defaults `account_type` to
+  `storefront_buyer` (shopping accounts) when a user has no stored account type.
+- The frontend modal shows the date field that applies to the chosen status and
+  renders a "Changes to apply" before → after summary for all changed fields.
+
 ## Files
 
 - `app/Services/Platform/PlatformUserService.php`
+- `app/Services/Platform/PlatformSubscriptionPrivilegeService.php`
 - `app/Http/Controllers/Api/Platform/PlatformUserController.php`
 - `app/Http/Resources/PlatformUserResource.php`
 - `app/Http/Middleware/EnsureAccountUsable.php`
