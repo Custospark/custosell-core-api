@@ -21,6 +21,12 @@
       border-bottom: 2px solid {{ $accent }};
       padding-bottom: 12px;
     }
+    .header-logo {
+      max-height: 56px;
+      max-width: 180px;
+      margin: 0 auto 8px auto;
+      display: block;
+    }
     .header h1 {
       font-family: DejaVu Sans, sans-serif;
       font-size: 20px;
@@ -221,7 +227,22 @@
   </style>
 </head>
 <body>
+  @php
+    $logoDataUri = null;
+    $logoPath = isset($business->logo_path) ? $business->logo_path : null;
+    if ($logoPath) {
+      $relative = ltrim(str_replace('/storage/', '', (string) $logoPath), '/');
+      $disk = \Illuminate\Support\Facades\Storage::disk('public');
+      if ($relative !== '' && $disk->exists($relative)) {
+        $mime = \Illuminate\Support\Facades\File::mimeType($disk->path($relative)) ?: 'image/png';
+        $logoDataUri = 'data:'.$mime.';base64,'.base64_encode((string) $disk->get($relative));
+      }
+    }
+  @endphp
   <div class="header">
+    @if($logoDataUri)
+      <img class="header-logo" src="{{ $logoDataUri }}" alt="">
+    @endif
     <h1>{{ $business->name }}</h1>
     @if($business->address)<p>{{ $business->address }}</p>@endif
     @php $location = collect([$business->city, $business->state, $business->country])->filter()->implode(', '); @endphp
