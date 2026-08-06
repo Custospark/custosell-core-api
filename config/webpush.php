@@ -12,7 +12,7 @@ return [
     |
     */
     'enabled' => (bool) env('WEB_PUSH_ENABLED', true),
-    'subject' => env('VAPID_SUBJECT', 'mailto:dev@custosell.app'),
+    'subject' => env('VAPID_SUBJECT', 'mailto:info@custospark.com'),
     'public_key' => env('VAPID_PUBLIC_KEY'),
     'private_key' => env('VAPID_PRIVATE_KEY'),
 

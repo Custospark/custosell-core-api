@@ -120,7 +120,7 @@ class WebPushService implements WebPushServiceInterface
     {
         return [
             'VAPID' => [
-                'subject' => (string) config('webpush.subject', 'mailto:dev@custosell.app'),
+                'subject' => (string) config('webpush.subject', 'mailto:info@custospark.com'),
                 'publicKey' => (string) config('webpush.public_key'),
                 'privateKey' => (string) config('webpush.private_key'),
             ],

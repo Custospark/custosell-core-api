@@ -477,3 +477,5 @@
 **Tests:** `WebPushSubscriptionTest` 7/7 (status, store, idempotency, validation, unsubscribe, auth). `composer vera:fast` passed; `migrate --pretend` verified the `push_subscriptions` schema.
 
 **Full detail:** `Frontend/docs/adr/2026-08-05-web-push-notifications.md`
+
+**How-to (ops):** generating/filling/rotating VAPID keys is documented in `docs/webpush-vapid.md`.
