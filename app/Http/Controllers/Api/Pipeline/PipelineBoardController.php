@@ -122,12 +122,14 @@ class PipelineBoardController extends Controller
             'members.*.send_notification' => ['nullable', 'boolean'],
         ]);
 
-        if ($validated['visibility'] === 'shared' && (!empty($validated['members']) || !empty($validated['member_ids']))) {
+        if (!empty($validated['members']) || !empty($validated['member_ids'])) {
             $board = $this->pipelineService->getBoard((int) $request->user()->business_id, $request->user(), $id);
-            $currentMemberCount = $board->members->count();
-            $subscription = $this->subscriptionService->getByBusiness((int) $board->business_id);
-            $incomingCount = !empty($validated['members']) ? count($validated['members']) : count($validated['member_ids']);
-            $this->boardMemberLimit->assertWithinBoardMemberLimit($subscription, $currentMemberCount, $incomingCount);
+            if (($validated['visibility'] ?? $board->visibility) === 'shared') {
+                $currentMemberCount = $board->members->count();
+                $subscription = $this->subscriptionService->getByBusiness((int) $board->business_id);
+                $incomingCount = !empty($validated['members']) ? count($validated['members']) : count($validated['member_ids']);
+                $this->boardMemberLimit->assertWithinBoardMemberLimit($subscription, $currentMemberCount, $incomingCount);
+            }
         }
 
         $board = $this->pipelineService->updateBoard(
