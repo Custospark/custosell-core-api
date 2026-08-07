@@ -52,8 +52,9 @@ class PersonalBudgetService implements PersonalBudgetServiceInterface
     }
 
     /**
-     * Replace the budget's plan lines and re-derive planned_amount from the
-     * priced lines (auto-total). Returns the refreshed plan lines.
+     * Replace the budget's plan lines (upsert by id, delete removed, keep
+     * purchased). The planned amount is the user's target and is NOT derived
+     * from line totals. Returns the refreshed plan lines.
      */
     public function syncLines(int $id, array $lines): array
     {
@@ -104,10 +105,6 @@ class PersonalBudgetService implements PersonalBudgetServiceInterface
                     $model->delete();
                 }
             }
-
-            // Auto-total: sum of line totals (including purchased lines).
-            $autoTotal = (float) $budget->lines()->sum('line_total');
-            $budget->update(['planned_amount' => round($autoTotal, 2)]);
         });
 
         return $budget->fresh('lines')->lines()->orderBy('id')->get()->toArray();

@@ -124,14 +124,19 @@ class PersonalBudgetRepository implements PersonalBudgetRepositoryInterface
     /**
      * Cumulative spend-vs-budget pacing for a budget. The budget line spreads
      * the planned amount evenly across the coverage period; actual accumulates
-     * daily. Empty when the budget has no coverage dates.
+     * daily. Falls back to the budget's creation-to-now window when no explicit
+     * coverage dates are set, so a chart always renders for a planned budget.
      */
     protected function buildPacing(PersonalBudget $budget, array $filters): array
     {
-        $start = $budget->period_start;
-        $end = $budget->period_end;
         $planned = (float) $budget->planned_amount;
-        if (!$start || !$end || $planned <= 0) {
+        if ($planned <= 0) {
+            return [];
+        }
+
+        $start = $budget->period_start ?? $budget->created_at;
+        $end = $budget->period_end ?? now();
+        if (!$start || !$end) {
             return [];
         }
 
@@ -152,8 +157,8 @@ class PersonalBudgetRepository implements PersonalBudgetRepositoryInterface
         $cumulativeSpend = 0;
         $series = [];
 
-        $date = $budget->period_start->copy();
-        while ($date->lte($budget->period_end)) {
+        $date = $start->copy();
+        while ($date->lte($end)) {
             $key = $date->toDateString();
             $cumulativeSpend += (float) ($daily[$key] ?? 0);
             $daysElapsed = (int) $start->diffInDays($date) + 1;
