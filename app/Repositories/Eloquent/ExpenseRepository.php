@@ -55,12 +55,15 @@ class ExpenseRepository implements ExpenseRepositoryInterface
         return $expense->delete();
     }
 
-    public function getByDateRange(int $businessId, string $start, string $end): Collection
+    public function getByDateRange(int $businessId, string $start, string $end, ?int $locationId = null): Collection
     {
-        return Expense::where('business_id', $businessId)
+        $query = Expense::where('business_id', $businessId)
             ->whereBetween('expense_date', [$start, $end])
-            ->with(['expenseCategory', 'recordedBy', 'location'])
-            ->orderBy('expense_date', 'desc')
+            ->with(['expenseCategory', 'recordedBy', 'location']);
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+        return $query->orderBy('expense_date', 'desc')
             ->get();
     }
 

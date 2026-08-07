@@ -17,7 +17,7 @@ interface ExpenseRepositoryInterface
 
     public function delete(Expense $expense): bool;
 
-    public function getByDateRange(int $businessId, string $start, string $end): \Illuminate\Database\Eloquent\Collection;
+    public function getByDateRange(int $businessId, string $start, string $end, ?int $locationId = null): \Illuminate\Database\Eloquent\Collection;
 
     public function getByCategory(int $businessId, int $categoryId): \Illuminate\Database\Eloquent\Collection;
 

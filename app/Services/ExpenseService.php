@@ -112,6 +112,7 @@ class ExpenseService implements ExpenseServiceInterface
     {
         $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
         $dateTo = $filters['date_to'] ?? now()->endOfMonth()->toDateString();
+        $locationId = $filters['location_id'] ?? null;
 
         $isPersonal = $accountType === 'personal';
 
@@ -125,6 +126,7 @@ class ExpenseService implements ExpenseServiceInterface
         $expenseSummary = $this->expenseRepository->getSummary($businessId, [
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
+            'location_id' => $locationId,
         ]);
 
         $totalIncome = $incomeSummary['total_amount'];
@@ -143,24 +145,28 @@ class ExpenseService implements ExpenseServiceInterface
             'income_by_source' => $incomeSummary['by_source'] ?? [],
             'expenses_by_category' => $expenseSummary['by_category'] ?? [],
             'monthly_trends' => $monthlyTrends,
-            'daily_spending_trends' => $this->buildDailySpendingTrends($businessId),
-            'monthly_spending_trends' => $this->buildMonthlySpendingTrends($businessId),
-            'recent_transactions' => $this->buildRecentTransactions($businessId, $dateFrom, $dateTo, $isPersonal),
+            'daily_spending_trends' => $this->buildDailySpendingTrends($businessId, $dateFrom, $locationId),
+            'monthly_spending_trends' => $this->buildMonthlySpendingTrends($businessId, $dateFrom, $locationId),
+            'recent_transactions' => $this->buildRecentTransactions($businessId, $dateFrom, $dateTo, $isPersonal, $locationId),
         ];
     }
 
-    /** Per-day-of-current-month expense totals, filled for a full line/bar series. */
-    protected function buildDailySpendingTrends(int $businessId): array
+    /** Per-day-of-month expense totals within the month of $dateFrom, filled as a line/bar series. */
+    protected function buildDailySpendingTrends(int $businessId, string $dateFrom, ?int $locationId = null): array
     {
-        $year = now()->year;
-        $month = now()->month;
-        $daysInMonth = now()->daysInMonth;
-        $first = now()->startOfMonth()->toDateString();
-        $last = now()->endOfMonth()->toDateString();
+        $monthKey = \Illuminate\Support\Carbon::parse($dateFrom)->format('Y-m');
+        $daysInMonth = \Illuminate\Support\Carbon::parse($dateFrom)->daysInMonth;
+        $month = \Illuminate\Support\Carbon::parse($dateFrom)->month;
+        $first = date('Y-m-d', strtotime($monthKey . '-01'));
+        $last = date('Y-m-t', strtotime($monthKey . '-01'));
 
-        $rows = DB::table('expenses')
+        $query = DB::table('expenses')
             ->where('business_id', $businessId)
-            ->whereBetween('expense_date', [$first, $last])
+            ->whereBetween('expense_date', [$first, $last]);
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+        $rows = $query
             ->selectRaw('DAY(expense_date) as d, SUM(amount) as total')
             ->groupBy('d')
             ->pluck('total', 'd');
@@ -173,18 +179,21 @@ class ExpenseService implements ExpenseServiceInterface
                 'expenses' => round((float) ($rows[$day] ?? 0), 2),
             ];
         }
-        unset($year);
 
         return $series;
     }
 
-    /** Per-month-of-current-year expense totals, filled for a full year series. */
-    protected function buildMonthlySpendingTrends(int $businessId): array
+    /** Per-month-of-year expense totals for the year of $dateFrom, filled for a full year series. */
+    protected function buildMonthlySpendingTrends(int $businessId, string $dateFrom, ?int $locationId = null): array
     {
-        $year = now()->year;
-        $rows = DB::table('expenses')
+        $year = \Illuminate\Support\Carbon::parse($dateFrom)->year;
+        $query = DB::table('expenses')
             ->where('business_id', $businessId)
-            ->whereYear('expense_date', $year)
+            ->whereYear('expense_date', $year);
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+        $rows = $query
             ->selectRaw('MONTH(expense_date) as m, SUM(amount) as total')
             ->groupBy('m')
             ->pluck('total', 'm');
@@ -203,7 +212,7 @@ class ExpenseService implements ExpenseServiceInterface
     }
 
     /** Merged recent income/expense entries. Income excluded for business accounts. */
-    protected function buildRecentTransactions(int $businessId, string $dateFrom, string $dateTo, bool $isPersonal): array
+    protected function buildRecentTransactions(int $businessId, string $dateFrom, string $dateTo, bool $isPersonal, ?int $locationId = null): array
     {
         $recentIncome = collect();
         if ($isPersonal) {
@@ -220,7 +229,7 @@ class ExpenseService implements ExpenseServiceInterface
                 ]);
         }
 
-        $recentExpenses = $this->expenseRepository->getByDateRange($businessId, $dateFrom, $dateTo)
+        $recentExpenses = $this->expenseRepository->getByDateRange($businessId, $dateFrom, $dateTo, $locationId ?? null)
             ->take(5)
             ->map(fn($e) => [
                 'type' => 'expense',
