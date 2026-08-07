@@ -30,6 +30,7 @@ class ExpenseResource extends JsonResource
             'vat_amount' => $this->vat_amount,
             'vat_claimable' => (bool) $this->vat_claimable,
             'receipt_url' => $this->receipt_path ? url('storage/' . $this->receipt_path) : null,
+            'attachments' => ExpenseAttachmentResource::collection($this->whenLoaded('attachments')),
             'is_recurring' => $this->is_recurring,
             'recurrence_interval' => $this->recurrence_interval,
             'recurrence_end_date' => $this->recurrence_end_date,

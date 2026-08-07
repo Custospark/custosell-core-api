@@ -12,7 +12,7 @@ class ExpenseRepository implements ExpenseRepositoryInterface
     public function all(int $businessId, array $filters = []): LengthAwarePaginator
     {
         $query = Expense::where('business_id', $businessId)
-            ->with(['expenseCategory', 'recordedBy', 'location']);
+            ->with(['expenseCategory', 'recordedBy', 'location', 'attachments']);
 
         if (!empty($filters['category_id'])) {
             $query->where('expense_category_id', $filters['category_id']);
@@ -36,7 +36,7 @@ class ExpenseRepository implements ExpenseRepositoryInterface
 
     public function find(int $id): ?Expense
     {
-        return Expense::with(['expenseCategory', 'recordedBy', 'location'])->find($id);
+        return Expense::with(['expenseCategory', 'recordedBy', 'location', 'attachments'])->find($id);
     }
 
     public function create(array $data): Expense

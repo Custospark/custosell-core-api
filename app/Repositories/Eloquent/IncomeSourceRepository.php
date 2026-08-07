@@ -11,7 +11,7 @@ class IncomeSourceRepository implements IncomeSourceRepositoryInterface
 {
     public function all(int $businessId, array $filters = []): LengthAwarePaginator
     {
-        $query = IncomeSource::where('business_id', $businessId);
+        $query = IncomeSource::with('attachments')->where('business_id', $businessId);
 
         if (!empty($filters['source_name'])) {
             $query->where('source_name', $filters['source_name']);
@@ -29,7 +29,7 @@ class IncomeSourceRepository implements IncomeSourceRepositoryInterface
 
     public function find(int $id): ?IncomeSource
     {
-        return IncomeSource::find($id);
+        return IncomeSource::with('attachments')->find($id);
     }
 
     public function create(array $data): IncomeSource

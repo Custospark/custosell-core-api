@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Expense extends Model
@@ -85,5 +86,10 @@ class Expense extends Model
     public function fixedAsset(): BelongsTo
     {
         return $this->belongsTo(FixedAsset::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ExpenseAttachment::class, 'expense_id')->orderByDesc('created_at');
     }
 }

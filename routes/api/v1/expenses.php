@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ExpenseAttachmentController;
 use App\Http\Controllers\Api\ExpenseController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
     Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])->whereNumber('expense');
     Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->whereNumber('expense');
     Route::patch('/expenses/{expense}', [ExpenseController::class, 'update'])->whereNumber('expense');
+
+    Route::post('/expenses/{expense}/attachments', [ExpenseAttachmentController::class, 'store'])->whereNumber('expense');
+    Route::post('/expenses/{expense}/attachments/link', [ExpenseAttachmentController::class, 'storeLink'])->whereNumber('expense');
+    Route::delete('/expense-attachments/{id}', [ExpenseAttachmentController::class, 'destroy'])->whereNumber('id');
 });
