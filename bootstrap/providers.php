@@ -8,6 +8,7 @@ use App\Providers\CustomerServiceProvider;
 use App\Providers\ExpenseCategoryServiceProvider;
 use App\Providers\ExpenseServiceProvider;
 use App\Providers\IncomeSourceServiceProvider;
+use App\Providers\PersonalBudgetServiceProvider;
 use App\Providers\InvoiceServiceProvider;
 use App\Providers\LocationServiceProvider;
 use App\Providers\MarketplaceServiceProvider;
@@ -61,6 +62,7 @@ return [
     SubscriptionServiceProvider::class,
     ExpenseCategoryServiceProvider::class,
     ExpenseServiceProvider::class,
+    PersonalBudgetServiceProvider::class,
     IncomeSourceServiceProvider::class,
     InvoiceServiceProvider::class,
     StaffTransferServiceProvider::class,

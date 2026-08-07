@@ -43,6 +43,7 @@ class ExpenseService implements ExpenseServiceInterface
     {
         $data['business_id'] = $businessId;
         $this->assertCategoryAvailable($businessId, $data['expense_category_id'] ?? null);
+        $this->assertBudgetAvailable($businessId, $data['budget_id'] ?? null);
         $this->assertFixedAssetBelongsToBusiness($businessId, $data['fixed_asset_id'] ?? null);
         $this->assertLocationBelongsToBusiness($businessId, $data['location_id'] ?? null);
 
@@ -66,6 +67,10 @@ class ExpenseService implements ExpenseServiceInterface
 
         if (array_key_exists('expense_category_id', $data)) {
             $this->assertCategoryAvailable($expense->business_id, $data['expense_category_id']);
+        }
+
+        if (array_key_exists('budget_id', $data)) {
+            $this->assertBudgetAvailable($expense->business_id, $data['budget_id']);
         }
 
         if (array_key_exists('fixed_asset_id', $data)) {
@@ -370,6 +375,24 @@ class ExpenseService implements ExpenseServiceInterface
         if (!$category) {
             throw ValidationException::withMessages([
                 'expense_category_id' => 'Invalid expense category.',
+            ]);
+        }
+    }
+
+    protected function assertBudgetAvailable(int $businessId, mixed $budgetId): void
+    {
+        if ($budgetId === null || $budgetId === '') {
+            return;
+        }
+
+        $budget = \App\Models\PersonalBudget::query()
+            ->where('id', (int) $budgetId)
+            ->where('business_id', $businessId)
+            ->first();
+
+        if (!$budget) {
+            throw ValidationException::withMessages([
+                'budget_id' => 'Invalid budget for this business.',
             ]);
         }
     }

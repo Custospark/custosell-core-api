@@ -14,6 +14,7 @@ class IncomeSource extends Model
     protected $fillable = [
         'business_id',
         'user_id',
+        'budget_id',
         'amount',
         'source_name',
         'description',
@@ -36,6 +37,11 @@ class IncomeSource extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function personalBudget(): BelongsTo
+    {
+        return $this->belongsTo(PersonalBudget::class, 'budget_id');
     }
 
     public function attachments(): HasMany

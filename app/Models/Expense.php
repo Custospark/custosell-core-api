@@ -12,6 +12,7 @@ class Expense extends Model
 
     protected $fillable = [
         'business_id',
+        'budget_id',
         'expense_category_id',
         'recorded_by',
         'location_id',
@@ -49,6 +50,11 @@ class Expense extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function personalBudget(): BelongsTo
+    {
+        return $this->belongsTo(PersonalBudget::class, 'budget_id');
     }
 
     public function expenseCategory(): BelongsTo
