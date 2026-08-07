@@ -16,4 +16,8 @@ interface PersonalBudgetServiceInterface
     public function update(int $id, array $data): PersonalBudget;
 
     public function delete(int $id): bool;
+
+    public function syncLines(int $id, array $lines): array;
+
+    public function purchaseLine(int $id, int $lineId, array $expenseData, ?int $userId): \App\Models\BudgetLine;
 }

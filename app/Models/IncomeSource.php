@@ -19,6 +19,9 @@ class IncomeSource extends Model
         'source_name',
         'description',
         'income_date',
+        'is_recurring',
+        'recurrence_interval',
+        'next_due_date',
     ];
 
     protected function casts(): array
@@ -26,6 +29,8 @@ class IncomeSource extends Model
         return [
             'amount' => 'decimal:2',
             'income_date' => 'date',
+            'is_recurring' => 'boolean',
+            'next_due_date' => 'date',
         ];
     }
 

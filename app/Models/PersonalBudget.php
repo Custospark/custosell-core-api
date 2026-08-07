@@ -52,4 +52,9 @@ class PersonalBudget extends Model
     {
         return $this->hasMany(IncomeSource::class, 'budget_id');
     }
+
+    public function lines()
+    {
+        return $this->hasMany(BudgetLine::class, 'personal_budget_id')->orderBy('id');
+    }
 }

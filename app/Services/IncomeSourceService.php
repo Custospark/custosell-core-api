@@ -28,6 +28,7 @@ class IncomeSourceService implements IncomeSourceServiceInterface
     {
         $data['business_id'] = $businessId;
         $data['user_id'] = $userId;
+        $data = $this->applyRecurrenceDefaults($data);
         return $this->incomeSourceRepository->create($data);
     }
 
@@ -37,7 +38,26 @@ class IncomeSourceService implements IncomeSourceServiceInterface
         if (!$incomeSource) {
             throw new \RuntimeException('Income source not found');
         }
+        $data = $this->applyRecurrenceDefaults($data);
         return $this->incomeSourceRepository->update($incomeSource, $data);
+    }
+
+    protected function applyRecurrenceDefaults(array $data): array
+    {
+        $recurring = (bool) ($data['is_recurring'] ?? false);
+        if ($recurring && empty($data['next_due_date'])) {
+            $data['next_due_date'] = match ($data['recurrence_interval'] ?? 'monthly') {
+                'daily' => now()->addDay()->toDateString(),
+                'weekly' => now()->addWeek()->toDateString(),
+                'yearly' => now()->addYear()->toDateString(),
+                default => now()->addMonth()->toDateString(),
+            };
+        }
+        if (!$recurring) {
+            $data['recurrence_interval'] = null;
+            $data['next_due_date'] = null;
+        }
+        return $data;
     }
 
     public function delete(int $id): bool
