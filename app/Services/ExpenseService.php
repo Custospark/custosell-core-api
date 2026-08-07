@@ -108,15 +108,19 @@ class ExpenseService implements ExpenseServiceInterface
         return $this->expenseRepository->getSummary($businessId, $filters);
     }
 
-    public function getOverview(int $businessId, array $filters = []): array
+    public function getOverview(int $businessId, array $filters = [], ?string $accountType = null): array
     {
         $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
         $dateTo = $filters['date_to'] ?? now()->endOfMonth()->toDateString();
 
-        $incomeSummary = $this->incomeSourceRepository->getSummary($businessId, [
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-        ]);
+        $isPersonal = $accountType === 'personal';
+
+        $incomeSummary = $isPersonal
+            ? $this->incomeSourceRepository->getSummary($businessId, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ])
+            : ['total_amount' => 0, 'total_count' => 0, 'by_source' => []];
 
         $expenseSummary = $this->expenseRepository->getSummary($businessId, [
             'date_from' => $dateFrom,
@@ -127,19 +131,96 @@ class ExpenseService implements ExpenseServiceInterface
         $totalExpenses = $expenseSummary['total_amount'];
         $netBalance = $totalIncome - $totalExpenses;
 
-        $monthlyTrends = $this->buildMonthlyTrends($businessId, $dateFrom, $dateTo);
+        $monthlyTrends = $this->buildMonthlyTrends($businessId, $dateFrom, $dateTo, $isPersonal);
 
-        $recentIncome = IncomeSource::where('business_id', $businessId)
-            ->orderBy('income_date', 'desc')
-            ->take(5)
-            ->get()
-            ->map(fn($i) => [
-                'type' => 'income',
-                'amount' => (float) $i->amount,
-                'description' => $i->source_name . ($i->description ? ' — ' . $i->description : ''),
-                'date' => $i->income_date->toISOString(),
-                'id' => $i->id,
-            ]);
+        $recentClosure = $this->buildRecentTransactions($businessId, $dateFrom, $dateTo, $isPersonal);
+
+        return [
+            'account_type' => $isPersonal ? 'personal' : 'business',
+            'total_income' => $totalIncome,
+            'total_expenses' => $totalExpenses,
+            'net_balance' => $totalExpenses === 0 ? $totalIncome : $netBalance,
+            'income_count' => $incomeSummary['total_count'],
+            'expense_count' => $expenseSummary['total_count'],
+            'income_by_source' => $incomeSummary['by_source'] ?? [],
+            'expenses_by_category' => $expenseSummary['by_category'] ?? [],
+            'monthly_trends' => $monthlyTrends,
+            'daily_spending_trends' => $this->buildDailySpendingTrends($businessId),
+            'monthly_spending_trends' => $this->buildMonthlySpendingTrends($businessId),
+            'recent_transactions' => $this->buildRecentTransactions($businessId, $dateFrom, $dateTo, $isPersonal),
+        ];
+    }
+
+    /** Per-day-of-current-month expense totals, filled for a full line/bar series. */
+    protected function buildDailySpendingTrends(int $businessId): array
+    {
+        $year = now()->year;
+        $month = now()->month;
+        $daysInMonth = now()->daysInMonth;
+        $first = now()->startOfMonth()->toDateString();
+        $last = now()->endOfMonth()->toDateString();
+
+        $rows = DB::table('expenses')
+            ->where('business_id', $businessId)
+            ->whereBetween('expense_date', [$first, $last])
+            ->selectRaw('DAY(expense_date) as d, SUM(amount) as total')
+            ->groupBy('d')
+            ->pluck('total', 'd');
+
+        $series = [];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $series[] = [
+                'day' => $day,
+                'label' => sprintf('%02d/%02d', $day, $month),
+                'expenses' => round((float) ($rows[$day] ?? 0), 2),
+            ];
+        }
+        unset($year);
+
+        return $series;
+    }
+
+    /** Per-month-of-current-year expense totals, filled for a full year series. */
+    protected function buildMonthlySpendingTrends(int $businessId): array
+    {
+        $year = now()->year;
+        $rows = DB::table('expenses')
+            ->where('business_id', $businessId)
+            ->whereYear('expense_date', $year)
+            ->selectRaw('MONTH(expense_date) as m, SUM(amount) as total')
+            ->groupBy('m')
+            ->pluck('total', 'm');
+
+        $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $series = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $series[] = [
+                'month' => $m,
+                'label' => $labels[$m - 1],
+                'expenses' => round((float) ($rows[$m] ?? 0), 2),
+            ];
+        }
+
+        return $series;
+    }
+
+    /** Merged recent income/expense entries. Income excluded for business accounts. */
+    protected function buildRecentTransactions(int $businessId, string $dateFrom, string $dateTo, bool $isPersonal): array
+    {
+        $recentIncome = collect();
+        if ($isPersonal) {
+            $recentIncome = IncomeSource::where('business_id', $businessId)
+                ->orderBy('income_date', 'desc')
+                ->take(5)
+                ->get()
+                ->map(fn($i) => [
+                    'type' => 'income',
+                    'amount' => (float) $i->amount,
+                    'description' => $i->source_name . ($i->description ? ' — ' . $i->description : ''),
+                    'date' => $i->income_date->toISOString(),
+                    'id' => $i->id,
+                ]);
+        }
 
         $recentExpenses = $this->expenseRepository->getByDateRange($businessId, $dateFrom, $dateTo)
             ->take(5)
@@ -151,23 +232,11 @@ class ExpenseService implements ExpenseServiceInterface
                 'id' => $e->id,
             ]);
 
-        $recentTransactions = collect($recentIncome)
+        return collect($recentIncome)
             ->concat($recentExpenses)
             ->sortByDesc('date')
             ->take(10)
             ->values();
-
-        return [
-            'total_income' => $totalIncome,
-            'total_expenses' => $totalExpenses,
-            'net_balance' => $netBalance,
-            'income_count' => $incomeSummary['total_count'],
-            'expense_count' => $expenseSummary['total_count'],
-            'income_by_source' => $incomeSummary['by_source'] ?? [],
-            'expenses_by_category' => $expenseSummary['by_category'] ?? [],
-            'monthly_trends' => $monthlyTrends,
-            'recent_transactions' => $recentTransactions,
-        ];
     }
 
     public function getBudgets(int $businessId, array $filters = []): array
@@ -249,14 +318,16 @@ class ExpenseService implements ExpenseServiceInterface
         ];
     }
 
-    protected function buildMonthlyTrends(int $businessId, string $dateFrom, string $dateTo): array
+    protected function buildMonthlyTrends(int $businessId, string $dateFrom, string $dateTo, bool $isPersonal = true): array
     {
-        $incomeTrends = IncomeSource::where('business_id', $businessId)
-            ->whereBetween('income_date', [$dateFrom, $dateTo])
-            ->selectRaw("DATE_FORMAT(income_date, '%Y-%m') as month, SUM(amount) as total")
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
+        $incomeTrends = $isPersonal
+            ? IncomeSource::where('business_id', $businessId)
+                ->whereBetween('income_date', [$dateFrom, $dateTo])
+                ->selectRaw("DATE_FORMAT(income_date, '%Y-%m') as month, SUM(amount) as total")
+                ->groupBy('month')
+                ->orderBy('month')
+                ->pluck('total', 'month')
+            : collect();
 
         $expenseTrends = \App\Models\Expense::where('business_id', $businessId)
             ->whereBetween('expense_date', [$dateFrom, $dateTo])
@@ -272,7 +343,7 @@ class ExpenseService implements ExpenseServiceInterface
 
         return $months->map(fn($month) => [
             'month' => $month,
-            'income' => (float) ($incomeTrends[$month] ?? 0),
+            'income' => $isPersonal ? (float) ($incomeTrends[$month] ?? 0) : 0,
             'expenses' => (float) ($expenseTrends[$month] ?? 0),
         ])->values()->toArray();
     }

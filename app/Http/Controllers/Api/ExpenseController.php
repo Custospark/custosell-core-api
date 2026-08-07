@@ -80,7 +80,7 @@ class ExpenseController extends Controller
         $businessId = $request->user()->business_id;
         $filters = $request->only(['date_from', 'date_to']);
         return response()->json(
-            $this->expenseService->getOverview($businessId, $filters)
+            $this->expenseService->getOverview($businessId, $filters, $request->user()->account_type)
         );
     }
 
