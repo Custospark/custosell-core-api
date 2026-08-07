@@ -15,6 +15,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
         Route::put('/{budget}/lines', [PersonalBudgetController::class, 'syncLines'])->whereNumber('budget');
         Route::post('/{budget}/lines/{line}/purchase', [PersonalBudgetController::class, 'purchaseLine'])->whereNumber('budget')->whereNumber('line');
         Route::get('/{budget}/affordability', [PersonalBudgetController::class, 'affordability'])->whereNumber('budget');
+        Route::get('/{budget}/download', [PersonalBudgetController::class, 'download'])->whereNumber('budget');
     });
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:expenses'])->prefix('money')

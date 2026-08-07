@@ -7,17 +7,23 @@ use App\Http\Requests\PersonalBudgetRequest;
 use App\Http\Requests\PurchaseLineRequest;
 use App\Http\Resources\PersonalBudgetResource;
 use App\Models\BudgetLine;
+use App\Models\Business;
 use App\Models\Expense;
 use App\Models\IncomeSource;
 use App\Models\PersonalBudget;
+use App\Services\BudgetPdfBuilder;
 use App\Services\Contracts\PersonalBudgetServiceInterface;
+use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class PersonalBudgetController extends Controller
 {
     public function __construct(
         protected PersonalBudgetServiceInterface $personalBudgetService,
+        protected BudgetPdfBuilder $budgetPdfBuilder,
+        protected ReportExportService $export,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -66,6 +72,25 @@ class PersonalBudgetController extends Controller
         $this->assertOwned($request, $id);
         $this->personalBudgetService->delete($id);
         return response()->json(null, 204);
+    }
+
+    public function download(Request $request, int $id): Response
+    {
+        $budget = $this->findOwned($request, $id);
+        if (!$budget) {
+            abort(404, 'Budget not found');
+        }
+        $user = $request->user();
+        $business = $user->business ?? new Business(['name' => $user->name, 'currency' => 'UGX']);
+
+        $config = $this->budgetPdfBuilder->build($budget, $business, $user);
+
+        return $this->export->downloadPdf(
+            $config['view'],
+            $config['data'],
+            $config['filename'],
+            $config['orientation'],
+        );
     }
 
     public function syncLines(Request $request, int $id): JsonResponse
