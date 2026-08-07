@@ -131,9 +131,7 @@ class ExpenseService implements ExpenseServiceInterface
         $totalExpenses = $expenseSummary['total_amount'];
         $netBalance = $totalIncome - $totalExpenses;
 
-        $monthlyTrends = $this->buildMonthlyTrends($businessId, $dateFrom, $dateTo, $isPersonal);
-
-        $recentClosure = $this->buildRecentTransactions($businessId, $dateFrom, $dateTo, $isPersonal);
+        $monthlyTrends = $this->buildYearlyMonthlyTrends($businessId, $isPersonal);
 
         return [
             'account_type' => $isPersonal ? 'personal' : 'business',
@@ -318,34 +316,38 @@ class ExpenseService implements ExpenseServiceInterface
         ];
     }
 
-    protected function buildMonthlyTrends(int $businessId, string $dateFrom, string $dateTo, bool $isPersonal = true): array
+    /** Full calendar year income/expense trend, filled for all 12 months. */
+    protected function buildYearlyMonthlyTrends(int $businessId, bool $isPersonal = true): array
     {
+        $year = now()->year;
+
         $incomeTrends = $isPersonal
             ? IncomeSource::where('business_id', $businessId)
-                ->whereBetween('income_date', [$dateFrom, $dateTo])
-                ->selectRaw("DATE_FORMAT(income_date, '%Y-%m') as month, SUM(amount) as total")
-                ->groupBy('month')
-                ->orderBy('month')
-                ->pluck('total', 'month')
+                ->whereYear('income_date', $year)
+                ->selectRaw("MONTH(income_date) as m, SUM(amount) as total")
+                ->groupBy('m')
+                ->pluck('total', 'm')
             : collect();
 
         $expenseTrends = \App\Models\Expense::where('business_id', $businessId)
-            ->whereBetween('expense_date', [$dateFrom, $dateTo])
-            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
+            ->whereYear('expense_date', $year)
+            ->selectRaw("MONTH(expense_date) as m, SUM(amount) as total")
+            ->groupBy('m')
+            ->pluck('total', 'm');
 
-        $months = collect(array_unique(array_merge(
-            $incomeTrends->keys()->toArray(),
-            $expenseTrends->keys()->toArray(),
-        )))->sort();
+        $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        return $months->map(fn($month) => [
-            'month' => $month,
-            'income' => $isPersonal ? (float) ($incomeTrends[$month] ?? 0) : 0,
-            'expenses' => (float) ($expenseTrends[$month] ?? 0),
-        ])->values()->toArray();
+        $series = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $series[] = [
+                'month' => $m,
+                'label' => $labels[$m - 1],
+                'income' => $isPersonal ? (float) ($incomeTrends[$m] ?? 0) : 0,
+                'expenses' => (float) ($expenseTrends[$m] ?? 0),
+            ];
+        }
+
+        return $series;
     }
 
     protected function assertCategoryAvailable(int $businessId, mixed $categoryId): void
