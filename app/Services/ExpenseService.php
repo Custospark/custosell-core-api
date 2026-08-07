@@ -234,7 +234,8 @@ class ExpenseService implements ExpenseServiceInterface
             ->concat($recentExpenses)
             ->sortByDesc('date')
             ->take(10)
-            ->values();
+            ->values()
+            ->all();
     }
 
     public function getBudgets(int $businessId, array $filters = []): array
