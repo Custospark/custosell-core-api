@@ -19,6 +19,8 @@ class PipelineBoardMemberResource extends JsonResource
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
+                'email' => $this->user->email,
+                'avatar' => $this->user->avatar,
             ]),
         ];
     }

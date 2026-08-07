@@ -265,7 +265,7 @@ class PipelineBoardService
                 ])
                 ->withCount(['activities as history_count'])
                 ->orderByRaw('is_pinned DESC, position ASC'),
-            'members.user:id,name',
+            'members.user:id,name,avatar,email',
             'creator:id,name',
         ]);
     }

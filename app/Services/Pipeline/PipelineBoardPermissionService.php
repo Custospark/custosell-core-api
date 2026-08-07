@@ -37,12 +37,44 @@ class PipelineBoardPermissionService
                 || $this->moduleAccess->canAccess($user, 'estimates'),
             'private' => (int) $board->created_by === (int) $user->id,
             'shared' => (int) $board->created_by === (int) $user->id
-                || PipelineBoardMember::query()
-                    ->where('board_id', $board->id)
-                    ->where('user_id', $user->id)
-                    ->exists(),
+                || ($this->userIsBoardMember($user, $board)
+                    && $this->externalContributorHasAccess($user, $board)),
             default => false,
         };
+    }
+
+    /**
+     * External contributors (users added to a board owned by a different
+     * business) may only access the board when they hold pipeline or estimates
+     * module access in their own account AND have an active subscription or
+     * trial. Same-business members are never subject to this gate.
+     */
+    public function externalContributorHasAccess(User $user, PipelineBoard $board): bool
+    {
+        if ((int) $board->business_id === (int) $user->business_id) {
+            return true;
+        }
+
+        if (! $user->business_id) {
+            return false;
+        }
+
+        if (! $this->moduleAccess->canAccess($user, 'pipeline')
+            && ! $this->moduleAccess->canAccess($user, 'estimates')) {
+            return false;
+        }
+
+        $subscription = $user->business?->subscription;
+
+        return $subscription ? $subscription->hasAccess() : false;
+    }
+
+    protected function userIsBoardMember(User $user, PipelineBoard $board): bool
+    {
+        return PipelineBoardMember::query()
+            ->where('board_id', $board->id)
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function assertCanViewBoard(User $user, PipelineBoard $board): void
@@ -151,7 +183,9 @@ class PipelineBoardPermissionService
                 ->where('user_id', $user->id)
                 ->first();
 
-            return $member && $this->boardMemberRoleAllowsEdit($member->role);
+            return $member
+                && $this->boardMemberRoleAllowsEdit($member->role)
+                && $this->externalContributorHasAccess($user, $board);
         }
 
         return false;
@@ -232,7 +266,11 @@ class PipelineBoardPermissionService
                 ->where('user_id', $user->id)
                 ->first();
 
-            return $member?->role;
+            if ($member && $this->externalContributorHasAccess($user, $board)) {
+                return $member->role;
+            }
+
+            return null;
         }
 
         return null;

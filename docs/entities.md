@@ -766,3 +766,74 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 - [x] Liskov Substitution
 - [x] Interface Segregation
 - [x] Dependency Inversion
+
+## PersonalBudget + BudgetLine - 2026-08-07 12:00:00
+
+### Fields (personal_budgets)
+- id: bigint increments - Primary key
+- business_id: unsignedBigInteger - FK businesses.id
+- user_id: unsignedBigInteger - FK users.id (owner)
+- name: string(191) - e.g. "Groceries", "June holiday", "Overall"
+- description: text - nullable
+- planned_amount: decimal(15,2) - default 0; auto-totals from lines
+- period_start: date - nullable
+- period_end: date - nullable
+- status: string(20) - active/archived
+- timestamps
+
+### Fields (budget_lines)
+- id: bigint increments - Primary key
+- personal_budget_id: unsignedBigInteger - FK personal_budgets.id (cascade delete)
+- item_name: string(255)
+- quantity: integer unsigned - default 1
+- unit_price: decimal(15,2) - default 0
+- line_total: decimal(15,2) - default 0 (quantity * unit_price)
+- purchased: boolean - default false
+- expense_id: unsignedBigInteger - nullable, FK expenses.id (set null on delete)
+- timestamps
+
+### Recurring income columns (income_sources)
+- is_recurring: boolean - default false
+- recurrence_interval: string(20) - daily/weekly/monthly/yearly, nullable
+- next_due_date: date - nullable
+
+### Files Generated/Updated
+- [x] Migration: `database/migrations/2026_08_07_110000_create_budget_lines_table.php`
+- [x] Migration: `database/migrations/2026_08_07_110100_add_recurring_to_income_sources.php`
+- [x] Migration: `database/migrations/2026_08_07_110200_seed_legacy_income_target_as_overall_budget.php` (folds legacy Business.income_target into an "Overall" PersonalBudget for personal accounts; idempotent)
+- [x] Model: `app/Models/BudgetLine.php` (budget() + expense() relations)
+- [x] Model: `app/Models/PersonalBudget.php` (added lines() hasMany BudgetLine)
+- [x] Model: `app/Models/IncomeSource.php` (recurring casts/fillable)
+- [x] Service: `app/Services/PersonalBudgetService.php` (syncLines auto-total, purchaseLine -> expense)
+- [x] Service: `app/Services/IncomeSourceService.php` (applyRecurrenceDefaults)
+- [x] Controller: `app/Http/Controllers/Api/PersonalBudgetController.php` (show detail + affordability + alerts + moneySummary)
+- [x] Request: `app/Http/Requests/PurchaseLineRequest.php`
+- [x] Routes: `routes/api/v1/personal_budgets.php` (+ /budgets/{id}/lines, /lines/{line}/purchase, /affordability; /money/summary, /money/alerts)
+
+### API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/budgets` | Summarised budget list (plan/income/spend/remaining/pacing) |
+| POST | `/api/v1/budgets` | Create budget |
+| GET | `/api/v1/budgets/{id}` | Detail: budget + lines + linked expenses/income + summary |
+| PUT/PATCH | `/api/v1/budgets/{id}` | Update budget |
+| DELETE | `/api/v1/budgets/{id}` | Delete (unlinks income/expenses via nullOnDelete, keeps records) |
+| PUT | `/api/v1/budgets/{id}/lines` | Replace plan lines, auto-total planned_amount |
+| POST | `/api/v1/budgets/{id}/lines/{line}/purchase` | Convert plan line into a linked Expense |
+| GET | `/api/v1/budgets/{id}/affordability` | Can the user afford this plan? + recommendation |
+| GET | `/api/v1/money/summary` | Income/expense/savings/planned totals + affordability |
+| GET | `/api/v1/money/alerts` | Near (>=80%) / over (>=100%) budget alerts |
+
+### Test Results
+- Lint: ✅ Passed (composer vera:fast, php -l)
+- Migration: ✅ Ran successfully (budget_lines + recurring income + Overall seed)
+- Smoke: ✅ syncLines auto-total (2x5+1x12=22.00), purchaseLine created expense linked to budget+line
+
+### SOLID Compliance Checklist
+- [x] Single Responsibility
+- [x] Open/Closed
+- [x] Liskov Substitution
+- [x] Interface Segregation
+- [x] Dependency Inversion
+
+---

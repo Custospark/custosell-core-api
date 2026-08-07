@@ -479,3 +479,21 @@
 **Full detail:** `Frontend/docs/adr/2026-08-05-web-push-notifications.md`
 
 **How-to (ops):** generating/filling/rotating VAPID keys is documented in `docs/webpush-vapid.md`.
+
+---
+
+## ADR-030: Budget PDF download
+
+**Date:** 2026-08-07
+**Status:** Accepted
+
+**Context:** Personal-account users wanted to download a budget as a printable document (plan, linked income, and spend), and manage budgets across years.
+
+**Decision:** Add `BudgetPdfBuilder` (app/Services) that reuses the canonical PDF pipeline — `ReportExportService::downloadPdf` → DomPDF on `reports.layouts.base`, matching estimates/invoices/reports. Exposed as `GET /api/v1/budgets/{budget}/download`, guarded and ownership-checked like `show`. For `account_type === 'personal'` the PDF header + filename use the **user's name** (business model replicated in memory with `name` overridden), since budgets are personal documents. PDF contents: summary cards (Planned/Spent/Income/Remaining), plan-lines table, income table, spend table, remaining total. No schema change; data derives from existing `lines`, `expenses`, `income`, and `summarise()`.
+
+**Frontend:** mirrors invoice/estimate PDF download (blob + Content-Disposition parse); adds a Download button on the budget card and a year filter + name search on My Budgets.
+
+**Gates:** BE `composer vera:fast` passed; FE `npx tsc --noEmit` + `npm run vera:fast` passed.
+
+**Full detail:** `Frontend/docs/adr/2026-08-07-budget-pdf-download-year-filter.md`
+

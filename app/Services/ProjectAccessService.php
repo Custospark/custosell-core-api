@@ -216,6 +216,13 @@ class ProjectAccessService
     protected function canAccessNonProjectBoard(User $user, PipelineBoard $board): bool
     {
         if ((int) $board->business_id !== (int) $user->business_id) {
+            // External contributors: allowed only when invited to a shared board
+            // and holding pipeline/estimates module access in their own account.
+            // Subscription/trial validity is enforced by the subscription.active middleware.
+            if ($board->visibility === 'shared' && $this->externalMemberEligibleForPipeline($user, $board)) {
+                return true;
+            }
+
             return false;
         }
 
@@ -237,13 +244,28 @@ class ProjectAccessService
         };
     }
 
+    protected function externalMemberEligibleForPipeline(User $user, PipelineBoard $board): bool
+    {
+        $isMember = PipelineBoardMember::query()
+            ->where('board_id', $board->id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (! $isMember) {
+            return false;
+        }
+
+        return $this->moduleAccess->canAccess($user, 'pipeline')
+            || $this->moduleAccess->canAccess($user, 'estimates');
+    }
+
     protected function resolveBoardFromRequest(Request $request, int $businessId): ?PipelineBoard
     {
         $boardId = $request->route('id') ?? $request->route('boardId');
         if ($boardId && is_numeric($boardId)) {
             $path = $request->path();
             if (str_contains($path, 'pipeline/boards') || str_contains($path, 'pipeline/stages')) {
-                return $this->findBoard($businessId, (int) $boardId);
+                return $this->findBoard($request->user(), (int) $boardId);
             }
         }
 
@@ -397,11 +419,21 @@ class ProjectAccessService
         return null;
     }
 
-    protected function findBoard(int $businessId, int $boardId): ?PipelineBoard
+    protected function findBoard(User $user, int $boardId): ?PipelineBoard
     {
-        return PipelineBoard::query()
-            ->where('business_id', $businessId)
+        $board = PipelineBoard::query()
+            ->where('business_id', $user->business_id)
             ->whereKey($boardId)
+            ->first();
+
+        if ($board) {
+            return $board;
+        }
+
+        // Cross-business fallback: boards the user was invited to as a member.
+        return PipelineBoard::query()
+            ->whereKey($boardId)
+            ->whereHas('members', fn ($query) => $query->where('user_id', $user->id))
             ->first();
     }
 
