@@ -136,6 +136,13 @@ class ModuleAccessService
             return false;
         }
 
+        // Personal accounts have full access to the Expenses workflow (and its
+        // underlying Sales dependency) from authentication alone — the expenses
+        // records for personal accounts are not scoped by plan or module grants.
+        if ($user->account_type === 'personal' && in_array($module, ['sales', 'expenses'], true)) {
+            return true;
+        }
+
         // Plan-level gating: check if the user's subscription plan includes this module feature
         if (! $this->planAllowsModule($user, $module)) {
             return false;
