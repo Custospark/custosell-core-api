@@ -49,6 +49,15 @@
         <tr><td colspan="5" class="text-center text-muted">No plan lines</td></tr>
       @endforelse
     </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left">{{ $lines->count() }} item{{ $lines->count() === 1 ? '' : 's' }}</td>
+        <td class="col-money">{{ $formatter->formatTableNumber((float) $lines->sum('quantity')) }}</td>
+        <td></td>
+        <td class="col-money">{{ $formatter->formatMoney((float) $lines->sum('line_total'), $currency) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
 @endif
 
@@ -68,6 +77,13 @@
         </tr>
       @endforeach
     </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left">Total income</td>
+        <td></td>
+        <td class="col-money">{{ $formatter->formatMoney((float) $income->sum('amount'), $currency) }}</td>
+      </tr>
+    </tfoot>
   </table>
 @endif
 
@@ -87,6 +103,13 @@
         </tr>
       @endforeach
     </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left">Total spend</td>
+        <td></td>
+        <td class="col-money">{{ $formatter->formatMoney((float) $expenses->sum('amount'), $currency) }}</td>
+      </tr>
+    </tfoot>
   </table>
 @endif
 
