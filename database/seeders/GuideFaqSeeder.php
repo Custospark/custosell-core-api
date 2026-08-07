@@ -111,6 +111,57 @@ class GuideFaqSeeder extends Seeder
                 'answer' => 'Absolutely. All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Your data belongs to you — we never share or sell it to third parties. Local backups ensure you never lose data even if your device is lost or damaged. Install Custosell on a new device, log in, and your data restores from the cloud.',
                 'sort_order' => 15,
             ],
+        // ── Features & Tools ──────────────────────────────
+            [
+                'question' => 'Does Custosell include Point of Sale (POS) and how does it work offline?',
+                'answer' => "Yes. Custosell is powerful Point of Sale software for retail, restaurants, and services. Cashiers ring up sales, apply discounts, choose payment methods, and print or share receipts in seconds — on a computer, tablet, or phone. Because it's offline-first, sales keep flowing even when the internet drops. Open a shift, record every transaction, then close with a clear cash-at-handover report.",
+                'sort_order' => 17,
+            ],
+            [
+                'question' => 'Is Custosell accounting and bookkeeping software?',
+                'answer' => "Yes. Custosell bundles Accounting software with your daily Point of Sale, so your books are built from the sales you actually make. Log expenses, track payables and receivables, and see profit-and-loss numbers without copying data between apps. Every sale and expense feeds the same ledger, ready for tax season.",
+                'sort_order' => 19,
+            ],
+            [
+                'question' => 'Does Custosell include inventory and supply chain management?',
+                'answer' => "Yes. Custosell keeps a live count of every product you hold. Sales from your POS and storefront reduce stock automatically, and you can raise purchase orders to suppliers, track fulfillment, and record receipt. You always know what to reorder, what is moving, and what is sitting on the shelf — across branches and registers.",
+                'sort_order' => 20,
+            ],
+            [
+                'question' => 'Does Custosell include HR and payroll software?',
+                'answer' => "Yes. Custosell includes HR and payroll tools for growing teams: attendance, leave, and payroll in one place. Control who has access to what with role-based permissions, and keep team records organized — all from the same platform you use to run sales and inventory.",
+                'sort_order' => 21,
+            ],
+            [
+                'question' => 'Does Custosell provide an e-commerce storefront?',
+                'answer' => "Yes. Custosell turns your business into e-commerce with a public storefront. Share a shop link so customers browse your catalog, save wishlists, place order requests, and track status — while stock stays tied to your real inventory. There's no separate database to reconcile.",
+                'sort_order' => 22,
+            ],
+            [
+                'question' => 'Does Custosell include a sales pipeline and CRM?',
+                'answer' => "Yes. Custosell includes a sales pipeline and CRM to manage leads, opportunities, and follow-ups on simple boards. Pipelines and notes are shared, so salespeople, managers, and owners collaborate in real time and see who owns each deal. Customer records hold contact and purchase history.",
+                'sort_order' => 23,
+            ],
+            [
+                'question' => 'Does Custosell include project management tools?',
+                'answer' => "Yes. Custosell includes projects, estimates, and productivity tools — quotes that turn into projects, shared boards for tasks and deadlines, and team collaboration. Because projects sit beside invoicing and expenses, you can quote a job, track its costs, and send an invoice the moment it's done.",
+                'sort_order' => 24,
+            ],
+            [
+                'question' => 'Does Custosell track expenses?',
+                'answer' => 'Yes. Custosell records spendings as they happen, with categories, suppliers, and monthly reports so you can see where cash actually goes. Expenses paid from a store shift are reconciled into the close report to keep the books balanced.',
+                'sort_order' => 25,
+            ],
+            [
+                'question' => 'Does Custosell include financial forecasting?',
+                'answer' => "Yes. Financial forecasting in Custosell turns your recorded sales and expense history into a forward-looking cash outlook and what-if scenarios — so you can plan hires, stock, and growth with more confidence instead of guesswork.",
+                'sort_order' => 26,
+            ],
+            [
+                'question' => 'Does Custosell include document management?',
+                'answer' => 'Yes. Document management in Custosell keeps contracts, invoices, quotations, and records organized for the whole team — searchable, and linked to the customers, jobs, and invoices that need them.',
+                'sort_order' => 27,
+            ],
         ];
 
         foreach ($faqs as $faq) {

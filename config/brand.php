@@ -16,7 +16,7 @@ return [
 
     'tagline_short' => 'Business OS',
 
-    'supporting_line' => 'Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management — all in one connected system that works with or without the internet.',
+    'supporting_line' => 'Custosell is your Business Operating System — Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management — all in one connected system that works with or without the internet.',
 
     'seo_description' => 'Custosell is your Business Operating System — Point of Sale, E-commerce, Inventory, Accounting, HR & Payroll, Invoicing and CRM in one connected system that works with or without the internet.',
 
