@@ -89,7 +89,7 @@ class PersonalBudgetRepository implements PersonalBudgetRepositoryInterface
             }
         }
 
-        $rows = $budgets->map(function (PersonalBudget $b) use ($spend, $income) {
+        $rows = $budgets->map(function (PersonalBudget $b) use ($spend, $income, $filters) {
             $actualSpend = (float) ($spend->get($b->id) ?? 0);
             $actualIncome = (float) ($income->get($b->id) ?? 0);
             $planned = (float) $b->planned_amount;
@@ -109,6 +109,7 @@ class PersonalBudgetRepository implements PersonalBudgetRepositoryInterface
                 'percentage' => $percentage,
                 'expense_count' => $b->linked_expenses_count,
                 'income_count' => $b->linked_income_count,
+                'pacing' => $this->buildPacing($b, $filters),
             ];
         })->values();
 
@@ -118,5 +119,52 @@ class PersonalBudgetRepository implements PersonalBudgetRepositoryInterface
             'total_spend' => round($rows->sum('actual_spend'), 2),
             'total_income' => round($rows->sum('actual_income'), 2),
         ];
+    }
+
+    /**
+     * Cumulative spend-vs-budget pacing for a budget. The budget line spreads
+     * the planned amount evenly across the coverage period; actual accumulates
+     * daily. Empty when the budget has no coverage dates.
+     */
+    protected function buildPacing(PersonalBudget $budget, array $filters): array
+    {
+        $start = $budget->period_start;
+        $end = $budget->period_end;
+        $planned = (float) $budget->planned_amount;
+        if (!$start || !$end || $planned <= 0) {
+            return [];
+        }
+
+        $startDate = $start->toDateString();
+        $endDate = $end->toDateString();
+        $days = (int) $start->diffInDays($end) + 1;
+        if ($days <= 0) {
+            return [];
+        }
+
+        $daily = Expense::where('budget_id', $budget->id)
+            ->whereBetween('expense_date', [$startDate, $endDate])
+            ->selectRaw('DATE(expense_date) as d, SUM(amount) as total')
+            ->groupBy('d')
+            ->pluck('total', 'd');
+
+        $budgetPerDay = $planned / $days;
+        $cumulativeSpend = 0;
+        $series = [];
+
+        $date = $budget->period_start->copy();
+        while ($date->lte($budget->period_end)) {
+            $key = $date->toDateString();
+            $cumulativeSpend += (float) ($daily[$key] ?? 0);
+            $daysElapsed = (int) $start->diffInDays($date) + 1;
+            $series[] = [
+                'label' => $date->format('d/m'),
+                'budget' => round($budgetPerDay * $daysElapsed, 2),
+                'actual' => round($cumulativeSpend, 2),
+            ];
+            $date->addDay();
+        }
+
+        return $series;
     }
 }
