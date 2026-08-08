@@ -45,6 +45,7 @@ class InvoiceResource extends JsonResource
             'due_date' => $this->due_date?->toISOString(),
             'status' => $this->status,
             'subtotal' => $this->subtotal,
+            'discount_amount' => $this->discount_amount,
             'tax_total' => $this->tax_total,
             'total_amount' => $this->total_amount,
             'amount_paid' => $this->amount_paid,

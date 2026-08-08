@@ -6,6 +6,8 @@
   $currency = $currency ?? ($business->currency ?? 'UGX');
   $balanceDue = $balanceDue ?? max(0, (float) $invoice->total_amount - (float) $invoice->amount_paid);
   $statusLabel = $statusLabel ?? ucfirst(str_replace('_', ' ', (string) $invoice->status));
+  $invoiceDiscount = (float) $invoice->discount_amount;
+  $subtotalBeforeDiscount = max(0, (float) $invoice->subtotal + $invoiceDiscount);
 @endphp
 
 <table style="width:100%; margin-bottom:14px; border-collapse:collapse;">
@@ -67,15 +69,24 @@
   </thead>
   <tbody>
     @forelse ($items as $item)
+      @php
+        $itemQty = (float) $item->quantity;
+        $itemUnit = (float) $item->unit_price;
+        $itemLineDisc = (float) $item->discount_amount;
+        $itemTier = ($item->price_tier ?? 'retail') === 'wholesale' ? 'wholesale' : 'retail';
+      @endphp
       <tr>
         <td class="text-left">
           {{ $item->description }}
           @if($item->product?->sku)
             <br><span class="text-muted">SKU: {{ $item->product->sku }}</span>
           @endif
+          @if($itemLineDisc > 0)
+            <br><span class="text-muted" style="color:#16a34a;">disc −{{ $formatter->formatMoney($itemLineDisc, $currency) }}</span>
+          @endif
         </td>
-        <td class="col-money">{{ $formatter->formatTableNumber((float) $item->quantity) }}</td>
-        <td class="col-money">{{ $formatter->formatMoney((float) $item->unit_price, $currency) }}</td>
+        <td class="col-money">{{ $formatter->formatTableNumber($itemQty) }}</td>
+        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }} <span class="text-muted">({{ $itemTier === 'wholesale' ? 'WSP' : 'RP' }})</span></td>
         <td class="col-money amount-emphasis">{{ $formatter->formatMoney((float) $item->subtotal, $currency) }}</td>
       </tr>
     @empty
@@ -90,8 +101,14 @@
   <tbody>
     <tr>
       <td class="text-left">Subtotal</td>
-      <td class="col-money">{{ $formatter->formatMoney((float) $invoice->subtotal, $currency) }}</td>
+      <td class="col-money">{{ $formatter->formatMoney($subtotalBeforeDiscount, $currency) }}</td>
     </tr>
+    @if($invoiceDiscount > 0)
+      <tr>
+        <td class="text-left">Discount</td>
+        <td class="col-money" style="color:#16a34a;">-{{ $formatter->formatMoney($invoiceDiscount, $currency) }}</td>
+      </tr>
+    @endif
     @if((float) $invoice->tax_total > 0)
       <tr>
         <td class="text-left">Tax / VAT</td>

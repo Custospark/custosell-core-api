@@ -40,13 +40,32 @@ class InvoiceService implements InvoiceServiceInterface
             $invoiceNumber = $this->generateInvoiceNumber($business);
 
             $subtotal = 0;
+            $lineItems = [];
             foreach ($data['items'] as $item) {
-                $lineSubtotal = (float) ($item['quantity'] ?? 1) * (float) ($item['unit_price'] ?? 0);
+                $lineQty = (float) ($item['quantity'] ?? 1);
+                $linePrice = (float) ($item['unit_price'] ?? 0);
+                $lineDisc = max(0, (float) ($item['discount_amount'] ?? 0));
+                $lineSubtotal = $lineQty * $linePrice - $lineDisc;
                 $subtotal += $lineSubtotal;
+                $lineItems[] = [
+                    'product_id' => $item['product_id'] ?? null,
+                    'description' => $item['description'],
+                    'quantity' => $lineQty,
+                    'unit_price' => $linePrice,
+                    'price_tier' => in_array($item['price_tier'] ?? 'retail', ['retail', 'wholesale'], true)
+                        ? $item['price_tier']
+                        : 'retail',
+                    'discount_amount' => $lineDisc,
+                    'subtotal' => $lineSubtotal,
+                ];
             }
 
             $taxTotal = (float) ($data['tax_total'] ?? 0);
-            $totalAmount = $subtotal + $taxTotal;
+            $subtotal = isset($data['subtotal']) ? (float) $data['subtotal'] : $subtotal;
+            $discountAmount = max(0, (float) ($data['discount_amount'] ?? 0));
+            $totalAmount = isset($data['total_amount'])
+                ? (float) $data['total_amount']
+                : max(0, $subtotal + $taxTotal);
 
             $locationId = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
 
@@ -63,6 +82,7 @@ class InvoiceService implements InvoiceServiceInterface
                 'due_date' => $data['due_date'],
                 'status' => 'draft',
                 'subtotal' => $subtotal,
+                'discount_amount' => $discountAmount,
                 'tax_total' => $taxTotal,
                 'total_amount' => $totalAmount,
                 'amount_paid' => 0,
@@ -70,19 +90,8 @@ class InvoiceService implements InvoiceServiceInterface
                 'created_by' => $userId,
             ]);
 
-            foreach ($data['items'] as $item) {
-                $lineQty = (float) ($item['quantity'] ?? 1);
-                $linePrice = (float) ($item['unit_price'] ?? 0);
-                $lineSubtotal = $lineQty * $linePrice;
-
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'] ?? null,
-                    'description' => $item['description'],
-                    'quantity' => $lineQty,
-                    'unit_price' => $linePrice,
-                    'subtotal' => $lineSubtotal,
-                ]);
+            foreach ($lineItems as $lineItem) {
+                InvoiceItem::create(array_merge($lineItem, ['invoice_id' => $invoice->id]));
             }
 
             if (!empty($data['sale_id'])) {
@@ -224,7 +233,8 @@ class InvoiceService implements InvoiceServiceInterface
                 foreach ($data['items'] as $item) {
                     $lineQty = (float) ($item['quantity'] ?? 1);
                     $linePrice = (float) ($item['unit_price'] ?? 0);
-                    $lineSubtotal = $lineQty * $linePrice;
+                    $lineDisc = max(0, (float) ($item['discount_amount'] ?? 0));
+                    $lineSubtotal = $lineQty * $linePrice - $lineDisc;
                     $subtotal += $lineSubtotal;
 
                     InvoiceItem::create([
@@ -233,14 +243,22 @@ class InvoiceService implements InvoiceServiceInterface
                         'description' => $item['description'],
                         'quantity' => $lineQty,
                         'unit_price' => $linePrice,
+                        'price_tier' => in_array($item['price_tier'] ?? 'retail', ['retail', 'wholesale'], true)
+                            ? $item['price_tier']
+                            : 'retail',
+                        'discount_amount' => $lineDisc,
                         'subtotal' => $lineSubtotal,
                     ]);
                 }
 
+                $subtotal = isset($data['subtotal']) ? (float) $data['subtotal'] : $subtotal;
                 $data['subtotal'] = $subtotal;
+                $data['discount_amount'] = max(0, (float) ($data['discount_amount'] ?? $invoice->discount_amount));
                 $taxTotal = (float) ($data['tax_total'] ?? $invoice->tax_total);
                 $data['tax_total'] = $taxTotal;
-                $data['total_amount'] = $subtotal + $taxTotal;
+                $data['total_amount'] = isset($data['total_amount'])
+                    ? (float) $data['total_amount']
+                    : max(0, $subtotal + $taxTotal);
             }
 
             return $this->invoiceRepository->update($invoice, $data)

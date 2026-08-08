@@ -32,6 +32,11 @@ class StoreInvoiceRequest extends BaseFormRequest
             'items.*.description' => ['required', 'string', 'max:500'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.price_tier' => ['nullable', 'string', 'in:retail,wholesale'],
+            'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'subtotal' => ['nullable', 'numeric', 'min:0'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_total' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ];

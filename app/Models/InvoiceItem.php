@@ -13,6 +13,8 @@ class InvoiceItem extends Model
         'description',
         'quantity',
         'unit_price',
+        'price_tier',
+        'discount_amount',
         'subtotal',
     ];
 
@@ -21,6 +23,8 @@ class InvoiceItem extends Model
         return [
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'price_tier' => 'string',
+            'discount_amount' => 'decimal:2',
             'subtotal' => 'decimal:2',
         ];
     }
