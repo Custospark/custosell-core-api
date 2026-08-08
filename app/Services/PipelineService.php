@@ -151,14 +151,14 @@ class PipelineService
         $this->leadService->archiveLead($businessId, $user, $leadId);
     }
 
-    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due'): array
+    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due', string $timezone = 'UTC'): array
     {
-        return $this->calendarService->boardCalendar($businessId, $user, $boardRef, $year, $month, $dateField);
+        return $this->calendarService->boardCalendar($businessId, $user, $boardRef, $year, $month, $dateField, $timezone);
     }
 
-    public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline'): array
+    public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline', string $timezone = 'UTC'): array
     {
-        return $this->calendarService->allBoardsCalendar($businessId, $user, $year, $month, $dateField, $workspace);
+        return $this->calendarService->allBoardsCalendar($businessId, $user, $year, $month, $dateField, $workspace, $timezone);
     }
 
     public function createSource(int $businessId, User $user, array $data): PipelineSource

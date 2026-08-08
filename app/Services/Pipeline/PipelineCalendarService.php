@@ -8,6 +8,7 @@ use App\Models\PipelineLead;
 use App\Models\User;
 use App\Services\Pipeline\PipelineBoardLookupService;
 use App\Services\Pipeline\PipelineBoardService;
+use Carbon\Carbon;
 
 class PipelineCalendarService
 {
@@ -16,13 +17,11 @@ class PipelineCalendarService
         protected PipelineBoardService $boardService,
     ) {}
 
-    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due'): array
+    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due', string $timezone = 'UTC'): array
     {
         $board = $this->lookup->findBoardForUser($user, $boardRef);
 
         $effectiveBusinessId = (int) $board->business_id;
-        $start = sprintf('%04d-%02d-01', $year, $month);
-        $end = date('Y-m-t', strtotime($start));
 
         $query = PipelineLead::query()
             ->where('business_id', $effectiveBusinessId)
@@ -30,21 +29,23 @@ class PipelineCalendarService
             ->whereIn('status', ['open', 'won', 'lost'])
             ->with(['stage:id,name,color', 'assignee:id,name,avatar']);
 
+        [$startUtc, $endUtc] = $this->monthRangeUtc($year, $month, $timezone);
+
         if ($dateField === 'start') {
-            $query->whereBetween('start_date', [$start, $end]);
+            $query->whereBetween('start_date', [$startUtc, $endUtc]);
         } elseif ($dateField === 'close') {
-            $query->whereBetween('expected_close_date', [$start, $end]);
+            $query->whereBetween('expected_close_date', [$startUtc, $endUtc]);
         } elseif ($dateField === 'all') {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_date', [$start, $end])
-                    ->orWhereBetween('due_date', [$start, $end])
-                    ->orWhereBetween('expected_close_date', [$start, $end]);
+            $query->where(function ($q) use ($startUtc, $endUtc) {
+                $q->whereBetween('start_date', [$startUtc, $endUtc])
+                    ->orWhereBetween('due_date', [$startUtc, $endUtc])
+                    ->orWhereBetween('expected_close_date', [$startUtc, $endUtc]);
             });
         } else {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('due_date', [$start, $end])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
+            $query->where(function ($q) use ($startUtc, $endUtc) {
+                $q->whereBetween('due_date', [$startUtc, $endUtc])
+                    ->orWhere(function ($q2) use ($startUtc, $endUtc) {
+                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$startUtc, $endUtc]);
                     });
             });
         }
@@ -53,7 +54,7 @@ class PipelineCalendarService
         $byDate = [];
 
         foreach ($leads as $lead) {
-            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
+            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $year, $month, $timezone);
             foreach ($entries as $entry) {
                 $byDate[$entry['date']][] = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
             }
@@ -70,7 +71,7 @@ class PipelineCalendarService
             ->all();
     }
 
-    public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline'): array
+    public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline', string $timezone = 'UTC'): array
     {
         $boards = $this->boardService->listBoards(
             $businessId,
@@ -84,29 +85,28 @@ class PipelineCalendarService
             return [];
         }
 
-        $start = sprintf('%04d-%02d-01', $year, $month);
-        $end = date('Y-m-t', strtotime($start));
-
         $query = PipelineLead::query()
             ->whereIn('board_id', $boardIds)
             ->whereIn('status', ['open', 'won', 'lost'])
             ->with(['stage:id,name,color', 'assignee:id,name,avatar', 'board:id,name']);
 
+        [$startUtc, $endUtc] = $this->monthRangeUtc($year, $month, $timezone);
+
         if ($dateField === 'start') {
-            $query->whereBetween('start_date', [$start, $end]);
+            $query->whereBetween('start_date', [$startUtc, $endUtc]);
         } elseif ($dateField === 'close') {
-            $query->whereBetween('expected_close_date', [$start, $end]);
+            $query->whereBetween('expected_close_date', [$startUtc, $endUtc]);
         } elseif ($dateField === 'all') {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_date', [$start, $end])
-                    ->orWhereBetween('due_date', [$start, $end])
-                    ->orWhereBetween('expected_close_date', [$start, $end]);
+            $query->where(function ($q) use ($startUtc, $endUtc) {
+                $q->whereBetween('start_date', [$startUtc, $endUtc])
+                    ->orWhereBetween('due_date', [$startUtc, $endUtc])
+                    ->orWhereBetween('expected_close_date', [$startUtc, $endUtc]);
             });
         } else {
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereBetween('due_date', [$start, $end])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$start, $end]);
+            $query->where(function ($q) use ($startUtc, $endUtc) {
+                $q->whereBetween('due_date', [$startUtc, $endUtc])
+                    ->orWhere(function ($q2) use ($startUtc, $endUtc) {
+                        $q2->whereNull('due_date')->whereBetween('expected_close_date', [$startUtc, $endUtc]);
                     });
             });
         }
@@ -115,7 +115,7 @@ class PipelineCalendarService
         $byDate = [];
 
         foreach ($leads as $lead) {
-            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $start, $end);
+            $entries = $this->calendarDateEntriesForLead($lead, $dateField, $year, $month, $timezone);
             foreach ($entries as $entry) {
                 $formatted = $this->formatCalendarLead($lead, $entry['kind'], $entry['time'] ?? null);
                 $formatted['board'] = $lead->board ? [
@@ -209,18 +209,34 @@ class PipelineCalendarService
         ];
     }
 
-    protected function calendarDateEntriesForLead(PipelineLead $lead, string $dateField, string $rangeStart, string $rangeEnd): array
+    protected function monthRangeUtc(int $year, int $month, string $timezone): array
     {
+        $tz = $timezone ?: 'UTC';
+        $firstLocal = Carbon::create($year, $month, 1, 0, 0, 0, $tz);
+        $firstNextLocal = (clone $firstLocal)->addMonth();
+
+        return [
+            $firstLocal->copy()->setTimezone('UTC'),
+            $firstNextLocal->copy()->setTimezone('UTC')->subSecond(),
+        ];
+    }
+
+    protected function calendarDateEntriesForLead(PipelineLead $lead, string $dateField, int $year, int $month, string $timezone = 'UTC'): array
+    {
+        $tz = $timezone ?: 'UTC';
+        $monthStart = Carbon::create($year, $month, 1, 0, 0, 0, $tz)->toDateString();
+        $monthEnd = Carbon::create($year, $month, 1, 0, 0, 0, $tz)->endOfMonth()->toDateString();
+
         $entries = [];
-        $inRange = static function (?string $date) use ($rangeStart, $rangeEnd): bool {
+        $inRange = static function (?string $date) use ($monthStart, $monthEnd): bool {
             if (!$date) return false;
-            return $date >= $rangeStart && $date <= $rangeEnd;
+            return $date >= $monthStart && $date <= $monthEnd;
         };
 
-        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($inRange): void {
+        $push = static function (array &$entries, mixed $rawDate, string $kind) use ($inRange, $tz): void {
             if ($rawDate === null) return;
             $dateStr = $rawDate instanceof \Carbon\CarbonInterface
-                ? $rawDate->toDateString()
+                ? $rawDate->copy()->setTimezone($tz)->toDateString()
                 : substr((string) $rawDate, 0, 10);
             if (!$inRange($dateStr)) return;
             $timeStr = $rawDate instanceof \Carbon\CarbonInterface ? $rawDate->toISOString() : null;

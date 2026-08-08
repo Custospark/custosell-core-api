@@ -20,6 +20,7 @@ class PipelineCalendarController extends Controller
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'date_field' => ['nullable', 'in:due,start,close,all'],
+            'timezone' => ['nullable', 'timezone'],
         ]);
 
         $days = $this->pipelineService->boardCalendar(
@@ -29,6 +30,7 @@ class PipelineCalendarController extends Controller
             (int) $validated['year'],
             (int) $validated['month'],
             $validated['date_field'] ?? 'due',
+            $validated['timezone'] ?? 'UTC',
         );
 
         return response()->json(['data' => $days]);
@@ -41,6 +43,7 @@ class PipelineCalendarController extends Controller
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'date_field' => ['nullable', 'in:due,start,close,all'],
             'workspace' => ['nullable', 'in:pipeline,estimates'],
+            'timezone' => ['nullable', 'timezone'],
         ]);
 
         $days = $this->pipelineService->allBoardsCalendar(
@@ -50,6 +53,7 @@ class PipelineCalendarController extends Controller
             (int) $validated['month'],
             $validated['date_field'] ?? 'due',
             $validated['workspace'] ?? 'pipeline',
+            $validated['timezone'] ?? 'UTC',
         );
 
         return response()->json(['data' => $days]);

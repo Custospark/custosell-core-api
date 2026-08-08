@@ -121,10 +121,9 @@ class PipelineBookingController extends Controller
 
         if (array_key_exists('notes', $validated) && $validated['notes'] !== null) {
             $existingNotes = $lead->description;
-            $newNotes = 'Admin notes: ' . $validated['notes'];
             $updateData['description'] = $existingNotes
-                ? $existingNotes . "\n\n" . $newNotes
-                : $newNotes;
+                ? $existingNotes . "\n\n" . $validated['notes']
+                : $validated['notes'];
         }
 
         $lead->update($updateData);
