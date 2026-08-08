@@ -205,6 +205,7 @@ class OrderService implements OrderServiceInterface
                     'product_price' => (float) $item->product_price,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
+                    'wholesale_price' => (float) ($item->wholesale_price ?? 0),
                     'discount_amount' => (float) $item->discount_amount,
                     'tax_amount' => (float) $item->tax_amount,
                     'subtotal' => (float) $item->subtotal,
@@ -373,6 +374,9 @@ class OrderService implements OrderServiceInterface
                 'product_price' => (float) ($item['product_price'] ?? $product?->unit_price ?? $unitPrice),
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,
+                'wholesale_price' => isset($item['wholesale_price'])
+                    ? (float) $item['wholesale_price']
+                    : (float) ($product?->wholesale_price ?? 0),
                 'discount_amount' => $discount,
                 'tax_amount' => $tax,
                 'subtotal' => $lineSubtotal,
@@ -424,6 +428,7 @@ class OrderService implements OrderServiceInterface
                 'subtotal' => $line['subtotal'],
                 'tax_amount' => $line['tax_amount'],
                 'discount_amount' => $line['discount_amount'],
+                'wholesale_price' => $line['wholesale_price'] ?? 0,
             ]);
         }
     }

@@ -17,6 +17,7 @@ class OrderItem extends Model
         'subtotal',
         'tax_amount',
         'discount_amount',
+        'wholesale_price',
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class OrderItem extends Model
             'subtotal' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'wholesale_price' => 'decimal:2',
             'quantity' => 'integer',
         ];
     }
