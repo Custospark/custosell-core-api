@@ -96,7 +96,7 @@ class TaxEngine
     /**
      * @param  list<array{product: Product, quantity: int, unit_price: float, discount_amount?: float}>  $items
      * @return array{
-     *   lines: list<array{product: Product, quantity: int, unit_price: float, net: float, tax: float, gross: float, rate: float, tax_class: string, subtotal: float, tax_amount: float}>,
+     *   lines: list<array{product: Product, quantity: int, unit_price: float, net: float, tax: float, gross: float, rate: float, tax_class: string, subtotal: float, tax_amount: float, discount_amount: float}>,
      *   subtotal: float,
      *   tax_total: float,
      *   discount_amount: float,
@@ -123,6 +123,7 @@ class TaxEngine
                 'unit_price' => $unitPrice,
                 'subtotal' => $computed['net'],
                 'tax_amount' => $computed['tax'],
+                'discount_amount' => $lineDiscount,
             ]);
 
             $sumNet += $computed['net'];

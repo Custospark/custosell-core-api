@@ -47,14 +47,13 @@ class InvoiceService implements InvoiceServiceInterface
                 $lineDisc = max(0, (float) ($item['discount_amount'] ?? 0));
                 $lineSubtotal = $lineQty * $linePrice - $lineDisc;
                 $subtotal += $lineSubtotal;
+                $tier = $item['price_tier'] ?? 'retail';
                 $lineItems[] = [
                     'product_id' => $item['product_id'] ?? null,
                     'description' => $item['description'],
                     'quantity' => $lineQty,
                     'unit_price' => $linePrice,
-                    'price_tier' => in_array($item['price_tier'] ?? 'retail', ['retail', 'wholesale'], true)
-                        ? $item['price_tier']
-                        : 'retail',
+                    'price_tier' => in_array($tier, ['retail', 'wholesale'], true) ? $tier : 'retail',
                     'discount_amount' => $lineDisc,
                     'subtotal' => $lineSubtotal,
                 ];

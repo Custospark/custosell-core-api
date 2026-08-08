@@ -147,6 +147,56 @@ class SaleTest extends TestCase
         ]);
     }
 
+    public function test_create_sale_persists_per_line_and_global_discounts(): void
+    {
+        $vodka = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 20,
+            'unit_price' => 23150,
+            'name' => 'Eagle Extra Vodka 750ml',
+        ]);
+        $lager = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 20,
+            'unit_price' => 29250,
+            'name' => 'Bell Lager Vodka 750ml',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->postJson('/api/v1/sales', [
+                'items' => [
+                    ['product_id' => $vodka->id, 'quantity' => 1, 'unit_price' => 23150, 'discount_amount' => 1150],
+                    ['product_id' => $lager->id, 'quantity' => 1, 'unit_price' => 29250, 'discount_amount' => 1250],
+                ],
+                'subtotal' => 50000,
+                'discount_amount' => 5000,
+                'total_amount' => 45000,
+                'payment_method' => 'cash',
+                'amount_tendered' => 45000,
+                'sale_date' => now()->toDateTimeString(),
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.total_amount', '45000.00')
+            ->assertJsonPath('data.discount_amount', '5000.00');
+
+        $saleId = $response->json('data.id');
+
+        $this->assertDatabaseHas('sale_items', [
+            'sale_id' => $saleId,
+            'product_id' => $vodka->id,
+            'discount_amount' => 1150,
+        ]);
+        $this->assertDatabaseHas('sale_items', [
+            'sale_id' => $saleId,
+            'product_id' => $lager->id,
+            'discount_amount' => 1250,
+        ]);
+
+        $items = SaleItem::where('sale_id', $saleId)->get();
+        $this->assertEqualsWithDelta(50000, (float) $items->sum('subtotal') + 5000, 0.01);
+    }
+
     public function test_create_sale_updates_stock_quantity(): void
     {
         $product = Product::factory()->create([

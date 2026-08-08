@@ -58,9 +58,8 @@ class SaleService implements SaleServiceInterface
                     'unit_price' => (float) ($item['unit_price'] ?? $product->unit_price),
                     'discount_amount' => (float) ($item['discount_amount'] ?? 0),
                 ];
-                $priceTiers[$i] = in_array($item['price_tier'] ?? 'retail', ['retail', 'wholesale'], true)
-                    ? $item['price_tier']
-                    : 'retail';
+                $tier = $item['price_tier'] ?? 'retail';
+                $priceTiers[$i] = in_array($tier, ['retail', 'wholesale'], true) ? $tier : 'retail';
             }
 
             $computed = $this->taxEngine->computeSale(
