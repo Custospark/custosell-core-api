@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class PipelineBoard extends Model
 {
@@ -23,6 +24,15 @@ class PipelineBoard extends Model
         'background_value',
         'sort_order',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (PipelineBoard $board) {
+            if (empty($board->code)) {
+                $board->code = Str::random(32);
+            }
+        });
+    }
 
     protected function casts(): array
     {

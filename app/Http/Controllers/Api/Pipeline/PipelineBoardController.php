@@ -93,18 +93,18 @@ class PipelineBoardController extends Controller
             ->setStatusCode(201);
     }
 
-    public function showBoard(Request $request, int $id): PipelineBoardResource
+    public function showBoard(Request $request, string $boardRef): PipelineBoardResource
     {
         $board = $this->pipelineService->getBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
 
         return new PipelineBoardResource($board);
     }
 
-    public function updateBoard(Request $request, int $id): PipelineBoardResource
+    public function updateBoard(Request $request, string $boardRef): PipelineBoardResource
     {
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
@@ -123,7 +123,7 @@ class PipelineBoardController extends Controller
         ]);
 
         if (!empty($validated['members']) || !empty($validated['member_ids'])) {
-            $board = $this->pipelineService->getBoard((int) $request->user()->business_id, $request->user(), $id);
+            $board = $this->pipelineService->getBoard((int) $request->user()->business_id, $request->user(), $boardRef);
             if (($validated['visibility'] ?? $board->visibility) === 'shared') {
                 $currentMemberCount = $board->members->count();
                 $subscription = $this->subscriptionService->getByBusiness((int) $board->business_id);
@@ -135,41 +135,41 @@ class PipelineBoardController extends Controller
         $board = $this->pipelineService->updateBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
             $validated,
         );
 
         return new PipelineBoardResource($board);
     }
 
-    public function destroyBoard(Request $request, int $id): JsonResponse
+    public function destroyBoard(Request $request, string $boardRef): JsonResponse
     {
         $this->pipelineService->deleteBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
 
         return response()->json(['message' => 'Board deleted']);
     }
 
-    public function duplicateBoard(Request $request, int $id): JsonResponse
+    public function duplicateBoard(Request $request, string $boardRef): JsonResponse
     {
         $board = $this->pipelineService->duplicateBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
 
         return response()->json(['data' => new PipelineBoardResource($board)]);
     }
 
-    public function kanban(Request $request, int $id): PipelineBoardResource
+    public function kanban(Request $request, string $boardRef): PipelineBoardResource
     {
         $board = $this->pipelineService->getKanban(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
 
         return new PipelineBoardResource($board);
@@ -203,13 +203,13 @@ class PipelineBoardController extends Controller
         return new PipelineBoardResource($kanban);
     }
 
-    public function uploadBoardBackground(Request $request, int $boardId): \Illuminate\Http\JsonResponse
+    public function uploadBoardBackground(Request $request, string $boardRef): \Illuminate\Http\JsonResponse
     {
         $user = $request->user();
         $board = $this->pipelineService->getBoard(
             (int) $user->business_id,
             $user,
-            $boardId,
+            $boardRef,
         );
         $this->pipelineService->ensureCanManageBoard($user, $board);
 
@@ -231,12 +231,12 @@ class PipelineBoardController extends Controller
         ]);
     }
 
-    public function downloadLeadImportTemplate(Request $request, int $id)
+    public function downloadLeadImportTemplate(Request $request, string $boardRef)
     {
         $board = $this->pipelineService->getBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
         $this->pipelineService->ensureCanEditBoard($request->user(), $board);
 
@@ -252,7 +252,7 @@ class PipelineBoardController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    public function importLeads(Request $request, int $id): JsonResponse
+    public function importLeads(Request $request, int|string $boardRef): JsonResponse
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
@@ -261,7 +261,7 @@ class PipelineBoardController extends Controller
         $board = $this->pipelineService->getBoard(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
         );
         $this->pipelineService->ensureCanEditBoard($request->user(), $board);
 

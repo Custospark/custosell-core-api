@@ -12,11 +12,23 @@ use App\Models\User;
 
 class PipelineBoardLookupService
 {
-    public function findBoardForBusiness(int $businessId, int $boardId): PipelineBoard
+    /**
+     * Boards are addressed by an opaque `code` in client URLs, but legacy
+     * numeric ids still work so existing links and internal callers (stages,
+     * leads, resources) keep resolving.
+     */
+    protected function scopeByBoardReference(\Illuminate\Database\Eloquent\Builder $query, string $boardRef): \Illuminate\Database\Eloquent\Builder
+    {
+        return ctype_digit((string) $boardRef)
+            ? $query->where('id', (int) $boardRef)
+            : $query->where('code', $boardRef);
+    }
+
+    public function findBoardForBusiness(int $businessId, int|string $boardRef): PipelineBoard
     {
         return PipelineBoard::query()
             ->where('business_id', $businessId)
-            ->where('id', $boardId)
+            ->where(fn ($q) => $this->scopeByBoardReference($q, (string) $boardRef))
             ->firstOrFail();
     }
 
@@ -38,11 +50,11 @@ class PipelineBoardLookupService
             ->firstOrFail();
     }
 
-    public function findBoardForUser(User $user, int $boardId): PipelineBoard
+    public function findBoardForUser(User $user, int|string $boardRef): PipelineBoard
     {
         $board = PipelineBoard::query()
             ->where('business_id', $user->business_id)
-            ->where('id', $boardId)
+            ->where(fn ($q) => $this->scopeByBoardReference($q, (string) $boardRef))
             ->first();
 
         if ($board) {
@@ -50,7 +62,7 @@ class PipelineBoardLookupService
         }
 
         return PipelineBoard::query()
-            ->where('id', $boardId)
+            ->where(fn ($q) => $this->scopeByBoardReference($q, (string) $boardRef))
             ->whereHas('members', fn ($q) => $q->where('user_id', $user->id))
             ->firstOrFail();
     }

@@ -106,24 +106,24 @@ class PipelineService
         return $this->boardService->listBoards($businessId, $user, $salesOnly, $projectOnly, $estimatesWorkspace);
     }
 
-    public function getBoard(int $businessId, User $user, int $boardId): PipelineBoard
+    public function getBoard(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        return $this->boardService->getBoard($businessId, $user, $boardId);
+        return $this->boardService->getBoard($businessId, $user, $boardRef);
     }
 
-    public function updateBoard(int $businessId, User $user, int $boardId, array $data): PipelineBoard
+    public function updateBoard(int $businessId, User $user, int|string $boardRef, array $data): PipelineBoard
     {
-        return $this->boardService->updateBoard($businessId, $user, $boardId, $data);
+        return $this->boardService->updateBoard($businessId, $user, $boardRef, $data);
     }
 
-    public function deleteBoard(int $businessId, User $user, int $boardId): void
+    public function deleteBoard(int $businessId, User $user, int|string $boardRef): void
     {
-        $this->boardService->deleteBoard($businessId, $user, $boardId);
+        $this->boardService->deleteBoard($businessId, $user, $boardRef);
     }
 
-    public function getKanban(int $businessId, User $user, int $boardId): PipelineBoard
+    public function getKanban(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        return $this->boardService->getKanban($businessId, $user, $boardId);
+        return $this->boardService->getKanban($businessId, $user, $boardRef);
     }
 
     public function createStage(int $businessId, User $user, int $boardId, array $data): PipelineStage
@@ -151,9 +151,9 @@ class PipelineService
         $this->leadService->archiveLead($businessId, $user, $leadId);
     }
 
-    public function boardCalendar(int $businessId, User $user, int $boardId, int $year, int $month, string $dateField = 'due'): array
+    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due'): array
     {
-        return $this->calendarService->boardCalendar($businessId, $user, $boardId, $year, $month, $dateField);
+        return $this->calendarService->boardCalendar($businessId, $user, $boardRef, $year, $month, $dateField);
     }
 
     public function allBoardsCalendar(int $businessId, User $user, int $year, int $month, string $dateField = 'due', string $workspace = 'pipeline'): array
@@ -301,9 +301,9 @@ class PipelineService
         return $this->leadService->recordActivity($lead, $userId, $type, $body, $metadata, $parentId);
     }
 
-    public function findBoardForBusiness(int $businessId, int $boardId): PipelineBoard
+    public function findBoardForBusiness(int $businessId, int|string $boardRef): PipelineBoard
     {
-        return $this->lookup->findBoardForBusiness($businessId, $boardId);
+        return $this->lookup->findBoardForBusiness($businessId, $boardRef);
     }
 
     public function findStageForBusiness(int $businessId, int $stageId): PipelineStage
@@ -316,9 +316,9 @@ class PipelineService
         return $this->lookup->findLeadForBusiness($businessId, $leadId);
     }
 
-    public function findBoardForUser(User $user, int $boardId): PipelineBoard
+    public function findBoardForUser(User $user, int|string $boardRef): PipelineBoard
     {
-        return $this->lookup->findBoardForUser($user, $boardId);
+        return $this->lookup->findBoardForUser($user, $boardRef);
     }
 
     public function findLeadForUser(User $user, int $leadId): PipelineLead
@@ -391,8 +391,8 @@ class PipelineService
         $this->leadLinkService->deleteLeadLink($businessId, $user, $linkId);
     }
 
-    public function duplicateBoard(int $businessId, User $user, int $boardId): PipelineBoard
+    public function duplicateBoard(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        return $this->boardService->duplicateBoard($businessId, $user, $boardId);
+        return $this->boardService->duplicateBoard($businessId, $user, $boardRef);
     }
 }

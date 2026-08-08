@@ -192,17 +192,17 @@ class PipelineBoardService
             ->values();
     }
 
-    public function getBoard(int $businessId, User $user, int $boardId): PipelineBoard
+    public function getBoard(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        $board = $this->lookup->findBoardForUser($user, $boardId);
+        $board = $this->lookup->findBoardForUser($user, $boardRef);
         $this->permission->assertCanViewBoard($user, $board);
 
         return $board->load(['stages', 'members.user', 'creator']);
     }
 
-    public function updateBoard(int $businessId, User $user, int $boardId, array $data): PipelineBoard
+    public function updateBoard(int $businessId, User $user, int|string $boardRef, array $data): PipelineBoard
     {
-        $board = $this->lookup->findBoardForUser($user, $boardId);
+        $board = $this->lookup->findBoardForUser($user, $boardRef);
 
         if (array_key_exists('is_archived', $data) && $data['is_archived']) {
             $this->permission->assertCanArchiveBoard($user, $board);
@@ -229,9 +229,9 @@ class PipelineBoardService
         return $board->fresh(['stages', 'members.user', 'creator']);
     }
 
-    public function deleteBoard(int $businessId, User $user, int $boardId): void
+    public function deleteBoard(int $businessId, User $user, int|string $boardRef): void
     {
-        $board = $this->lookup->findBoardForBusiness($businessId, $boardId);
+        $board = $this->lookup->findBoardForBusiness($businessId, $boardRef);
         $this->permission->assertCanManageBoard($user, $board);
 
         if ($board->is_default) {
@@ -241,9 +241,9 @@ class PipelineBoardService
         $board->delete();
     }
 
-    public function getKanban(int $businessId, User $user, int $boardId): PipelineBoard
+    public function getKanban(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        $board = $this->lookup->findBoardForUser($user, $boardId);
+        $board = $this->lookup->findBoardForUser($user, $boardRef);
         $this->permission->assertCanViewBoard($user, $board);
 
         return $board->load([
@@ -270,9 +270,9 @@ class PipelineBoardService
         ]);
     }
 
-    public function duplicateBoard(int $businessId, User $user, int $boardId): PipelineBoard
+    public function duplicateBoard(int $businessId, User $user, int|string $boardRef): PipelineBoard
     {
-        $source = $this->getBoard($businessId, $user, $boardId);
+        $source = $this->getBoard($businessId, $user, $boardRef);
         $this->permission->assertCanEditBoard($user, $source);
 
         return DB::transaction(function () use ($businessId, $user, $source) {

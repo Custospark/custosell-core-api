@@ -16,9 +16,9 @@ class PipelineCalendarService
         protected PipelineBoardService $boardService,
     ) {}
 
-    public function boardCalendar(int $businessId, User $user, int $boardId, int $year, int $month, string $dateField = 'due'): array
+    public function boardCalendar(int $businessId, User $user, int|string $boardRef, int $year, int $month, string $dateField = 'due'): array
     {
-        $board = $this->lookup->findBoardForUser($user, $boardId);
+        $board = $this->lookup->findBoardForUser($user, $boardRef);
 
         $effectiveBusinessId = (int) $board->business_id;
         $start = sprintf('%04d-%02d-01', $year, $month);
@@ -26,7 +26,7 @@ class PipelineCalendarService
 
         $query = PipelineLead::query()
             ->where('business_id', $effectiveBusinessId)
-            ->where('board_id', $boardId)
+            ->where('board_id', $board->id)
             ->whereIn('status', ['open', 'won', 'lost'])
             ->with(['stage:id,name,color', 'assignee:id,name,avatar']);
 

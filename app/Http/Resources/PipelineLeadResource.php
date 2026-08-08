@@ -80,6 +80,7 @@ class PipelineLeadResource extends JsonResource
             'created_by' => $this->created_by,
             'board' => $this->whenLoaded('board', fn () => [
                 'id' => $this->board->id,
+                'code' => $this->board->code,
                 'name' => $this->board->name,
             ]),
             'stage' => $this->whenLoaded('stage', fn () => [

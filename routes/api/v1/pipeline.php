@@ -23,16 +23,16 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'pi
     Route::get('/pipeline/boards', [PipelineBoardController::class, 'boards']);
     Route::get('/pipeline/team-members', [PipelineBoardController::class, 'teamMembers']);
     Route::post('/pipeline/boards', [PipelineBoardController::class, 'storeBoard']);
-    Route::get('/pipeline/boards/{id}', [PipelineBoardController::class, 'showBoard'])->whereNumber('id');
-    Route::patch('/pipeline/boards/{id}', [PipelineBoardController::class, 'updateBoard'])->whereNumber('id');
-    Route::delete('/pipeline/boards/{id}', [PipelineBoardController::class, 'destroyBoard'])->whereNumber('id');
-    Route::post('/pipeline/boards/{id}/duplicate', [PipelineBoardController::class, 'duplicateBoard'])->whereNumber('id');
-    Route::get('/pipeline/boards/{id}/kanban', [PipelineBoardController::class, 'kanban'])->whereNumber('id');
-    Route::get('/pipeline/boards/{id}/calendar', [PipelineCalendarController::class, 'calendar'])->whereNumber('id');
+    Route::get('/pipeline/boards/{boardRef}', [PipelineBoardController::class, 'showBoard']);
+    Route::patch('/pipeline/boards/{boardRef}', [PipelineBoardController::class, 'updateBoard']);
+    Route::delete('/pipeline/boards/{boardRef}', [PipelineBoardController::class, 'destroyBoard']);
+    Route::post('/pipeline/boards/{boardRef}/duplicate', [PipelineBoardController::class, 'duplicateBoard']);
+    Route::get('/pipeline/boards/{boardRef}/kanban', [PipelineBoardController::class, 'kanban']);
+    Route::get('/pipeline/boards/{boardRef}/calendar', [PipelineCalendarController::class, 'calendar']);
     Route::get('/pipeline/calendar', [PipelineCalendarController::class, 'allBoardsCalendar']);
-    Route::post('/pipeline/boards/{id}/background', [PipelineBoardController::class, 'uploadBoardBackground'])->whereNumber('id');
-    Route::get('/pipeline/boards/{id}/import-template', [PipelineBoardController::class, 'downloadLeadImportTemplate'])->whereNumber('id');
-    Route::post('/pipeline/boards/{id}/import', [PipelineBoardController::class, 'importLeads'])->whereNumber('id');
+    Route::post('/pipeline/boards/{boardRef}/background', [PipelineBoardController::class, 'uploadBoardBackground']);
+    Route::get('/pipeline/boards/{boardRef}/import-template', [PipelineBoardController::class, 'downloadLeadImportTemplate']);
+    Route::post('/pipeline/boards/{boardRef}/import', [PipelineBoardController::class, 'importLeads']);
 
     Route::post('/pipeline/boards/{boardId}/stages', [PipelineStageController::class, 'storeStage'])->whereNumber('boardId');
     Route::post('/pipeline/boards/{boardId}/stages/reorder', [PipelineStageController::class, 'reorderStages'])->whereNumber('boardId');

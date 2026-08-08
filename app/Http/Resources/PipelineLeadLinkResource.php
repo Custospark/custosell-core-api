@@ -28,6 +28,7 @@ class PipelineLeadLinkResource extends JsonResource
                 'stage_id' => $this->linkedLead->stage_id,
                 'board' => $this->linkedLead->board ? [
                     'id' => $this->linkedLead->board->id,
+                    'code' => $this->linkedLead->board->code,
                     'name' => $this->linkedLead->board->name,
                 ] : null,
                 'stage' => $this->linkedLead->stage ? [
@@ -38,6 +39,7 @@ class PipelineLeadLinkResource extends JsonResource
             ]),
             'linked_board' => $this->whenLoaded('linkedBoard', fn () => [
                 'id' => $this->linkedBoard->id,
+                'code' => $this->linkedBoard->code,
                 'name' => $this->linkedBoard->name,
                 'workspace' => $this->linkedBoard->workspace,
             ]),

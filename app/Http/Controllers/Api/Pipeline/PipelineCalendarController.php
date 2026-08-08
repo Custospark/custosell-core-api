@@ -14,7 +14,7 @@ class PipelineCalendarController extends Controller
         protected PipelineService $pipelineService,
     ) {}
 
-    public function calendar(Request $request, int $id): JsonResponse
+    public function calendar(Request $request, int|string $boardRef): JsonResponse
     {
         $validated = $request->validate([
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
@@ -25,7 +25,7 @@ class PipelineCalendarController extends Controller
         $days = $this->pipelineService->boardCalendar(
             (int) $request->user()->business_id,
             $request->user(),
-            $id,
+            $boardRef,
             (int) $validated['year'],
             (int) $validated['month'],
             $validated['date_field'] ?? 'due',

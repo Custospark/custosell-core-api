@@ -15,6 +15,7 @@ class PipelineBoardResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'business_id' => $this->business_id,
             'name' => $this->name,
             'description' => $this->description,

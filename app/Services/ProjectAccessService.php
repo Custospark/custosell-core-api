@@ -261,6 +261,16 @@ class ProjectAccessService
 
     protected function resolveBoardFromRequest(Request $request, int $businessId): ?PipelineBoard
     {
+        // Board-destination routes may carry an opaque `code` or a legacy
+        // numeric id as `{boardRef}` (e.g. /pipeline/boards/{code}).
+        $boardRef = $request->route('boardRef');
+        if ($boardRef) {
+            $path = $request->path();
+            if (str_contains($path, 'pipeline/boards') || str_contains($path, 'pipeline/stages')) {
+                return $this->findBoardByReference($request->user(), (string) $boardRef);
+            }
+        }
+
         $boardId = $request->route('id') ?? $request->route('boardId');
         if ($boardId && is_numeric($boardId)) {
             $path = $request->path();
@@ -433,6 +443,28 @@ class ProjectAccessService
         // Cross-business fallback: boards the user was invited to as a member.
         return PipelineBoard::query()
             ->whereKey($boardId)
+            ->whereHas('members', fn ($query) => $query->where('user_id', $user->id))
+            ->first();
+    }
+
+    protected function findBoardByReference(User $user, string $boardRef): ?PipelineBoard
+    {
+        $scope = fn ($query) => ctype_digit($boardRef)
+            ? $query->whereKey((int) $boardRef)
+            : $query->where('code', $boardRef);
+
+        $board = PipelineBoard::query()
+            ->where('business_id', $user->business_id)
+            ->where($scope)
+            ->first();
+
+        if ($board) {
+            return $board;
+        }
+
+        // Cross-business fallback: boards the user was invited to as a member.
+        return PipelineBoard::query()
+            ->where($scope)
             ->whereHas('members', fn ($query) => $query->where('user_id', $user->id))
             ->first();
     }
