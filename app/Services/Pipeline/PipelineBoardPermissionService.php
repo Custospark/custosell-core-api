@@ -24,7 +24,7 @@ class PipelineBoardPermissionService
             return (int) $board->created_by === (int) $user->id;
         }
 
-        if ($this->moduleAccess->isBusinessOwner($user)) {
+        if ($this->ownsBoardBusiness($user, $board)) {
             return true;
         }
 
@@ -41,6 +41,18 @@ class PipelineBoardPermissionService
                     && $this->externalContributorHasAccess($user, $board)),
             default => false,
         };
+    }
+
+    /**
+     * Whether the user owns the business the board belongs to. Business owners
+     * enjoy full board rights only within their own business — an external
+     * contributor who owns a different business must NOT inherit owner powers
+     * (or the "Manager" role) on this board.
+     */
+    protected function ownsBoardBusiness(User $user, PipelineBoard $board): bool
+    {
+        return (int) $board->business_id === (int) $user->business_id
+            && $this->moduleAccess->isBusinessOwner($user);
     }
 
     /**
@@ -90,7 +102,7 @@ class PipelineBoardPermissionService
             return (int) $board->created_by === (int) $user->id;
         }
 
-        if ($this->moduleAccess->isBusinessOwner($user)) {
+        if ($this->ownsBoardBusiness($user, $board)) {
             return true;
         }
 
@@ -120,7 +132,7 @@ class PipelineBoardPermissionService
     {
         $this->assertCanViewBoard($user, $board);
 
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+        if ($this->ownsBoardBusiness($user, $board) || (int) $board->created_by === (int) $user->id) {
             return;
         }
 
@@ -163,7 +175,7 @@ class PipelineBoardPermissionService
             return (int) $board->created_by === (int) $user->id;
         }
 
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+        if ($this->ownsBoardBusiness($user, $board) || (int) $board->created_by === (int) $user->id) {
             return true;
         }
 
@@ -239,7 +251,7 @@ class PipelineBoardPermissionService
 
     public function resolveCurrentUserBoardMemberRole(User $user, PipelineBoard $board): ?string
     {
-        if ($this->moduleAccess->isBusinessOwner($user) || (int) $board->created_by === (int) $user->id) {
+        if ($this->ownsBoardBusiness($user, $board) || (int) $board->created_by === (int) $user->id) {
             return 'manager';
         }
 
@@ -267,7 +279,7 @@ class PipelineBoardPermissionService
                 ->first();
 
             if ($member && $this->externalContributorHasAccess($user, $board)) {
-                return $member->role;
+                return $this->normalizeBoardMemberRole((string) $member->role);
             }
 
             return null;

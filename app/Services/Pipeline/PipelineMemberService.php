@@ -36,9 +36,11 @@ class PipelineMemberService
                 continue;
             }
 
-            if (! in_array($role, ['viewer', 'contributor', 'manager'], true)) {
-                $role = 'viewer';
-            }
+            $role = match ($role) {
+                'viewer', 'contributor', 'manager' => $role,
+                'editor' => 'contributor',
+                default => 'viewer',
+            };
             PipelineBoardMember::create([
                 'board_id' => $board->id,
                 'user_id' => $userId,
