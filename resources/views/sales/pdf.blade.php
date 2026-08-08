@@ -82,16 +82,30 @@
   </thead>
   <tbody>
     @forelse ($items as $item)
+      @php
+        $itemUnit = (float) $item->unit_price;
+        $itemQty = (int) $item->quantity;
+        $itemLineDisc = (float) $item->discount_amount;
+        $itemLineTotal = max(0, $itemUnit * $itemQty - $itemLineDisc);
+        $itemRetail = (float) ($item->product_price ?? 0);
+        $itemTier = ($item->price_tier ?? 'retail') === 'wholesale'
+          || ($itemRetail > 0 && $itemUnit < $itemRetail)
+          ? 'wholesale'
+          : 'retail';
+      @endphp
       <tr>
         <td class="text-left">
           {{ $item->product_name }}
           @if((float) $item->refunded_quantity > 0)
-            <br><span class="text-muted">({{ (int) $item->refunded_quantity }} refunded)</span>
+            <br><span class="text-muted">{{ (int) $item->refunded_quantity }} refunded −{{ $formatter->formatMoney((float) $item->refunded_amount, $currency) }}</span>
+          @endif
+          @if($itemLineDisc > 0)
+            <br><span class="text-muted" style="color:#16a34a;">disc −{{ $formatter->formatMoney($itemLineDisc, $currency) }}</span>
           @endif
         </td>
-        <td class="col-money">{{ $formatter->formatTableNumber((int) $item->quantity) }}</td>
-        <td class="col-money">{{ $formatter->formatMoney((float) $item->unit_price, $currency) }}</td>
-        <td class="col-money amount-emphasis">{{ $formatter->formatMoney((float) $item->subtotal, $currency) }}</td>
+        <td class="col-money">{{ $formatter->formatTableNumber($itemQty) }}</td>
+        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }} <span class="text-muted">({{ $itemTier === 'wholesale' ? 'WSP' : 'RP' }})</span></td>
+        <td class="col-money amount-emphasis">{{ $formatter->formatMoney($itemLineTotal, $currency) }}</td>
       </tr>
     @empty
       <tr>
@@ -99,13 +113,15 @@
       </tr>
     @endforelse
   </tbody>
-</table>
+  </table>
+
+<p style="font-size:8px;color:#9ca3af;margin:-6px 0 12px 0;">(RP) Retail price · (WSP) Wholesale price</p>
 
 <table class="data" style="margin-top:10px;width:52%;margin-left:auto;">
   <tbody>
     <tr>
       <td class="text-left">Subtotal</td>
-      <td class="col-money">{{ $formatter->formatMoney((float) $sale->subtotal, $currency) }}</td>
+      <td class="col-money">{{ $formatter->formatMoney(max(0, (float) $sale->subtotal + $discount), $currency) }}</td>
     </tr>
     @if($discount > 0)
       <tr>
