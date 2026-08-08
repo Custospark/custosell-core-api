@@ -49,7 +49,8 @@ class SaleService implements SaleServiceInterface
             $locationId = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
 
             $saleItemsInput = [];
-            foreach ($data['items'] as $item) {
+            $priceTiers = [];
+            foreach ($data['items'] as $i => $item) {
                 $product = Product::findOrFail($item['product_id']);
                 $saleItemsInput[] = [
                     'product' => $product,
@@ -57,6 +58,9 @@ class SaleService implements SaleServiceInterface
                     'unit_price' => (float) ($item['unit_price'] ?? $product->unit_price),
                     'discount_amount' => (float) ($item['discount_amount'] ?? 0),
                 ];
+                $priceTiers[$i] = in_array($item['price_tier'] ?? 'retail', ['retail', 'wholesale'], true)
+                    ? $item['price_tier']
+                    : 'retail';
             }
 
             $computed = $this->taxEngine->computeSale(
@@ -103,7 +107,7 @@ class SaleService implements SaleServiceInterface
                 $this->orderService->completeFromSale($orderId, $businessId, $sale->id);
             }
 
-            foreach ($computed['lines'] as $line) {
+            foreach (array_values($computed['lines']) as $lineIndex => $line) {
                 $product = $line['product'];
                 $qty = $line['quantity'];
 
@@ -114,6 +118,7 @@ class SaleService implements SaleServiceInterface
                     'product_price' => $product->unit_price,
                     'quantity' => $qty,
                     'unit_price' => $line['unit_price'],
+                    'price_tier' => $priceTiers[$lineIndex] ?? 'retail',
                     'unit_cost' => $product->tracksStock() ? (float) $product->cost_price : 0.0,
                     'subtotal' => $line['subtotal'],
                     'tax_amount' => $line['tax_amount'],

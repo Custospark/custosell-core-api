@@ -20,6 +20,7 @@ class SaleRequest extends BaseFormRequest
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.price_tier' => ['nullable', 'string', 'in:retail,wholesale'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'tax_total' => ['nullable', 'numeric', 'min:0'],

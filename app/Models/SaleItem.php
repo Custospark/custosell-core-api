@@ -15,6 +15,7 @@ class SaleItem extends Model
         'product_price',
         'quantity',
         'unit_price',
+        'price_tier',
         'unit_cost',
         'subtotal',
         'tax_amount',
