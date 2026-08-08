@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Hr;
 
 use App\Models\Hr\HrEmployee;
-use App\Models\PipelineBoardTarget;
-use App\Models\PipelineLead;
-use App\Models\ProjectTask;
 use App\Services\Pipeline\PipelineBoardProgressService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Evaluates whether linked staff are meeting Pipeline/Projects goals
- * from assigned leads/cards, project tasks, and board targets.
+ * Orchestrates work-performance evaluation for HR employees from
+ * Pipeline/Projects activity: roster, snapshots, and review seeding.
+ *
+ * Heavy lifting is delegated to {@see HrPerformanceMetrics} (aggregation)
+ * and {@see HrPerformanceInsights} (verdict + suggested review text).
  */
 class HrPerformanceService
 {
@@ -23,6 +22,8 @@ class HrPerformanceService
         protected HrEmployeeService $employees,
         protected HrTalentService $talent,
         protected PipelineBoardProgressService $progress,
+        protected HrPerformanceMetrics $metrics,
+        protected HrPerformanceInsights $insights,
     ) {}
 
     /**
@@ -150,10 +151,10 @@ class HrPerformanceService
             'employee_id' => $employeeId,
             'period_label' => $periodLabel,
             'status' => 'draft',
-            'rating' => $this->suggestedRating($snapshot['verdict']),
-            'strengths' => $this->suggestedStrengths($snapshot),
-            'improvements' => $this->suggestedImprovements($snapshot),
-            'notes' => $this->suggestedNotes($snapshot),
+            'rating' => $this->insights->suggestedRating($snapshot['verdict']),
+            'strengths' => $this->insights->suggestedStrengths($snapshot),
+            'improvements' => $this->insights->suggestedImprovements($snapshot),
+            'notes' => $this->insights->suggestedNotes($snapshot),
         ], $actorUserId);
 
         return [
@@ -227,487 +228,33 @@ class HrPerformanceService
                 'verdict' => 'unlinked',
                 'verdict_label' => 'No app login linked',
                 'period' => $periodPayload,
-                'leads' => $this->emptyLeadStats(),
-                'project_tasks' => $this->emptyTaskStats(),
-                'goals' => $this->emptyGoalStats(),
+                'leads' => $this->metrics->emptyLeadStats(),
+                'project_tasks' => $this->metrics->emptyTaskStats(),
+                'goals' => $this->metrics->emptyGoalStats(),
                 'recent_leads' => [],
                 'recent_tasks' => [],
                 'evaluated_at' => now()->toIso8601String(),
             ];
         }
 
-        $leads = $this->leadStats($businessId, $userId, $start, $end);
-        $tasks = $this->projectTaskStats($businessId, $userId, $start, $end);
-        $goals = $this->goalStats($businessId, $userId, $periodType, $start, $end);
-        $verdict = $this->resolveVerdict($goals, $leads, $tasks);
+        $leads = $this->metrics->leadStats($businessId, $userId, $start, $end);
+        $tasks = $this->metrics->projectTaskStats($businessId, $userId, $start, $end);
+        $goals = $this->metrics->goalStats($businessId, $userId, $periodType, $start, $end);
+        $verdict = $this->insights->resolveVerdict($goals, $leads, $tasks);
 
         return [
             'employee' => $employeePayload,
             'user_id' => $userId,
             'link_status' => 'linked',
             'verdict' => $verdict,
-            'verdict_label' => $this->verdictLabel($verdict),
+            'verdict_label' => $this->insights->verdictLabel($verdict),
             'period' => $periodPayload,
             'leads' => $leads,
             'project_tasks' => $tasks,
             'goals' => $goals,
-            'recent_leads' => $this->recentLeads($businessId, $userId, $start, $end),
-            'recent_tasks' => $this->recentProjectTasks($businessId, $userId, $start, $end),
+            'recent_leads' => $this->metrics->recentLeads($businessId, $userId, $start, $end),
+            'recent_tasks' => $this->metrics->recentProjectTasks($businessId, $userId, $start, $end),
             'evaluated_at' => now()->toIso8601String(),
-        ];
-    }
-
-    /**
-     * @return array<string, int|float>
-     */
-    protected function leadStats(int $businessId, int $userId, Carbon $start, Carbon $end): array
-    {
-        $leadIds = $this->assignedLeadIds($businessId, $userId);
-        if ($leadIds === []) {
-            return $this->emptyLeadStats();
-        }
-
-        $today = Carbon::today()->toDateString();
-        $rows = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->whereIn('id', $leadIds)
-            ->get(['id', 'status', 'due_date', 'won_at', 'lost_at', 'converted_at', 'created_at', 'updated_at']);
-
-        $open = $rows->where('status', 'open')->count();
-        $won = $rows->filter(fn (PipelineLead $lead) => $lead->status === 'won'
-            && $lead->won_at
-            && $lead->won_at->between($start, $end))->count();
-        $lost = $rows->filter(fn (PipelineLead $lead) => $lead->status === 'lost'
-            && $lead->lost_at
-            && $lead->lost_at->between($start, $end))->count();
-        $converted = $rows->filter(fn (PipelineLead $lead) => $lead->status === 'converted'
-            && $lead->converted_at
-            && $lead->converted_at->between($start, $end))->count();
-        $touched = $rows->filter(fn (PipelineLead $lead) => ($lead->created_at && $lead->created_at->between($start, $end))
-            || ($lead->updated_at && $lead->updated_at->between($start, $end))
-            || ($lead->won_at && $lead->won_at->between($start, $end))
-            || ($lead->lost_at && $lead->lost_at->between($start, $end))
-            || ($lead->converted_at && $lead->converted_at->between($start, $end)))->count();
-        $overdue = $rows
-            ->filter(fn (PipelineLead $lead) => $lead->status === 'open'
-                && $lead->due_date
-                && $lead->due_date->toDateString() < $today)
-            ->count();
-
-        $closed = $won + $lost + $converted;
-        $winRate = $closed > 0 ? round(($won / $closed) * 100, 1) : 0.0;
-
-        return [
-            'total' => $touched,
-            'open' => $open,
-            'won' => $won,
-            'lost' => $lost,
-            'converted' => $converted,
-            'overdue' => $overdue,
-            'win_rate' => $winRate,
-        ];
-    }
-
-    /**
-     * @return array<string, int|float>
-     */
-    protected function projectTaskStats(int $businessId, int $userId, Carbon $start, Carbon $end): array
-    {
-        $rows = ProjectTask::query()
-            ->where('assigned_to', $userId)
-            ->whereHas('project', fn ($q) => $q->where('business_id', $businessId))
-            ->get(['id', 'status', 'due_date', 'created_at', 'updated_at']);
-
-        if ($rows->isEmpty()) {
-            return $this->emptyTaskStats();
-        }
-
-        $today = Carbon::today()->toDateString();
-        $done = $rows->filter(fn (ProjectTask $task) => $task->status === 'done'
-            && $task->updated_at
-            && $task->updated_at->between($start, $end))->count();
-        $cancelled = $rows->filter(fn (ProjectTask $task) => $task->status === 'cancelled'
-            && $task->updated_at
-            && $task->updated_at->between($start, $end))->count();
-        $open = $rows->whereIn('status', ['todo', 'in_progress'])->count();
-        $overdue = $rows
-            ->filter(fn (ProjectTask $task) => in_array($task->status, ['todo', 'in_progress'], true)
-                && $task->due_date
-                && $task->due_date->toDateString() < $today)
-            ->count();
-        $touched = $rows->filter(fn (ProjectTask $task) => ($task->created_at && $task->created_at->between($start, $end))
-            || ($task->updated_at && $task->updated_at->between($start, $end)))->count();
-
-        $actionable = $done + $open;
-        $completionRate = $actionable > 0 ? round(($done / $actionable) * 100, 1) : 0.0;
-
-        return [
-            'total' => $touched,
-            'open' => $open,
-            'done' => $done,
-            'cancelled' => $cancelled,
-            'overdue' => $overdue,
-            'completion_rate' => $completionRate,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function goalStats(
-        int $businessId,
-        int $userId,
-        string $periodType,
-        Carbon $start,
-        Carbon $end,
-    ): array {
-        $targets = PipelineBoardTarget::query()
-            ->where('business_id', $businessId)
-            ->where('status', 'active')
-            ->where('scope', 'member')
-            ->where('member_user_id', $userId)
-            ->whereNull('parent_id')
-            ->with(['board:id,name,workspace', 'member:id,name', 'allocations'])
-            ->orderBy('period_end')
-            ->get();
-
-        if ($targets->isEmpty()) {
-            return $this->emptyGoalStats();
-        }
-
-        $items = [];
-        foreach ($targets as $target) {
-            $board = $target->board;
-            if (! $board) {
-                continue;
-            }
-
-            $serialized = $this->progress->serializeTargetForHr(
-                $target,
-                $board,
-                $start,
-                $end,
-                $periodType === 'custom' ? null : $periodType,
-            );
-            $slice = $serialized['period_slice'] ?? null;
-            $expected = is_array($slice) && isset($slice['expected_value'])
-                ? (float) $slice['expected_value']
-                : (float) $serialized['target_value'];
-
-            $items[] = [
-                'id' => $serialized['id'],
-                'title' => $serialized['title'],
-                'type' => $serialized['type'],
-                'board_id' => (int) $board->id,
-                'board_name' => $board->name,
-                'workspace' => $board->workspace,
-                'metric_key' => $serialized['metric_key'],
-                'target_value' => (float) $serialized['target_value'],
-                'expected_value' => round($expected, 4),
-                'actual_value' => (float) $serialized['actual_value'],
-                'unit' => $serialized['unit'],
-                'progress_percent' => $serialized['progress_percent'],
-                'pace_status' => $serialized['pace_status'],
-                'period_start' => is_array($slice)
-                    ? ($slice['period_start'] ?? $serialized['period_start'])
-                    : $serialized['period_start'],
-                'period_end' => is_array($slice)
-                    ? ($slice['period_end'] ?? $serialized['period_end'])
-                    : $serialized['period_end'],
-                'view_period_type' => is_array($slice)
-                    ? ($slice['view_period_type'] ?? $periodType)
-                    : $periodType,
-                'period_slice' => $slice,
-            ];
-        }
-
-        $paceCounts = [
-            'achieved' => 0,
-            'on_track' => 0,
-            'at_risk' => 0,
-            'behind' => 0,
-        ];
-        foreach ($items as $item) {
-            $pace = $item['pace_status'];
-            if (isset($paceCounts[$pace])) {
-                $paceCounts[$pace]++;
-            }
-        }
-
-        $avg = count($items) > 0
-            ? round(collect($items)->avg('progress_percent') ?? 0, 1)
-            : 0.0;
-
-        return [
-            'total' => count($items),
-            'average_progress_percent' => $avg,
-            'on_track_count' => $paceCounts['achieved'] + $paceCounts['on_track'],
-            'at_risk_count' => $paceCounts['at_risk'],
-            'behind_count' => $paceCounts['behind'],
-            'items' => $items,
-        ];
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    protected function recentLeads(int $businessId, int $userId, Carbon $start, Carbon $end): array
-    {
-        $leadIds = $this->assignedLeadIds($businessId, $userId);
-        if ($leadIds === []) {
-            return [];
-        }
-
-        return PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->whereIn('id', $leadIds)
-            ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('updated_at', [$start, $end])
-                    ->orWhereBetween('created_at', [$start, $end])
-                    ->orWhereBetween('won_at', [$start, $end])
-                    ->orWhereBetween('lost_at', [$start, $end]);
-            })
-            ->with(['board:id,name,workspace', 'stage:id,name'])
-            ->orderByDesc('updated_at')
-            ->limit(8)
-            ->get()
-            ->map(fn (PipelineLead $lead) => [
-                'id' => (int) $lead->id,
-                'title' => $lead->title,
-                'status' => $lead->status,
-                'due_date' => $lead->due_date?->toDateString(),
-                'board_id' => $lead->board_id ? (int) $lead->board_id : null,
-                'board_name' => $lead->board?->name,
-                'workspace' => $lead->board?->workspace,
-                'stage_name' => $lead->stage?->name,
-            ])
-            ->all();
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    protected function recentProjectTasks(int $businessId, int $userId, Carbon $start, Carbon $end): array
-    {
-        return ProjectTask::query()
-            ->where('assigned_to', $userId)
-            ->whereHas('project', fn ($q) => $q->where('business_id', $businessId))
-            ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('updated_at', [$start, $end])
-                    ->orWhereBetween('created_at', [$start, $end]);
-            })
-            ->with(['project:id,name,business_id'])
-            ->orderByDesc('updated_at')
-            ->limit(8)
-            ->get()
-            ->map(fn (ProjectTask $task) => [
-                'id' => (int) $task->id,
-                'name' => $task->name,
-                'status' => $task->status,
-                'due_date' => $task->due_date?->toDateString(),
-                'project_id' => (int) $task->project_id,
-                'project_name' => $task->project?->name,
-            ])
-            ->all();
-    }
-
-    /**
-     * @return list<int>
-     */
-    protected function assignedLeadIds(int $businessId, int $userId): array
-    {
-        $primary = PipelineLead::query()
-            ->where('business_id', $businessId)
-            ->where('assigned_to', $userId)
-            ->pluck('id');
-
-        $multi = DB::table('pipeline_lead_assignees')
-            ->join('pipeline_leads', 'pipeline_leads.id', '=', 'pipeline_lead_assignees.lead_id')
-            ->where('pipeline_leads.business_id', $businessId)
-            ->where('pipeline_lead_assignees.user_id', $userId)
-            ->whereNull('pipeline_leads.deleted_at')
-            ->pluck('pipeline_leads.id');
-
-        return $primary->merge($multi)->unique()->values()->map(fn ($id) => (int) $id)->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $goals
-     * @param  array<string, int|float>  $leads
-     * @param  array<string, int|float>  $tasks
-     */
-    protected function resolveVerdict(array $goals, array $leads, array $tasks): string
-    {
-        $hasGoals = ($goals['total'] ?? 0) > 0;
-        $hasWork = ($leads['total'] ?? 0) > 0 || ($tasks['total'] ?? 0) > 0;
-
-        if (! $hasGoals && ! $hasWork) {
-            return 'no_data';
-        }
-
-        if ($hasGoals) {
-            if (($goals['behind_count'] ?? 0) > 0) {
-                return 'behind';
-            }
-            if (($goals['at_risk_count'] ?? 0) > 0) {
-                return 'at_risk';
-            }
-            if (($goals['on_track_count'] ?? 0) > 0) {
-                return 'on_track';
-            }
-        }
-
-        // Fallback when no member goals: use overdue + completion signals from work items.
-        $overdue = (int) ($leads['overdue'] ?? 0) + (int) ($tasks['overdue'] ?? 0);
-        if ($overdue >= 3) {
-            return 'behind';
-        }
-        if ($overdue >= 1) {
-            return 'at_risk';
-        }
-
-        $completion = (float) ($tasks['completion_rate'] ?? 0);
-        $winRate = (float) ($leads['win_rate'] ?? 0);
-        if ($completion >= 70 || $winRate >= 40 || ((int) ($tasks['done'] ?? 0) + (int) ($leads['won'] ?? 0)) > 0) {
-            return 'on_track';
-        }
-
-        return $hasWork ? 'at_risk' : 'no_data';
-    }
-
-    protected function verdictLabel(string $verdict): string
-    {
-        return match ($verdict) {
-            'on_track' => 'Meeting goals',
-            'at_risk' => 'At risk',
-            'behind' => 'Behind goals',
-            'unlinked' => 'No app login linked',
-            default => 'No work data yet',
-        };
-    }
-
-    protected function suggestedRating(string $verdict): ?float
-    {
-        return match ($verdict) {
-            'on_track' => 4.0,
-            'at_risk' => 3.0,
-            'behind' => 2.0,
-            default => null,
-        };
-    }
-
-    /**
-     * @param  array<string, mixed>  $snapshot
-     */
-    protected function suggestedStrengths(array $snapshot): ?string
-    {
-        $parts = [];
-        $goalsOnTrack = (int) ($snapshot['goals']['on_track_count'] ?? 0);
-        $won = (int) ($snapshot['leads']['won'] ?? 0);
-        $done = (int) ($snapshot['project_tasks']['done'] ?? 0);
-
-        if ($goalsOnTrack > 0) {
-            $parts[] = sprintf('%d board goal(s) on track or achieved.', $goalsOnTrack);
-        }
-        if ($won > 0) {
-            $parts[] = sprintf('%d won pipeline card(s).', $won);
-        }
-        if ($done > 0) {
-            $parts[] = sprintf('%d completed project task(s).', $done);
-        }
-
-        return $parts === [] ? null : implode(' ', $parts);
-    }
-
-    /**
-     * @param  array<string, mixed>  $snapshot
-     */
-    protected function suggestedImprovements(array $snapshot): ?string
-    {
-        $parts = [];
-        $behind = (int) ($snapshot['goals']['behind_count'] ?? 0);
-        $atRisk = (int) ($snapshot['goals']['at_risk_count'] ?? 0);
-        $leadOverdue = (int) ($snapshot['leads']['overdue'] ?? 0);
-        $taskOverdue = (int) ($snapshot['project_tasks']['overdue'] ?? 0);
-
-        if ($behind > 0) {
-            $parts[] = sprintf('%d goal(s) behind pace — review targets and blockers.', $behind);
-        }
-        if ($atRisk > 0) {
-            $parts[] = sprintf('%d goal(s) at risk — tighten weekly follow-up.', $atRisk);
-        }
-        if ($leadOverdue > 0) {
-            $parts[] = sprintf('%d overdue pipeline card(s).', $leadOverdue);
-        }
-        if ($taskOverdue > 0) {
-            $parts[] = sprintf('%d overdue project task(s).', $taskOverdue);
-        }
-
-        return $parts === [] ? null : implode(' ', $parts);
-    }
-
-    /**
-     * @param  array<string, mixed>  $snapshot
-     */
-    protected function suggestedNotes(array $snapshot): string
-    {
-        return sprintf(
-            "Auto-seeded from Pipeline/Projects work on %s.\nVerdict: %s.\nGoals avg progress: %s%%.\nLeads open/won/overdue: %d/%d/%d.\nProject tasks open/done/overdue: %d/%d/%d.",
-            Carbon::parse($snapshot['evaluated_at'])->toDateString(),
-            $snapshot['verdict_label'],
-            (string) ($snapshot['goals']['average_progress_percent'] ?? 0),
-            (int) ($snapshot['leads']['open'] ?? 0),
-            (int) ($snapshot['leads']['won'] ?? 0),
-            (int) ($snapshot['leads']['overdue'] ?? 0),
-            (int) ($snapshot['project_tasks']['open'] ?? 0),
-            (int) ($snapshot['project_tasks']['done'] ?? 0),
-            (int) ($snapshot['project_tasks']['overdue'] ?? 0),
-        );
-    }
-
-    /**
-     * @return array<string, int|float>
-     */
-    protected function emptyLeadStats(): array
-    {
-        return [
-            'total' => 0,
-            'open' => 0,
-            'won' => 0,
-            'lost' => 0,
-            'converted' => 0,
-            'overdue' => 0,
-            'win_rate' => 0.0,
-        ];
-    }
-
-    /**
-     * @return array<string, int|float>
-     */
-    protected function emptyTaskStats(): array
-    {
-        return [
-            'total' => 0,
-            'open' => 0,
-            'done' => 0,
-            'cancelled' => 0,
-            'overdue' => 0,
-            'completion_rate' => 0.0,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function emptyGoalStats(): array
-    {
-        return [
-            'total' => 0,
-            'average_progress_percent' => 0.0,
-            'on_track_count' => 0,
-            'at_risk_count' => 0,
-            'behind_count' => 0,
-            'items' => [],
         ];
     }
 
