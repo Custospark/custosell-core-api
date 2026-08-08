@@ -14,6 +14,7 @@ use App\Repositories\Contracts\EstimateRepositoryInterface;
 use App\Services\Contracts\EstimateServiceInterface;
 use App\Services\Contracts\InvoiceServiceInterface;
 use App\Services\Contracts\ProjectServiceInterface;
+use App\Services\Estimate\Concerns\ManagesEstimateLineItems;
 use App\Services\PipelineService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,8 @@ use Illuminate\Database\QueryException;
 
 class EstimateService implements EstimateServiceInterface
 {
+    use ManagesEstimateLineItems;
+
     public function __construct(
         protected EstimateRepositoryInterface $estimateRepository,
         protected InvoiceServiceInterface $invoiceService,
@@ -110,10 +113,6 @@ class EstimateService implements EstimateServiceInterface
             throw new \RuntimeException('Estimate not found');
         }
 
-        if (!in_array($estimate->status, ['draft', 'rejected'], true)) {
-            throw new \RuntimeException('Only draft or rejected estimates can be updated');
-        }
-
         return DB::transaction(function () use ($estimate, $data) {
             if (isset($data['line_items'])) {
                 $totals = $this->calculateTotals($data['line_items'], $data);
@@ -133,10 +132,6 @@ class EstimateService implements EstimateServiceInterface
         $estimate = $this->estimateRepository->find($id);
         if (!$estimate) {
             throw new \RuntimeException('Estimate not found');
-        }
-
-        if ($estimate->status !== 'draft') {
-            throw new \RuntimeException('Only draft estimates can be deleted');
         }
 
         return $this->estimateRepository->delete($estimate);
@@ -211,18 +206,7 @@ class EstimateService implements EstimateServiceInterface
             throw new \RuntimeException('Estimate not found');
         }
 
-        $lineItems = $source->lineItems->map(fn (EstimateLineItem $item) => [
-            'product_id' => $item->product_id,
-            'sort_order' => $item->sort_order,
-            'type' => $item->type,
-            'description' => $item->description,
-            'quantity' => $item->quantity,
-            'unit_cost' => $item->unit_cost,
-            'unit_price' => $item->unit_price,
-            'markup_type' => $item->markup_type,
-            'markup_value' => $item->markup_value,
-            'is_billable' => $item->is_billable,
-        ])->all();
+        $lineItems = $this->lineItemsData($source->lineItems);
 
         return $this->create($source->business_id, $userId, [
             'customer_id' => $source->customer_id,
@@ -252,19 +236,7 @@ class EstimateService implements EstimateServiceInterface
         return DB::transaction(function () use ($source, $userId, $data) {
             $this->createVersionSnapshot($source, $userId, $data['change_summary'] ?? 'Revision created');
 
-            $lineItems = $data['line_items'] ?? $source->lineItems->map(fn (EstimateLineItem $item) => [
-                'product_id' => $item->product_id,
-                'sort_order' => $item->sort_order,
-                'type' => $item->type,
-                'description' => $item->description,
-                'quantity' => $item->quantity,
-                'unit_cost' => $item->unit_cost,
-                'unit_price' => $item->unit_price,
-                'markup_type' => $item->markup_type,
-                'markup_value' => $item->markup_value,
-                'is_billable' => $item->is_billable,
-            ])->all();
-
+            $lineItems = $data['line_items'] ?? $this->lineItemsData($source->lineItems);
             $totals = $this->calculateTotals($lineItems, array_merge($source->toArray(), $data));
 
             $estimate = $this->estimateRepository->update($source, [
@@ -395,7 +367,6 @@ class EstimateService implements EstimateServiceInterface
 
             $actor = User::query()->find($userId);
             if ($actor) {
-                // Ensure the converter becomes project-board owner immediately.
                 $this->pipelineService->getOrCreateProjectBoard($estimate->business_id, $actor, $project->id);
             }
 
@@ -445,105 +416,6 @@ class EstimateService implements EstimateServiceInterface
         }
 
         return $this->estimateRepository->deleteTemplate($template);
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $lineItems
-     * @return array<string, float>
-     */
-    protected function calculateTotals(array $lineItems, array $data): array
-    {
-        $subtotal = 0;
-        $costSubtotal = 0;
-
-        foreach ($lineItems as $item) {
-            $calculated = $this->calculateLineItem($item);
-            if (($item['is_billable'] ?? true) !== false) {
-                $subtotal += $calculated['total_price'];
-            }
-            $costSubtotal += $calculated['total_cost'];
-        }
-
-        $discountType = $data['discount_type'] ?? null;
-        $discountValue = (float) ($data['discount_value'] ?? 0);
-        $discountAmount = 0;
-
-        if ($discountType === 'percent' && $discountValue > 0) {
-            $discountAmount = round($subtotal * ($discountValue / 100), 2);
-        } elseif ($discountType === 'fixed' && $discountValue > 0) {
-            $discountAmount = min($discountValue, $subtotal);
-        }
-
-        $taxable = max(0, $subtotal - $discountAmount);
-        $taxRate = (float) ($data['tax_rate'] ?? 0);
-        $taxTotal = round($taxable * ($taxRate / 100), 2);
-        $total = $taxable + $taxTotal;
-
-        $revenue = $taxable;
-        $grossProfit = round($revenue - $costSubtotal, 2);
-        $marginPercent = $revenue > 0
-            ? round(($grossProfit / $revenue) * 100, 2)
-            : 0;
-
-        return [
-            'subtotal' => round($subtotal, 2),
-            'discount_amount' => round($discountAmount, 2),
-            'tax_total' => $taxTotal,
-            'total' => round($total, 2),
-            'cost_subtotal' => round($costSubtotal, 2),
-            'gross_profit' => $grossProfit,
-            'margin_percent' => $marginPercent,
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     * @return array{unit_price: float, total_cost: float, total_price: float}
-     */
-    protected function calculateLineItem(array $item): array
-    {
-        $qty = (float) ($item['quantity'] ?? 1);
-        $unitCost = (float) ($item['unit_cost'] ?? 0);
-        $markupType = $item['markup_type'] ?? 'none';
-        $markupValue = (float) ($item['markup_value'] ?? 0);
-
-        $unitPrice = match ($markupType) {
-            'percent' => $unitCost * (1 + ($markupValue / 100)),
-            'fixed' => $unitCost + $markupValue,
-            default => (float) ($item['unit_price'] ?? 0),
-        };
-
-        return [
-            'unit_price' => round($unitPrice, 2),
-            'total_cost' => round($qty * $unitCost, 2),
-            'total_price' => round($qty * $unitPrice, 2),
-        ];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $lineItems
-     */
-    protected function syncLineItems(Estimate $estimate, array $lineItems): void
-    {
-        foreach ($lineItems as $index => $item) {
-            $calculated = $this->calculateLineItem($item);
-
-            EstimateLineItem::create([
-                'estimate_id' => $estimate->id,
-                'product_id' => $item['product_id'] ?? null,
-                'sort_order' => $item['sort_order'] ?? $index,
-                'type' => $item['type'] ?? 'other',
-                'description' => $item['description'],
-                'quantity' => $item['quantity'] ?? 1,
-                'unit_cost' => $item['unit_cost'] ?? 0,
-                'unit_price' => $calculated['unit_price'],
-                'markup_type' => $item['markup_type'] ?? 'none',
-                'markup_value' => $item['markup_value'] ?? 0,
-                'total_cost' => $calculated['total_cost'],
-                'total_price' => $calculated['total_price'],
-                'is_billable' => $item['is_billable'] ?? true,
-            ]);
-        }
     }
 
     protected function createVersionSnapshot(Estimate $estimate, int $userId, ?string $changeSummary): void

@@ -98,8 +98,14 @@ class PublicBookingController extends Controller
 
         while ($current < $end && count($slots) + count($takenSlots) < $maxSlots) {
             $timeStr = $current->format('H:i');
-            $endTime = (clone $current)->addMinutes($duration)->format('H:i');
-            $entry = ['time' => $timeStr, 'end_time' => $endTime];
+            $slotEnd = (clone $current)->addMinutes($duration);
+            $endTime = $slotEnd->format('H:i');
+            $entry = [
+                'time' => $timeStr,
+                'end_time' => $endTime,
+                'time_iso' => $current->toIso8601String(),
+                'end_time_iso' => $slotEnd->toIso8601String(),
+            ];
             if (in_array($timeStr, $takenTimes)) {
                 $entry['available'] = false;
                 $takenSlots[] = $entry;
