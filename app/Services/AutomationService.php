@@ -228,14 +228,6 @@ class AutomationService
         $paymentAccount = $this->resolvePaymentAccountCode((string) $sale->payment_method, $codes);
         $arCode = $codes['accounts_receivable'];
 
-        if (!$this->saleWasCreditAccounted($sale, $codes)) {
-            return [[
-                'account_code' => $paymentAccount,
-                'amount' => $refundTotal,
-                'label' => 'cash settlement',
-            ]];
-        }
-
         $cashCollected = (float) ($sale->amount_paid ?? 0);
         $cashAlreadyRefunded = $this->journalEntryService->sumSaleRefundCreditsForAccount(
             $sale->business_id,
@@ -265,24 +257,6 @@ class AutomationService
         return $settlements;
     }
 
-    /**
-     * @param  array<string, string>  $codes
-     */
-    protected function saleWasCreditAccounted(Sale $sale, array $codes): bool
-    {
-        $entry = $this->journalEntryService->getEntryByReference('sale', $sale->id, $sale->business_id);
-        if (!$entry) {
-            return (float) ($sale->amount_paid ?? 0) < (float) $sale->total_amount - 0.001;
-        }
-
-        $arCode = $codes['accounts_receivable'];
-
-        return $entry->lines()
-            ->whereHas('chartOfAccount', fn ($q) => $q->where('code', $arCode))
-            ->where('debit_amount', '>', 0)
-            ->exists();
-    }
-
     public function handleSaleRefunded(Sale $sale, array $refundBatch = []): void
     {
         try {
@@ -297,7 +271,9 @@ class AutomationService
                 ? $sale->sale_date->toDateString()
                 : now()->toDateString();
 
-            $refundTotal = round(collect($refundBatch)->sum(fn (array $row) => (float) ($row['proportionalAmount'] ?? 0)), 2);
+            $refundNetTotal = round(collect($refundBatch)->sum(fn (array $row) => (float) ($row['proportionalAmount'] ?? 0)), 2);
+            $refundTaxTotal = round(collect($refundBatch)->sum(fn (array $row) => (float) ($row['taxRefundAmount'] ?? 0)), 2);
+            $refundTotal = round($refundNetTotal + $refundTaxTotal, 2);
             $cogsRestore = $this->inventoryCogsService->calculateRefundCogs($refundBatch);
 
             if ($refundTotal <= 0 && $cogsRestore <= 0) {
@@ -308,12 +284,26 @@ class AutomationService
             $returnsCode = $codes['sales_returns'] ?? '4400';
 
             if ($refundTotal > 0) {
-                $lines[] = [
-                    'account_code' => $returnsCode,
-                    'debit' => $refundTotal,
-                    'credit' => 0,
-                    'description' => "Refund {$sale->receipt_number} - sales return",
-                ];
+                // Refund the customer the net they paid back, and reverse the VAT
+                // share from the liability so no over-statement remains.
+                if ($refundNetTotal > 0) {
+                    $lines[] = [
+                        'account_code' => $returnsCode,
+                        'debit' => $refundNetTotal,
+                        'credit' => 0,
+                        'description' => "Refund {$sale->receipt_number} - sales return",
+                    ];
+                }
+
+                if ($refundTaxTotal > 0) {
+                    $vatCode = $codes['vat_payable'] ?? '2102';
+                    $lines[] = [
+                        'account_code' => $vatCode,
+                        'debit' => $refundTaxTotal,
+                        'credit' => 0,
+                        'description' => "Refund {$sale->receipt_number} - VAT reversal",
+                    ];
+                }
 
                 foreach ($this->resolveRefundSettlementLines($sale, $refundTotal, $codes) as $settlement) {
                     $lines[] = [

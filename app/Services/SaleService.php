@@ -324,12 +324,15 @@ class SaleService implements SaleServiceInterface
         return DB::transaction(function () use ($id, $data, $actorUserId) {
             $sale = Sale::with('saleItems')->findOrFail($id);
             $refundedBy = $actorUserId ?? auth()->id() ?? $sale->user_id;
-            $saleSubtotal = (float) $sale->subtotal;
-            $saleDiscount = (float) $sale->discount_amount;
-            $discountRatio = $saleSubtotal > 0 ? $saleDiscount / $saleSubtotal : 0;
+
+            $alreadyRefunded = (float) SaleItem::where('sale_id', $sale->id)->sum('refunded_amount');
+            $refundCap = max(0, round(
+                min((float) $sale->total_amount, (float) ($sale->amount_paid ?? 0)) - $alreadyRefunded,
+                2,
+            ));
 
             $processedItems = [];
-            $rawTotal = 0;
+            $expectedTotal = 0.0;
 
             foreach ($data['items'] as $refundItem) {
                 $saleItem = SaleItem::findOrFail($refundItem['id']);
@@ -339,32 +342,41 @@ class SaleService implements SaleServiceInterface
                     abort(422, "Cannot refund {$refundQty} of '{$saleItem->product_name}'. Only " . ($saleItem->quantity - $saleItem->refunded_quantity) . " remaining.");
                 }
 
-                $rawAmount = $saleItem->unit_price * $refundQty;
-                $rawTotal += $rawAmount;
-                $proportionalAmount = $rawAmount * (1 - $discountRatio);
+                // The line subtotal already carries the per-line discount AND the
+                // prorated global checkout discount; tax_amount is the tax share.
+                // Refund proportionally to the qty so the customer never gets back
+                // more than they actually paid for the returned units.
+                $itemQty = max(1, (int) $saleItem->quantity);
+                $lineNetRefund = round((float) $saleItem->subtotal * ($refundQty / $itemQty), 2);
+                $lineTaxRefund = round((float) $saleItem->tax_amount * ($refundQty / $itemQty), 2);
+
+                $expectedTotal += round($lineNetRefund + $lineTaxRefund, 2);
 
                 $processedItems[] = [
                     'saleItem' => $saleItem,
                     'refundQty' => $refundQty,
-                    'proportionalAmount' => $proportionalAmount,
-                    'rawAmount' => $rawAmount,
+                    'proportionalAmount' => $lineNetRefund,
+                    'taxRefundAmount' => $lineTaxRefund,
+                    'rawAmount' => round((float) $saleItem->unit_price * $refundQty, 2),
                 ];
             }
 
-            // Expected total refund for this batch = raw total minus proportional share of discount
-            $expectedTotal = $rawTotal * (1 - $discountRatio);
+            $expectedTotal = round($expectedTotal, 2);
+            if ($expectedTotal > $refundCap + 0.01) {
+                abort(422, "Refund of " . number_format($expectedTotal, 2) . " exceeds the " . number_format($refundCap, 2) . " this customer actually paid for this sale.");
+            }
 
             foreach ($processedItems as $i => $pi) {
                 $isLast = $i === count($processedItems) - 1;
-                $refundAmount = $pi['proportionalAmount'];
+                $netRefund = $pi['proportionalAmount'];
+                $taxRefund = $pi['taxRefundAmount'];
+                $refundAmount = round($netRefund + $taxRefund, 2);
 
-                // Absorb any rounding difference into the last item
+                // Absorb any rounding into the last item so the batch total equals the expected total.
                 if ($isLast && count($processedItems) > 1) {
-                    $sumOthers = collect($processedItems)->take(count($processedItems) - 1)->sum('proportionalAmount');
-                    $refundAmount = $expectedTotal - $sumOthers;
+                    $sumOthers = collect($processedItems)->take(count($processedItems) - 1)->sum(fn ($row) => round($row['proportionalAmount'] + $row['taxRefundAmount'], 2));
+                    $refundAmount = round($expectedTotal - $sumOthers, 2);
                 }
-
-                $refundAmount = round($refundAmount, 2);
 
                 $taxRefund = $this->taxEngine->computeLineTaxRefund(
                     (float) $pi['saleItem']->tax_amount,
