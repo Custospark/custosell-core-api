@@ -283,7 +283,7 @@ class EfrisService implements EfrisServiceInterface
                 'phone' => $invoice->customer?->phone,
             ],
             'totals' => [
-                'subtotal' => (float) $invoice->subtotal,
+                'subtotal' => (float) $invoice->subtotal + (float) $invoice->discount_amount,
                 'taxTotal' => (float) $invoice->tax_total,
                 'discount' => (float) $invoice->discount_amount,
                 'total' => (float) $invoice->total_amount,
