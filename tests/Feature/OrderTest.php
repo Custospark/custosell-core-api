@@ -88,6 +88,61 @@ class OrderTest extends TestCase
         $this->assertDatabaseCount('order_items', 1);
     }
 
+    public function test_create_open_order_persists_line_and_global_discounts(): void
+    {
+        $second = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'stock_quantity' => 50,
+            'unit_price' => 2500,
+        ]);
+
+        $response = $this->authJson('POST', '/api/v1/orders', [
+            'customer_name' => 'Table 5',
+            'discount_amount' => 1000,
+            'tax_total' => 0,
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                    'unit_price' => 1000,
+                    'discount_amount' => 200,
+                    'subtotal' => 800,
+                ],
+                [
+                    'product_id' => $second->id,
+                    'quantity' => 1,
+                    'unit_price' => 2500,
+                    'discount_amount' => 300,
+                    'subtotal' => 2200,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.total_amount', '2000.00');
+
+        $orderId = $response->json('data.id');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'discount_amount' => 1000,
+        ]);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $orderId,
+            'product_id' => $this->product->id,
+            'discount_amount' => 200,
+        ]);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $orderId,
+            'product_id' => $second->id,
+            'discount_amount' => 300,
+        ]);
+
+        $items = \App\Models\OrderItem::where('order_id', $orderId)->get();
+        $this->assertEqualsWithDelta(3000, (float) $items->sum('subtotal'), 0.01);
+        $this->assertEqualsWithDelta(2000, (float) $items->sum('subtotal') - 1000, 0.01);
+    }
+
     public function test_sale_completes_open_order(): void
     {
         $order = $this->authJson('POST', '/api/v1/orders', [

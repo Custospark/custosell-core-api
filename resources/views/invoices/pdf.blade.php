@@ -82,7 +82,7 @@
             <br><span class="text-muted">SKU: {{ $item->product->sku }}</span>
           @endif
           @if($itemLineDisc > 0)
-            <br><span class="text-muted" style="color:#16a34a;">disc −{{ $formatter->formatMoney($itemLineDisc, $currency) }}</span>
+            <br><span class="text-muted" style="color:#16a34a;">Disc −{{ $formatter->formatMoney($itemLineDisc, $currency) }}</span>
           @endif
         </td>
         <td class="col-money">{{ $formatter->formatTableNumber($itemQty) }}</td>
