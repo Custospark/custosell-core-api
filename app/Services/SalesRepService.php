@@ -88,6 +88,11 @@ class SalesRepService implements SalesRepServiceInterface
                 'owner_user_id' => $user->id,
                 'discount_type' => DiscountType::PERCENTAGE,
                 'discount_value' => $data['discount_rate'] ?? 20,
+                // Rep codes are ALWAYS single-period: the referee discount applies to
+                // the first charge only. A duration > 1 would create standing monthly
+                // discount credits — the one recurring company cost — with no extra
+                // earnings for the rep (commission is one-time). Locked to 1 on purpose.
+                'discount_duration_months' => 1,
                 'is_active' => true,
             ]);
 

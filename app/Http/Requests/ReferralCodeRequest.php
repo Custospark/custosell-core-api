@@ -37,4 +37,22 @@ class ReferralCodeRequest extends BaseFormRequest
 
         return $rules;
     }
+
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+            // Sales-rep codes are ALWAYS single-period (see SalesRepService::create).
+            // The referee discount applies to the first charge only; a longer duration
+            // would create recurring monthly discount credits — the one recurring
+            // company cost — with no extra rep earnings. This clamp blocks raising it
+            // through the admin referral-code CRUD surface too.
+            $ref = $this->route('referral_code') ?? $this->route('id');
+            $isRepCode = $ref && \App\Models\ReferralCode::whereKey($ref)->first()?->owner_type
+                === \App\Enums\Billing\ReferralCodeOwnerType::SALES_REP;
+
+            if ($isRepCode && (int) ($this->input('discount_duration_months') ?? 1) !== 1) {
+                $validator->errors()->add('discount_duration_months', 'Sales-rep codes are always single-period (discount_duration_months = 1).');
+            }
+        });
+    }
 }
