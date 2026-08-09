@@ -43,6 +43,7 @@ class PaymentQuoteService
             $nextBillingDate,
             $billingCycle,
             $subscriptionPrices,
+            $subscription->trial_ends_at,
         );
 
         if ($targetCycle !== $billingCycle) {

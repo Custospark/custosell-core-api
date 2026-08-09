@@ -309,7 +309,12 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
         $periodEnd = $subscription->next_billing_date->copy()->startOfDay();
         $periodStart = $periodEnd->copy()->subMonth()->startOfDay();
         $daysInPeriod = max(1, (int) $periodStart->diffInDays($periodEnd));
-        $daysRemaining = $periodEnd->lte($now) ? 0 : (int) $now->diffInDays($periodEnd);
+        // Paid coverage starts when the preserved trial ends (or now if the trial
+        // already lapsed) — free trial days are never credited toward an upgrade.
+        $paidStart = $subscription->trial_ends_at && $subscription->trial_ends_at->startOfDay()->gt($now)
+            ? $subscription->trial_ends_at->copy()->startOfDay()
+            : $now;
+        $daysRemaining = $periodEnd->lte($paidStart) ? 0 : (int) $paidStart->diffInDays($periodEnd);
         $credit = round((float) $this->essential->price_monthly_usd * ($daysRemaining / $daysInPeriod), 2);
         $charge = (float) $this->enterprise->price_monthly_usd;
 

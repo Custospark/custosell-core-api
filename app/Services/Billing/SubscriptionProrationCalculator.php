@@ -13,6 +13,7 @@ class SubscriptionProrationCalculator
         Carbon $nextBillingDate,
         string $billingCycle = 'monthly',
         ?array $subscriptionPrices = null,
+        ?Carbon $trialEndsAt = null,
     ): array {
         $now = Carbon::now()->startOfDay();
         $periodEnd = $nextBillingDate->copy()->startOfDay();
@@ -21,9 +22,15 @@ class SubscriptionProrationCalculator
             : $periodEnd->copy()->subMonth()->startOfDay();
 
         $daysInPeriod = max(1, (int) $periodStart->diffInDays($periodEnd));
-        $daysRemaining = $periodEnd->lte($now)
+        // Remaining paid coverage starts when the free trial ends (or now if the
+        // trial has already lapsed) — never before, so free trial days are not
+        // credited as if the user had paid for them.
+        $paidStart = $trialEndsAt && $trialEndsAt->startOfDay()->gt($now)
+            ? $trialEndsAt->copy()->startOfDay()
+            : $now;
+        $daysRemaining = $periodEnd->lte($paidStart)
             ? 0
-            : (int) $now->diffInDays($periodEnd);
+            : (int) $paidStart->diffInDays($periodEnd);
 
         $oldPriceUsd = $billingCycle === 'yearly'
             ? (float) ($subscriptionPrices['price_yearly_usd'] ?? $currentPlan->price_yearly_usd ?? 0)
