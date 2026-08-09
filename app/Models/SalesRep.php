@@ -13,6 +13,7 @@ class SalesRep extends Model
         'user_id',
         'referral_code_id',
         'commission_rate',
+        'discount_rate',
         'commission_type',
         'is_active',
         'phone',
@@ -33,6 +34,7 @@ class SalesRep extends Model
     {
         return [
             'commission_rate' => 'decimal:2',
+            'discount_rate' => 'decimal:2',
             'is_active' => 'boolean',
             'commission_type' => CommissionType::class,
             'next_payout_at' => 'datetime',

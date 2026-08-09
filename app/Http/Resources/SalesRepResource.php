@@ -16,6 +16,7 @@ class SalesRepResource extends JsonResource
             'user' => $this->whenLoaded('user'),
             'referral_code' => $this->whenLoaded('referralCode'),
             'commission_rate' => $this->commission_rate,
+            'discount_rate' => $this->discount_rate,
             'commission_type' => $this->commission_type,
             'is_active' => $this->is_active,
             'phone' => $this->phone,

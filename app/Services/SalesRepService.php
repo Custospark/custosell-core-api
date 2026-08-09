@@ -51,6 +51,16 @@ class SalesRepService implements SalesRepServiceInterface
 
     public function create(array $data): SalesRep
     {
+        $commissionType = $data['commission_type'] ?? 'percentage';
+        if ($commissionType === 'percentage') {
+            $discount = (float) ($data['discount_rate'] ?? 20);
+            $commission = (float) ($data['commission_rate'] ?? 0);
+            $minCommission = $discount / (100 - $discount) * 100;
+            if ($discount > 30 || $commission >= 50 || $commission <= $minCommission) {
+                throw new \RuntimeException('Commission/discount must keep the company the largest earner (commission below 50% and above the referee discount share).');
+            }
+        }
+
         return DB::transaction(function () use ($data) {
             $user = User::where('email', $data['email'])->first();
 
@@ -77,7 +87,7 @@ class SalesRepService implements SalesRepServiceInterface
                 'owner_type' => ReferralCodeOwnerType::SALES_REP,
                 'owner_user_id' => $user->id,
                 'discount_type' => DiscountType::PERCENTAGE,
-                'discount_value' => $data['commission_rate'] ?? 0,
+                'discount_value' => $data['discount_rate'] ?? 20,
                 'is_active' => true,
             ]);
 
@@ -95,7 +105,17 @@ class SalesRepService implements SalesRepServiceInterface
         if (!$salesRep) {
             throw new \RuntimeException('SalesRep not found');
         }
-        return $this->salesRepRepository->update($salesRep, $data);
+
+        $result = $this->salesRepRepository->update($salesRep, $data);
+
+        if (array_key_exists('discount_rate', $data) && $salesRep->referralCode) {
+            $this->referralCodeService->update($salesRep->referralCode->id, [
+                'discount_value' => $data['discount_rate'] ?? 0,
+            ]);
+            $result->load('referralCode');
+        }
+
+        return $result;
     }
 
     public function delete(int $id): bool
@@ -288,6 +308,7 @@ class SalesRepService implements SalesRepServiceInterface
             $mapped['phone'] = isset($row['Phone']) ? trim((string) $row['Phone']) : '';
             $mapped['region'] = isset($row['Region']) ? trim((string) $row['Region']) : '';
             $mapped['commission_rate'] = isset($row['Commission Rate']) ? trim((string) $row['Commission Rate']) : '';
+            $mapped['discount_rate'] = isset($row['Discount Rate']) ? trim((string) $row['Discount Rate']) : '';
             $mapped['commission_type'] = isset($row['Commission Type']) ? trim((string) $row['Commission Type']) : '';
 
             if (empty(array_filter($mapped, fn ($v) => $v !== ''))) {
@@ -300,6 +321,7 @@ class SalesRepService implements SalesRepServiceInterface
                 'phone' => ['nullable', 'string', 'max:50'],
                 'region' => ['nullable', 'string', 'max:100'],
                 'commission_rate' => ['required', 'numeric', 'min:0'],
+                'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:30'],
                 'commission_type' => ['nullable', 'in:percentage,flat'],
             ]);
 
@@ -316,6 +338,7 @@ class SalesRepService implements SalesRepServiceInterface
                 'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
                 'region' => null,
                 'commission_rate' => (float) $data['commission_rate'],
+                'discount_rate' => !empty($data['discount_rate']) ? (float) $data['discount_rate'] : 20,
                 'commission_type' => !empty($data['commission_type']) ? mb_strtolower(trim($data['commission_type'])) : 'percentage',
             ];
 
@@ -353,7 +376,7 @@ class SalesRepService implements SalesRepServiceInterface
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Sales Reps');
 
-        $headers = ['Name', 'Email', 'Phone', 'Region', 'Commission Rate', 'Commission Type'];
+        $headers = ['Name', 'Email', 'Phone', 'Region', 'Discount Rate', 'Commission Rate', 'Commission Type'];
         $lastCol = chr(65 + count($headers) - 1);
 
         $bold = [
