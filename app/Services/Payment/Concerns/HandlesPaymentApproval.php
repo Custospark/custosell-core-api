@@ -39,6 +39,38 @@ trait HandlesPaymentApproval
             'billing_cycle_change' => $this->handleBillingCycleChange($payment, $subscription),
             default => null,
         };
+
+        $this->logSubscriptionAuditState($payment, $paymentType);
+    }
+
+    /**
+     * Single audit trail line capturing the resulting subscription state after ANY
+     * payment type is applied, so the charged amount and the coverage granted can
+     * be verified back-to-back (money done, coverage done).
+     */
+    private function logSubscriptionAuditState(BillingPayment $payment, string $paymentType): void
+    {
+        $subscription = $payment->subscription;
+        if (!$subscription) {
+            return;
+        }
+
+        Log::info('[SubscriptionAudit] state after payment', [
+            'payment_id' => $payment->id,
+            'payment_type' => $paymentType,
+            'subscription_id' => $subscription->id,
+            'business_id' => $subscription->business_id,
+            'plan_id' => $subscription->plan_id,
+            'plan_name' => $subscription->plan?->name,
+            'billing_cycle' => $subscription->billing_cycle,
+            'status' => $subscription->status,
+            'next_billing_date' => $subscription->next_billing_date?->toDateString(),
+            'trial_ends_at' => $subscription->trial_ends_at?->toDateString(),
+            'ends_at' => $subscription->ends_at?->toDateString(),
+            'credit_used' => (float) ($payment->metadata['credit_used'] ?? 0),
+            'topup_months' => $payment->metadata['topup_months'] ?? null,
+            'amount_paid' => (float) $payment->amount,
+        ]);
     }
 
     private function handleRenewalPayment(Subscription $subscription, BillingPayment $payment): void
