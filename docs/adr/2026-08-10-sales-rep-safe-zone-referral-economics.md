@@ -198,6 +198,37 @@ Takeaway: a sales-rep acquisition costs ~44% of the onboarding fee on day one, b
 
 ---
 
+## Fixed policy (ratified 2026-08-10) — dials locked for future teams
+
+Prices will change; **the structural dials do not**. These are the enforceable defaults a future team should preserve and revisit only via a documented ADR change:
+
+### P1 — Sales-rep rates: discount 20% / commission 30% (decoupled)
+- `sales_reps.discount_rate` (referee) and `commission_rate` (referrer) are independent dials.
+- Safe zone (enforced in `SalesRepRequest` + `SalesRepService::create` so imports can't bypass):
+  - `discount_rate ≤ 30`
+  - commission strictly between `d/(1−d)%` and `50%`
+- This guarantees **Company > Referrer > Referee** on every allowed configuration. 20/30 is the default; any value inside the zone is legal.
+
+### P2 — Rep commission is ONE-TIME per signup
+- Earned once at activation from the referee's actually-paid amount (`metadata.original_amount`, post-discount).
+- Renewals and top-ups never pay the referrer.
+- **Do NOT build recurring commission** without a vested-commission ledger + scheduled accrual (see `2026-07-31-referral-reward-economics.md` Option 3) — economically destructive on a monthly-billing product (see Recommendation above).
+
+### P3 — Rep codes are single-period (`discount_duration_months = 1`) — HARD LOCK
+- Rep referral codes apply the referee discount to the **first charge only**.
+- Locked in `SalesRepService::create` (explicit) **and** `ReferralCodeRequest.withValidator` (clamps admin referral-code CRUD for `sales_rep` codes).
+- Why: duration > 1 creates standing monthly discount credits — the **only recurring company cost** — with **no additional earnings for the rep**. It's a pure cost dial with zero upside to the referrer, so it's gated.
+
+### P4 — Normal/campaign codes unchanged
+- Default business/personal code: discount 10% / reward 15% (of paid), already Company-first.
+- Campaign codes (company-owned): discount only, **never a reward** (no self-crediting). Do not re-enable rewards on campaign codes.
+
+### P5 — Measurement: channel attribution before tuning rates
+- Channel is derivable today: `referral_codes.owner_type` = `sales_rep | business` (normal referral) | `campaign`; no referral row → `organic`.
+- Before changing any rate, measure **cohort LTV by channel** (rep-sourced vs normal-referral vs organic). Only if rep-sourced LTV is materially lower than organic do we revisit rates or add retention-gated payout installments. Attribution column/flag is a known future enhancement if cohort queries become heavy.
+
+---
+
 ## Files
 
 | Area | File | Role |
