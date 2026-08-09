@@ -71,6 +71,12 @@ trait InitiatesGatewayPayments
                 'plan_id' => $plan?->id,
                 'plan_name' => $plan?->name,
                 'original_amount_usd' => $originalAmount,
+                'our_reference' => $ourRef,
+                'email' => $driverPayload['email'],
+                'phone_number' => $driverPayload['phone_number'],
+                'first_name' => $driverPayload['customer_name'],
+                'description' => $driverPayload['description'],
+                'country_code' => $countryCode,
             ]);
 
             $result = $driver->initiate($driverPayload);
