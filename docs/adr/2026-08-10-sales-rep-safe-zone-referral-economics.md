@@ -222,6 +222,13 @@ Prices will change; **the structural dials do not**. These are the enforceable d
 ### P4 — Normal/campaign codes unchanged
 - Default business/personal code: discount 10% / reward 15% (of paid), already Company-first.
 - Campaign codes (company-owned): discount only, **never a reward** (no self-crediting). Do not re-enable rewards on campaign codes.
+- **Extended guard (2026-08-10, apply-time):** campaign codes mirror the sales-rep safe zone in `ReferralCodeRequest::withValidator`:
+  - single-period hard lock (`discount_duration_months = 1`),
+  - reward rejected entirely (campaign codes never carry a reward),
+  - percentage discount capped at **30%**,
+  - flat_amount capped at **half the cheapest active plan's onboarding fee** (currently $40 → $20; computed from the `plans` table so it tracks price changes).
+  - The discount cap/reward checks fire only when those fields are *submitted* — a status-only toggle on a legacy out-of-zone campaign code is not blocked.
+- The FE `PlatformCampaignCodeFormModal` mirrors the guard live (`CampaignDiscountGuardHint`): amber warning when a percentage > 30%, flat ≥ $20, or duration > 1 would be submitted; the duration field is locked to 1.
 
 ### P5 — Measurement: channel attribution before tuning rates
 - Channel is derivable today: `referral_codes.owner_type` = `sales_rep | business` (normal referral) | `campaign`; no referral row → `organic`.
@@ -236,8 +243,10 @@ Prices will change; **the structural dials do not**. These are the enforceable d
 | Migration | `database/migrations/2026_08_10_000000_add_discount_rate_to_sales_reps_table.php` | Adds `discount_rate`; migrates existing reps to 20/30 |
 | Model | `app/Models/SalesRep.php` | `discount_rate` fillable + decimal cast |
 | Request | `app/Http/Requests/SalesRepRequest.php` | `discount_rate` rules + safe-zone `withValidator` |
+| Request | `app/Http/Requests/ReferralCodeRequest.php` | campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) |
 | Service | `app/Services/SalesRepService.php` | `create` writes `discount_rate` → code `discount_value`; `create` safe-zone guard; `update` resyncs code discount; import maps `Discount Rate` (default 20) + template header |
 | Resource | `app/Http/Resources/SalesRepResource.php` | exposes `discount_rate` |
+| FE form | `Frontend/.../PlatformCampaignCodeFormModal.tsx` + `CampaignDiscountGuardHint.tsx` | campaign safe-zone live hint + single-period lock; duration clamped to 1 in payload |
 | FE form | `Frontend/.../PlatformSalesRepFormModal.tsx` + `SalesRepCommissionSection.tsx` | decoupled fields + live split/hint |
 | FE table | `Frontend/.../PlatformSalesRepsPage.tsx` | Referee Discount column |
 

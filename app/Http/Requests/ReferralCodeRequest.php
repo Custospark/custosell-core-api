@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Billing\DiscountType;
+use App\Models\Plan;
 use Illuminate\Validation\Rule;
 
 class ReferralCodeRequest extends BaseFormRequest
@@ -41,17 +43,63 @@ class ReferralCodeRequest extends BaseFormRequest
     public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function (\Illuminate\Validation\Validator $validator) {
+            $ref = $this->route('referral_code') ?? $this->route('id');
+            $existing = $ref ? \App\Models\ReferralCode::whereKey($ref)->first() : null;
+
+            // Effective owner type: what is being written (create), else what is stored (update).
+            $ownerType = $this->input('owner_type') ?? $existing?->owner_type?->value;
+
             // Sales-rep codes are ALWAYS single-period (see SalesRepService::create).
             // The referee discount applies to the first charge only; a longer duration
             // would create recurring monthly discount credits — the one recurring
             // company cost — with no extra rep earnings. This clamp blocks raising it
             // through the admin referral-code CRUD surface too.
-            $ref = $this->route('referral_code') ?? $this->route('id');
-            $isRepCode = $ref && \App\Models\ReferralCode::whereKey($ref)->first()?->owner_type
-                === \App\Enums\Billing\ReferralCodeOwnerType::SALES_REP;
-
-            if ($isRepCode && (int) ($this->input('discount_duration_months') ?? 1) !== 1) {
+            if ($ownerType === \App\Enums\Billing\ReferralCodeOwnerType::SALES_REP->value
+                && (int) ($this->input('discount_duration_months') ?? 1) !== 1) {
                 $validator->errors()->add('discount_duration_months', 'Sales-rep codes are always single-period (discount_duration_months = 1).');
+            }
+
+            // Campaign codes are company-owned promos: discount-only and single-period.
+            // Same structural guard as sales-rep codes so the company keeps the largest
+            // share (Company > Referee on the cheapest plan) and never credits itself.
+            if ($ownerType === \App\Enums\Billing\ReferralCodeOwnerType::CAMPAIGN->value) {
+                // Single-period clamp fires whenever a duration is supplied or a code is
+                // being created; status-only toggles (no duration) are not blocked.
+                if (($this->isMethod('post') || $this->exists('discount_duration_months'))
+                    && (int) ($this->input('discount_duration_months') ?? 1) !== 1) {
+                    $validator->errors()->add('discount_duration_months', 'Campaign codes are single-period (discount_duration_months = 1).');
+                }
+
+                // Discount-only: campaign codes never carry a reward (the company would be crediting itself).
+                // Only enforced when a reward is actually being submitted so unrelated updates pass.
+                $rewardSubmitted = $this->exists('reward_type') || $this->exists('reward_value');
+                $rewardType = $this->input('reward_type') ?? $existing?->reward_type?->value;
+                $rewardValue = (float) ($this->input('reward_value') ?? $existing?->reward_value ?? 0);
+                if ($rewardSubmitted && ($rewardType !== null || $rewardValue > 0)) {
+                    $validator->errors()->add('reward_value', 'Campaign codes are discount-only — they never carry a reward.');
+                }
+
+                // Discount cap so Company > Referee holds on the cheapest plan.
+                // Only enforced when the discount value is being submitted (or creating)
+                // so a status toggle on a legacy out-of-zone code is not blocked.
+                $discountSubmitted = $this->exists('discount_value') || $this->isMethod('post');
+                if ($discountSubmitted) {
+                    $type = $this->input('discount_type') ?? $existing?->discount_type?->value ?? DiscountType::PERCENTAGE->value;
+                    $value = (float) ($this->input('discount_value') ?? $existing?->discount_value ?? 0);
+
+                    if ($type === DiscountType::PERCENTAGE->value && $value > 30) {
+                        $validator->errors()->add('discount_value', 'Campaign percentage discount is capped at 30% so the company keeps the largest share.');
+                    } elseif ($type === DiscountType::FLAT_AMOUNT->value) {
+                        $minOnboarding = (float) Plan::query()
+                            ->where('is_active', true)
+                            ->where('onboarding_fee_usd', '>', 0)
+                            ->min('onboarding_fee_usd');
+                        $minOnboarding = $minOnboarding > 0 ? $minOnboarding : 40.0;
+                        if ($value >= $minOnboarding / 2) {
+                            $validator->errors()->add('discount_value', 'Campaign flat discount must be below half the cheapest plan fee so the company keeps the largest share.');
+                        }
+                    }
+                }
             }
         });
     }

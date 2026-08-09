@@ -527,8 +527,13 @@
 - Unit tests (ReferralCodeTest): 5/5 ✅
 - Unit tests (ReferralTest): 5/5 ✅
 - Feature tests (ReferralBillingTest): 2/2 ✅
-- Total: 12 tests, 29 assertions, 0 failures
+- Unit tests (CampaignReferralCodeRequestTest): 7/7 ✅ — campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) + sales-rep clamp regression + status-toggle not blocked
+- Total: 19 tests, 38 assertions, 0 failures
 - Vera Fast: ✅ (php -l on 46 files + logic rules)
+
+### Referral Code Guard (added 2026-08-10)
+- `ReferralCodeRequest::withValidator` enforces the campaign safe-zone: single-period (duration=1), no reward allowed, percentage discount ≤ 30%, flat_amount < half the cheapest active plan's onboarding fee (from `plans` table).
+- Cap/reward checks fire only on submitted fields; a status-only toggle of a legacy out-of-zone campaign code passes. Sales-rep duration clamp unchanged (now resolved from route record OR submitted owner_type).
 
 ### SOLID Compliance Checklist
 - [x] Single Responsibility
