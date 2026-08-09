@@ -8,6 +8,7 @@ use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\ReferralStatus;
 use App\Enums\Billing\RewardType;
 use App\Models\Business;
+use App\Models\BillingCredit;
 use App\Models\Plan;
 use App\Models\ReferralCode;
 use App\Models\SalesRep;
@@ -128,6 +129,40 @@ class ReferralActivationTest extends TestCase
         $activated = $this->referralService->markActive($referral->id);
 
         $this->assertEquals(0.00, (float) $activated->reward_amount, 'free_month reward = 0 when the referee pays nothing');
+    }
+
+    public function test_mark_active_creates_remaining_months_credit_off_recurring_charge(): void
+    {
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->business->id,
+            'code' => 'MULTI3',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 20,
+            'discount_duration_months' => 3,
+            'reward_type' => RewardType::PERCENTAGE,
+            'reward_value' => 5,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $this->referralService->markActive($referral->id);
+
+        // First charge (onboarding fee $40) took 20% off = $8.
+        // The remaining 2 months are charged at the RECURRING monthly price
+        // ($20), so each must be 20% × $20 = $4 → credit = $8 total.
+        $credit = BillingCredit::where('referral_id', $referral->id)
+            ->where('owner_id', $this->business->id)
+            ->orderByDesc('id')
+            ->first();
+
+        $this->assertNotNull($credit, 'remaining-months credit should exist');
+        $this->assertEquals(8.00, (float) $credit->amount, '2 remaining months × 20% of $20 recurring = $8');
     }
 
     // ─── Scenario 3: markActive (payment confirmed) — SALES_REP codes ───

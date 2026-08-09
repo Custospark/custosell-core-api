@@ -105,7 +105,7 @@ class ReferralTest extends TestCase
         );
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('This business has already used a referral code');
+        $this->expectExceptionMessage('This account has already used a referral code');
 
         $this->service->processReferral(
             $this->referralCode->code,

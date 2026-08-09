@@ -106,14 +106,14 @@ class ReferralService implements ReferralServiceInterface
 
             // One-time use per business — no stacking across codes or resubscribes
             if ($this->referralRepository->findByBusiness($businessId)->isNotEmpty()) {
-                throw new \RuntimeException('This business has already used a referral code');
+                throw new \RuntimeException('This account has already used a referral code');
             }
 
             // Same-code duplicate guard
             $existing = $this->referralRepository->findByCode($referralCode->id)
                 ->first(fn ($r) => $r->referred_business_id === $businessId);
             if ($existing) {
-                throw new \RuntimeException('This business has already used this referral code');
+                throw new \RuntimeException('This account has already used this referral code');
             }
 
             // Calculate discount based on the amount being paid at the time of application
@@ -173,19 +173,28 @@ class ReferralService implements ReferralServiceInterface
             return 0;
         }
 
-        $discount = match ($referralCode->discount_type) {
-            DiscountType::PERCENTAGE => round($base * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
-            DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
-            DiscountType::FREE_MONTH => $base,
-        };
-
-        $discount = min($discount, $base);
+        $discount = $this->discountAgainstBase($referralCode, $base);
 
         if ((float) $referral->discount_applied !== $discount) {
             $this->referralRepository->update($referral, ['discount_applied' => $discount]);
         }
 
         return $discount;
+    }
+
+    private function discountAgainstBase(ReferralCode $referralCode, float $base): float
+    {
+        if ($base <= 0) {
+            return 0;
+        }
+
+        $discount = match ($referralCode->discount_type) {
+            DiscountType::PERCENTAGE => round($base * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
+            DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
+            DiscountType::FREE_MONTH => $base,
+        };
+
+        return min($discount, $base);
     }
 
     public function markActive(int $id): Referral
@@ -276,19 +285,29 @@ class ReferralService implements ReferralServiceInterface
 
             // Create discount BillingCredit for remaining months after the first payment.
             // The first month's discount was consumed directly in GatewayService.
+            // Each remaining period is sized against the RECURRING charge (the monthly
+            // price, or the monthly equivalent on a yearly cycle), not the one-time
+            // onboarding fee, so "N months at X%" means X% off the current charge each
+            // month — not a fee-shaped lump that inflates the later periods' discount.
             $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
             $remainingMonths = $discountDuration - 1;
-            $discountApplied = (float) $referral->discount_applied;
-            if ($remainingMonths > 0 && $discountApplied > 0) {
-                $remainingCredit = round($discountApplied * $remainingMonths, 2);
-                BillingCredit::create([
-                    'owner_type' => 'business',
-                    'owner_id' => $referral->referred_business_id,
-                    'referral_id' => $referral->id,
-                    'amount' => $remainingCredit,
-                    'amount_used' => 0,
-                    'status' => 'available',
-                ]);
+
+            if ($remainingMonths > 0) {
+                $cycle = (string) ($subscription?->billing_cycle ?? 'monthly');
+                $yearlyUsd = (float) ($plan?->price_yearly_usd ?? 0) ?: $monthlyPriceUsd * 12;
+                $recurringBase = $cycle === 'yearly' ? round($yearlyUsd / 12, 2) : $monthlyPriceUsd;
+
+                $perPeriodDiscount = $this->discountAgainstBase($referralCode, $recurringBase);
+                if ($perPeriodDiscount > 0) {
+                    BillingCredit::create([
+                        'owner_type' => 'business',
+                        'owner_id' => $referral->referred_business_id,
+                        'referral_id' => $referral->id,
+                        'amount' => round($perPeriodDiscount * $remainingMonths, 2),
+                        'amount_used' => 0,
+                        'status' => 'available',
+                    ]);
+                }
             }
 
             return $this->referralRepository->update($referral, $updateData);
