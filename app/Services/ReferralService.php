@@ -4,9 +4,13 @@ namespace App\Services;
 
 use App\Enums\Billing\CommissionType;
 use App\Enums\Billing\DiscountType;
+use App\Enums\Billing\PaymentStatus;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\ReferralStatus;
 use App\Enums\Billing\RewardType;
+use App\Models\BillingCredit;
+use App\Models\BillingPayment;
+use App\Models\Plan;
 use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\SalesRep;
@@ -14,7 +18,6 @@ use App\Models\User;
 use App\Repositories\Contracts\ReferralCodeRepositoryInterface;
 use App\Repositories\Contracts\ReferralRepositoryInterface;
 use App\Repositories\Contracts\SubscriptionRepositoryInterface;
-use App\Models\BillingCredit;
 use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\CreditService;
 use Illuminate\Database\Eloquent\Collection;
@@ -144,6 +147,47 @@ class ReferralService implements ReferralServiceInterface
         });
     }
 
+    public function resolveDiscountForCharge(
+        Referral $referral,
+        ?Plan $plan,
+        string $paymentType,
+        string $billingCycle = 'monthly'
+    ): float {
+        $referralCode = $referral->referralCode;
+        if (!$referralCode) {
+            return 0;
+        }
+
+        // Base the discount on the same fees the charge uses (the resolved plan),
+        // so onboarding discounts track the plan actually being paid for.
+        $onboardingFeeUsd = (float) ($plan?->onboarding_fee_usd ?? 0);
+        $monthlyUsd = (float) ($plan?->price_monthly_usd ?? 0);
+        $yearlyUsd = (float) ($plan?->price_yearly_usd ?? 0) ?: $monthlyUsd * 12;
+
+        $isOnboardingBase = $paymentType === 'onboarding' && $onboardingFeeUsd > 0;
+        $base = $isOnboardingBase
+            ? $onboardingFeeUsd
+            : ($billingCycle === 'yearly' ? $yearlyUsd : $monthlyUsd);
+
+        if ($base <= 0) {
+            return 0;
+        }
+
+        $discount = match ($referralCode->discount_type) {
+            DiscountType::PERCENTAGE => round($base * ((float) ($referralCode->discount_value ?? 0) / 100), 2),
+            DiscountType::FLAT_AMOUNT => (float) ($referralCode->discount_value ?? 0),
+            DiscountType::FREE_MONTH => $base,
+        };
+
+        $discount = min($discount, $base);
+
+        if ((float) $referral->discount_applied !== $discount) {
+            $this->referralRepository->update($referral, ['discount_applied' => $discount]);
+        }
+
+        return $discount;
+    }
+
     public function markActive(int $id): Referral
     {
         return DB::transaction(function () use ($id) {
@@ -166,13 +210,27 @@ class ReferralService implements ReferralServiceInterface
             $plan = $subscription?->plan;
             $monthlyPriceUsd = (float) ($plan->price_monthly_usd ?? 0);
             $onboardingFeeUsd = (float) ($plan->onboarding_fee_usd ?? 0);
-            $isOnboarding = !$subscription->onboarding_fee_paid;
-            $rewardBase = $isOnboarding && $onboardingFeeUsd > 0 ? $onboardingFeeUsd : $monthlyPriceUsd;
 
-            // Reward/commission is a % of what the referee ACTUALLY paid, not the
-            // undiscounted base. Keeps the give-away capped: it never exceeds the
-            // amount collected (base minus the referral discount).
-            $paidBase = max(0, $rewardBase - (float) ($referral->discount_applied ?? 0));
+            // Reward/commission is a % of what the referee ACTUALLY paid. The
+            // authoritative figure is the confirmed payment's original amount
+            // (post-referral-discount USD), which avoids ever rewarding on a
+            // plan-price snapshot captured at the wrong time.
+            $paidBase = 0.0;
+            $paidPayment = $subscription?->payments()
+                ->where('status', PaymentStatus::COMPLETED)
+                ->orderByDesc('id')
+                ->first();
+            if ($paidPayment) {
+                $paidBase = (float) ($paidPayment->metadata['original_amount'] ?? 0);
+            }
+            if ($paidBase <= 0) {
+                // Fallback: plan-based estimate (base minus referral discount).
+                $rewardBase = $monthlyPriceUsd;
+                if (!$subscription->onboarding_fee_paid && $onboardingFeeUsd > 0) {
+                    $rewardBase = $onboardingFeeUsd;
+                }
+                $paidBase = max(0, $rewardBase - (float) ($referral->discount_applied ?? 0));
+            }
 
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
@@ -208,8 +266,7 @@ class ReferralService implements ReferralServiceInterface
                 'owner_business_id' => $referralCode->owner_business_id,
                 'monthly_price_usd' => $monthlyPriceUsd,
                 'onboarding_fee_usd' => $onboardingFeeUsd,
-                'is_onboarding' => $isOnboarding,
-                'reward_base_usd' => $rewardBase,
+                'reward_base_usd' => $paidBase,
                 'discount_applied_usd' => (float) ($referral->discount_applied ?? 0),
                 'paid_base_usd' => $paidBase,
                 'reward_amount_usd' => $updateData['reward_amount'] ?? 0,

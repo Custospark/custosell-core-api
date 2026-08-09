@@ -105,14 +105,23 @@ class GatewayService
         $data['currency'] = 'USD';
         $this->paymentValidator->validatePaymentAmount($subscription, $data);
 
-        // Apply pending referral discount directly (no pre-existing credit needed)
+        // Apply pending referral discount based on the RESOLVED plan being charged.
+        // The value stored at registration may reference the subscription's default
+        // plan, so we recompute against the effective plan/amount at initiate time.
         $referralDiscount = 0;
         $referral = Referral::where('subscription_id', $subscription->id)
             ->where('status', ReferralStatus::PENDING)
             ->first();
-        if ($referral && (float) $referral->discount_applied > 0) {
-            $referralDiscount = min((float) $referral->discount_applied, (float) $data['amount']);
-            $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
+        if ($referral) {
+            $referralDiscount = $this->referralService->resolveDiscountForCharge(
+                $referral,
+                $plan,
+                $paymentType,
+                $effectiveCycle,
+            );
+            if ($referralDiscount > 0) {
+                $data['amount'] = round((float) $data['amount'] - $referralDiscount, 2);
+            }
         }
 
         // H5: Idempotency check — return existing payment if same key used
