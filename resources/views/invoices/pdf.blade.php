@@ -73,7 +73,6 @@
         $itemQty = (float) $item->quantity;
         $itemUnit = (float) $item->unit_price;
         $itemLineDisc = (float) $item->discount_amount;
-        $itemTier = ($item->price_tier ?? 'retail') === 'wholesale' ? 'wholesale' : 'retail';
       @endphp
       <tr>
         <td class="text-left">
@@ -86,7 +85,7 @@
           @endif
         </td>
         <td class="col-money">{{ $formatter->formatTableNumber($itemQty) }}</td>
-        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }} <span class="text-muted">({{ $itemTier === 'wholesale' ? 'WSP' : 'RP' }})</span></td>
+        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }}</td>
         <td class="col-money amount-emphasis">{{ $formatter->formatMoney((float) $item->subtotal, $currency) }}</td>
       </tr>
     @empty

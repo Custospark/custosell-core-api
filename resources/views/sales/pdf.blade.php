@@ -87,11 +87,6 @@
         $itemQty = (int) $item->quantity;
         $itemLineDisc = (float) $item->discount_amount;
         $itemLineTotal = max(0, $itemUnit * $itemQty - $itemLineDisc);
-        $itemRetail = (float) ($item->product_price ?? 0);
-        $itemTier = ($item->price_tier ?? 'retail') === 'wholesale'
-          || ($itemRetail > 0 && $itemUnit < $itemRetail)
-          ? 'wholesale'
-          : 'retail';
       @endphp
       <tr>
         <td class="text-left">
@@ -104,7 +99,7 @@
           @endif
         </td>
         <td class="col-money">{{ $formatter->formatTableNumber($itemQty) }}</td>
-        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }} <span class="text-muted">({{ $itemTier === 'wholesale' ? 'WSP' : 'RP' }})</span></td>
+        <td class="col-money">{{ $formatter->formatMoney($itemUnit, $currency) }}</td>
         <td class="col-money amount-emphasis">{{ $formatter->formatMoney($itemLineTotal, $currency) }}</td>
       </tr>
     @empty
@@ -114,8 +109,6 @@
     @endforelse
   </tbody>
   </table>
-
-<p style="font-size:8px;color:#9ca3af;margin:-6px 0 12px 0;">(RP) Retail price · (WSP) Wholesale price</p>
 
 <table class="data" style="margin-top:10px;width:52%;margin-left:auto;">
   <tbody>
