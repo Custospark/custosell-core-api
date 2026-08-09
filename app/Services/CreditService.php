@@ -40,6 +40,17 @@ class CreditService
             return null;
         }
 
+        // Audit log — the amount that lands as a spendable credit for the referee (owner).
+        // Goal: verify commission distribution amounts against the paid base.
+        Log::info('[PaymentAudit] referral credit created', [
+            'referral_id' => $referral->id,
+            'referred_business_id' => $referral->referred_business_id,
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
+            'amount_usd' => $amountUsd,
+            'status' => 'available',
+        ]);
+
         return BillingCredit::create([
             'owner_type' => $ownerType,
             'owner_id' => $ownerId,

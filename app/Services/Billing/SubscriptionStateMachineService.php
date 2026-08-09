@@ -9,9 +9,32 @@ use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Contracts\SubscriptionStateMachineServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubscriptionStateMachineService implements SubscriptionStateMachineServiceInterface
 {
+    /**
+     * Audit log for every subscription state transition.
+     * Goal: trace the full subscription lifecycle (trial → active → past_due, etc.)
+     * across onboarding / renewal / upgrade / cancel payments.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    private function logTransition(string $event, Subscription $subscription, array $extra = []): void
+    {
+        $status = $subscription->status instanceof SubscriptionStatus ? $subscription->status->value : $subscription->status;
+        Log::info("[PaymentAudit] subscription {$event}", array_merge([
+            'subscription_id' => $subscription->id,
+            'business_id' => $subscription->business_id,
+            'plan_id' => $subscription->plan_id,
+            'status' => $status,
+            'billing_cycle' => $subscription->billing_cycle ?? 'monthly',
+            'next_billing_date' => $subscription->next_billing_date?->toDateTimeString(),
+            'trial_ends_at' => $subscription->trial_ends_at?->toDateTimeString(),
+            'onboarding_fee_paid' => $subscription->onboarding_fee_paid,
+            'grace_period_ends_at' => $subscription->grace_period_ends_at?->toDateTimeString(),
+        ], $extra));
+    }
     public function __construct(
         protected SubscriptionRepositoryInterface $subscriptionRepository,
         protected ReferralServiceInterface $referralService,
@@ -46,6 +69,8 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
 
             $this->referralService->activateForSubscription($subscription->id);
 
+            $this->logTransition('activated', $updated);
+
             return $updated;
         });
     }
@@ -67,7 +92,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 'grace_period_ends_at' => null,
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition('renewed', $updated);
+
+            return $updated;
         });
     }
 
@@ -109,7 +137,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 ]),
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition('renewed_early', $updated, ['months' => $months]);
+
+            return $updated;
         });
     }
 
@@ -134,7 +165,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 'grace_used' => true,
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition('marked_past_due', $updated);
+
+            return $updated;
         });
     }
 
@@ -152,7 +186,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 'suspended_at' => Carbon::now(),
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition('suspended', $updated);
+
+            return $updated;
         });
     }
 
@@ -175,7 +212,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 'grace_period_ends_at' => null,
             ];
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition('reactivated', $updated);
+
+            return $updated;
         });
     }
 
@@ -196,9 +236,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
             ];
 
             if ($subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isFuture()) {
-                $this->subscriptionRepository->update($subscription, $data);
+                $updated = $this->subscriptionRepository->update($subscription, $data);
+                $this->logTransition('onboarding_paid_trial_kept', $updated, ['trial_days' => $trialDays]);
                 $this->referralService->activateForSubscription($subscription->id);
-                return $subscription->fresh();
+                return $this->onboardingResult($subscription);
             }
 
             if ($trialDays > 0 && !$subscription->trial_used) {
@@ -213,11 +254,21 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 $data['next_billing_date'] = $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly');
             }
 
-            $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition(
+                'onboarded',
+                $updated,
+                ['trial_days' => $trialDays],
+            );
             $this->referralService->activateForSubscription($subscription->id);
 
-            return $subscription->fresh();
+            return $this->onboardingResult($updated);
         });
+    }
+
+    private function onboardingResult(Subscription $subscription): Subscription
+    {
+        return $subscription->exists ? $subscription->fresh() : $subscription;
     }
 
     public function cancel(int $id, bool $immediate = false): Subscription
@@ -249,7 +300,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 $data = ['metadata' => $metadata];
             }
 
-            return $this->subscriptionRepository->update($subscription, $data);
+            $updated = $this->subscriptionRepository->update($subscription, $data);
+            $this->logTransition($immediate ? 'cancelled_immediately' : 'cancel_requested', $updated);
+
+            return $updated;
         });
     }
 
@@ -263,29 +317,32 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
         $now = Carbon::now();
 
         if ($subscription->status === SubscriptionStatus::TRIAL && $subscription->trial_ends_at?->isPast()) {
-            $this->subscriptionRepository->update($subscription, [
+            $updated = $this->subscriptionRepository->update($subscription, [
                 'status' => SubscriptionStatus::PAST_DUE,
                 'grace_period_ends_at' => $now->copy()->addDays(7),
                 'grace_used' => true,
             ]);
+            $this->logTransition('trial_expired_to_past_due', $updated);
             return;
         }
 
         if ($subscription->status === SubscriptionStatus::ACTIVE && $subscription->cancel_at_period_end && $subscription->next_billing_date?->isPast()) {
-            $this->subscriptionRepository->update($subscription, [
+            $updated = $this->subscriptionRepository->update($subscription, [
                 'status' => SubscriptionStatus::CANCELLED,
                 'cancelled_at' => $now,
                 'ends_at' => $now,
             ]);
+            $this->logTransition('cancel_period_end_applied', $updated);
             return;
         }
 
         if ($subscription->status === SubscriptionStatus::ACTIVE && !$subscription->cancel_at_period_end && $subscription->next_billing_date?->isPast()) {
             if ($subscription->grace_used) {
-                $this->subscriptionRepository->update($subscription, [
+                $updated = $this->subscriptionRepository->update($subscription, [
                     'status' => SubscriptionStatus::SUSPENDED,
                     'suspended_at' => $now,
                 ]);
+                $this->logTransition('past_renewal_to_suspended', $updated);
             } else {
                 try {
                     $this->markPastDue($subscription);

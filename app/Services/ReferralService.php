@@ -196,6 +196,26 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
+            // Audit log — distribution computed for referrer (reward/commission) and referee (discount base)
+            // that passed through to BillingCredit / payout. Goal: verify commission distribution accuracy.
+            Log::info('[PaymentAudit] referral reward/commission computed', [
+                'referral_id' => $referral->id,
+                'referral_code' => $referralCode->code,
+                'referred_business_id' => $referral->referred_business_id,
+                'owner_type' => $referralCode->owner_type->value ?? $referralCode->owner_type,
+                'owner_user_id' => $referralCode->owner_user_id,
+                'owner_business_id' => $referralCode->owner_business_id,
+                'monthly_price_usd' => $monthlyPriceUsd,
+                'onboarding_fee_usd' => $onboardingFeeUsd,
+                'is_onboarding' => $isOnboarding,
+                'reward_base_usd' => $rewardBase,
+                'discount_applied_usd' => (float) ($referral->discount_applied ?? 0),
+                'paid_base_usd' => $paidBase,
+                'reward_amount_usd' => $updateData['reward_amount'] ?? 0,
+                'commission_earned_usd' => $updateData['commission_earned'] ?? 0,
+                'status' => ReferralStatus::ACTIVE->value,
+            ]);
+
             // Create discount BillingCredit for remaining months after the first payment.
             // The first month's discount was consumed directly in GatewayService.
             $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));

@@ -147,6 +147,26 @@ class GatewayService
             }
         }
 
+        // Audit log — full amount breakdown of the resolved payment (before any currency conversion).
+        // Goal: verify the exact figure we hand to the gateway and the discounts/credits that shaped it.
+        Log::info('[PaymentAudit] initiate-payment resolved', [
+            'payment_type' => $paymentType,
+            'subscription_id' => $subscription->id,
+            'business_id' => $subscription->business_id,
+            'business_currency' => strtoupper($business?->currency ?? 'UGX'),
+            'plan_id' => $plan?->id,
+            'plan_name' => $plan?->name,
+            'plan_onboarding_fee_usd' => (float) ($plan?->onboarding_fee_usd ?? 0),
+            'plan_price_monthly_usd' => (float) ($plan?->price_monthly_usd ?? 0),
+            'plan_price_yearly_usd' => (float) ($plan?->price_yearly_usd ?? 0),
+            'billing_cycle' => $effectiveCycle,
+            'amount_usd_after_discounts' => (float) $data['amount'],
+            'referral_discount_usd' => $referralDiscount,
+            'credit_used_usd' => (float) ($creditResult['credit_used'] ?? 0),
+            'payment_currency' => $paymentCurrency,
+            'exchange_rate_usd_to_currency' => $exchangeRate,
+        ]);
+
         // If credits fully cover the payment, bypass the gateway entirely
         if ($originalAmount > 0 && $data['amount'] <= 0) {
             try {

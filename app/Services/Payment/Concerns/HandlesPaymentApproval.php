@@ -238,6 +238,18 @@ trait HandlesPaymentApproval
 
             $this->sendReceiptIfDue($payment);
 
+            Log::info('[PaymentAudit] payment confirmed', [
+                'payment_id' => $payment->id,
+                'gateway' => $payment->gateway_name,
+                'subscription_id' => $payment->subscription_id,
+                'business_id' => $payment->business_id,
+                'amount' => (float) $payment->amount,
+                'currency' => $payment->currency,
+                'payment_type' => $payment->payment_type,
+                'gateway_confirmed_amount' => isset($verification['amount']) ? (float) $verification['amount'] : null,
+                'gateway_confirmed_currency' => $verification['currency'] ?? null,
+            ]);
+
             Log::info('[GatewayService] Payment auto-approved', [
                 'payment_id' => $payment->id,
                 'gateway' => $payment->gateway_name,

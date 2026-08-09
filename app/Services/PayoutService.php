@@ -159,6 +159,20 @@ class PayoutService
                 }
             }
 
+            // Audit log — cash paid out to the referrer / sales rep for the distributed commission.
+            // Goal: verify payout totals reconcile with earned reward/commission.
+            \Illuminate\Support\Facades\Log::info('[PaymentAudit] payout recorded', [
+                'payout_id' => $payout->id,
+                'payable_type' => $payableType,
+                'payable_id' => $payableId,
+                'amount_usd' => $amount,
+                'currency' => $payout->currency,
+                'status' => $payout->status,
+                'payment_method' => $paymentMethod,
+                'scheduled_at' => $scheduledAt,
+                'paid_at' => $payout->paid_at?->toDateTimeString(),
+            ]);
+
             if ($isImmediate && $payable->next_payout_at && $payable->payout_frequency) {
                 $payable->next_payout_at = $this->advanceDate($payable->next_payout_at, $payable->payout_frequency);
                 $payable->save();
