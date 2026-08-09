@@ -57,7 +57,7 @@ class SalesRepController extends Controller
             $this->salesRepService->delete($id);
             return response()->json(['message' => 'Deleted'], 200);
         } catch (RuntimeException $e) {
-            abort(404, $e->getMessage());
+            abort(422, $e->getMessage());
         }
     }
 

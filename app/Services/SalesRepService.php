@@ -106,6 +106,15 @@ class SalesRepService implements SalesRepServiceInterface
                 throw new \RuntimeException('SalesRep not found');
             }
 
+            $referrals = $salesRep->referralCode?->referrals ?? collect();
+            $totalCommission = (float) $referrals->sum('commission_earned');
+            $totalPaid = (float) $salesRep->payouts()->where('status', 'paid')->sum('amount');
+            $pending = round(max(0, $totalCommission - $totalPaid), 2);
+
+            if ($pending > 0) {
+                throw new \RuntimeException('Cannot remove sales rep with unpaid commission.');
+            }
+
             if ($salesRep->referralCode) {
                 $this->referralCodeService->update($salesRep->referralCode->id, [
                     'is_active' => false,
