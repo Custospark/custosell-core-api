@@ -129,6 +129,75 @@ The top-up path never re-triggers commission because the referral is already `AC
 
 ---
 
+## Atomicity — commission/reward is ONLY recorded with a successful payment
+
+**Verified 2026-08-10.** The referrer's reward/commission can never be created, updated, or paid without a legally-completed payment, because the entire settlement runs inside one DB transaction:
+
+```
+PesaPal webhook / credit-cover path
+  └─ GatewayService::autoApprove() ── DB::transaction(...)          (HandlesPaymentApproval.php:261)
+       ├─ mark payment status = completed, approved_at = now
+       ├─ handlePaymentType($payment)                                (:275)
+       │    └─ onboarding ─> activateAfterOnboarding($sub) ── DB::transaction(...)
+       │         └─ referralService->activateForSubscription($subId)   (SubscriptionStateMachineService.php:263)
+       │              └─ ReferralService::markActive($referralId) ── DB::transaction(...)
+       │                   ├─ compute commission_earned / reward_amount from paid_base
+       │                   └─ create referee discount BillingCredit (remaining months)
+       └─ sendReceiptIfDue + audit logs                              (all inside the SAME outer tx)
+```
+
+Laravel nests the inner `DB::transaction()` calls as **savepoints**, so a failure anywhere in the chain rolls back *everything* — the payment completion, the subscription activation, referral `ACTIVE`, the referrer's commission/reward, and the referee's discount credit. There is no code path that pays/rewards a referrer for an unconfirmed payment:
+- Webhook confirm → `autoApprove` (transactional).
+- Gateway-bypass credit cover → `GatewayService` wraps in `DB::transaction` (lines 182, 261).
+- No payment → referral stays `PENDING` → `markActive` never runs → `commission_earned` stays 0.
+
+---
+
+## Recommendation — keep ONE-TIME commission (do NOT go recurring)
+
+**Decision (2026-08-10, Oscar + team):** keep commission as a one-time amount per signup, recorded at activation. Do not build recurring commission on renewals or top-ups.
+
+### Why (lifetime math, Professional $54/mo, customer stays 12 months)
+
+| Model | Onboarding | 11 renewals | 12-month referrer | 12-month company |
+|---|---|---|---|---|
+| **One-time (current)** | Rep $22.80 / Co $53.20 | Rep $0 / Co $594 | **$22.80** | **$647.20** |
+| Recurring 30%/mo (hypothetical) | Rep $22.80 / Co $53.20 | Rep ~$178 / Co ~$416 | **~$201** | **~$469** |
+
+1. **Generated cash stays with the company.** After month 1, renewals ($54 or $540/yr) are pure revenue. One-time commission = bounded, predictable CAC. Recurring commission taxes every renewal at 30% — uneconomic on a $54 product.
+2. **Preserves the approved guard.** The safe-zone ordering (Company > Referrer > Referee) was ratified for the *deal*; recurring commission would let the referrer drain a large share of lifetime value while the discount keeps compounding.
+3. **Zero architecture cost.** `commission_earned` is stored once; `pending = earned − payouts` stays correct. Recurring would need a vests ledger + scheduled accrual + clawback accounting (see `2026-07-31-referral-reward-economics.md` Option 3).
+4. **Referral is an acquisition channel.** You pay for acquiring the customer, not for every future invoice.
+
+### The single cheap improvement to revisit later (not built now)
+**Payout timing, not earning.** A rep who brings a churn-after-1-month signup still collects all $22.80 at payout. If churn-mining ever shows up in the data, the fix is: same $22.80 total, but released in installments gated on the referee staying active (partial payouts already supported by the payout system). No new ledger. Not implemented today — tracked as a revisit trigger.
+
+---
+
+## Customer Acquisition Cost (CAC) workbook — $95 Professional onboarding
+
+CAC = everything the company gives up to land one paying signup: the referee discount + the referrer's reward/commission (cash or credit). The "cost" is absent where a party earns nothing.
+
+| Code | Referee discount | Referrer payout | **CAC** | Company net (month 1) | CAC as % of $95 |
+|---|---|---|---|---|---|
+| Sales rep (20/30) | $19.00 | $22.80 (cash) | **$41.80** | $53.20 | 44% |
+| Normal (10/15) | $9.50 | $12.83 (credit) | **$22.33** | $72.68 | 23.5% |
+| Campaign (30/0) | $28.50 | $0 | **$28.50** | $66.50 | 30% |
+
+### CAC amortized over the customer's lifetime (Professional $54/mo, 12 months)
+
+Recurring revenue is unaffected by referral cost (renewals carry no referral payout at duration 1), so CAC is a **front-loaded one-time charge**:
+
+| Code | CAC (front-loaded) | Renewal revenue 12 mo | Total revenue | CAC / lifetime revenue |
+|---|---|---|---|---|
+| Sales rep (20/30) | $41.80 | $594 | $647.20 | **6.5%** |
+| Normal (10/15) | $22.33 | $594 | $666.33 | **3.4%** |
+| Campaign (30/0) | $28.50 | $594 | $660.50 | **4.3%** |
+
+Takeaway: a sales-rep acquisition costs ~44% of the onboarding fee on day one, but falls to ~6.5% of 12-month revenue — acceptable for an acquisition channel, and far below a recurring model whose referrer share would approach 30%+ of lifetime revenue. Budgeting guard: if the target cohort LTV drops toward ~$45–50, the 44% day-one CAC becomes dangerous and discount/commission should be tightened.
+
+---
+
 ## Files
 
 | Area | File | Role |
@@ -144,7 +213,8 @@ The top-up path never re-triggers commission because the referral is already `AC
 ## Revisit Triggers
 
 | Trigger | Why |
-|---|---|
-| Product wants RECURRING rep commission (e.g. 30% of every monthly charge) | Not modeled; requires a vested-commission ledger + scheduled per-renewal accrual (see `2026-07-31-referral-reward-economics.md` Option 3). Current model is one-time-per-signup by design, which caps liability |
+|---|---|---|
+| Product wants RECURRING rep commission (e.g. 30% of every monthly charge) | Not modeled; requires a vested-commission ledger + scheduled per-renewal accrual (see `2026-07-31-referral-reward-economics.md` Option 3). Current model is one-time-per-signup by design, which caps liability. Recommendation (2026-08-10): keep one-time |
+| Churn-mining appears in the data | Adopt retention-gated installments (same $22.80, released over active months) instead of changing earnings; no new ledger needed — partial payouts already exist |
 | A sales-rep code should override the safe zone | Guard is intentional; overriding requires an owner/sales-manager override path with explicit economics review |
 | Marketing asks to advertise "30% of everything the business pays" | Not true under current model (one-time). Would require a campaign flag + vested ledger |
