@@ -20,6 +20,7 @@ use App\Services\CreditService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReferralService implements ReferralServiceInterface
 {
