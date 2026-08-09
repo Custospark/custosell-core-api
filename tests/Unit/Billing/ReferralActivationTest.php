@@ -165,6 +165,38 @@ class ReferralActivationTest extends TestCase
         $this->assertEquals(8.00, (float) $credit->amount, '2 remaining months × 20% of $20 recurring = $8');
     }
 
+    // ─── Scenario 2b: markActive — CAMPAIGN codes earn no reward ───
+
+    public function test_mark_active_earns_no_reward_for_campaign_code(): void
+    {
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::CAMPAIGN,
+            'owner_user_id' => User::factory()->create(['is_active' => true])->id,
+            'code' => 'CAMPAIGNNO',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'discount_duration_months' => 1,
+            'reward_type' => RewardType::PERCENTAGE,
+            'reward_value' => 25,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $activated = $this->referralService->markActive($referral->id);
+
+        $this->assertEquals(0, (float) $activated->reward_amount, 'campaign codes should not reward the company');
+        $this->assertSame(
+            0,
+            BillingCredit::where('referral_id', $referral->id)->count(),
+            'no reward credit should exist for a campaign code'
+        );
+    }
+
     // ─── Scenario 3: markActive (payment confirmed) — SALES_REP codes ───
 
     public function test_mark_active_calculates_commission_for_sales_rep_percentage(): void

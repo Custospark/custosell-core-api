@@ -250,7 +250,7 @@ class ReferralService implements ReferralServiceInterface
                     };
                     $updateData['commission_earned'] = $commissionEarned;
                 }
-            } else {
+            } elseif ($referralCode->owner_type === ReferralCodeOwnerType::BUSINESS) {
                 $rewardAmount = match ($referralCode->reward_type) {
                     RewardType::PERCENTAGE => round($paidBase * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
                     RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
@@ -263,6 +263,9 @@ class ReferralService implements ReferralServiceInterface
                     $this->creditService->createFromReferral($referral, $rewardAmount);
                 }
             }
+            // CAMPAIGN codes (company-owned) intentionally earn no reward:
+            // the company shouldn't credit itself credits/free months for its own
+            // promotions. Referee discount still applies via markActive's credit below.
 
             // Audit log — distribution computed for referrer (reward/commission) and referee (discount base)
             // that passed through to BillingCredit / payout. Goal: verify commission distribution accuracy.

@@ -77,7 +77,7 @@ reward       = PERCENTAGE  ? round(paid_base * reward_value/100, 2)
 ```
 - Default program: `reward_value = 15`, i.e. **15% of what the referee paid**.
 - Sales-rep codes: commission follows the same base logic (`commission_rate` % or flat of `paid_base`).
-- Reward > 0 → `CreditService::createFromReferral()` creates a **BillingCredit** for the referrer (owner resolved: user's business if the referrer has a business, else the user).
+- **CAMPAIGN codes (company-owned, created by platform admins): earn NO reward.** The company shouldn't credit itself free months for its own promotions. `reward_amount` is forced to 0 and no `BillingCredit` is created; referee discount still applies. (Fix 2026-08-09 — the DB default `reward_type = 'free_month'` plus the admin form not sending `reward_type` was silently granting the company a full free-month credit per signup.)
 
 ### When
 At settlement (`markActive()`, after payment confirms). Before that the referral sits `pending`. No payment → no reward — zero prepaid liability.
