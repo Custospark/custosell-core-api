@@ -32,6 +32,7 @@ class SalesRepRequest extends BaseFormRequest
         return [
             'email' => ['required', 'email'],
             'name' => ['sometimes', 'string', 'max:255'],
+            'password' => ['sometimes', 'string', 'min:6'],
             'commission_rate' => ['required', 'numeric', 'min:0'],
             'commission_type' => ['sometimes', 'string', 'in:percentage,flat'],
             'is_active' => ['sometimes', 'boolean'],

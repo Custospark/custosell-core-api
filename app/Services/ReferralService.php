@@ -342,18 +342,28 @@ class ReferralService implements ReferralServiceInterface
 
     public function getEarningsByUser(int $userId): array
     {
-        // Check if this user is a sales rep first
+        // Sales rep code takes precedence while the rep is active. If the rep has
+        // been terminated (is_active=false / code deactivated), the user falls
+        // back to their personal referral code. Resolution never creates a code —
+        // it returns whatever exists.
         $salesRep = SalesRep::where('user_id', $userId)->with('referralCode')->first();
-        $userCode = $salesRep?->referralCode
-            ?? ReferralCode::where('owner_user_id', $userId)->first()
-            ?? ReferralCode::whereHas('ownerBusiness', function ($q) use ($userId) {
-                $q->where('owner_id', $userId);
-            })->first();
+        $isSalesRep = $salesRep !== null && (bool) $salesRep->is_active;
+
+        $userCode = ($isSalesRep && $salesRep->referralCode?->isValid())
+            ? $salesRep->referralCode
+            : null;
+        $userCode ??= ReferralCode::where('owner_user_id', $userId)
+            ->where('owner_type', ReferralCodeOwnerType::BUSINESS)
+            ->first();
+        $userCode ??= ReferralCode::where('owner_user_id', $userId)->first();
+        $userCode ??= ReferralCode::whereHas('ownerBusiness', function ($q) use ($userId) {
+            $q->where('owner_id', $userId);
+        })->first();
 
         if (!$userCode) {
             return [
                 'referral_code' => null,
-                'is_sales_rep' => false,
+                'is_sales_rep' => $isSalesRep,
                 'total_earned' => 0,
                 'pending_rewards' => 0,
                 'rewarded_amount' => 0,
@@ -378,7 +388,7 @@ class ReferralService implements ReferralServiceInterface
 
         return [
             'referral_code' => $userCode->code,
-            'is_sales_rep' => $salesRep !== null,
+            'is_sales_rep' => $isSalesRep,
             'commission_rate' => $salesRep?->commission_rate,
             'commission_type' => $salesRep?->commission_type,
             'total_earned' => (float) $referrals->sum('reward_amount'),

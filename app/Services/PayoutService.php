@@ -135,7 +135,7 @@ class PayoutService
             throw new \RuntimeException("Payout amount ({$amount}) exceeds pending balance ({$pending}).");
         }
 
-        return DB::transaction(function () use ($payable, $amount, $paymentMethod, $notes, $attachments, $scheduledAt, $paidBy) {
+        return DB::transaction(function () use ($payable, $payableType, $payableId, $amount, $paymentMethod, $notes, $attachments, $scheduledAt, $paidBy) {
             $now = now();
             $isImmediate = empty($scheduledAt);
 

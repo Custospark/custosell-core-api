@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Repositories\Contracts\SalesRepRepositoryInterface;
 use App\Services\Contracts\ReferralCodeServiceInterface;
 use App\Services\Contracts\SalesRepServiceInterface;
+use App\Services\Contracts\UserServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ class SalesRepService implements SalesRepServiceInterface
     public function __construct(
         protected SalesRepRepositoryInterface $salesRepRepository,
         protected ReferralCodeServiceInterface $referralCodeService,
+        protected UserServiceInterface $userService,
     ) {}
 
     public function getAll(): Collection
@@ -53,11 +55,16 @@ class SalesRepService implements SalesRepServiceInterface
             $user = User::where('email', $data['email'])->first();
 
             if (!$user) {
-                $user = User::create([
+                // A brand-new rep email needs a personal account (same path the
+                // register page uses) + a password so they can sign in with the
+                // referral dropdown/dashboard. If no password was provided (import),
+                // fall back to a random one they can reset.
+                $user = $this->userService->register([
                     'name' => $data['name'] ?? explode('@', $data['email'])[0],
                     'email' => $data['email'],
-                    'password' => bcrypt(Str::random(32)),
-                    'is_active' => true,
+                    'password' => $data['password'] ?? Str::random(16),
+                    'phone' => $data['phone'] ?? null,
+                    'account_type' => 'personal',
                 ]);
             }
 
