@@ -131,6 +131,72 @@ class ReferralActivationTest extends TestCase
         $this->assertEquals(0.00, (float) $activated->reward_amount, 'free_month reward = 0 when the referee pays nothing');
     }
 
+    public function test_mark_active_free_month_reward_capped_at_recurring_monthly_not_full_paid_base(): void
+    {
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->business->id,
+            'code' => 'FREEMTHCAP',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'reward_type' => RewardType::FREE_MONTH,
+            'reward_value' => 0,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        // Referee pays $36 ($40 onboarding − 10%). A free-month reward must pay
+        // ONE month of the plan ($20 monthly), never the full $36 collected.
+        $activated = $this->referralService->markActive($referral->id);
+
+        $this->assertEquals(
+            20.00,
+            (float) $activated->reward_amount,
+            'free_month reward = min(recurring monthly $20, paid base $36) = $20, never the full paid base'
+        );
+    }
+
+    public function test_mark_active_free_month_reward_never_exceeds_paid_base(): void
+    {
+        // A yearly plan spreads its price across 12 months; the monthly
+        // equivalent must still never exceed what the referee actually paid.
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->business->id,
+            'code' => 'FREEMTHYEAR',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'reward_type' => RewardType::FREE_MONTH,
+            'reward_value' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->subscription->update([
+            'billing_cycle' => 'yearly',
+            'price_monthly_usd' => 20,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $paidBase = 40.0 - 4.0;
+        $activated = $this->referralService->markActive($referral->id);
+
+        $this->assertLessThanOrEqual(
+            $paidBase,
+            (float) $activated->reward_amount,
+            'reward must never exceed the amount the referee actually paid'
+        );
+    }
+
     public function test_mark_active_creates_remaining_months_credit_off_recurring_charge(): void
     {
         $referralCode = ReferralCode::create([

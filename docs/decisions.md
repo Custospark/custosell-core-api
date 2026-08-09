@@ -246,6 +246,7 @@
 
 **Consequences:**
 - `ReferralService::markActive()` now computes `$paidBase` and applies it to PERCENTAGE/FREE_MONTH rewards and PERCENTAGE commissions
+- **ADR-015 (2026-08-10):** normal referral codes are generated with `reward_type = percentage / 15%` — the DB default was `free_month` and a code created without an explicit reward silently paid the referrer the **full paid amount** as credit. Default flipped to `percentage`; a `FREE_MONTH` reward is now `min(recurring_monthly, paid_base)` (one month of the referee's plan, capped at what was actually paid), never the full paid base.
 - Defaults updated in `UserService`, `BusinessService`, `SimulateCreditDeduction`
 - Referrer incentive slightly reduced (20% → ~13.5% of base) but still exceeds the referee's 10% saving
 

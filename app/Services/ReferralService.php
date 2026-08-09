@@ -251,10 +251,19 @@ class ReferralService implements ReferralServiceInterface
                     $updateData['commission_earned'] = $commissionEarned;
                 }
             } elseif ($referralCode->owner_type === ReferralCodeOwnerType::BUSINESS) {
+                // FREE_MONTH as a *reward* pays the referrer one month of the
+                // referee's RECURRING subscription value (monthly, or monthly
+                // equivalent on a yearly cycle) — never the full paid amount.
+                // Without this cap, a free_month code awarded 100% of what the
+                // referee paid (e.g. $180 of a $200 onboarding fee) as credit.
+                $cycle = (string) ($subscription?->billing_cycle ?? 'monthly');
+                $yearlyUsd = (float) ($plan?->price_yearly_usd ?? 0) ?: $monthlyPriceUsd * 12;
+                $recurringMonthly = $cycle === 'yearly' ? round($yearlyUsd / 12, 2) : $monthlyPriceUsd;
+
                 $rewardAmount = match ($referralCode->reward_type) {
                     RewardType::PERCENTAGE => round($paidBase * ((float) ($referralCode->reward_value ?? 0) / 100), 2),
                     RewardType::FLAT_AMOUNT => (float) ($referralCode->reward_value ?? 0),
-                    RewardType::FREE_MONTH => $paidBase,
+                    RewardType::FREE_MONTH => round(min($recurringMonthly, $paidBase), 2),
                     default => 0,
                 };
                 $updateData['reward_amount'] = $rewardAmount;

@@ -73,9 +73,10 @@ This base is deliberate: the referrer earns **in proportion to real cash flow**.
 paid_base    = paidPayment.metadata.original_amount  (USD, post-discount)
 reward       = PERCENTAGE  ? round(paid_base * reward_value/100, 2)
           | FLAT_AMOUNT ? reward_value
-          | FREE_MONTH  ? paid_base
+          | FREE_MONTH  ? min(recurring_monthly, paid_base)   // ONE month of the referee's plan, capped at what they actually paid
 ```
-- Default program: `reward_value = 15`, i.e. **15% of what the referee paid**.
+- Default program: `reward_value = 15`, i.e. **15% of what the referee paid**. The DB default `reward_type` is `percentage` (was `free_month` before 2026-08-10) so normal codes can never inherit a full-payout reward.
+- A `FREE_MONTH` **reward** pays the referrer exactly ONE month of the referee's **recurring** subscription value (monthly price, or the monthly equivalent on a yearly cycle), **capped at the amount actually paid** — never the full paid amount. Before the 2026-08-10 fix, `FREE_MONTH => paid_base` paid the referrer 100% of what the referee paid (e.g. $180 credit on a $180 onboarding payment) — the money-leak this ADR supersedes.
 - Sales-rep codes: commission follows the same base logic (`commission_rate` % or flat of `paid_base`).
 - **CAMPAIGN codes (company-owned, created by platform admins): earn NO reward.** The company shouldn't credit itself free months for its own promotions. `reward_amount` is forced to 0 and no `BillingCredit` is created; referee discount still applies. (Fix 2026-08-09 — the DB default `reward_type = 'free_month'` plus the admin form not sending `reward_type` was silently granting the company a full free-month credit per signup.)
 
