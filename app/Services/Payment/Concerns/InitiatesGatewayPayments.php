@@ -68,7 +68,7 @@ trait InitiatesGatewayPayments
                 'business_id' => $subscription->business_id,
                 'payment_type' => $paymentType,
                 'billing_cycle' => $effectiveCycle,
-                'plan_id' => $subscription->plan_id,
+                'plan_id' => $plan?->id,
                 'plan_name' => $plan?->name,
                 'original_amount_usd' => $originalAmount,
             ]);
