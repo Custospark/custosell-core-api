@@ -1,5 +1,12 @@
 # Custosell — Backend Test Results
 
+## Migration Guard — 2026-08-10
+
+Added `2026_08_10_010000_ensure_pipeline_collaboration_dismissals.php`: idempotent counterpart to `2026_07_08_160000_pipeline_collaboration_dismissals.php`. Guards `is_dismissed` / `dismissed_at` on `pipeline_board_announcement_reads` and the `pipeline_poll_dismissals` table behind `hasColumn` / `hasTable` checks, so rerun environments where the schema already exists but the migration was never recorded (e.g. interrupted applies) no longer fail with "Duplicate column". Verified on a consistent DB: migration no-ops (~22ms), batches cleanly, `migrate` reports "Nothing to migrate".
+
+---
+
+N/A — full-suite records below are historical.  
 **Date:** 2026-06-02  
 **Framework:** PHPUnit 11.5.55  
 **Database:** SQLite :memory:  
