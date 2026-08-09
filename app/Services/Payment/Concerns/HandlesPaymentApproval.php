@@ -158,7 +158,13 @@ trait HandlesPaymentApproval
     {
         $metadata = $payment->metadata ?? [];
         $toPlanId = $metadata['to_plan_id'] ?? null;
-        $billingCycle = $metadata['billing_cycle'] ?? null;
+        // The payment metadata's billing_cycle is defaulted by GatewayService to the
+        // subscription's *current* cycle at initiation. The cycle the user actually
+        // paid for on the upgrade is recorded on the subscription during upgrade().
+        $billingCycle = $subscription->metadata['pending_upgrade_billing_cycle']
+            ?? $metadata['billing_cycle']
+            ?? $subscription->billing_cycle
+            ?? 'monthly';
 
         if (!$toPlanId) {
             Log::warning('[GatewayService] Upgrade payment missing to_plan_id metadata', [
