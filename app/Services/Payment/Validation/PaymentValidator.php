@@ -29,8 +29,12 @@ class PaymentValidator
 
         $plan = $subscription->plan;
 
-        if ($paymentType === 'onboarding') {
-            $metaPlanId = $data['metadata']['plan_id'] ?? null;
+        // The charge is for the plan in metadata whenever the user is moving onto a
+        // specific plan (onboarding: plan_id; subscription reactivate/subscribe:
+        // to_plan_id). Otherwise a reactivation priced against the old plan would
+        // be rejected, or worse, a mismatched payment validated against the wrong plan.
+        if (in_array($paymentType, ['onboarding', 'subscription'], true)) {
+            $metaPlanId = $data['metadata']['to_plan_id'] ?? $data['metadata']['plan_id'] ?? null;
             if ($metaPlanId && (int) $metaPlanId !== $subscription->plan_id) {
                 $target = Plan::find((int) $metaPlanId);
                 if ($target) {

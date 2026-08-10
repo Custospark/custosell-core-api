@@ -19,15 +19,13 @@ trait HandlesPaymentApproval
 
         $subscription = $payment->subscription;
 
-        // For onboarding payments, apply any pending plan upgrade
-        // stored in metadata before activating the subscription.
-        if ($paymentType === 'onboarding') {
-            $metadata = $payment->metadata ?? [];
-            $planId = $metadata['plan_id'] ?? null;
-            if ($planId && (int) $planId !== $subscription->plan_id) {
-                $this->subscriptionService->changePlan($subscription, (int) $planId);
-                $subscription = $subscription->fresh();
-            }
+        // Reconcile the subscription onto the plan the user actually paid for.
+        // Onboarding metadata carries plan_id; subscription payments (reactivate,
+        // subscribe, resubscribe) carry to_plan_id. Without this a reactivated
+        // subscription would keep the OLD plan it held before suspension.
+        // upgrade_proration already switches plans inside its own transaction.
+        if ($paymentType === 'onboarding' || $paymentType === 'subscription') {
+            $subscription = $this->applyPaidPlan($subscription, $payment);
         }
 
         match ($paymentType) {
@@ -40,7 +38,26 @@ trait HandlesPaymentApproval
             default => null,
         };
 
-        $this->logSubscriptionAuditState($payment, $paymentType);
+        $this->logSubscriptionAuditState($subscription, $payment, $paymentType);
+    }
+
+    /**
+     * Move the subscription onto the plan encoded in the payment metadata whenever
+     * the user paid for a plan different from the one the subscription currently
+     * holds. Returns the fresh instance once the plan changed.
+     */
+    private function applyPaidPlan(Subscription $subscription, BillingPayment $payment): Subscription
+    {
+        $metadata = $payment->metadata ?? [];
+        $targetPlanId = $metadata['to_plan_id'] ?? $metadata['plan_id'] ?? null;
+        if ($targetPlanId && (int) $targetPlanId !== (int) $subscription->plan_id) {
+            $billingCycle = in_array($metadata['billing_cycle'] ?? null, ['monthly', 'yearly'], true)
+                ? $metadata['billing_cycle']
+                : null;
+            $this->subscriptionService->changePlan($subscription, (int) $targetPlanId, $billingCycle);
+            return $subscription->fresh();
+        }
+        return $subscription;
     }
 
     /**
@@ -48,9 +65,8 @@ trait HandlesPaymentApproval
      * payment type is applied, so the charged amount and the coverage granted can
      * be verified back-to-back (money done, coverage done).
      */
-    private function logSubscriptionAuditState(BillingPayment $payment, string $paymentType): void
+    private function logSubscriptionAuditState(Subscription $subscription, BillingPayment $payment, string $paymentType): void
     {
-        $subscription = $payment->subscription;
         if (!$subscription) {
             return;
         }

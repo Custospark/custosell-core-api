@@ -447,17 +447,23 @@ class GatewayService
         });
     }
 
+    /**
+     * The plan the charge is actually for. Metadata drives this whenever the user
+     * is paying to move onto a specific plan (onboarding: plan_id; reactivate,
+     * subscribe and resubscribe: to_plan_id). Falling back to the current plan
+     * means a reactivation/upgrade payment would otherwise be priced at the OLD
+     * plan the subscription still holds.
+     */
     private function resolveEffectivePlan(Subscription $subscription, array $data): ?Plan
     {
         $plan = $subscription->plan;
 
-        if (($data['payment_type'] ?? null) === 'onboarding') {
-            $metaPlanId = $data['metadata']['plan_id'] ?? null;
-            if ($metaPlanId && (int) $metaPlanId !== $subscription->plan_id) {
-                $target = Plan::find((int) $metaPlanId);
-                if ($target) {
-                    return $target;
-                }
+        $metadata = $data['metadata'] ?? [];
+        $metaPlanId = $metadata['to_plan_id'] ?? $metadata['plan_id'] ?? null;
+        if ($metaPlanId && (int) $metaPlanId !== $subscription->plan_id) {
+            $target = Plan::find((int) $metaPlanId);
+            if ($target) {
+                return $target;
             }
         }
 
