@@ -20,6 +20,7 @@ class StockMovementRequest extends BaseFormRequest
             'stock_after' => ['required', 'integer', 'min:0'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'to_location_id' => ['nullable', 'integer', 'exists:locations,id'],
         ];
     }
