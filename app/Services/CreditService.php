@@ -28,8 +28,21 @@ class CreditService
         if ($referralCode->owner_user_id) {
             $user = User::find($referralCode->owner_user_id);
             if ($user && $user->business_id) {
-                $ownerType = 'business';
-                $ownerId = $user->business_id;
+                // Business reward credit is an owner perk. A staff member who
+                // works in a business they don't own earns a PERSONAL commission
+                // credit instead — their referrals never fund the business
+                // promo-credit pool. The referee still gets the discount.
+                $ownsBusiness = Business::query()
+                    ->whereKey($user->business_id)
+                    ->where('owner_id', $user->id)
+                    ->exists();
+                if ($ownsBusiness) {
+                    $ownerType = 'business';
+                    $ownerId = $user->business_id;
+                } else {
+                    $ownerType = 'user';
+                    $ownerId = $user->id;
+                }
             }
         } elseif ($referralCode->owner_business_id) {
             $ownerType = 'business';

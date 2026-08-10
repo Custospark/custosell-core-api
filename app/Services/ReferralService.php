@@ -10,6 +10,7 @@ use App\Enums\Billing\ReferralStatus;
 use App\Enums\Billing\RewardType;
 use App\Models\BillingCredit;
 use App\Models\BillingPayment;
+use App\Models\Business;
 use App\Models\Plan;
 use App\Models\Referral;
 use App\Models\ReferralCode;
@@ -258,11 +259,10 @@ class ReferralService implements ReferralServiceInterface
                     $updateData['commission_earned'] = min($commissionEarned, $maxReferrerShare);
                 }
             } elseif ($referralCode->owner_type === ReferralCodeOwnerType::BUSINESS) {
-                // FREE_MONTH as a *reward* pays the referrer one month of the
-                // referee's RECURRING subscription value (monthly, or monthly
-                // equivalent on a yearly cycle) — never the full paid amount.
-                // Without this cap, a free_month code awarded 100% of what the
-                // referee paid (e.g. $180 of a $200 onboarding fee) as credit.
+                // Staff who work in a business they don't own keep their earned
+                // reward as a personal commission credit (see CreditService::
+                // createFromReferral) — their referrals never fund the business
+                // promo-credit pool. The referee still gets the discount.
                 $cycle = (string) ($subscription?->billing_cycle ?? 'monthly');
                 $yearlyUsd = (float) ($plan?->price_yearly_usd ?? 0) ?: $monthlyPriceUsd * 12;
                 $recurringMonthly = $cycle === 'yearly' ? round($yearlyUsd / 12, 2) : $monthlyPriceUsd;
