@@ -223,4 +223,59 @@ class InventoryOverviewTest extends TestCase
             ->assertJsonPath('summary.value_cost', 2 * 1000)
             ->assertJsonPath('summary.stock_quantity', 2);
     }
+
+    public function test_overview_trend_scopes_to_a_branch(): void
+    {
+        $product = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'name' => 'Trend Item',
+            'unit_price' => 3000,
+            'cost_price' => 1000,
+            'stock_quantity' => 20,
+            'is_active' => true,
+        ]);
+
+        $branchB = Location::create([
+            'business_id' => $this->business->id,
+            'name' => 'Branch B',
+            'code' => 'B',
+            'is_active' => true,
+        ]);
+
+        foreach ([$this->main, $branchB] as $i => $location) {
+            $qty = $i === 0 ? 20 : 8;
+            LocationProduct::create([
+                'business_id' => $this->business->id,
+                'location_id' => $location->id,
+                'product_id' => $product->id,
+                'stock_quantity' => $qty,
+                'low_stock_threshold' => 0,
+            ]);
+            StockMovement::create([
+                'business_id' => $this->business->id,
+                'location_id' => $location->id,
+                'product_id' => $product->id,
+                'type' => 'adjustment',
+                'quantity_change' => $qty,
+                'stock_before' => 0,
+                'stock_after' => $qty,
+                'notes' => 'seed',
+            ]);
+        }
+
+        $all = $this->withHeader('Authorization', "Bearer $this->token")
+            ->getJson('/api/v1/inventory/overview')
+            ->json('trend');
+        $scoped = $this->withHeader('Authorization', "Bearer $this->token")
+            ->getJson("/api/v1/inventory/overview?location_id={$branchB->id}")
+            ->json('trend');
+
+        // 20 (main) + 8 (branch B) across every bucket unscoped.
+        $this->assertSame(28, (int) collect($all)->last()['stock_quantity']);
+        $this->assertSame(28000.0, (float) collect($all)->last()['value_cost']);
+
+        // Scoped to branch B only: 8 units = 8 × 1000 cost.
+        $this->assertSame(8, (int) collect($scoped)->last()['stock_quantity']);
+        $this->assertSame(8000.0, (float) collect($scoped)->last()['value_cost']);
+    }
 }

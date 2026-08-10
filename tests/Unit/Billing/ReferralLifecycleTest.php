@@ -8,6 +8,7 @@ use App\Enums\Billing\ReferralStatus;
 use App\Enums\Billing\RewardType;
 use App\Models\Business;
 use App\Models\Plan;
+use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\Subscription;
 use App\Models\User;
@@ -325,6 +326,49 @@ class ReferralLifecycleTest extends TestCase
         $this->assertEquals(5.00, $earnings['total_earned']);
         $this->assertEquals(0, $earnings['pending_rewards'], 'rewarded referral not pending');
         $this->assertEquals(5.00, $earnings['rewarded_amount'], 'rewarded amount counted');
+    }
+
+    public function test_deleting_referred_business_does_not_reset_referrer_earnings(): void
+    {
+        $referrer = User::factory()->create(['is_active' => true]);
+
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_user_id' => $referrer->id,
+            'owner_business_id' => null,
+            'code' => 'KEEP1',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'reward_type' => RewardType::FLAT_AMOUNT,
+            'reward_value' => 5,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $this->referralService->markActive($referral->id);
+
+        $this->assertEquals(5.00, (float) Referral::find($referral->id)->reward_amount);
+
+        // Platform hard-delete wipes the referred business. The referral row is
+        // an earnings ledger record for the referrer and must not be cascade
+        // deleted with it — deleting a referred business must NOT reset earnings.
+        $this->business->forceDelete();
+
+        $this->assertDatabaseHas('referrals', ['id' => $referral->id]);
+        $this->assertDatabaseHas('referrals', [
+            'id' => $referral->id,
+            'referred_business_id' => null,
+        ]);
+
+        $earnings = $this->referralService->getEarningsByUser($referrer->id);
+        $this->assertEquals(5.00, $earnings['total_earned'], 'earnings survive deleting the referred business');
+        $this->assertEquals(1, $earnings['total_referrals'], 'referral count survives deleting the referred business');
+        $this->assertEquals(5.00, $earnings['pending_rewards'], 'reward remains pending/payable');
     }
 
     public function test_get_earnings_by_user_returns_zero_for_non_rep(): void
