@@ -64,6 +64,44 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         $this->assertStringStartsWith('%PDF', $pdf);
     }
 
+    public function test_receipt_plan_rate_always_denominated_in_usd(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->bellLabs);
+        $subscription = $subscription->fresh();
+
+        $payment = $this->paymentService->createPending([
+            'business_id' => $this->bellLabs->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $this->dennis->id,
+            'amount' => 74658.03,
+            'currency' => 'UGX',
+            'method' => 'gateway',
+            'payment_type' => 'subscription',
+            'gateway_name' => 'pesapal',
+            'gateway_transaction_id' => 'TXN-RCPT-UGX',
+            'transaction_reference' => 'CUSTO-RCPT-UGX',
+            'metadata' => [
+                'original_amount' => 20,
+                'credit_used' => 0,
+            ],
+        ]);
+        $payment = $this->paymentService->complete($payment, '{"status":"successful"}');
+
+        $data = $this->receiptService()->buildData($payment);
+        $html = view(PaymentReceiptService::RECEIPT_VIEW, $data)->render();
+
+        // The plan rate derives from price_*_usd so it must read as USD even
+        // when the customer paid in their own currency (UGX here).
+        $amountSection = substr(
+            $html,
+            (int) strpos($html, 'Plan rate'),
+            max(0, (int) strpos($html, 'TOTAL PAID') - (int) strpos($html, 'Plan rate')),
+        );
+        $this->assertStringContainsString('$', $amountSection, 'Plan rate must be shown in USD');
+        $this->assertStringNotContainsString('UGX', $amountSection, 'Plan rate must NOT be shown in the payment currency');
+        $this->assertStringContainsString('UGX 74,658.03', $html, 'TOTAL PAID stays in the payment currency');
+    }
+
     public function test_receipt_pdf_download_response_streams_file(): void
     {
         $payment = $this->makeCompletedTopUpPayment();

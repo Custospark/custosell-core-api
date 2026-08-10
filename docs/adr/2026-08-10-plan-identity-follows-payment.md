@@ -73,3 +73,36 @@ amount because it disagreed with the old price).
   `cancelled` subscription is a separate concern tracked separately.
 - The offline stale-active risk already documented in the 2026-08-10
   subscription state machine audit is unaffected.
+
+## Hardening — no plan/subscription effect without a confirmed payment
+
+Audit of every HTTP surface that can mutate plan identity or subscription state
+(2026-08-10):
+
+- **Removed** `POST /subscriptions/{id}/reactivate` — a suspended subscription
+  could be flipped to `ACTIVE` with no payment, no atomic money check. The
+  payment modal flow (initiate → confirm → `autoApprove` → `reactivate()`) is now
+  the only reactivation path, and it only runs inside `autoApprove`'s
+  `DB::transaction` after the gateway reports `successful`.
+- **Removed** the generic `apiResource` `store`/`update`/`destroy` for
+  `/subscriptions`. `SubscriptionRequest` accepted `plan_id` + `status` from any
+  authenticated business user, so `POST /subscriptions` could mint an `active`
+  subscription on an arbitrary `business_id` with an arbitrary plan, and
+  `PUT /subscriptions/{id}` could change plan/status directly — no payment, no
+  ownership scoping.
+- **Gated** `GET /subscriptions` (read-all registry) and `GET /subscriptions/{id}`
+  behind `platform:platform.businesses.view`. Previously any business user could
+  enumerate every business's subscriptions (cross-tenant leak).
+- All remaining business-facing subscription mutations reach the state machine
+  only through ownership-checked, payment-confirmed flows
+  (`autoApprove` DB transaction): onboarding payments, `subscription`
+  (subscribe/resubscribe/reactivate) payments, `upgrade_proration`, renewal,
+  billing-cycle-change, and the platform admin paths (which are intentionally
+  privileged).
+
+### Regression coverage
+
+`tests/Feature/SubscriptionTest.php` now asserts the hardened contract:
+business users cannot list-all (403), cannot raw-create (405) or raw-update (405)
+subscriptions, and cannot reactivate without payment (404); platform admin can
+list-all; owner can view own `current` and cancel.

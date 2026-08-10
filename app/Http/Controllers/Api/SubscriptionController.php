@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SubscriptionRequest;
 use App\Http\Resources\SubscriptionCollection;
 use App\Http\Resources\SubscriptionResource;
 use App\Services\Billing\PaymentQuoteService;
@@ -36,22 +35,6 @@ class SubscriptionController extends Controller
             abort(404, 'Subscription not found');
         }
         return new SubscriptionResource($subscription);
-    }
-
-    public function store(SubscriptionRequest $request): JsonResponse
-    {
-        $subscription = $this->subscriptionService->create($request->validated());
-        return response()->json(['data' => new SubscriptionResource($subscription)], 201);
-    }
-
-    public function update(SubscriptionRequest $request, int $id): JsonResponse
-    {
-        try {
-            $subscription = $this->subscriptionService->update($id, $request->validated());
-            return response()->json(['data' => new SubscriptionResource($subscription)]);
-        } catch (\RuntimeException $e) {
-            abort(404, 'Subscription not found');
-        }
     }
 
     public function current(Request $request): SubscriptionResource
@@ -98,22 +81,6 @@ class SubscriptionController extends Controller
 
         $this->subscriptionService->cancel($id, false);
         return response()->json(['message' => 'Subscription will be cancelled at the end of the billing period.']);
-    }
-
-    public function reactivate(Request $request, int $id): JsonResponse
-    {
-        $subscription = $this->subscriptionService->getById($id);
-
-        if (!$subscription) {
-            abort(404, 'Subscription not found');
-        }
-
-        if ($subscription->business_id !== $request->user()->business_id) {
-            abort(403, 'You can only reactivate your own subscription.');
-        }
-
-        $reactivated = $this->subscriptionService->reactivate($subscription);
-        return response()->json(['data' => new SubscriptionResource($reactivated)]);
     }
 
     public function upgrade(Request $request, int $id): JsonResponse
@@ -340,16 +307,6 @@ class SubscriptionController extends Controller
         $this->scheduledChangeService->cancelPendingChange($subscription->id);
 
         return response()->json(['message' => 'Scheduled change cancelled']);
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        try {
-            $this->subscriptionService->delete($id);
-            return response()->json(null, 204);
-        } catch (\RuntimeException $e) {
-            abort(404, 'Subscription not found');
-        }
     }
 
     protected function assertUpgradeAllowed(?string $currentCycle, ?string $targetCycle, array $proration): void

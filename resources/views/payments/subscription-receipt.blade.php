@@ -82,7 +82,7 @@
     @if($monthlyRate > 0)
       <tr>
         <td class="text-left">Plan rate ({{ $billingCycle }} / month)</td>
-        <td class="col-money">{{ $formatter->formatMoney($monthlyRate, $currency) }}</td>
+        <td class="col-money">{{ $formatter->formatMoney($monthlyRate, 'USD') }}</td>
       </tr>
     @endif
     @if(($originalAmountUsd ?? 0) > $amountPaid)

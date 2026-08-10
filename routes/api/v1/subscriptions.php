@@ -3,11 +3,11 @@
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
+// ── Business-facing endpoints (owner-audited, payment-gated) ─────────────
 Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::get('subscriptions/current', [SubscriptionController::class, 'current'])->name('subscriptions.current');
     Route::post('subscriptions/subscribe', [SubscriptionController::class, 'subscribe'])->name('subscriptions.subscribe');
     Route::post('subscriptions/{id}/cancel', [SubscriptionController::class, 'cancelPlan'])->name('subscriptions.cancel');
-    Route::post('subscriptions/{id}/reactivate', [SubscriptionController::class, 'reactivate'])->name('subscriptions.reactivate');
     Route::post('subscriptions/{id}/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscriptions.upgrade');
     Route::post('subscriptions/{id}/downgrade', [SubscriptionController::class, 'downgrade'])->name('subscriptions.downgrade');
     Route::get('subscriptions/{id}/proration-quote', [SubscriptionController::class, 'prorationQuote'])->name('subscriptions.proration-quote');
@@ -16,5 +16,14 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('subscriptions/{id}/billing-cycle', [SubscriptionController::class, 'changeBillingCycle'])->name('subscriptions.billing-cycle');
     Route::get('subscriptions/access', [SubscriptionController::class, 'checkAccess'])->name('subscriptions.access');
 
-    Route::apiResource('subscriptions', SubscriptionController::class);
+    // Generic CRUD is intentionally NOT exposed to business users. Plan identity,
+    // status and dates may only change through the payment-approved flows above
+    // (subscription payments, proration upgrades, billing-cycle payments) or via
+    // the platform. No endpoint accepts raw plan_id/status mutation by an owner.
+});
+
+// ── Platform-only: read-all + read-one for the admin subscription registry ──
+Route::middleware(['auth:sanctum', 'business.active', 'platform:platform.businesses.view'])->group(function () {
+    Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::get('subscriptions/{id}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
 });
