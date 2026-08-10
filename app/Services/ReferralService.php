@@ -241,6 +241,13 @@ class ReferralService implements ReferralServiceInterface
                 $paidBase = max(0, $rewardBase - (float) ($referral->discount_applied ?? 0));
             }
 
+            // Safe-zone guard (Company > Referrer): no matter how a reward or
+            // commission is configured, the referrer can never take >= 50% of
+            // what the referee actually paid. Hard clamp at apply time kills
+            // legacy/live codes that slipped past the request guard (or predate
+            // it) — e.g. the FREE_MONTH $135-on-$180 Enterprise leak.
+            $maxReferrerShare = max(0, round($paidBase * 0.5, 2) - 0.01);
+
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
                 $salesRep = SalesRep::where('referral_code_id', $referralCode->id)->first();
                 if ($salesRep && $salesRep->is_active) {
@@ -248,7 +255,7 @@ class ReferralService implements ReferralServiceInterface
                         CommissionType::PERCENTAGE => round($paidBase * ((float) ($salesRep->commission_rate ?? 0) / 100), 2),
                         CommissionType::FLAT => (float) ($salesRep->commission_rate ?? 0),
                     };
-                    $updateData['commission_earned'] = $commissionEarned;
+                    $updateData['commission_earned'] = min($commissionEarned, $maxReferrerShare);
                 }
             } elseif ($referralCode->owner_type === ReferralCodeOwnerType::BUSINESS) {
                 // FREE_MONTH as a *reward* pays the referrer one month of the
@@ -266,10 +273,10 @@ class ReferralService implements ReferralServiceInterface
                     RewardType::FREE_MONTH => round(min($recurringMonthly, $paidBase), 2),
                     default => 0,
                 };
-                $updateData['reward_amount'] = $rewardAmount;
+                $updateData['reward_amount'] = min($rewardAmount, $maxReferrerShare);
 
-                if ($rewardAmount > 0) {
-                    $this->creditService->createFromReferral($referral, $rewardAmount);
+                if ($updateData['reward_amount'] > 0) {
+                    $this->creditService->createFromReferral($referral, $updateData['reward_amount']);
                 }
             }
             // CAMPAIGN codes (company-owned) intentionally earn no reward:

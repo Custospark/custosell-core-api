@@ -88,11 +88,11 @@ class ReferralActivationTest extends TestCase
         $referralCode = ReferralCode::create([
             'owner_type' => ReferralCodeOwnerType::BUSINESS,
             'owner_business_id' => $this->business->id,
-            'code' => 'FLAT20K',
-            'discount_type' => DiscountType::FLAT_AMOUNT,
-            'discount_value' => 5000,
+            'code' => 'FLAT10',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 20000,
+            'reward_value' => 10,
             'is_active' => true,
         ]);
 
@@ -104,7 +104,37 @@ class ReferralActivationTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(20000, (float) $activated->reward_amount, 'flat reward = 20000');
+        $this->assertEquals(10.00, (float) $activated->reward_amount, 'flat reward = 10 when below the 50% safe-zone cap');
+    }
+
+    public function test_mark_active_caps_business_flat_reward_below_half_of_paid_base(): void
+    {
+        // A flat reward is hard-capped below 50% of the paid base ($36 paid →
+        // max $17.99), so a legacy $50 flat reward can not break the safe zone.
+        $referralCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->business->id,
+            'code' => 'FLAT50',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'reward_type' => RewardType::FLAT_AMOUNT,
+            'reward_value' => 50,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $activated = $this->referralService->markActive($referral->id);
+
+        $this->assertEquals(
+            17.99,
+            (float) $activated->reward_amount,
+            'flat reward capped to just under 50% of the $36 paid base (never >= half)'
+        );
     }
 
     public function test_mark_active_calculates_reward_for_business_free_month_code(): void
@@ -150,14 +180,15 @@ class ReferralActivationTest extends TestCase
             $this->business->id
         );
 
-        // Referee pays $36 ($40 onboarding − 10%). A free-month reward must pay
-        // ONE month of the plan ($20 monthly), never the full $36 collected.
+        // Referee pays $36 ($40 onboarding − 10%). A free-month reward pays ONE
+        // month of the plan ($20 monthly), but the safe zone caps any reward
+        // strictly below half the paid base ($36 / 2 = $18) → $17.99.
         $activated = $this->referralService->markActive($referral->id);
 
         $this->assertEquals(
-            20.00,
+            17.99,
             (float) $activated->reward_amount,
-            'free_month reward = min(recurring monthly $20, paid base $36) = $20, never the full paid base'
+            'free_month reward = min(recurring monthly $20, paid base $36) = $20, then capped just under 50% of the paid base'
         );
     }
 
@@ -305,9 +336,9 @@ class ReferralActivationTest extends TestCase
         $salesRepCode = ReferralCode::create([
             'owner_type' => ReferralCodeOwnerType::SALES_REP,
             'owner_user_id' => $owner->id,
-            'code' => 'SR50K',
-            'discount_type' => DiscountType::FLAT_AMOUNT,
-            'discount_value' => 5000,
+            'code' => 'SR10',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
             'reward_value' => 0,
             'is_active' => true,
@@ -316,7 +347,7 @@ class ReferralActivationTest extends TestCase
         $salesRep = SalesRep::create([
             'user_id' => $owner->id,
             'referral_code_id' => $salesRepCode->id,
-            'commission_rate' => 50000,
+            'commission_rate' => 10,
             'commission_type' => CommissionType::FLAT,
             'is_active' => true,
         ]);
@@ -329,7 +360,7 @@ class ReferralActivationTest extends TestCase
 
         $activated = $this->referralService->markActive($referral->id);
 
-        $this->assertEquals(50000, (float) $activated->commission_earned, 'flat commission = 50000');
+        $this->assertEquals(10.00, (float) $activated->commission_earned, 'flat commission = 10');
         $this->assertEquals(0, (float) $activated->reward_amount, 'flat reward = 0');
     }
 

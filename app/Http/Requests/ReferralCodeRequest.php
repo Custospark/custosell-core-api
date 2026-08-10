@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Enums\Billing\DiscountType;
+use App\Enums\Billing\ReferralCodeOwnerType;
+use App\Enums\Billing\RewardType;
 use App\Models\Plan;
 use Illuminate\Validation\Rule;
 
@@ -97,6 +99,37 @@ class ReferralCodeRequest extends BaseFormRequest
                         $minOnboarding = $minOnboarding > 0 ? $minOnboarding : 40.0;
                         if ($value >= $minOnboarding / 2) {
                             $validator->errors()->add('discount_value', 'Campaign flat discount must be below half the cheapest plan fee so the company keeps the largest share.');
+                        }
+                    }
+                }
+            }
+
+            // Business referral codes carry a reward, but Company > Referrer
+            // still holds: the referrer's reward must stay strictly below 50%
+            // of what the referee pays. The FE generator (useGenerateReferralCode)
+            // sends percentage/15; free_month as a REWARD is disallowed because
+            // it pays a full recurring month (up to ~100% of a renewal charge).
+            // Fires only when reward fields are actually submitted so status-only
+            // toggles on legacy codes pass. Both the business dashboard and the
+            // platform CRUD share this request, so one guard covers all paths.
+            if ($ownerType === \App\Enums\Billing\ReferralCodeOwnerType::BUSINESS->value) {
+                $rewardSubmitted = $this->exists('reward_type') || $this->exists('reward_value');
+                if ($rewardSubmitted) {
+                    $rewardType = $this->input('reward_type') ?? $existing?->reward_type?->value;
+                    $rewardValue = (float) ($this->input('reward_value') ?? $existing?->reward_value ?? 0);
+
+                    if ($rewardType === RewardType::FREE_MONTH->value) {
+                        $validator->errors()->add('reward_type', 'Business codes can not use a free_month reward — it pays a full recurring month and breaks Company > Referrer. Use a percentage or flat reward below 50%.');
+                    } elseif ($rewardType === RewardType::PERCENTAGE->value && $rewardValue >= 50) {
+                        $validator->errors()->add('reward_value', 'Business percentage reward must be below 50 so the company keeps the largest share.');
+                    } elseif ($rewardType === RewardType::FLAT_AMOUNT->value) {
+                        $minOnboarding = (float) Plan::query()
+                            ->where('is_active', true)
+                            ->where('onboarding_fee_usd', '>', 0)
+                            ->min('onboarding_fee_usd');
+                        $minOnboarding = $minOnboarding > 0 ? $minOnboarding : 40.0;
+                        if ($rewardValue >= $minOnboarding / 2) {
+                            $validator->errors()->add('reward_value', 'Business flat reward must be below half the cheapest plan fee so the company keeps the largest share.');
                         }
                     }
                 }

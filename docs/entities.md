@@ -528,12 +528,20 @@
 - Unit tests (ReferralTest): 5/5 ✅
 - Feature tests (ReferralBillingTest): 2/2 ✅
 - Unit tests (CampaignReferralCodeRequestTest): 7/7 ✅ — campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) + sales-rep clamp regression + status-toggle not blocked
-- Total: 19 tests, 38 assertions, 0 failures
+- Unit tests (ReferralCodeBusinessRewardRequestTest): 5/5 ✅ — business-owner reward safe zone: free_month reward rejected, % reward < 50, flat reward < half cheapest plan fee, status-toggle not blocked, sales-rep/campaign untouched
+- Unit tests (ReferralActivationTest): 11/11 ✅ — includes business flat reward capped below half of paid base ($17.99 on $36)
+- Unit tests (ReferralLifecycleTest): 11/11 ✅
+- Total: 41 tests, 89 assertions, 0 failures
 - Vera Fast: ✅ (php -l on 46 files + logic rules)
 
 ### Referral Code Guard (added 2026-08-10)
 - `ReferralCodeRequest::withValidator` enforces the campaign safe-zone: single-period (duration=1), no reward allowed, percentage discount ≤ 30%, flat_amount < half the cheapest active plan's onboarding fee (from `plans` table).
 - Cap/reward checks fire only on submitted fields; a status-only toggle of a legacy out-of-zone campaign code passes. Sales-rep duration clamp unchanged (now resolved from route record OR submitted owner_type).
+
+### Business Reward Safe Zone (added 2026-08-10)
+- Business codes are reward-bearing, but Company > Referrer still demands `reward < 50%` of the paid base. Authoring guard in `ReferralCodeRequest::withValidator`: `free_month` reward rejected, percentage reward < 50, flat_amount < half the cheapest active plan's onboarding fee. Fires only when reward fields are submitted.
+- Apply-time clamp in `ReferralService::markActive`: `reward_amount` and `commission_earned` are hard-capped to `round(paid_base * 0.5, 2) - 0.01` (never ≥ 50%), renormalizing legacy/live codes that predate the guard (e.g. the FREE_MONTH `$135`-on-`$180` Enterprise leak = 75%).
+- FE `useGenerateReferralCode` sends `percentage / 15` (was hardcoded `free_month`), so every UI-generated business code honors the zone by construction.
 
 ### SOLID Compliance Checklist
 - [x] Single Responsibility

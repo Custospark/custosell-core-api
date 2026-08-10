@@ -230,6 +230,16 @@ Prices will change; **the structural dials do not**. These are the enforceable d
   - The discount cap/reward checks fire only when those fields are *submitted* — a status-only toggle on a legacy out-of-zone campaign code is not blocked.
 - The FE `PlatformCampaignCodeFormModal` mirrors the guard live (`CampaignDiscountGuardHint`): amber warning when a percentage > 30%, flat ≥ $20, or duration > 1 would be submitted; the duration field is locked to 1.
 
+### P4b — Business-owner reward safe zone: referrer share < 50% of paid base — HARD CAP
+- Same `Company > Referrer` ordering applies to **business referral codes**: the referrer's reward is capped **strictly below 50% of what the referee actually paid** (`r < 50%`, see Why 2 above). Enforced at two layers:
+  - **Authoring guard** in `ReferralCodeRequest::withValidator` (fires only when reward fields are submitted — a status-only toggle on a legacy code is not blocked):
+    - `reward_type = free_month` **rejected** for business codes (a full recurring month can reach ~100% of a renewal charge, structurally violating the zone).
+    - `reward_type = percentage` requires `reward_value < 50`.
+    - `reward_type = flat_amount` requires `reward_value < half the cheapest active plan's onboarding fee` (currently $40 → $20; computed from `plans` so it tracks price changes).
+  - **Apply-time clamp** in `ReferralService::markActive`: whatever a code configures, `reward_amount` / `commission_earned` can never reach 50% of `paid_base` — belt-and-suspenders that renormalizes legacy or live codes that predate the guard (e.g. the Enterprise pack where `FREE_MONTH` reward was `$135` on a `$180` paid base = 75%).
+- Root-cause FE fix (2026-08-10): `useGenerateReferralCode` previously hardcoded `reward_type: 'free_month'`; it now sends `percentage / 15` — every UI-generated business code honors the safe zone by construction.
+- The shared `ReferralCodeRequest` backs both the business dashboard API and the platform CRUD, so one guard covers all creation/update paths.
+
 ### P5 — Measurement: channel attribution before tuning rates
 - Channel is derivable today: `referral_codes.owner_type` = `sales_rep | business` (normal referral) | `campaign`; no referral row → `organic`.
 - Before changing any rate, measure **cohort LTV by channel** (rep-sourced vs normal-referral vs organic). Only if rep-sourced LTV is materially lower than organic do we revisit rates or add retention-gated payout installments. Attribution column/flag is a known future enhancement if cohort queries become heavy.
@@ -243,7 +253,9 @@ Prices will change; **the structural dials do not**. These are the enforceable d
 | Migration | `database/migrations/2026_08_10_000000_add_discount_rate_to_sales_reps_table.php` | Adds `discount_rate`; migrates existing reps to 20/30 |
 | Model | `app/Models/SalesRep.php` | `discount_rate` fillable + decimal cast |
 | Request | `app/Http/Requests/SalesRepRequest.php` | `discount_rate` rules + safe-zone `withValidator` |
-| Request | `app/Http/Requests/ReferralCodeRequest.php` | campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) |
+| Request | `app/Http/Requests/ReferralCodeRequest.php` | campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) + business-owner reward guard (no free_month reward, % < 50, flat < half cheapest fee) |
+| Service | `app/Services/ReferralService.php` | `markActive` apply-time safe-zone clamp: reward/commission strictly below 50% of paid base |
+| FE qhook | `Frontend/.../referral/api/useReferralQueries.ts` | `useGenerateReferralCode` now sends `percentage / 15` (was hardcoded `free_month`) |
 | Service | `app/Services/SalesRepService.php` | `create` writes `discount_rate` → code `discount_value`; `create` safe-zone guard; `update` resyncs code discount; import maps `Discount Rate` (default 20) + template header |
 | Resource | `app/Http/Resources/SalesRepResource.php` | exposes `discount_rate` |
 | FE form | `Frontend/.../PlatformCampaignCodeFormModal.tsx` + `CampaignDiscountGuardHint.tsx` | campaign safe-zone live hint + single-period lock; duration clamped to 1 in payload |

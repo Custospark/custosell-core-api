@@ -115,7 +115,7 @@ class ReferralLifecycleTest extends TestCase
             'discount_type' => DiscountType::PERCENTAGE,
             'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 15000,
+            'reward_value' => 5,
             'is_active' => true,
         ]);
 
@@ -132,7 +132,7 @@ class ReferralLifecycleTest extends TestCase
 
         $referral->refresh();
         $this->assertEquals(ReferralStatus::ACTIVE, $referral->status);
-        $this->assertEquals(15000, (float) $referral->reward_amount, 'reward calculated on activation');
+        $this->assertEquals(5.00, (float) $referral->reward_amount, 'flat reward calculated on activation');
     }
 
     public function test_activate_for_subscription_skips_already_active(): void
@@ -144,7 +144,7 @@ class ReferralLifecycleTest extends TestCase
             'discount_type' => DiscountType::PERCENTAGE,
             'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 15000,
+            'reward_value' => 5,
             'is_active' => true,
         ]);
 
@@ -160,7 +160,7 @@ class ReferralLifecycleTest extends TestCase
 
         $this->referralService->activateForSubscription($this->subscription->id);
         $referral->refresh();
-        $this->assertEquals(15000, (float) $referral->reward_amount, 'should not double-calculate');
+        $this->assertEquals(5.00, (float) $referral->reward_amount, 'should not double-calculate');
     }
 
     // ─── Scenario 5: renewSubscription does NOT touch referrals ───
@@ -267,7 +267,7 @@ class ReferralLifecycleTest extends TestCase
             'discount_type' => DiscountType::PERCENTAGE,
             'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 10000,
+            'reward_value' => 5,
             'is_active' => true,
         ]);
 
@@ -282,7 +282,7 @@ class ReferralLifecycleTest extends TestCase
 
         $this->assertEquals(ReferralStatus::REWARDED, $rewarded->status);
         $this->assertTrue($rewarded->reward_paid);
-        $this->assertEquals(10000, (float) $rewarded->reward_amount, 'reward_amount should persist after rewarding');
+        $this->assertEquals(5.00, (float) $rewarded->reward_amount, 'reward_amount should persist after rewarding');
     }
 
     // ─── Scenario 8: getEarningsByUser ───
@@ -299,7 +299,7 @@ class ReferralLifecycleTest extends TestCase
             'discount_type' => DiscountType::PERCENTAGE,
             'discount_value' => 10,
             'reward_type' => RewardType::FLAT_AMOUNT,
-            'reward_value' => 10000,
+            'reward_value' => 5,
             'is_active' => true,
         ]);
 
@@ -315,16 +315,16 @@ class ReferralLifecycleTest extends TestCase
         $this->referralService->markActive($referral->id);
 
         $earnings = $this->referralService->getEarningsByUser($owner->id);
-        $this->assertEquals(10000, $earnings['total_earned'], 'active referral has reward');
-        $this->assertEquals(10000, $earnings['pending_rewards'], 'active referral is pending');
+        $this->assertEquals(5.00, $earnings['total_earned'], 'active referral has reward');
+        $this->assertEquals(5.00, $earnings['pending_rewards'], 'active referral is pending');
         $this->assertEquals(0, $earnings['rewarded_amount'], 'not rewarded yet');
 
         $this->referralService->markRewarded($referral->id);
 
         $earnings = $this->referralService->getEarningsByUser($owner->id);
-        $this->assertEquals(10000, $earnings['total_earned']);
+        $this->assertEquals(5.00, $earnings['total_earned']);
         $this->assertEquals(0, $earnings['pending_rewards'], 'rewarded referral not pending');
-        $this->assertEquals(10000, $earnings['rewarded_amount'], 'rewarded amount counted');
+        $this->assertEquals(5.00, $earnings['rewarded_amount'], 'rewarded amount counted');
     }
 
     public function test_get_earnings_by_user_returns_zero_for_non_rep(): void
