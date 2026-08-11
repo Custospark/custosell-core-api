@@ -18,6 +18,8 @@ class ShiftRequest extends BaseFormRequest
         return [
             'clock_in' => $isUpdate ? ['nullable', 'date'] : ['required', 'date'],
             'clock_out' => ['nullable', 'date', 'after:clock_in'],
+            'opening_balance' => ['nullable', 'numeric', 'min:0'],
+            'counted_cash' => ['nullable', 'numeric', 'min:0'],
             'location_id' => [
                 'nullable',
                 'integer',
@@ -37,6 +39,10 @@ class ShiftRequest extends BaseFormRequest
         return array_merge(parent::messages(), [
             'clock_in.required' => 'Please enter the clock-in time.',
             'clock_out.after' => 'The clock-out time must be after the clock-in time.',
+            'opening_balance.numeric' => 'The opening balance must be a number.',
+            'opening_balance.min' => 'The opening balance must be 0 or more.',
+            'counted_cash.numeric' => 'The counted cash must be a number.',
+            'counted_cash.min' => 'The counted cash must be 0 or more.',
             'total_sales.numeric' => 'The total sales must be a number.',
             'total_sales.min' => 'The total sales must be 0 or more.',
             'total_cash.numeric' => 'The total cash must be a number.',

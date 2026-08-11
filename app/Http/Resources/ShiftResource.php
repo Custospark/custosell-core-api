@@ -18,6 +18,8 @@ class ShiftResource extends JsonResource
             'location' => new LocationResource($this->whenLoaded('location')),
             'clock_in' => $this->clock_in?->toISOString(),
             'clock_out' => $this->clock_out?->toISOString(),
+            'opening_balance' => $this->opening_balance !== null ? (float) $this->opening_balance : null,
+            'counted_cash' => $this->counted_cash !== null ? (float) $this->counted_cash : null,
             'total_sales' => $this->total_sales,
             'total_cash' => $this->total_cash,
             'total_mobile_money' => $this->total_mobile_money,

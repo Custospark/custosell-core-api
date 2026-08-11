@@ -44,24 +44,41 @@
         <tr><td class="text-left text-red">Shift expenses</td><td class="col-money text-red">-{{ $formatter->formatTableNumber($report['shift_expenses']) }}</td></tr>
       @endif
       <tr class="total-row"><td class="text-left">Net sales</td><td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($report['net_sales']) }}</td></tr>
+      <tr><td class="text-left text-muted" style="padding-left:14px;">Opening balance</td><td class="col-money">{{ $formatter->formatTableNumber($report['opening_balance']) }}</td></tr>
       <tr><td class="text-left text-muted" style="padding-left:14px;">Cash collected</td><td class="col-money">{{ $formatter->formatTableNumber($report['cash']) }}</td></tr>
       <tr><td class="text-left text-muted" style="padding-left:14px;">Mobile money</td><td class="col-money">{{ $formatter->formatTableNumber($report['mobile_money']) }}</td></tr>
       <tr><td class="text-left text-muted" style="padding-left:14px;">Card / other</td><td class="col-money">{{ $formatter->formatTableNumber($report['card_other']) }}</td></tr>
-      <tr class="total-row"><td class="text-left">Cash at handover</td><td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($report['cash_handover']) }}</td></tr>
+      <tr class="total-row"><td class="text-left">Expected cash in drawer</td><td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($report['expected_cash']) }}</td></tr>
+      @if($report['counted_cash'] !== null)
+        <tr><td class="text-left">Counted cash</td><td class="col-money">{{ $formatter->formatTableNumber($report['counted_cash']) }}</td></tr>
+        <tr class="{{ $report['variance'] === 0 ? 'total-row' : '' }}">
+          <td class="text-left {{ $report['variance'] > 0 ? 'text-red' : '' }}">Variance (over/short)</td>
+          <td class="col-money {{ $report['variance'] === 0 ? 'amount-emphasis' : ($report['variance'] > 0 ? 'text-red' : '') }}">
+            {{ $formatter->formatTableNumber($report['variance']) }}
+          </td>
+        </tr>
+      @endif
     </tbody>
   </table>
 
   <div style="margin:16px 0;padding:14px 16px;text-align:center;border:2px solid {{ $accent }};background:#eff6ff;border-radius:8px;">
     <p style="margin:0 0 4px 0;font-size:9px;font-weight:bold;text-transform:uppercase;color:#1d4ed8;letter-spacing:0.3px;">
-      Cash at Handover
+      Expected Cash in Drawer
     </p>
     <p style="margin:0;font-size:20px;font-weight:bold;color:#1e3a8a;">
-      {{ $formatter->formatMoney($report['cash_handover'], $ccy) }}
+      {{ $formatter->formatMoney($report['expected_cash'], $ccy) }}
     </p>
     <p style="margin:6px 0 0 0;font-size:8.5px;color:#6b7280;">
-      Cash collected minus shift expenses paid from the drawer
+      Opening balance + cash collected - shift expenses paid from the drawer
     </p>
   </div>
+
+  @if($report['counted_cash'] !== null)
+    <p class="ranking-subtitle" style="text-align:center;">
+      Counted {{ $formatter->formatMoney($report['counted_cash'], $ccy) }}
+      · Variance {{ $report['variance'] === 0 ? 'Balanced' : ($report['variance'] > 0 ? '+' : '') . $formatter->formatMoney($report['variance'], $ccy) }}
+    </p>
+  @endif
 
   <p class="ranking-subtitle" style="text-align:center;">
     {{ $report['transaction_count'] }} transaction{{ $report['transaction_count'] === 1 ? '' : 's' }} this shift

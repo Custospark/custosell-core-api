@@ -14,6 +14,8 @@ class Shift extends Model
         'user_id',
         'clock_in',
         'clock_out',
+        'opening_balance',
+        'counted_cash',
         'total_sales',
         'total_cash',
         'total_mobile_money',
@@ -27,6 +29,8 @@ class Shift extends Model
         return [
             'clock_in' => 'datetime',
             'clock_out' => 'datetime',
+            'opening_balance' => 'decimal:2',
+            'counted_cash' => 'decimal:2',
             'total_sales' => 'decimal:2',
             'total_cash' => 'decimal:2',
             'total_mobile_money' => 'decimal:2',

@@ -54,6 +54,9 @@ trait ComputesShiftMetrics
                 ->sum('amount');
             $netSales = max(0, $gross - $refunds - $shiftExpenses);
             $cashHandover = max(0, $cash - $shiftExpenses);
+            $openingBalance = (float) ($shift->opening_balance ?? 0);
+            $expectedCash = $openingBalance + $cash - $shiftExpenses;
+            $countedCash = $shift->counted_cash !== null ? (float) $shift->counted_cash : null;
 
             return [
                 'shift' => $shift,
@@ -68,6 +71,10 @@ trait ComputesShiftMetrics
                 'mobile_money' => $mobile,
                 'card_other' => $cardOther,
                 'cash_handover' => $cashHandover,
+                'opening_balance' => $openingBalance,
+                'counted_cash' => $countedCash,
+                'expected_cash' => $expectedCash,
+                'variance' => $countedCash !== null ? $countedCash - $expectedCash : null,
             ];
         })->all();
     }
@@ -89,7 +96,11 @@ trait ComputesShiftMetrics
      *   cash: float,
      *   mobile_money: float,
      *   card_other: float,
-     *   cash_handover: float
+     *   cash_handover: float,
+     *   opening_balance: float,
+     *   counted_cash: float|null,
+     *   expected_cash: float,
+     *   variance: float|null
      * }
      */
     public function shiftCloseReport(int $businessId, int $shiftId): array
@@ -118,6 +129,10 @@ trait ComputesShiftMetrics
             'mobile_money' => 0.0,
             'card_other' => 0.0,
             'cash_handover' => 0.0,
+            'opening_balance' => 0.0,
+            'counted_cash' => null,
+            'expected_cash' => 0.0,
+            'variance' => null,
         ];
 
         $branch = $shift->location?->name
@@ -139,6 +154,10 @@ trait ComputesShiftMetrics
             'mobile_money' => (float) $metrics['mobile_money'],
             'card_other' => (float) $metrics['card_other'],
             'cash_handover' => (float) $metrics['cash_handover'],
+            'opening_balance' => (float) $metrics['opening_balance'],
+            'counted_cash' => $metrics['counted_cash'] !== null ? (float) $metrics['counted_cash'] : null,
+            'expected_cash' => (float) $metrics['expected_cash'],
+            'variance' => $metrics['variance'] !== null ? (float) $metrics['variance'] : null,
         ];
     }
 
