@@ -9,6 +9,7 @@ use App\Models\PipelineBoardMember;
 use App\Models\User;
 use App\Services\ModuleAccessService;
 use App\Services\Pipeline\PipelineNotificationService;
+use Illuminate\Validation\ValidationException;
 
 class PipelineMemberService
 {
@@ -24,6 +25,37 @@ class PipelineMemberService
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->toArray();
+
+        $requested = collect($members)
+            ->map(fn ($entry) => is_array($entry) ? (int) ($entry['user_id'] ?? 0) : (int) $entry)
+            ->filter(fn (int $userId) => $userId > 0 && $userId !== (int) $board->created_by)
+            ->unique()
+            ->values();
+
+        $invitees = collect();
+        if ($requested->isNotEmpty()) {
+            $invitees = User::query()
+                ->with(['business.subscription'])
+                ->whereKey($requested->all())
+                ->get()
+                ->keyBy('id');
+
+            $ineligible = [];
+            foreach ($requested as $userId) {
+                $user = $invitees->get($userId);
+                if (! $user || ! $user->is_active || ! $this->userCanAccessBoard($user, $board)) {
+                    $ineligible[] = $user?->email ?? "#{$userId}";
+                }
+            }
+
+            if ($ineligible !== []) {
+                throw ValidationException::withMessages([
+                    'members' => 'These users cannot access this board (out of pipeline/estimates scope or no active subscription): '
+                        .implode(', ', $ineligible)
+                        .'.',
+                ]);
+            }
+        }
 
         PipelineBoardMember::query()->where('board_id', $board->id)->delete();
 
@@ -48,7 +80,7 @@ class PipelineMemberService
             ]);
 
             if ($sendNotification && $actorUserId && ! in_array($userId, $existingUserIds, true)) {
-                $recipient = User::find($userId);
+                $recipient = $invitees?->get($userId) ?? User::find($userId);
                 if ($recipient) {
                     $actor = User::find($actorUserId);
                     if ($actor) {
@@ -57,6 +89,22 @@ class PipelineMemberService
                 }
             }
         }
+    }
+
+    /**
+     * Mirrors the board-access rule used when opening a board (ProjectAccessService),
+     * so invited users can actually collaborate:
+     *  - same-business invitees need an active subscription;
+     *  - cross-business/external invitees need pipeline or estimates module access.
+     */
+    protected function userCanAccessBoard(User $user, PipelineBoard $board): bool
+    {
+        if ((int) $user->business_id === (int) $board->business_id) {
+            return (bool) ($user->business?->subscription?->hasAccess() ?? false);
+        }
+
+        return $this->moduleAccess->canAccess($user, 'pipeline')
+            || $this->moduleAccess->canAccess($user, 'estimates');
     }
 
     public function listBoardTeamMembers(int $businessId, string $workspace = 'pipeline', string $scope = 'workspace'): array
@@ -92,6 +140,6 @@ class PipelineMemberService
             return true;
         }
 
-        return in_array('pipeline', $this->moduleAccess->storedStaffModules($user), true);
+        return $this->moduleAccess->canAccess($user, 'pipeline');
     }
 }

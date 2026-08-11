@@ -339,6 +339,73 @@ class PipelineBoardMembershipTest extends TestCase
         $this->assertContains($board->id, $ids);
     }
 
+    public function test_owner_cannot_invite_storefront_buyer_without_pipeline_access(): void
+    {
+        $board = $this->sharedBoard();
+        $buyer = User::factory()->create([
+            'business_id' => null,
+            'is_active' => true,
+            'modules' => [],
+        ]);
+
+        $this->withHeaders($this->headers($this->token))
+            ->patchJson("/api/v1/pipeline/boards/{$board->id}", [
+                'members' => [['user_id' => $buyer->id, 'role' => 'viewer']],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('members');
+
+        $this->assertDatabaseMissing('pipeline_board_members', ['board_id' => $board->id]);
+    }
+
+    public function test_owner_cannot_invite_external_user_on_plan_without_pipeline(): void
+    {
+        $board = $this->sharedBoard();
+        $externalOwner = User::factory()->create(['is_active' => true]);
+        $externalBusiness = Business::factory()->create([
+            'owner_id' => $externalOwner->id,
+            'currency' => 'USD',
+            'status' => 'active',
+        ]);
+        $externalOwner->update(['business_id' => $externalBusiness->id]);
+        $this->ensureSubscription($externalBusiness->id, Plan::where('slug', 'essential')->first()?->id);
+
+        $this->withHeaders($this->headers($this->token))
+            ->patchJson("/api/v1/pipeline/boards/{$board->id}", [
+                'members' => [['user_id' => $externalOwner->id, 'role' => 'viewer']],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('members');
+
+        $this->assertDatabaseMissing('pipeline_board_members', ['board_id' => $board->id]);
+    }
+
+    public function test_owner_can_invite_external_user_on_plan_with_pipeline(): void
+    {
+        $board = $this->sharedBoard();
+        $externalOwner = User::factory()->create(['is_active' => true]);
+        $externalBusiness = Business::factory()->create([
+            'owner_id' => $externalOwner->id,
+            'currency' => 'USD',
+            'status' => 'active',
+        ]);
+        $externalOwner->update(['business_id' => $externalBusiness->id]);
+        $this->ensureSubscription($externalBusiness->id, Plan::where('slug', 'professional')->first()?->id);
+
+        $this->withHeaders($this->headers($this->token))
+            ->patchJson("/api/v1/pipeline/boards/{$board->id}", [
+                'members' => [['user_id' => $externalOwner->id, 'role' => 'contributor']],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.members.0.user_id', $externalOwner->id);
+
+        $this->assertDatabaseHas('pipeline_board_members', [
+            'board_id' => $board->id,
+            'user_id' => $externalOwner->id,
+            'role' => 'contributor',
+        ]);
+    }
+
     public function test_editor_role_is_normalized_to_contributor(): void
     {
         $board = $this->sharedBoard();
