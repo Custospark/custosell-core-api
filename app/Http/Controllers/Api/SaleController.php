@@ -149,6 +149,12 @@ class SaleController extends Controller
             'sales.*.change_given' => ['nullable', 'numeric', 'min:0'],
             'sales.*.payment_method' => ['required', 'string', 'in:cash,mobile_money,card,bank,other'],
             'sales.*.shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
+            'sales.*.location_id' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('locations', 'id')
+                    ->where(fn ($q) => $q->where('business_id', $businessId)),
+            ],
             'sales.*.customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'sales.*.order_id' => ['nullable', 'integer', 'exists:orders,id'],
             'sales.*.sale_date' => ['nullable', 'date'],

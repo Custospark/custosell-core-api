@@ -470,11 +470,14 @@ class SaleService implements SaleServiceInterface
     protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
     {
         if ($locationId) {
-            return $locationId;
+            $exists = \App\Models\Location::forBusiness($businessId)->where('id', $locationId)->exists();
+            if ($exists) {
+                return $locationId;
+            }
         }
 
         $userLocation = \App\Models\User::find($userId)?->location_id;
-        if ($userLocation) {
+        if ($userLocation && \App\Models\Location::forBusiness($businessId)->where('id', $userLocation)->exists()) {
             return $userLocation;
         }
 

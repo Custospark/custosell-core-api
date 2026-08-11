@@ -67,6 +67,7 @@ class InvoiceService implements InvoiceServiceInterface
                 : max(0, $subtotal + $taxTotal);
 
             $locationId = $this->resolveLocationId($businessId, $userId, $data['location_id'] ?? null);
+            $this->assertBranchStockAvailable($businessId, $locationId, $lineItems);
 
             $invoice = $this->invoiceRepository->create([
                 'business_id' => $businessId,
@@ -105,15 +106,56 @@ class InvoiceService implements InvoiceServiceInterface
     protected function resolveLocationId(int $businessId, int $userId, ?int $locationId): ?int
     {
         if ($locationId) {
-            return $locationId;
+            $exists = \App\Models\Location::forBusiness($businessId)->where('id', $locationId)->exists();
+            if ($exists) {
+                return $locationId;
+            }
         }
 
         $userLocation = \App\Models\User::find($userId)?->location_id;
-        if ($userLocation) {
+        if ($userLocation && \App\Models\Location::forBusiness($businessId)->where('id', $userLocation)->exists()) {
             return $userLocation;
         }
 
         return \App\Services\LocationService::ensureDefault($businessId)?->id;
+    }
+
+    /**
+     * Physical goods on an invoice may not exceed what the branch has on hand.
+     * Services and custom (non-product) lines are exempt.
+     */
+    protected function assertBranchStockAvailable(int $businessId, ?int $locationId, array $items): void
+    {
+        foreach ($items as $item) {
+            $productId = isset($item['product_id']) ? (int) $item['product_id'] : null;
+            $qty = (float) ($item['quantity'] ?? 0);
+
+            if (!$productId || $qty <= 0) {
+                continue;
+            }
+
+            $product = \App\Models\Product::find($productId);
+            if (!$product || !$product->tracksStock()) {
+                continue;
+            }
+
+            $available = $locationId
+                ? (int) (\App\Models\LocationProduct::where('business_id', $businessId)
+                    ->where('location_id', $locationId)
+                    ->where('product_id', $productId)
+                    ->value('stock_quantity') ?? 0)
+                : (int) $product->stock_quantity;
+
+            if ($qty > $available) {
+                throw new \Illuminate\Validation\ValidationException(
+                    validator([], []),
+                    response()->json([
+                        'message' => "Insufficient stock for {$product->name}. Only {$available} available at this branch, requested {$qty}.",
+                        'errors' => ['items.*.quantity' => ["Only {$available} in stock at this branch for {$product->name}."]],
+                    ], 422),
+                );
+            }
+        }
     }
 
     /**
@@ -229,6 +271,7 @@ class InvoiceService implements InvoiceServiceInterface
                 $invoice->items()->delete();
 
                 $subtotal = 0;
+                $newItems = [];
                 foreach ($data['items'] as $item) {
                     $lineQty = (float) ($item['quantity'] ?? 1);
                     $linePrice = (float) ($item['unit_price'] ?? 0);
@@ -236,8 +279,7 @@ class InvoiceService implements InvoiceServiceInterface
                     $lineSubtotal = $lineQty * $linePrice - $lineDisc;
                     $subtotal += $lineSubtotal;
 
-                    InvoiceItem::create([
-                        'invoice_id' => $invoice->id,
+                    $newItems[] = [
                         'product_id' => $item['product_id'] ?? null,
                         'description' => $item['description'],
                         'quantity' => $lineQty,
@@ -247,7 +289,21 @@ class InvoiceService implements InvoiceServiceInterface
                             : 'retail',
                         'discount_amount' => $lineDisc,
                         'subtotal' => $lineSubtotal,
-                    ]);
+                    ];
+                }
+
+                $effectiveLocationId = isset($data['location_id'])
+                    ? $this->resolveLocationId((int) $invoice->business_id, (int) $invoice->created_by, $data['location_id'])
+                    : $invoice->location_id;
+
+                $this->assertBranchStockAvailable(
+                    (int) $invoice->business_id,
+                    $effectiveLocationId,
+                    $newItems,
+                );
+
+                foreach ($newItems as $newItem) {
+                    InvoiceItem::create(array_merge($newItem, ['invoice_id' => $invoice->id]));
                 }
 
                 $subtotal = isset($data['subtotal']) ? (float) $data['subtotal'] : $subtotal;

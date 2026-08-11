@@ -15,7 +15,12 @@ class SaleRequest extends BaseFormRequest
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'order_id' => ['nullable', 'integer', 'exists:orders,id'],
-            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
+            'location_id' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('locations', 'id')
+                    ->where(fn ($q) => $q->where('business_id', $this->user()->business_id)),
+            ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
