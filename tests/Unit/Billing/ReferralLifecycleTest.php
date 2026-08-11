@@ -2,14 +2,17 @@
 
 namespace Tests\Unit\Billing;
 
+use App\Enums\Billing\CommissionType;
 use App\Enums\Billing\DiscountType;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\ReferralStatus;
 use App\Enums\Billing\RewardType;
 use App\Models\Business;
+use App\Models\Payout;
 use App\Models\Plan;
 use App\Models\Referral;
 use App\Models\ReferralCode;
+use App\Models\SalesRep;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\ReferralService;
@@ -382,6 +385,62 @@ class ReferralLifecycleTest extends TestCase
         $this->assertEquals(0, $earnings['rewarded_amount']);
         $this->assertNull($earnings['referral_code']);
         $this->assertFalse($earnings['is_sales_rep']);
+    }
+
+    public function test_get_earnings_by_user_counts_only_paid_commission_for_sales_rep(): void
+    {
+        $owner = User::factory()->create(['is_active' => true]);
+        $salesRepCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::SALES_REP,
+            'owner_user_id' => $owner->id,
+            'code' => 'SRC1',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'reward_type' => RewardType::FLAT_AMOUNT,
+            'reward_value' => 0,
+            'is_active' => true,
+        ]);
+
+        $salesRep = SalesRep::create([
+            'user_id' => $owner->id,
+            'referral_code_id' => $salesRepCode->id,
+            'commission_rate' => 30,
+            'commission_type' => CommissionType::PERCENTAGE,
+            'is_active' => true,
+        ]);
+
+        $referral = $this->referralService->processReferral(
+            $salesRepCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+        $this->referralService->markActive($referral->id);
+
+        // A paid payout should count as commission paid...
+        $salesRep->payouts()->create([
+            'amount' => 9.65,
+            'currency' => 'USD',
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+        // ...but a scheduled payout must NOT (pending stays intact).
+        $salesRep->payouts()->create([
+            'amount' => 20.00,
+            'currency' => 'USD',
+            'status' => 'scheduled',
+            'scheduled_at' => now()->addDays(7),
+        ]);
+
+        $earnings = $this->referralService->getEarningsByUser($owner->id);
+
+        $this->assertTrue($earnings['is_sales_rep']);
+        $this->assertEquals(9.65, $earnings['commission_paid'], 'scheduled payout must not count as paid');
+        $this->assertGreaterThan(9.65, $earnings['commission_earned'], 'commission earned covers total earned');
+        $this->assertEquals(
+            round($earnings['commission_earned'] - 9.65, 2),
+            $earnings['commission_pending'],
+            'pending = earned - paid only'
+        );
     }
 
     // ─── Scenario 9: Self-referral prevention ───

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\SalesRep;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,15 +48,26 @@ class AccountController extends Controller
         $payouts = $user->payouts()
             ->with('paidByUser')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->toArray();
+            ->get();
 
-        $payouts = array_map(function ($payout) {
-            $payout['attachments'] = $this->normalizePayoutAttachments($payout['attachments'] ?? null);
-            return $payout;
-        }, $payouts);
+        // Sales-rep commissions are recorded as payouts on the SalesRep model,
+        // not the user. Merge them in so reps see their full payout history.
+        $salesRep = SalesRep::where('user_id', $user->id)->first();
+        if ($salesRep) {
+            $repPayouts = $salesRep->payouts()
+                ->with('paidByUser')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            $payouts = $payouts->concat($repPayouts)->sortByDesc('created_at')->values();
+        }
 
-        return response()->json(['data' => $payouts]);
+        $payouts = $payouts->map(function ($payout) {
+            $payoutArray = $payout->toArray();
+            $payoutArray['attachments'] = $this->normalizePayoutAttachments($payoutArray['attachments'] ?? null);
+            return $payoutArray;
+        });
+
+        return response()->json(['data' => $payouts->toArray()]);
     }
 
     private function normalizePayoutAttachments(mixed $attachments): ?array

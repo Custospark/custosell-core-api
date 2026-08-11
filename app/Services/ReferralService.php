@@ -381,6 +381,8 @@ class ReferralService implements ReferralServiceInterface
                 'referral_code' => null,
                 'is_sales_rep' => $isSalesRep,
                 'total_earned' => 0,
+                'total_paid' => 0,
+                'total_balance' => 0,
                 'pending_rewards' => 0,
                 'rewarded_amount' => 0,
                 'commission_earned' => 0,
@@ -398,7 +400,7 @@ class ReferralService implements ReferralServiceInterface
             ->get();
 
         $totalCommission = (float) $referrals->sum('commission_earned');
-        $paidCommission = $salesRep ? (float) $salesRep->payouts()->sum('amount') : 0;
+        $paidCommission = $salesRep ? (float) $salesRep->payouts()->where('status', 'paid')->sum('amount') : 0;
 
         $rewardsPaid = (float) User::find($userId)?->payouts()->where('status', 'paid')->sum('amount') ?? 0;
 
