@@ -28,10 +28,10 @@ class LocationController extends Controller
         return new LocationCollection($this->locationService->getActive($businessId));
     }
 
-    public function show(int $id): LocationResource
+    public function show(Request $request, int $id): LocationResource
     {
         $location = $this->locationService->getById($id);
-        if (!$location) {
+        if (!$location || $location->business_id !== $request->user()->business_id) {
             abort(404, 'Location not found');
         }
         return new LocationResource($location);

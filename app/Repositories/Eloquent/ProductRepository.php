@@ -31,6 +31,10 @@ class ProductRepository implements ProductRepositoryInterface
             foreach ($products as $product) {
                 $local = $product->locationStock->first();
                 if (!$local) {
+                    // Branch has no stock row for this product — it is out of stock there.
+                    // Never fall back to the global product quantity, or every branch
+                    // would show the same number regardless of where stock actually lives.
+                    $product->stock_quantity = 0;
                     continue;
                 }
                 $product->stock_quantity = (int) $local->stock_quantity;
