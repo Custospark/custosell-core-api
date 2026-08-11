@@ -4,12 +4,15 @@ namespace App\Services;
 
 use App\Models\Business;
 use App\Models\User;
+use App\Services\Concerns\ResolvesPersonalPlanModules;
 use App\Services\Platform\PlatformAdminService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ModuleAccessService
 {
+    use ResolvesPersonalPlanModules;
+
     public const ESTIMATES_FULL_SLUG = 'estimates_full';
 
     public const HR_FULL_SLUG = 'hr_full';
@@ -113,7 +116,9 @@ class ModuleAccessService
             $modules = array_merge($modules, self::PLATFORM_MODULES);
         }
 
-        if ($this->isBusinessOwner($user)) {
+        if ($user->account_type === 'personal') {
+            $modules = array_merge($modules, $this->personalPlanModules($user));
+        } elseif ($this->isBusinessOwner($user)) {
             $modules = array_merge($modules, $this->resolvedOwnerBusinessModules($user));
         } else {
             $modules = array_merge($modules, $this->storedBusinessModules($user));
@@ -146,6 +151,18 @@ class ModuleAccessService
         // Plan-level gating: check if the user's subscription plan includes this module feature
         if (! $this->planAllowsModule($user, $module)) {
             return false;
+        }
+
+        // Personal accounts resolve module grants from the live subscription plan
+        // features — mirror of UserResource::resolveModules and the frontend's
+        // getAccessibleModules. The mutable `user.modules` array can go stale or be
+        // decorated by offline/business sync, so it is never the source of truth here.
+        if ($user->account_type === 'personal') {
+            if ($module === 'settings') {
+                return true;
+            }
+
+            return in_array($module, $this->personalPlanModules($user), true);
         }
 
         // Sales and Customers are base modules — every business user needs them
