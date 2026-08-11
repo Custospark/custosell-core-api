@@ -17,6 +17,12 @@
     @endif
   </p>
 
+  @if(!empty($report['branch']))
+    <p class="ranking-subtitle" style="text-align:center;margin-bottom:10px;">
+      <strong>Branch:</strong> {{ $report['branch'] }}
+    </p>
+  @endif
+
   <p class="ranking-subtitle" style="text-align:center;margin-bottom:10px;">
     Net sales = gross sales - refunds - shift expenses
   </p>
