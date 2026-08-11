@@ -8,9 +8,8 @@
 
   <p class="ranking-subtitle" style="text-align:center;margin-bottom:12px;">
     {{ $report['cashier'] }}
-    · In {{ $shift->clock_in->format('M d, Y H:i') }}
     @if($shift->clock_out)
-      · Out {{ $shift->clock_out->format('M d, Y H:i') }}
+      · As of {{ $shift->clock_out->format('M d, Y H:i') }}
       @if(!empty($report['duration'])) · {{ $report['duration'] }} @endif
     @else
       · As of {{ now()->format('M d, Y H:i') }}
