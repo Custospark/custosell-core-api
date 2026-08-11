@@ -20,9 +20,17 @@ class InitiatePaymentRequest extends BaseFormRequest
             'payment_type' => ['required', 'string', 'in:onboarding,subscription,renewal,upgrade_proration,billing_cycle_change,topup'],
             'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly'],
             'topup_months' => ['required_if:payment_type,topup', 'nullable', 'integer', 'between:1,60'],
-            'phone' => ['sometimes', 'string'],
+            'phone' => ['required', 'string', 'min:6'],
             'idempotency_key' => ['sometimes', 'string', 'max:255'],
             'metadata' => ['sometimes', 'nullable', 'array'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'phone.required' => 'A mobile money phone number is required to start the payment.',
+            'phone.min' => 'Please enter a valid mobile money phone number.',
+        ]);
     }
 }
