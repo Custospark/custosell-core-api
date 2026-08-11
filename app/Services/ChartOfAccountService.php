@@ -101,9 +101,15 @@ class ChartOfAccountService
         $this->chartOfAccountRepository->delete($account);
     }
 
-    public function seedDefaultTemplate(int $businessId): void
+    /**
+     * Seed the default chart-of-accounts template for a single business. Idempotent per code.
+     *
+     * @return int Number of accounts created.
+     */
+    public function seedDefaultTemplate(int $businessId): int
     {
         $seeder = new \Database\Seeders\DefaultAccountingTemplateSeeder();
-        $seeder->run();
+
+        return $seeder->runForBusiness($businessId);
     }
 }

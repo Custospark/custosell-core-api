@@ -2,15 +2,38 @@
 
 namespace Database\Seeders;
 
-use App\Models\Business;
 use App\Models\ChartOfAccount;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 
 class DefaultAccountingTemplateSeeder extends Seeder
 {
+    /**
+     * Runs the `accounting:seed-chart-of-accounts` command once, seeding the default
+     * chart for every business missing one (idempotent — existing codes are skipped).
+     */
     public function run(): void
     {
-        $accounts = [
+        if ($this->command) {
+            $this->command->call('accounting:seed-chart-of-accounts');
+        } else {
+            Artisan::call('accounting:seed-chart-of-accounts');
+        }
+    }
+
+    /**
+     * Seed the default chart-of-accounts template for a single business. Idempotent per code.
+     *
+     * @return int Number of accounts created.
+     */
+    public function runForBusiness(int $businessId): int
+    {
+        return $this->seedForBusiness($businessId, $this->defaultTemplate());
+    }
+
+    protected function defaultTemplate(): array
+    {
+        return [
             ['code' => '1000', 'name' => 'Assets', 'parent_code' => null, 'type_id' => 1, 'normal_balance' => 'debit'],
             ['code' => '1100', 'name' => 'Current Assets', 'parent_code' => '1000', 'type_id' => 1, 'normal_balance' => 'debit'],
             ['code' => '1101', 'name' => 'Cash', 'parent_code' => '1100', 'type_id' => 1, 'normal_balance' => 'debit'],
@@ -82,20 +105,12 @@ class DefaultAccountingTemplateSeeder extends Seeder
             ['code' => '6600', 'name' => 'Amortization Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
             ['code' => '6700', 'name' => 'Research & Development', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
         ];
-
-        $businesses = Business::all();
-
-        if ($businesses->isEmpty()) {
-            $this->command?->info('No businesses found — skipping chart-of-accounts seeding.');
-            return;
-        }
-
-        foreach ($businesses as $business) {
-            $this->seedForBusiness($business->id, $accounts);
-        }
     }
 
-    protected function seedForBusiness(int $businessId, array $accounts): void
+    /**
+     * @return int Number of accounts created.
+     */
+    protected function seedForBusiness(int $businessId, array $accounts): int
     {
         $existingCodes = ChartOfAccount::where('business_id', $businessId)
             ->pluck('code')
@@ -104,6 +119,8 @@ class DefaultAccountingTemplateSeeder extends Seeder
         $inserted = ChartOfAccount::where('business_id', $businessId)
             ->pluck('id', 'code')
             ->toArray();
+
+        $created = 0;
 
         foreach ($accounts as $account) {
             if (in_array($account['code'], $existingCodes)) {
@@ -127,6 +144,9 @@ class DefaultAccountingTemplateSeeder extends Seeder
             ]);
 
             $inserted[$account['code']] = $model->id;
+            $created++;
         }
+
+        return $created;
     }
 }

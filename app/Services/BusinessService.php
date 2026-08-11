@@ -34,6 +34,7 @@ class BusinessService implements BusinessServiceInterface
         protected ReferralCodeServiceInterface $referralCodeService,
         protected ReferralCodeRepositoryInterface $referralCodeRepository,
         protected ReferralServiceInterface $referralService,
+        protected ChartOfAccountService $chartOfAccountService,
     ) {}
 
     public function getById(int $id): ?Business
@@ -106,6 +107,8 @@ class BusinessService implements BusinessServiceInterface
             }
             $businessData['slug'] = $slug;
             $business = $this->businessRepository->create($businessData);
+
+            $this->chartOfAccountService->seedDefaultTemplate((int) $business->id);
 
             $user->business_id = $business->id;
             $user->account_type = 'business';

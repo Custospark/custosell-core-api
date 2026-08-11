@@ -34,6 +34,7 @@ class UserService implements UserServiceInterface
         protected ReferralCodeServiceInterface $referralCodeService,
         protected ReferralCodeRepositoryInterface $referralCodeRepository,
         protected SubscriptionServiceInterface $subscriptionService,
+        protected ChartOfAccountService $chartOfAccountService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): Collection
@@ -100,6 +101,8 @@ class UserService implements UserServiceInterface
                     'status' => 'active',
                     'business_type' => 'personal',
                 ]);
+
+                $this->chartOfAccountService->seedDefaultTemplate((int) $business->id);
 
                 $plan = Plan::where('slug', 'personal')->first();
                 if ($plan) {

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Business, Category, Customer, Plan, Product, Role, Sale, SaleItem, Shift, StockMovement, Subscription, ExpenseCategory, Expense, User};
+use App\Models\{Business, Category, ChartOfAccount, Customer, Plan, Product, Role, Sale, SaleItem, Shift, StockMovement, Subscription, ExpenseCategory, Expense, User};
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -178,6 +178,26 @@ class BusinessTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('data.name', 'Updated Shop Name')
             ->assertJsonPath('data.currency', 'USD');
+    }
+
+    public function test_business_registration_seeds_chart_of_accounts(): void
+    {
+        $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Chart Owner',
+            'name' => 'Chart Shop',
+            'email' => 'chartshop@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
+        ]);
+
+        $response->assertStatus(201);
+        $businessId = $response->json('data.id');
+
+        $this->assertTrue(ChartOfAccount::where('business_id', $businessId)->where('code', '1101')->exists());
+        $this->assertTrue(ChartOfAccount::where('business_id', $businessId)->where('code', '4100')->exists());
+        $this->assertTrue(ChartOfAccount::where('business_id', $businessId)->where('code', '6101')->exists());
     }
 
     public function test_register_sets_user_business_id(): void
