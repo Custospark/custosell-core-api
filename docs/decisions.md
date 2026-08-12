@@ -529,3 +529,17 @@
 **Gates:** BE `composer vera:fast` passed (php -l 1 file + logic); `php artisan migrate --pretend` OK.
 
 **Full detail:** `Backend/docs/adr/2026-08-13-backfill-default-branch.md`
+
+
+## ADR-033: Pre-cleanup for hard-deleting soft-deleted businesses and users
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+**Context:** `2026_07_25_000001_hard_delete_soft_deleted_businesses_and_users` hard-deletes rows where `deleted_at IS NOT NULL`. In production it failed with `SQLSTATE[23000] ... Cannot delete or update a parent row ... FOREIGN KEY (created_by) REFERENCES users(id)` because several tables hold RESTRICTIVE foreign keys to `users` (journal_entries, invoices, estimates, estimate_versions, estimate_templates, projects, timesheet_entries, project_cost_allocations, board_wall_posts). A restrictive FK blocks the purge; the migration is not recorded as run, so it re-runs and fails identically.
+
+**Decision:** Add a backdated, idempotent pre-cleanup migration (`2026_07_25_000000_reassign_soft_deleted_user_references.php`) that runs BEFORE the hard-delete. It reassigns each referencing row's `created_by` / `user_id` to the owning business's `owner_id` (skipping owners that are themselves soft-deleted), preserving financial/audit records instead of deleting them. The hard-delete then succeeds.
+
+**Why a new (backdated) migration:** Existing migrations are historical records and are never edited (Rule 15). A backdated timestamp ensures it sorts before `...000001` so the purge can proceed; it uses `UPDATE ... JOIN` guarded by try/catch so it is safe on any environment and idempotent.
+
+**Gates:** BE `composer vera:fast` passed (php -l 1 file + logic).
