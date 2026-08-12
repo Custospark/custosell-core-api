@@ -81,7 +81,89 @@ class ReferralTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->assertEquals(1, $this->referralCode->fresh()->used_count);
+        // Applying/previewing a code must NOT consume it — usage only counts
+        // once a payment has actually been claimed with the code.
+        $this->assertEquals(0, $this->referralCode->fresh()->used_count);
+    }
+
+    public function test_code_counts_as_used_only_after_payment_claimed(): void
+    {
+        $referral = $this->service->processReferral(
+            $this->referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $this->assertEquals(0, $this->referralCode->fresh()->used_count, 'preview does not consume the code');
+
+        $this->service->markActive($referral->id);
+
+        $this->assertEquals(1, $this->referralCode->fresh()->used_count, 'claimed payment counts the code as used');
+    }
+
+    public function test_previewing_then_applying_other_code_swaps_pending_referral(): void
+    {
+        // A PENDING (unpaid) code is only a preview — a different code applied
+        // before any payment is claimed replaces it (latest code wins).
+        $first = $this->service->processReferral(
+            $this->referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $otherCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->referringBusiness->id,
+            'code' => 'OTHER09',
+            'discount_type' => DiscountType::FLAT_AMOUNT,
+            'discount_value' => 15,
+            'is_active' => true,
+            'max_uses' => 10,
+            'used_count' => 0,
+            'expires_at' => null,
+        ]);
+
+        $second = $this->service->processReferral(
+            $otherCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+
+        $this->assertSame($first->id, $second->id, 'same referral row is re-pointed, no stacking');
+        $this->assertSame($otherCode->id, $second->fresh()->referral_code_id, 'newest code wins while unpaid');
+        $this->assertSame('15.00', (string) $second->fresh()->discount_applied);
+        $this->assertDatabaseCount('referrals', 1);
+    }
+
+    public function test_account_stays_locked_after_code_is_claimed(): void
+    {
+        $first = $this->service->processReferral(
+            $this->referralCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
+        $this->service->markActive($first->id);
+
+        $otherCode = ReferralCode::create([
+            'owner_type' => ReferralCodeOwnerType::BUSINESS,
+            'owner_business_id' => $this->referringBusiness->id,
+            'code' => 'LOCKED01',
+            'discount_type' => DiscountType::PERCENTAGE,
+            'discount_value' => 10,
+            'is_active' => true,
+            'max_uses' => 10,
+            'used_count' => 0,
+            'expires_at' => null,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('This account has already used a referral code');
+
+        $this->service->processReferral(
+            $otherCode->code,
+            $this->subscription->id,
+            $this->business->id
+        );
     }
 
     public function test_process_referral_throws_for_invalid_code(): void
@@ -96,22 +178,25 @@ class ReferralTest extends TestCase
         );
     }
 
-    public function test_process_referral_throws_for_duplicate(): void
+    public function test_reapplying_same_code_while_pending_is_idempotent(): void
     {
-        $this->service->processReferral(
+        $first = $this->service->processReferral(
             $this->referralCode->code,
             $this->subscription->id,
             $this->business->id
         );
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('This account has already used a referral code');
-
-        $this->service->processReferral(
+        // Still unpaid → re-applying the same code refreshes the pending
+        // referral instead of raising a duplicate error.
+        $second = $this->service->processReferral(
             $this->referralCode->code,
             $this->subscription->id,
             $this->business->id
         );
+
+        $this->assertSame($first->id, $second->id, 'no new referral row on repeat apply');
+        $this->assertDatabaseCount('referrals', 1);
+        $this->assertEquals(0, $this->referralCode->fresh()->used_count, 'preview never consumes the code');
     }
 
     public function test_mark_active_sets_status(): void

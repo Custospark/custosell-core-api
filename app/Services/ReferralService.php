@@ -107,16 +107,16 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
-            // One-time use per business — no stacking across codes or resubscribes
-            if ($this->referralRepository->findByBusiness($businessId)->isNotEmpty()) {
+            // Only a CLAIMED (paid) referral permanently locks the account. A
+            // PENDING referral is just a preview of a code's worth — trying a
+            // code must never earmark the account or consume the code (usage is
+            // counted in markActive, once a payment is actually claimed).
+            $businessReferrals = $this->referralRepository->findByBusiness($businessId);
+            $claimed = $businessReferrals->first(
+                fn ($r) => in_array($r->status, [ReferralStatus::ACTIVE, ReferralStatus::REWARDED], true)
+            );
+            if ($claimed) {
                 throw new \RuntimeException('This account has already used a referral code');
-            }
-
-            // Same-code duplicate guard
-            $existing = $this->referralRepository->findByCode($referralCode->id)
-                ->first(fn ($r) => $r->referred_business_id === $businessId);
-            if ($existing) {
-                throw new \RuntimeException('This account has already used this referral code');
             }
 
             // Calculate discount based on the amount being paid at the time of application
@@ -135,6 +135,19 @@ class ReferralService implements ReferralServiceInterface
                 DiscountType::FREE_MONTH => $discountBase,
             };
 
+            // Latest code wins while unpaid: a PENDING referral is only a
+            // preview, so applying a new code re-points it to the newer code
+            // (recomputed against the business/payment) instead of stacking.
+            $pending = $businessReferrals->first(fn ($r) => $r->status === ReferralStatus::PENDING);
+            if ($pending) {
+                return $this->referralRepository->update($pending, [
+                    'referral_code_id' => $referralCode->id,
+                    'subscription_id' => $subscriptionId,
+                    'referred_business_id' => $businessId,
+                    'discount_applied' => $discountApplied,
+                ]);
+            }
+
             $referral = $this->referralRepository->create([
                 'referral_code_id' => $referralCode->id,
                 'subscription_id' => $subscriptionId,
@@ -147,7 +160,9 @@ class ReferralService implements ReferralServiceInterface
             // No BillingCredit created here — the discount is applied directly
             // to the payment amount in GatewayService. After payment confirms,
             // markActive() creates any remaining months as a credit.
-            $referralCode->markUsed();
+            // NOTE: usage is NOT counted here. A code is only ever counted as
+            // "used" in markActive(), once a payment has been claimed with it —
+            // merely previewing/applying a code must not consume it.
 
             return $referral;
         });
@@ -209,6 +224,12 @@ class ReferralService implements ReferralServiceInterface
             $referral = $this->referralRepository->find($id);
             if (!$referral) {
                 throw new \RuntimeException('Referral not found');
+            }
+
+            // A referral may only be activated once — a code counts as "used"
+            // only when a payment has actually been claimed with it.
+            if ($referral->status === ReferralStatus::ACTIVE) {
+                return $referral;
             }
 
             $updateData = [
@@ -333,6 +354,10 @@ class ReferralService implements ReferralServiceInterface
                     ]);
                 }
             }
+
+            // The code is only consumed once a payment is actually claimed with
+            // it. Previewing/applying (PENDING) never counts toward max_uses.
+            $referralCode->markUsed();
 
             return $this->referralRepository->update($referral, $updateData);
         });
