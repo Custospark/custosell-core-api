@@ -161,7 +161,7 @@ class PipelineLeadService
             'expected_close_date' => $data['expected_close_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
             'start_date' => $data['start_date'] ?? null,
-            'priority' => $data['priority'] ?? 'none',
+            'priority' => $data['priority'] ?? null,
             'status' => $data['status'] ?? 'open',
             'assigned_to' => $data['assigned_to'] ?? null,
         ]);
