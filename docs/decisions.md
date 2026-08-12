@@ -513,3 +513,19 @@
 **Gates:** BE `composer vera:fast` passed; `AuthTest::test_personal_registration_seeds_default_pipeline_board`, `BusinessTest::test_register_business_seeds_default_pipeline_board_with_columns_and_cards`, and `PipelineBoardNotificationCtaTest` all passed (3 tests, 18 assertions).
 
 **Full detail:** `Backend/docs/adr/2026-08-13-default-pipeline-board-seed-and-code-cta.md`
+
+
+## ADR-032: Backfill a default branch for every business and link all stock to it
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+**Context:** Branches are represented by the `locations` table; a business's default branch is the row with `is_default = true` (created as `Main Branch`, code `MAIN`), and per-branch stock lives in the `location_product` pivot (`stock_quantity`, `low_stock_threshold`). The original `2026_08_02_000000` migration backfilled a default branch only at the moment it ran, and `LocationService::ensureDefaultLocation()` covers new businesses at runtime. Businesses that were created after that backfill ran, or that never hit the runtime path, could be left with **no default branch** and therefore no `location_product` rows — meaning their stock was not linked to any branch.
+
+**Decision:** Add an idempotent data backfill migration (`2026_08_13_000000_backfill_default_branch_for_all_businesses.php`) that iterates every business and, for each one lacking a default location, creates a `Main Branch` (`is_default = true`, `is_active = true`). It then backfills `location_id` on orphaned rows in `users`, `shifts`, `sales`, `stock_movements`, `invoices`, and `orders`, links every user via `location_user`, and links **all of the business's stock** by upserting a `location_product` row for every product (carrying over `stock_quantity` and `low_stock_threshold`). The logic mirrors `LocationService::ensureDefaultLocation()` so runtime and migration behaviour stay consistent.
+
+**Why a new migration:** Existing migrations are historical records and are never edited (Rule 15). This runs `updateOrInsert`, so it is safe to re-run and does not duplicate stock rows.
+
+**Gates:** BE `composer vera:fast` passed (php -l 1 file + logic); `php artisan migrate --pretend` OK.
+
+**Full detail:** `Backend/docs/adr/2026-08-13-backfill-default-branch.md`
