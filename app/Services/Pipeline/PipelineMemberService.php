@@ -50,9 +50,8 @@ class PipelineMemberService
 
             if ($ineligible !== []) {
                 throw ValidationException::withMessages([
-                    'members' => 'These users cannot access this board (out of pipeline/estimates scope or no active subscription): '
-                        .implode(', ', $ineligible)
-                        .'.',
+                    'members' => 'Can\'t invite: '.implode(', ', $ineligible)
+                        .'. They need pipeline/estimates access with an active subscription.',
                 ]);
             }
         }
