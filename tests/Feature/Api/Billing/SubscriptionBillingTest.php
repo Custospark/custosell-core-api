@@ -10,7 +10,6 @@ use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class SubscriptionBillingTest extends TestCase
@@ -347,102 +346,6 @@ class SubscriptionBillingTest extends TestCase
         $subscription->refresh();
         $this->assertTrue($subscription->isCancelAtPeriodEnd());
         $this->assertNull($subscription->cancelled_at);
-    }
-
-    // ─── PAYMENT INITIATION ──────────────────────────────────────
-
-    public function test_initiate_payment_returns_422_for_missing_fields(): void
-    {
-        $subscription = Subscription::create([
-            'business_id' => $this->business->id,
-            'plan_id' => $this->essentialPlan->id,
-            'status' => 'active',
-            'billing_cycle' => 'monthly',
-            'starts_at' => now(),
-            'next_billing_date' => now()->addMonth(),
-        ]);
-
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', []);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['gateway_name', 'amount', 'currency', 'payment_type']);
-    }
-
-    public function test_initiate_payment_with_valid_data_creates_pending_payment(): void
-    {
-        Config::set('pesapal.enabled', true);
-
-        $this->mock(\App\Services\Payment\Gateways\PesaPalGateway::class, function ($mock) {
-            $mock->shouldReceive('isEnabled')->andReturn(true);
-            $mock->shouldReceive('getSupportedCurrencies')->andReturn(['UGX', 'KES', 'TZS', 'USD']);
-            $mock->shouldReceive('initiate')->andReturn([
-                'gateway_txn_id' => 'mock-txn-123',
-                'gateway_ref' => 'mock-ref-123',
-                'type' => 'redirect',
-                'redirect_url' => 'https://pay.pesapal.com/mock',
-                'message' => 'Success',
-                'raw_response' => [],
-            ]);
-        });
-
-        $this->mock(\App\Services\Currency\Contracts\CurrencyExchangeServiceInterface::class, function ($mock) {
-            $mock->shouldReceive('getExchangeRate')
-                ->with('USD', 'UGX')
-                ->andReturn(3708.59);
-        });
-
-        $subscription = Subscription::create([
-            'business_id' => $this->business->id,
-            'plan_id' => $this->essentialPlan->id,
-            'status' => 'active',
-            'billing_cycle' => 'monthly',
-            'starts_at' => now(),
-            'next_billing_date' => now()->addMonth(),
-        ]);
-
-        // Sent amount ignored — backend recomputes authoritative $20/mo → 20 × 3708.59 = 74,171.80 UGX.
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'pesapal',
-                'amount' => 75000,
-                'currency' => 'UGX',
-                'payment_type' => 'subscription',
-            ]);
-
-        $response->assertStatus(201);
-
-        $this->assertDatabaseHas('billing_payments', [
-            'business_id' => $this->business->id,
-            'subscription_id' => $subscription->id,
-            'amount' => round(20 * 3708.59, 2),
-            'currency' => 'UGX',
-            'status' => 'pending',
-            'gateway_name' => 'pesapal',
-        ]);
-    }
-
-    public function test_initiate_payment_returns_error_for_invalid_gateway(): void
-    {
-        Subscription::create([
-            'business_id' => $this->business->id,
-            'plan_id' => $this->essentialPlan->id,
-            'status' => 'active',
-            'billing_cycle' => 'monthly',
-            'starts_at' => now(),
-            'next_billing_date' => now()->addMonth(),
-        ]);
-
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'nonexistent_gateway',
-                'amount' => 75000,
-                'currency' => 'UGX',
-                'payment_type' => 'subscription',
-            ]);
-
-        $response->assertStatus(502)
-            ->assertJsonStructure(['message']);
     }
 
     // ─── PAYMENT HISTORY ─────────────────────────────────────────

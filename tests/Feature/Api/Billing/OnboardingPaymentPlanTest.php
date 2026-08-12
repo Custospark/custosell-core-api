@@ -118,6 +118,7 @@ class OnboardingPaymentPlanTest extends TestCase
         $response = $this->withHeaders($this->authHeaders())
             ->postJson('/api/v1/billing/payments/initiate', [
                 'gateway_name' => 'pesapal',
+                'phone' => '0771234567',
                 'amount' => 5.00,
                 'currency' => 'USD',
                 'payment_type' => 'onboarding',

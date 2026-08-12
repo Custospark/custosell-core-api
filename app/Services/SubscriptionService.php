@@ -214,21 +214,33 @@ class SubscriptionService implements SubscriptionServiceInterface
         });
     }
 
-    public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null): Subscription
+    public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null, bool $preserveNextBillingDate = false): Subscription
     {
         $plan = $this->planRepository->find($newPlanId);
         if (!$plan) {
             throw new \RuntimeException('Plan not found');
         }
 
-        return DB::transaction(function () use ($subscription, $plan, $billingCycle) {
+        return DB::transaction(function () use ($subscription, $plan, $billingCycle, $preserveNextBillingDate) {
             $data = [
                 'plan_id' => $plan->id,
                 'price_monthly_usd' => $plan->price_monthly_usd,
                 'price_yearly_usd' => $plan->price_yearly_usd,
                 'onboarding_fee_usd' => $plan->onboarding_fee_usd,
-                'next_billing_date' => $this->nextBillingDate(now(), $billingCycle ?? $subscription->billing_cycle ?? 'monthly'),
             ];
+
+            // An upgrade KEEPS the user's paid-through date: top-ups extend
+            // next_billing_date many periods out, and the proration quote already
+            // charged the difference over that whole remaining window. Resetting
+            // the date here would silently discard the prepaid coverage they paid
+            // for (months of topped-up days vanish). Only reset when explicitly
+            // requested (fresh subscriptions, cycle changes, reactivations).
+            if (!$preserveNextBillingDate) {
+                $data['next_billing_date'] = $this->nextBillingDate(
+                    now(),
+                    $billingCycle ?? $subscription->billing_cycle ?? 'monthly'
+                );
+            }
 
             if ($billingCycle) {
                 $data['billing_cycle'] = $billingCycle;

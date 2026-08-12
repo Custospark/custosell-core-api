@@ -16,7 +16,7 @@ interface SubscriptionServiceInterface
     public function getActive(): Collection;
 
     public function subscribe(int $businessId, int $planId, string $billingCycle = 'monthly', ?string $referralCode = null, bool $skipTrial = false): Subscription;
-    public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null): Subscription;
+    public function changePlan(Subscription $subscription, int $newPlanId, ?string $billingCycle = null, bool $preserveNextBillingDate = false): Subscription;
     public function activateSubscription(Subscription $subscription, $payment = null, ?int $approvedBy = null): Subscription;
     public function renewSubscription(Subscription $subscription, $payment = null): Subscription;
     public function renewEarly(Subscription $subscription, ?int $months = null): Subscription;

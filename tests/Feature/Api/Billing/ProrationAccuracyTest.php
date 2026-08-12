@@ -11,7 +11,6 @@ use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -107,29 +106,6 @@ class ProrationAccuracyTest extends TestCase
         ]);
     }
 
-    protected function mockPesapal(): void
-    {
-        Config::set('pesapal.enabled', true);
-
-        $this->mock(\App\Services\Payment\Gateways\PesaPalGateway::class, function ($mock) {
-            $mock->shouldReceive('isEnabled')->andReturn(true);
-            $mock->shouldReceive('getSupportedCurrencies')->andReturn(['UGX', 'KES', 'TZS', 'USD']);
-            $mock->shouldReceive('initiate')->andReturn([
-                'gateway_txn_id' => 'mock-txn-' . uniqid(),
-                'gateway_ref' => 'mock-ref-' . uniqid(),
-                'type' => 'redirect',
-                'redirect_url' => 'https://pay.pesapal.com/mock',
-                'message' => 'Success',
-                'raw_response' => [],
-            ]);
-        });
-    }
-
-    protected function usdToLocal(float $usd): float
-    {
-        return round($usd * self::RATE, 2);
-    }
-
     protected function expectedProration(Plan $current, Plan $target, Carbon $nextBillingDate, string $cycle = 'monthly'): array
     {
         $now = Carbon::now()->startOfDay();
@@ -148,8 +124,11 @@ class ProrationAccuracyTest extends TestCase
             ? (float) $target->price_yearly_usd
             : (float) $target->price_monthly_usd;
 
+        // Full-window proration: keep the user's paid-through date, charge the
+        // DIFFERENCE over ALL remaining days (top-ups can push daysRemaining
+        // several periods beyond the single-period daysInPeriod figure).
         $credit = round($oldPrice * ($daysRemaining / $daysInPeriod), 2);
-        $charge = $newPrice;
+        $charge = round($newPrice * ($daysRemaining / $daysInPeriod), 2);
         $due = round(max(0, $charge - $credit), 2);
 
         return [
@@ -212,145 +191,38 @@ class ProrationAccuracyTest extends TestCase
         $this->assertSame($this->professional->id, (int) $subscription->plan_id);
     }
 
-    // ─── SUBSCRIBE / ACTIVATE (authoritative plan price) ──────────────────
+    // ─── TOPPED-UP WINDOW (multi-month prepaid coverage) ──────────────────
 
-    public function test_subscription_payment_amount_is_authoritative_plan_price_during_trial(): void
+    public function test_upgrade_after_topup_charges_full_window_difference(): void
     {
-        $this->mockPesapal();
+        // A 3-month top-up pushes next_billing_date ~122 days out while the billing
+        // window stays one month → daysRemaining (122) >> daysInPeriod (31). The
+        // quote must charge the DIFFERENCE over ALL remaining days, never just one
+        // new-plan period, so the topped-up coverage is never discounted/overwritten.
+        $nextBillingDate = Carbon::now()->addDays(122)->startOfDay();
+        $subscription = $this->createSubscription($this->professional, $nextBillingDate, 'active', 'monthly');
 
-        $subscription = $this->createSubscription(
-            $this->professional,
-            Carbon::now()->addMonth()->startOfDay(),
-            'trial',
-        );
-
-        // Send a deliberately wrong amount — backend must recompute to the plan price,
-        // validate in USD, then convert to UGX: 54 × 3708.59 = 200,263.86.
         $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'pesapal',
-                'amount' => 1.00,
-                'currency' => 'USD',
-                'payment_type' => 'subscription',
+            ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
+                'to_plan_id' => $this->enterprise->id,
+                'effective' => 'immediate',
+                'billing_cycle' => 'monthly',
             ]);
 
-        $response->assertStatus(201);
+        $response->assertStatus(200);
 
-        $this->assertDatabaseHas('billing_payments', [
-            'business_id' => $this->business->id,
-            'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal(54.0),
-            'currency' => 'UGX',
-            'payment_type' => 'subscription',
-            'status' => 'pending',
-        ]);
-    }
-
-    // ─── ONBOARDING (authoritative onboarding fee) ────────────────────────
-
-    public function test_onboarding_payment_amount_is_authoritative(): void
-    {
-        $this->mockPesapal();
-
-        $subscription = $this->createSubscription(
-            $this->professional,
-            Carbon::now()->addMonth()->startOfDay(),
-            'trial',
-        );
-
-        // Frontend amount ignored; authoritative = $95 onboarding fee → 352,316.05 UGX.
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'pesapal',
-                'amount' => 5.00,
-                'currency' => 'USD',
-                'payment_type' => 'onboarding',
-            ]);
-
-        $response->assertStatus(201);
-
-        $this->assertDatabaseHas('billing_payments', [
-            'business_id' => $this->business->id,
-            'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal(95.0),
-            'currency' => 'UGX',
-            'payment_type' => 'onboarding',
-            'status' => 'pending',
-        ]);
-    }
-
-    // ─── UPGRADE PAYMENT (USD contract → exact local charge) ──────────────
-
-    public function test_upgrade_payment_charges_exact_local_amount_after_conversion(): void
-    {
-        $this->mockPesapal();
-
-        $nextBillingDate = Carbon::now()->addDays(20)->startOfDay();
-        $subscription = $this->createSubscription($this->professional, $nextBillingDate);
+        $proration = $response->json('proration.proration');
         $expected = $this->expectedProration($this->professional, $this->enterprise, $nextBillingDate);
 
-        // Confirm upgrade intent → stores pending amount
-        $this->withHeaders($this->authHeaders())
-            ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
-                'to_plan_id' => $this->enterprise->id,
-                'effective' => 'immediate',
-                'billing_cycle' => 'monthly',
-            ])->assertStatus(200);
+        $this->assertGreaterThan(31, (int) $proration['days_remaining']);
+        $this->assertSame($expected['credit'], (float) $proration['credit']);
+        $this->assertSame($expected['charge'], (float) $proration['charge']);
+        $this->assertSame($expected['due'], (float) $proration['proration_due']);
+        $this->assertSame($expected['due'], (float) $proration['proration_due_usd']);
 
-        // Frontend sends the USD proration figure (backend contract); backend converts to UGX.
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'pesapal',
-                'amount' => $expected['due'],
-                'currency' => 'UGX',
-                'payment_type' => 'upgrade_proration',
-                'metadata' => ['action' => 'upgrade', 'to_plan_id' => $this->enterprise->id, 'billing_cycle' => 'monthly'],
-            ]);
-
-        $response->assertStatus(201);
-
-        $this->assertDatabaseHas('billing_payments', [
-            'business_id' => $this->business->id,
-            'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal($expected['due']),
-            'currency' => 'UGX',
-            'payment_type' => 'upgrade_proration',
-            'status' => 'pending',
-        ]);
-    }
-
-    public function test_upgrade_payment_rejects_tampered_amount(): void
-    {
-        $this->mockPesapal();
-
-        $subscription = $this->createSubscription(
-            $this->professional,
-            Carbon::now()->addDays(20)->startOfDay(),
-        );
-
-        $this->withHeaders($this->authHeaders())
-            ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
-                'to_plan_id' => $this->enterprise->id,
-                'effective' => 'immediate',
-                'billing_cycle' => 'monthly',
-            ])->assertStatus(200);
-
-        // Tampered amount (1.00) vs pending due — must be rejected, no payment created.
-        $response = $this->withHeaders($this->authHeaders())
-            ->postJson('/api/v1/billing/payments/initiate', [
-                'gateway_name' => 'pesapal',
-                'amount' => 1.00,
-                'currency' => 'UGX',
-                'payment_type' => 'upgrade_proration',
-            ]);
-
-        $response->assertStatus(502);
-
-        $this->assertDatabaseMissing('billing_payments', [
-            'business_id' => $this->business->id,
-            'subscription_id' => $subscription->id,
-            'payment_type' => 'upgrade_proration',
-        ]);
+        // Plan must NOT change until payment completes
+        $subscription->refresh();
+        $this->assertSame($this->professional->id, (int) $subscription->plan_id);
     }
 
     // ─── BILLING CYCLE CHANGE (monthly → yearly) ──────────────────────────

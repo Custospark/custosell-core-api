@@ -221,7 +221,13 @@ trait HandlesPaymentApproval
             return;
         }
 
-        DB::transaction(function () use ($payment, $subscription, $toPlanId, $billingCycle) {
+        // The upgrade quote already charged the full-window difference over the
+        // REMAINING prepaid coverage (top-ups keep next_billing_date far out).
+        // Preserve the paid-through date so topped-up days are never discarded;
+        // only a cycle switch (monthly → yearly prepay) resets it.
+        $preserveBillingDate = $billingCycle === ($subscription->billing_cycle ?? 'monthly');
+
+        DB::transaction(function () use ($payment, $subscription, $toPlanId, $billingCycle, $preserveBillingDate) {
             $this->scheduledChangeRepo->create([
                 'subscription_id' => $subscription->id,
                 'business_id' => $subscription->business_id,
@@ -237,7 +243,12 @@ trait HandlesPaymentApproval
                 ],
             ]);
 
-            $this->subscriptionService->changePlan($subscription, (int) $toPlanId, $billingCycle);
+            $this->subscriptionService->changePlan(
+                $subscription,
+                (int) $toPlanId,
+                $billingCycle,
+                $preserveBillingDate,
+            );
 
             $this->referralService->activateForSubscription($subscription->id);
 
@@ -269,6 +280,7 @@ trait HandlesPaymentApproval
             'payment_id' => $payment->id,
             'subscription_id' => $subscription->id,
             'to_plan_id' => $toPlanId,
+            'preserved_next_billing_date' => $preserveBillingDate,
         ]);
     }
 

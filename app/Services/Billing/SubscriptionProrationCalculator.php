@@ -40,8 +40,15 @@ class SubscriptionProrationCalculator
             ? (float) ($newPlan->price_yearly_usd ?? 0)
             : (float) ($newPlan->price_monthly_usd ?? 0);
 
+        // The user has already PAID for the whole remaining window (top-ups can
+        // push next_billing_date many periods out, so daysRemaining may exceed
+        // daysInPeriod). We keep their paid-through date and charge the pro-rated
+        // DIFFERENCE over that full window:
+        //   credit = value of the remaining days at the OLD plan price (already paid)
+        //   charge = value of the SAME days at the NEW plan price (what they now cost)
+        //   due    = the gap between the two, scaled to the remaining fraction.
         $creditUsd = round($oldPriceUsd * ($daysRemaining / $daysInPeriod), 2);
-        $chargeUsd = $newPriceUsd;
+        $chargeUsd = round($newPriceUsd * ($daysRemaining / $daysInPeriod), 2);
         $prorationDueUsd = round(max(0, $chargeUsd - $creditUsd), 2);
 
         return [
