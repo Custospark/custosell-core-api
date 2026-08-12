@@ -81,6 +81,8 @@ class ReferralController extends Controller
     {
         $request->validate([
             'referral_code' => ['required', 'string', 'max:64'],
+            'plan_id' => ['sometimes', 'integer', 'nullable'],
+            'billing_cycle' => ['sometimes', 'string', 'in:monthly,yearly', 'nullable'],
         ]);
 
         $user = $request->user();
@@ -94,15 +96,16 @@ class ReferralController extends Controller
         }
 
         $subscription = $this->subscriptionService->getByBusiness($business->id);
-        if (!$subscription) {
-            abort(422, 'No subscription found for this business');
-        }
 
         try {
             $referral = $this->referralService->processReferral(
                 $request->input('referral_code'),
-                $subscription->id,
-                $business->id
+                $subscription?->id,
+                $business->id,
+                [
+                    'plan_id' => $request->input('plan_id'),
+                    'billing_cycle' => $request->input('billing_cycle'),
+                ]
             );
 
             return response()->json([

@@ -17,7 +17,7 @@ interface ReferralServiceInterface
     public function delete(int $id): bool;
     public function getPending(): Collection;
     public function getUnpaid(): Collection;
-    public function processReferral(string $code, int $subscriptionId, int $businessId): Referral;
+    public function processReferral(string $code, ?int $subscriptionId, int $businessId, ?array $planContext = null): Referral;
     public function resolveDiscountForCharge(Referral $referral, ?Plan $plan, string $paymentType, string $billingCycle = 'monthly'): float;
     public function markActive(int $id): Referral;
     public function markRewarded(int $id): Referral;

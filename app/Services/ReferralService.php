@@ -88,18 +88,20 @@ class ReferralService implements ReferralServiceInterface
         return $this->referralRepository->getUnpaid();
     }
 
-    public function processReferral(string $code, int $subscriptionId, int $businessId): Referral
+    public function processReferral(string $code, ?int $subscriptionId, int $businessId, ?array $planContext = null): Referral
     {
-        return DB::transaction(function () use ($code, $subscriptionId, $businessId) {
+        return DB::transaction(function () use ($code, $subscriptionId, $businessId, $planContext) {
             $referralCode = $this->referralCodeRepository->findByCode($code);
             if (!$referralCode || !$referralCode->isValid()) {
                 throw new \RuntimeException('Referral code is invalid or expired');
             }
 
-            // Prevent a business from using its own owner's referral code
-            $subscription = $this->subscriptionRepository->find($subscriptionId);
-            if ($subscription && $referralCode->owner_user_id) {
-                $business = $subscription->business;
+            // Prevent a business from using its own owner's referral code.
+            // With a subscription we use its business; pre-subscription we
+            // resolve the business directly from the referral business id.
+            $subscription = $subscriptionId ? $this->subscriptionRepository->find($subscriptionId) : null;
+            if ($referralCode->owner_user_id) {
+                $business = $subscription?->business ?? Business::find($businessId);
                 if ($business && $business->owner_id === $referralCode->owner_user_id) {
                     throw new \RuntimeException('You cannot use your own referral code');
                 }
@@ -119,9 +121,12 @@ class ReferralService implements ReferralServiceInterface
 
             // Calculate discount based on the amount being paid at the time of application
             $plan = $subscription?->plan;
+            if (!$plan && !empty($planContext['plan_id'])) {
+                $plan = Plan::find((int) $planContext['plan_id']);
+            }
             $monthlyPriceUsd = (float) ($plan->price_monthly_usd ?? 0);
             $onboardingFeeUsd = (float) ($plan->onboarding_fee_usd ?? 0);
-            $isOnboarding = !$subscription->onboarding_fee_paid;
+            $isOnboarding = $subscription && !$subscription->onboarding_fee_paid;
             $discountBase = $isOnboarding && $onboardingFeeUsd > 0 ? $onboardingFeeUsd : $monthlyPriceUsd;
 
             $discountApplied = match ($referralCode->discount_type) {

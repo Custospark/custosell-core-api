@@ -108,10 +108,22 @@ class GatewayService
         // Apply pending referral discount based on the RESOLVED plan being charged.
         // The value stored at registration may reference the subscription's default
         // plan, so we recompute against the effective plan/amount at initiate time.
+        // A referral applied pre-subscription (against the business, subscription_id
+        // null) is bound to this subscription the first time a charge is initiated.
         $referralDiscount = 0;
         $referral = Referral::where('subscription_id', $subscription->id)
             ->where('status', ReferralStatus::PENDING)
             ->first();
+        if (!$referral) {
+            $referral = Referral::where('referred_business_id', $subscription->business_id)
+                ->whereNull('subscription_id')
+                ->where('status', ReferralStatus::PENDING)
+                ->orderByDesc('id')
+                ->first();
+            if ($referral) {
+                $referral->update(['subscription_id' => $subscription->id]);
+            }
+        }
         if ($referral) {
             $referralDiscount = $this->referralService->resolveDiscountForCharge(
                 $referral,
