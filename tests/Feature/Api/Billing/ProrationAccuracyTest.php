@@ -225,6 +225,52 @@ class ProrationAccuracyTest extends TestCase
         $this->assertSame($this->professional->id, (int) $subscription->plan_id);
     }
 
+    // ─── LIVE PLAN PRICING (stale subscription snapshot must be ignored) ──
+
+    public function test_upgrade_quote_uses_live_plan_price_not_stale_subscription_snapshot(): void
+    {
+        $nextBillingDate = Carbon::now()->addDays(30)->startOfDay();
+
+        // Subscription was created when Professional cost $54/mo — its snapshot
+        // columns still hold the OLD price (36,908.70 UGX in the field case).
+        $this->professional->update([
+            'price_monthly_usd' => 0.30,
+            'price_yearly_usd' => 3.00,
+        ]);
+
+        $subscription = Subscription::create([
+            'business_id' => $this->business->id,
+            'plan_id' => $this->professional->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'starts_at' => now()->subMonth(),
+            'next_billing_date' => $nextBillingDate,
+            'price_monthly_usd' => 54.0,
+            'price_yearly_usd' => 540.0,
+            'onboarding_fee_usd' => 95.0,
+        ]);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/v1/subscriptions/{$subscription->id}/upgrade", [
+                'to_plan_id' => $this->enterprise->id,
+                'effective' => 'immediate',
+                'billing_cycle' => 'monthly',
+            ]);
+
+        $response->assertStatus(200);
+
+        $proration = $response->json('proration.proration');
+        $expected = $this->expectedProration($this->professional, $this->enterprise, $nextBillingDate);
+
+        // Old price + credit must reflect the LIVE plan price ($0.30), never the
+        // stale $54 snapshot. Enterprise ($135/mo) full-window charge applied.
+        $this->assertSame(0.30, (float) $proration['old_price']);
+        $this->assertSame($expected['credit'], (float) $proration['credit']);
+        $this->assertSame($expected['charge'], (float) $proration['charge']);
+        $this->assertSame($expected['due'], (float) $proration['proration_due']);
+        $this->assertSame($expected['due'], (float) $proration['proration_due_usd']);
+    }
+
     // ─── BILLING CYCLE CHANGE (monthly → yearly) ──────────────────────────
 
     public function test_billing_cycle_change_monthly_to_yearly_stores_pending_and_quotes(): void

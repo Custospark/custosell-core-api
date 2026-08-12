@@ -32,9 +32,14 @@ class PaymentQuoteService
             ?? $subscription->ends_at
             ?? now()->addMonth();
 
+        // Price the CURRENT plan from its LIVE plan rows, never the subscription's
+        // snapshotted price columns. Plan pricing is adjusted in the plans table
+        // (promotions, price changes) and the payment path always charges live
+        // prices (GatewayService). A stale snapshot here surfaces an old price and
+        // an inflated upgrade credit e.g. USh 36,908.70 for a now-$0.30/mo plan.
         $subscriptionPrices = [
-            'price_monthly_usd' => $subscription->price_monthly_usd ?? $currentPlan->price_monthly_usd,
-            'price_yearly_usd' => $subscription->price_yearly_usd ?? $currentPlan->price_yearly_usd,
+            'price_monthly_usd' => (float) ($currentPlan->price_monthly_usd ?? 0),
+            'price_yearly_usd' => (float) ($currentPlan->price_yearly_usd ?? 0),
         ];
 
         $proration = $this->prorationCalculator->calculateUpgradeCost(
