@@ -381,11 +381,12 @@ class PipelineNotificationService
     {
         $base = rtrim((string) config('app.frontend_url', config('app.url')), '/');
         $prefix = $board->workspace === 'estimates' ? 'estimates' : 'pipeline';
+        // The UI opens boards by their opaque code, not the numeric id.
         if ($lead) {
-            return "{$base}/{$prefix}/boards/{$board->id}?lead={$lead->id}";
+            return "{$base}/{$prefix}/boards/{$board->code}?lead={$lead->id}";
         }
 
-        return "{$base}/{$prefix}/boards/{$board->id}";
+        return "{$base}/{$prefix}/boards/{$board->code}";
     }
 
     protected function boardConversationCta(PipelineBoard $board): ?string
@@ -393,6 +394,6 @@ class PipelineNotificationService
         $base = rtrim((string) config('app.frontend_url', config('app.url')), '/');
         $prefix = $board->workspace === 'estimates' ? 'estimates' : 'pipeline';
 
-        return "{$base}/{$prefix}/boards/{$board->id}?conversation=1";
+        return "{$base}/{$prefix}/boards/{$board->code}?conversation=1";
     }
 }

@@ -69,6 +69,28 @@ class AuthTest extends TestCase
         $this->assertTrue(ChartOfAccount::where('business_id', $business->id)->where('code', '6101')->exists());
     }
 
+    public function test_personal_registration_seeds_default_pipeline_board(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Board User',
+            'email' => 'board@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertStatus(201);
+
+        $business = Business::where('business_type', 'personal')->first();
+        $this->assertNotNull($business);
+
+        $board = \App\Models\PipelineBoard::where('business_id', $business->id)->first();
+        $this->assertNotNull($board, 'Personal account should be seeded with a default board');
+        $this->assertTrue((bool) $board->is_default);
+        $this->assertNotEmpty($board->code);
+
+        // Sample kanban columns + guiding cards so the board is never empty
+        $this->assertGreaterThanOrEqual(3, \App\Models\PipelineStage::where('board_id', $board->id)->count());
+        $this->assertGreaterThanOrEqual(1, \App\Models\PipelineLead::where('board_id', $board->id)->count());
+    }
+
     public function test_can_login_with_valid_credentials(): void
     {
         User::factory()->create([

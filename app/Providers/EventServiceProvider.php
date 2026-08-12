@@ -13,6 +13,7 @@ use App\Listeners\AccountForInvoiceSent;
 use App\Listeners\CreateJournalEntryForExpense;
 use App\Listeners\CreateJournalEntryForSale;
 use App\Listeners\CreateReversingEntryForRefund;
+use App\Listeners\SeedDefaultPipelineBoard;
 use App\Listeners\SendWelcomeEmail;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -36,6 +37,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         UserRegistered::class => [
             SendWelcomeEmail::class,
+            SeedDefaultPipelineBoard::class,
         ],
     ];
 

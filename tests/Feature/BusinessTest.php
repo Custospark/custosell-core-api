@@ -92,6 +92,32 @@ class BusinessTest extends TestCase
             ->assertJsonPath('data.name', 'My Shop');
     }
 
+    public function test_register_business_seeds_default_pipeline_board_with_columns_and_cards(): void
+    {
+        $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'Board Owner',
+            'name' => 'Board Shop',
+            'email' => 'boardowner@shop.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'plan_id' => 1,
+            'privacy_consent' => true,
+        ]);
+
+        $response->assertStatus(201);
+
+        $businessId = (int) $response->json('data.id');
+
+        $board = \App\Models\PipelineBoard::where('business_id', $businessId)->first();
+        $this->assertNotNull($board, 'Business account should be seeded with a default board');
+        $this->assertTrue((bool) $board->is_default);
+        $this->assertNotEmpty($board->code);
+
+        // Sample kanban columns + guiding cards so the board is never empty
+        $this->assertGreaterThanOrEqual(3, \App\Models\PipelineStage::where('board_id', $board->id)->count());
+        $this->assertGreaterThanOrEqual(1, \App\Models\PipelineLead::where('board_id', $board->id)->count());
+    }
+
     public function test_register_duplicate_email_returns_422(): void
     {
         $this->postJson('/api/v1/businesses/register', [

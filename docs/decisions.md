@@ -498,3 +498,18 @@
 
 **Full detail:** `Frontend/docs/adr/2026-08-07-budget-pdf-download-year-filter.md`
 
+
+## ADR-031: Default pipeline board seeded on account creation; email CTAs deep-link by board code
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+**Context:** A new personal or business account had no pipeline board until one was created, so the CRM board looked empty on first sign-in. Separately, `PipelineNotificationService` built board email CTAs with the numeric `$board->id`, but the frontend opens boards by their opaque `code`, so emailed board links were invalid.
+
+**Decision:** Wire a new `SeedDefaultPipelineBoard` listener to the existing `UserRegistered` event. It resolves the business and calls `PipelineBoardService::ensureBusinessSetup()` to create a default `Main sales pipeline` board (workspace `pipeline`, `is_default = true`) with standard stages, default labels/appearance, and guiding cards — so the board is never empty. Storefront buyers (no workspace) are skipped; seeding failures are caught and only logged so they never block registration. Separately, `PipelineNotificationService::boardCta` and `boardConversationCta` now emit `/boards/{code}` instead of `/boards/{id}`.
+
+**Why event, not the registration services:** Board seeding is best-effort and should never roll back a successful registration, so it stays out of `UserService`/`BusinessService` (unlike the transactional chart-of-accounts seed, ADR 2026-08-11). `ensureBusinessSetup` is idempotent, so re-runs are safe.
+
+**Gates:** BE `composer vera:fast` passed; `AuthTest::test_personal_registration_seeds_default_pipeline_board`, `BusinessTest::test_register_business_seeds_default_pipeline_board_with_columns_and_cards`, and `PipelineBoardNotificationCtaTest` all passed (3 tests, 18 assertions).
+
+**Full detail:** `Backend/docs/adr/2026-08-13-default-pipeline-board-seed-and-code-cta.md`
