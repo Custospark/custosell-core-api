@@ -261,4 +261,27 @@ class BusinessTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('data.currency', 'UGX');
     }
+
+    public function test_register_without_plan_id_defaults_to_highest_tier_plan(): void
+    {
+        $response = $this->postJson('/api/v1/businesses/register', [
+            'owner_name' => 'No Plan Owner',
+            'name' => 'No Plan Shop',
+            'email' => 'noplan@shop.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'privacy_consent' => true,
+        ]);
+
+        $response->assertStatus(201);
+
+        $businessId = (int) $response->json('data.id');
+        $subscription = Subscription::where('business_id', $businessId)->first();
+        $this->assertNotNull($subscription, 'Business should be auto-subscribed to a default plan');
+
+        $enterprise = Plan::where('slug', 'enterprise')->first();
+        $this->assertNotNull($enterprise);
+        $this->assertSame($enterprise->id, (int) $subscription->plan_id);
+        $this->assertSame('monthly', $subscription->billing_cycle);
+    }
 }

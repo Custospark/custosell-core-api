@@ -50,11 +50,9 @@ class BusinessController extends Controller
         $businessData = $request->except(['password', 'password_confirmation', 'owner_name']);
         $referralCode = $request->input('referral_code');
         $business = $this->businessService->register($userData, $businessData, $referralCode);
-        if ($request->has('plan_id')) {
-            $business->load('subscription.plan');
-            if ($business->relationLoaded('subscription') && $business->subscription) {
-                $business->subscription->load('referral.referralCode');
-            }
+        $business->load('subscription.plan');
+        if ($business->relationLoaded('subscription') && $business->subscription) {
+            $business->subscription->load('referral.referralCode');
         }
         return response()->json(['data' => new BusinessResource($business)], 201);
     }

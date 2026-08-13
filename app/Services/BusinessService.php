@@ -121,8 +121,11 @@ class BusinessService implements BusinessServiceInterface
 
             $this->platformAdminService->assignIfEligible($user);
 
-            if (isset($businessData['plan_id'])) {
-                $planId = (int) $businessData['plan_id'];
+            $planId = isset($businessData['plan_id'])
+                ? (int) $businessData['plan_id']
+                : $this->defaultPlanId();
+
+            if ($planId) {
                 $billingCycle = $businessData['billing_cycle'] ?? 'monthly';
                 $subscription = $this->subscriptionService->subscribe(
                     $business->id,
@@ -151,6 +154,22 @@ class BusinessService implements BusinessServiceInterface
         UserRegistered::dispatch($business->owner, $business);
 
         return $business;
+    }
+
+    /**
+     * Default a new business to the highest-tier active business plan so the
+     * user experiences the full product during trial, then picks a plan later.
+     */
+    private function defaultPlanId(): ?int
+    {
+        $plan = \App\Models\Plan::query()
+            ->where('is_active', true)
+            ->business()
+            ->orderByDesc('sort_order')
+            ->orderByDesc('price_monthly_usd')
+            ->first();
+
+        return $plan?->id;
     }
 
     public function update(int $id, array $data): Business
