@@ -613,3 +613,25 @@
 - Tests updated to derive expectations from live plan values (`ProrationAccuracyTest`, `PaymentInitiateAccuracyTest`, `OnboardingPaymentPlanTest`, `SubscriptionBillingTest`).
 
 **Gates:** `composer vera:fast` passed; `BusinessTest|PlanTest|SubscriptionBillingTest` 45/45; `ProrationAccuracyTest|PaymentInitiateAccuracyTest|OnboardingPaymentPlanTest|PlanTest` 29/29.
+
+## ADR-038: Conversion events tracked via `converted_at`
+
+**Date:** 2026-08-13  
+**Status:** Accepted  
+
+**Context:** ADR-037 deferred revenue to the trial→paid conversion, but there was no reliable way to measure it: `SubscriptionStateMachineService::logTransition()` only writes to the Laravel log (no DB event table), so "when did this trial become paid?" could not be answered for trend analytics. The Platform team wanted a **Conversions** dashboard (monthly trend + yearly distribution) to prove the zero-fee funnel converts.
+
+**Decision:**
+1. Add a nullable `converted_at` timestamp to `subscriptions` via new migration `2026_08_13_000005_add_converted_at_to_subscriptions_table.php`, backfilled for existing ACTIVE subscriptions from `COALESCE(approved_at, updated_at)`.
+2. `converted_at` is set once on the first transition to ACTIVE in `SubscriptionStateMachineService` (both `activateSubscription` and the `activateAfterOnboarding` non-trial-kept branch). It is only written when currently null, so reactivation/renewal never overwrites the original conversion event.
+3. New `GET /api/v1/platform/conversions` endpoint (`PlatformConversionController` → `PlatformConversionMetricsService::conversionDashboard`) returns `summary`, `monthly` (last 12 months), `by_plan`, and `decisions`. "Trials started" = subscription creation (ADR-035: all new registrations start on trial); "converted" = `converted_at` in range.
+4. New permission `platform.conversions.view` granted to `platform-admin` + `platform-analyst` via migration `2026_08_13_000004_add_conversions_platform_permission.php` (uses null-safe role lookup so `migrate --pretend` on a fresh chain does not throw).
+
+**Why:** A durable per-subscription conversion timestamp is the honest event source for funnel analytics; it survives renewal/activation replays and lets both monthly and yearly charts be computed from one consistent definition.
+
+**Consequences:**
+- `converted_at` is the single monetization signal going forward — analytics, MRR, and referral-reward redesign (ADR-037 open follow-up) can all anchor to it.
+- Metrics queries run per month/plan; fine for platform scale, could be pre-aggregated if it ever grows large.
+- New permission means role-assignments must be re-migrated on existing environments (standard `php artisan migrate`).
+
+**Gates:** `composer vera:fast` passed (8 files, logic 6/6); `migrate --pretend` clean for both new migrations; `PlatformConversionStatsTest` 4/4 (45 assertions); `SubscriptionBillingTest|BusinessTest|PlanTest|SubscriptionStateMachine|OnboardingDismiss` 48/48.
