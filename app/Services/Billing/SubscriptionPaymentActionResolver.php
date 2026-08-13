@@ -18,7 +18,7 @@ class SubscriptionPaymentActionResolver
             ];
         }
 
-        if (!$subscription->onboarding_fee_paid) {
+        if (! $subscription->onboarding_fee_paid && (float) ($subscription->onboarding_fee_usd ?? 0) > 0) {
             return [
                 'required' => true,
                 'intent' => 'pay_onboarding',

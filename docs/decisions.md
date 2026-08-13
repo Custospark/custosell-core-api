@@ -574,3 +574,20 @@
 **Why:** Create-only seeding makes the seeder safe to re-run (no surprises); the UI is the single source of truth for plan changes. Starting the trial matches the product decision that every new business experiences the full product (highest-tier default = Enterprise) and then chooses a plan.
 
 **Gates:** BE `composer vera:fast` passed; `BusinessTest` 13/13 (58 assertions), `SubscriptionBillingTest|PlanTest|BusinessTest` 45/45 (175 assertions).
+
+## ADR-036: Onboarding Dismissal Is Persistent
+
+**Date:** 2026-08-13  
+**Status:** Accepted  
+
+**Context:** The FE intent modal's "No thanks" used two sequential optimistic updates (`skip_tour` then `skip_intent`). Because `skip_intent`/`complete_intent` optimistically set `needs_tour = true`, the tour re-opened after dismissal, and the second update was applied against a stale base user. Users also wanted dismissal to be remembered across logins.
+
+**Decision:** Add a single combined action `dismiss_onboarding` (FE + BE):
+
+- **BE** (`OnboardingService::dismissOnboarding`): marks `intent_skipped_at` when the user is the owner and has a business, and always marks `tour_skipped_at`. One DB write, one response.
+- **FE** (`localStateForAction['dismiss_onboarding']`): sets `needs_intent = false` and `needs_tour = false` in one optimistic patch, so the modal closes cleanly with no flash and no re-trigger.
+
+**Consequences:**
+- `payloadFor()` reports `needs_intent = false` / `needs_tour = false` for dismissed users, so onboarding never reappears automatically on later logins.
+- `skip_intent` alone no longer implies a forced tour from the dismiss path; the tour remains independently replayable via `replay_tour`.
+- Covered by `OnboardingDismissTest` (initial state, persistent dismissal, skipped-intent non-resurfacing).

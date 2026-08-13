@@ -131,7 +131,7 @@ class OnboardingPaymentPlanTest extends TestCase
         $this->assertDatabaseHas('billing_payments', [
             'business_id' => $this->business->id,
             'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal(95.0),
+            'amount' => $this->usdToLocal((float) $this->professional->onboarding_fee_usd),
             'currency' => 'UGX',
             'payment_type' => 'onboarding',
             'status' => 'pending',

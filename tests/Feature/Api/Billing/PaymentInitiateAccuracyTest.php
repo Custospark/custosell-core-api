@@ -213,7 +213,7 @@ class PaymentInitiateAccuracyTest extends TestCase
         $this->assertDatabaseHas('billing_payments', [
             'business_id' => $this->business->id,
             'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal(54.0),
+            'amount' => $this->usdToLocal((float) $this->professional->price_monthly_usd),
             'currency' => 'UGX',
             'payment_type' => 'subscription',
             'status' => 'pending',
@@ -243,7 +243,7 @@ class PaymentInitiateAccuracyTest extends TestCase
 
         $this->assertDatabaseHas('billing_payments', [
             'business_id' => $this->business->id,
-            'amount' => $this->usdToLocal(20.0),
+            'amount' => $this->usdToLocal((float) $this->essential->price_monthly_usd),
             'currency' => 'UGX',
             'status' => 'pending',
             'gateway_name' => 'pesapal',
@@ -297,7 +297,7 @@ class PaymentInitiateAccuracyTest extends TestCase
         $this->assertDatabaseHas('billing_payments', [
             'business_id' => $this->business->id,
             'subscription_id' => $subscription->id,
-            'amount' => $this->usdToLocal(95.0),
+            'amount' => $this->usdToLocal((float) $this->professional->onboarding_fee_usd),
             'currency' => 'UGX',
             'payment_type' => 'onboarding',
             'status' => 'pending',

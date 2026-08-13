@@ -86,6 +86,7 @@ class OnboardingService
         return match ($action) {
             'complete_intent' => $this->completeIntent($user, $data),
             'skip_intent' => $this->skipIntent($user),
+            'dismiss_onboarding' => $this->dismissOnboarding($user),
             'tour_step' => $this->saveTourStep($user, $data),
             'complete_tour' => $this->completeTour($user),
             'skip_tour' => $this->skipTour($user),
@@ -208,6 +209,28 @@ class OnboardingService
      */
     protected function skipTour(User $user): array
     {
+        $user->forceFill([
+            'tour_skipped_at' => now(),
+            'tour_completed_at' => null,
+        ])->save();
+
+        return $this->payloadFor($user->fresh(['business']));
+    }
+
+    /**
+     * Close onboarding entirely: skip any pending intent (owner) and skip the tour.
+     *
+     * @return array<string, mixed>
+     */
+    protected function dismissOnboarding(User $user): array
+    {
+        if ($this->isBusinessOwner($user) && $user->business) {
+            $user->business->forceFill([
+                'intent_skipped_at' => now(),
+                'intent_completed_at' => null,
+            ])->save();
+        }
+
         $user->forceFill([
             'tour_skipped_at' => now(),
             'tour_completed_at' => null,

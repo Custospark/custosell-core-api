@@ -44,7 +44,10 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
         $this->assertSame((float) $this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
         $this->assertSame((float) $this->essential->onboarding_fee_usd, (float) $subscription->onboarding_fee_usd);
         $this->assertSame((float) $this->essential->price_yearly_usd, (float) $subscription->price_yearly_usd);
-        $this->assertFalse($subscription->onboarding_fee_paid);
+        $this->assertSame(
+            (bool) config('onboarding.fee_paid_on_create', false),
+            $subscription->onboarding_fee_paid,
+        );
     }
 
     public function test_grace_hopper_pays_onboarding_and_activates_subscription(): void

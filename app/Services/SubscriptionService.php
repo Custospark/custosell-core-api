@@ -113,7 +113,7 @@ class SubscriptionService implements SubscriptionServiceInterface
             'starts_at' => $now,
             'trial_ends_at' => null,
             'next_billing_date' => $this->nextBillingDate($now, $billingCycle),
-            'onboarding_fee_paid' => false,
+            'onboarding_fee_paid' => (bool) config('onboarding.fee_paid_on_create', false),
             'trial_used' => false,
         ];
 

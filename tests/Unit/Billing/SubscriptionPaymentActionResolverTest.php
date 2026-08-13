@@ -65,6 +65,7 @@ class SubscriptionPaymentActionResolverTest extends TestCase
         $subscription = $this->makeSubscription([
             'status' => SubscriptionStatus::TRIAL,
             'onboarding_fee_paid' => false,
+            'onboarding_fee_usd' => 35,
         ]);
 
         $result = $this->resolver->resolve($subscription);
@@ -73,6 +74,22 @@ class SubscriptionPaymentActionResolverTest extends TestCase
         $this->assertSame('pay_onboarding', $result['intent']);
         $this->assertSame('Pay Setup Fee', $result['label']);
         $this->assertNotNull($result['message']);
+    }
+
+    public function test_returns_no_onboarding_prompt_when_fee_is_zero(): void
+    {
+        $subscription = $this->makeSubscription([
+            'status' => SubscriptionStatus::TRIAL,
+            'onboarding_fee_paid' => false,
+            'onboarding_fee_usd' => 0,
+        ]);
+
+        $result = $this->resolver->resolve($subscription);
+
+        $this->assertFalse($result['required']);
+        $this->assertNull($result['intent']);
+        $this->assertNull($result['label']);
+        $this->assertNull($result['message']);
     }
 
     public function test_returns_no_action_for_trial_with_onboarding_paid(): void
@@ -165,6 +182,7 @@ class SubscriptionPaymentActionResolverTest extends TestCase
         $subscription = $this->makeSubscription([
             'status' => SubscriptionStatus::ACTIVE,
             'onboarding_fee_paid' => false,
+            'onboarding_fee_usd' => 35,
         ]);
 
         $result = $this->resolver->resolve($subscription);

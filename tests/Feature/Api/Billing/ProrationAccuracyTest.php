@@ -155,11 +155,12 @@ class ProrationAccuracyTest extends TestCase
         $proration = $response->json('data.proration');
 
         // Trial = paid nothing → no unused credit → full target plan price, credit 0.
-        $this->assertSame(135.0, (float) $proration['new_price']);
-        $this->assertSame(135.0, (float) $proration['charge']);
+        $enterprisePrice = (float) $this->enterprise->price_monthly_usd;
+        $this->assertSame($enterprisePrice, (float) $proration['new_price']);
+        $this->assertSame($enterprisePrice, (float) $proration['charge']);
         $this->assertSame(0.0, (float) $proration['credit']);
-        $this->assertSame(135.0, (float) $proration['proration_due']);
-        $this->assertSame(135.0, (float) $proration['proration_due_usd']);
+        $this->assertSame($enterprisePrice, (float) $proration['proration_due']);
+        $this->assertSame($enterprisePrice, (float) $proration['proration_due_usd']);
     }
 
     // ─── UPGRADE (stores pending amount, defers plan change) ──────────────
@@ -278,9 +279,9 @@ class ProrationAccuracyTest extends TestCase
         $nextBillingDate = Carbon::now()->addDays(20)->startOfDay();
         $subscription = $this->createSubscription($this->professional, $nextBillingDate, 'active', 'monthly');
 
-        // Active monthly → yearly: prepay full year ($540), offset by unused monthly credit.
+        // Active monthly → yearly: prepay full year, offset by unused monthly credit.
         $credit = $this->expectedProration($this->professional, $this->professional, $nextBillingDate, 'monthly')['credit'];
-        $expectedDue = round(max(0, 540.0 - $credit), 2);
+        $expectedDue = round(max(0, (float) $this->professional->price_yearly_usd - $credit), 2);
 
         $response = $this->withHeaders($this->authHeaders())
             ->postJson("/api/v1/subscriptions/{$subscription->id}/billing-cycle", [
@@ -292,7 +293,7 @@ class ProrationAccuracyTest extends TestCase
 
         $proration = $response->json('proration.proration');
         $this->assertSame($expectedDue, (float) $proration['proration_due_usd']);
-        $this->assertSame(540.0, (float) $proration['new_price']);
+        $this->assertSame((float) $this->professional->price_yearly_usd, (float) $proration['new_price']);
         $this->assertSame($credit, (float) $proration['credit']);
 
         $subscription->refresh();
