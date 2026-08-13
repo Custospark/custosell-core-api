@@ -543,3 +543,17 @@
 **Why a new (backdated) migration:** Existing migrations are historical records and are never edited (Rule 15). A backdated timestamp ensures it sorts before `...000001` so the purge can proceed; it uses `UPDATE ... JOIN` guarded by try/catch so it is safe on any environment and idempotent.
 
 **Gates:** BE `composer vera:fast` passed (php -l 1 file + logic).
+
+
+## ADR-034: Upgrade ALL legacy subscriptions to Enterprise and retire stale Free/Pro/Premium plans
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+**Context:** Production was seeded under the ORIGINAL plan set — `free`, `pro`, `premium` (ids 1–3) — before plans were renamed to `essential`/`professional`/`enterprise`/`personal`. The legacy backfill (`2026_07_21_124239`) assigned subscriptions to whichever plan sorted first at the time — which in production was the stale `free` plan (id 1), not `essential` as in dev. The prior enterprise upgrade (`2026_08_11_000001`) only matched `plan_id = essential`, so it upgraded ZERO legacy subscriptions in production; every legacy business stayed on 'Free' and lost access to accounting, HR, forecasting, documents, and other premium features. A production diagnostic confirmed 21 of 22 subscriptions still point at plan id 1 (`free`), and the stale `free`/`pro`/`premium` plans remain active alongside the current set.
+
+**Decision:** Add a new idempotent data-fix migration (`2026_08_13_000001_upgrade_all_legacy_subscriptions_to_enterprise.php`) that matches the legacy backfill signature (status = TRIAL, trial_used = true, onboarding_fee_paid = true) REGARDLESS of which plan the subscription points at, and moves them all to Enterprise (syncing price snapshots). New registrations never match (they are created with trial_used = false, onboarding_fee_paid = false). The migration also deactivates the stale `free`/`pro`/`premium` plans (`is_active = false`) so they stop appearing in the Plans tab / dropdown.
+
+**Why a new migration:** Existing migrations are historical records and are never edited (Rule 15). The new one targets legacy subscriptions by their creation signature rather than by plan_id, so it is robust to the free/essential id divergence between environments.
+
+**Gates:** BE `composer vera:fast` passed (php -l 1 file + logic); `php artisan migrate --pretend` OK.
