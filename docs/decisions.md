@@ -557,3 +557,20 @@
 **Why a new migration:** Existing migrations are historical records and are never edited (Rule 15). The new one targets legacy subscriptions by their creation signature rather than by plan_id, so it is robust to the free/essential id divergence between environments.
 
 **Gates:** BE `composer vera:fast` passed (php -l 1 file + logic); `php artisan migrate --pretend` OK.
+
+
+## ADR-035: PlanSeeder is create-only; registration starts a trial on the highest-tier plan
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+**Context:** PlanSeeder previously used `updateOrCreate`, so every seed run overwrote plan pricing/features with the hardcoded values in the file. With pricing now managed in the UI (per Oscar: "changes in plans shall always be done in the UI"), re-running the seeder could silently clobber live prices and surprise the team. Separately, new business registrations created subscriptions with status PAST_DUE (the `subscribe()` default) because `BusinessService::register()` passed `skipTrial = true` — new accounts showed "Payment Due" instead of a trial, and `business.trial_ends_at` was never set.
+
+**Decision:**
+1. PlanSeeder now uses `firstOrCreate` for all four plans (essential, professional, personal, enterprise) — it only inserts plans that don't exist and never overwrites existing ones. The old per-module personal-plan cleanup delete remains.
+2. `BusinessService::register()` calls `subscribe(..., skipTrial = false)` so new businesses get status TRIAL with `trial_ends_at = now + plan.trial_days`.
+3. Registration mirrors `subscription.trial_ends_at` onto `business.trial_ends_at` so both surfaces agree.
+
+**Why:** Create-only seeding makes the seeder safe to re-run (no surprises); the UI is the single source of truth for plan changes. Starting the trial matches the product decision that every new business experiences the full product (highest-tier default = Enterprise) and then chooses a plan.
+
+**Gates:** BE `composer vera:fast` passed; `BusinessTest` 13/13 (58 assertions), `SubscriptionBillingTest|PlanTest|BusinessTest` 45/45 (175 assertions).

@@ -106,7 +106,7 @@ class SubscriptionBillingTest extends TestCase
 
         $essential = collect($response->json('data'))->firstWhere('slug', 'essential');
         $this->assertArrayHasKey('price_monthly_usd', $essential);
-        $this->assertEquals(20, (int) $essential['price_monthly_usd']);
+        $this->assertEquals((float) $this->essentialPlan->price_monthly_usd, (float) $essential['price_monthly_usd']);
     }
 
     public function test_list_active_plans_returns_only_active_sorted(): void

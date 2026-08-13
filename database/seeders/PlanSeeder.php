@@ -15,14 +15,16 @@ class PlanSeeder extends Seeder
             'estimates-personal', 'expenses-personal', 'documents-personal',
         ])->delete();
 
-        Plan::updateOrCreate(['slug' => 'essential'], [
+        // Create-only: plans are managed in the UI after seeding. This seeder must
+        // never overwrite existing plans, so it only inserts missing ones.
+        Plan::firstOrCreate(['slug' => 'essential'], [
             'name' => 'Essential',
             'slug' => 'essential',
             'type' => 'business',
             'description' => 'Point of sale, inventory, and online storefront for small businesses.',
-            'price_monthly_usd' => 20,
-            'price_yearly_usd' => 200,
-            'onboarding_fee_usd' => 40,
+            'price_monthly_usd' => 19.99,
+            'price_yearly_usd' => 199.9,
+            'onboarding_fee_usd' => 0,
             'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => false,
@@ -45,14 +47,14 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::updateOrCreate(['slug' => 'professional'], [
+        Plan::firstOrCreate(['slug' => 'professional'], [
             'name' => 'Professional',
             'slug' => 'professional',
             'type' => 'business',
             'description' => 'Full business management suite for growing businesses — including pipeline, estimates, and document management.',
-            'price_monthly_usd' => 54,
-            'price_yearly_usd' => 540,
-            'onboarding_fee_usd' => 95,
+            'price_monthly_usd' => 29.99,
+            'price_yearly_usd' => 299.9,
+            'onboarding_fee_usd' => 0,
             'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => true,
@@ -79,13 +81,13 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::updateOrCreate(['slug' => 'personal'], [
+        Plan::firstOrCreate(['slug' => 'personal'], [
             'name' => 'Personal',
             'slug' => 'personal',
             'type' => 'personal',
             'description' => 'All the tools you need for personal productivity — pipeline, estimates, expenses, accounting, and documents.',
-            'price_monthly_usd' => 10,
-            'price_yearly_usd' => 100,
+            'price_monthly_usd' => 9.99,
+            'price_yearly_usd' => 99.9,
             'onboarding_fee_usd' => 0,
             'trial_days' => 30,
             'billing_cycle' => 'both',
@@ -105,14 +107,14 @@ class PlanSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Plan::updateOrCreate(['slug' => 'enterprise'], [
+        Plan::firstOrCreate(['slug' => 'enterprise'], [
             'name' => 'Enterprise',
             'slug' => 'enterprise',
             'type' => 'business',
             'description' => 'Unlimited everything for large organizations and multi-branch operations.',
-            'price_monthly_usd' => 135,
-            'price_yearly_usd' => 1350,
-            'onboarding_fee_usd' => 200,
+            'price_monthly_usd' => 49.99,
+            'price_yearly_usd' => 499.9,
+            'onboarding_fee_usd' => 0,
             'trial_days' => 30,
             'billing_cycle' => 'both',
             'is_popular' => false,
