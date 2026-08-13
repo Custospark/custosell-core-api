@@ -65,6 +65,10 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 'grace_period_ends_at' => null,
             ];
 
+            if ($subscription->converted_at === null) {
+                $data['converted_at'] = $now;
+            }
+
             $updated = $this->subscriptionRepository->update($subscription, $data);
 
             $this->referralService->activateForSubscription($subscription->id);
@@ -252,6 +256,9 @@ class SubscriptionStateMachineService implements SubscriptionStateMachineService
                 $data['status'] = SubscriptionStatus::ACTIVE;
                 $data['approved_at'] = $now;
                 $data['next_billing_date'] = $this->nextBillingDate($now, $subscription->billing_cycle ?? 'monthly');
+                if ($subscription->converted_at === null) {
+                    $data['converted_at'] = $now;
+                }
             }
 
             $updated = $this->subscriptionRepository->update($subscription, $data);
