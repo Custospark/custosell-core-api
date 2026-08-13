@@ -283,5 +283,11 @@ class BusinessTest extends TestCase
         $this->assertNotNull($enterprise);
         $this->assertSame($enterprise->id, (int) $subscription->plan_id);
         $this->assertSame('monthly', $subscription->billing_cycle);
+        $this->assertSame(\App\Enums\Billing\SubscriptionStatus::TRIAL, $subscription->status);
+        $this->assertNotNull($subscription->trial_ends_at);
+
+        $business = Business::find($businessId);
+        $this->assertNotNull($business->trial_ends_at);
+        $this->assertSame($subscription->trial_ends_at->toDateTimeString(), $business->trial_ends_at->toDateTimeString());
     }
 }

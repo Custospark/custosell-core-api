@@ -132,8 +132,13 @@ class BusinessService implements BusinessServiceInterface
                     $planId,
                     $billingCycle,
                     null,
-                    true
+                    false
                 );
+
+                if ($subscription->trial_ends_at) {
+                    $business->trial_ends_at = $subscription->trial_ends_at;
+                    $business->save();
+                }
 
                 if ($referralCode) {
                     try {
