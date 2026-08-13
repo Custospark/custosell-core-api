@@ -591,3 +591,25 @@
 - `payloadFor()` reports `needs_intent = false` / `needs_tour = false` for dismissed users, so onboarding never reappears automatically on later logins.
 - `skip_intent` alone no longer implies a forced tour from the dismiss path; the tour remains independently replayable via `replay_tour`.
 - Covered by `OnboardingDismissTest` (initial state, persistent dismissal, skipped-intent non-resurfacing).
+
+## ADR-037: Remove the onboarding fee
+
+**Date:** 2026-08-13  
+**Status:** Accepted  
+
+**Context:** Registration charged a one-time onboarding fee per plan (e.g., Essential $40, Professional $95, Enterprise $200) and subscriptions were created PAST_DUE until the fee was paid. For the Ugandan small-business market this upfront payment right after signup was the biggest activation barrier — a double payment (fee + subscription) that new owners bailed on. The fee also ran against the new product story: default new registrations to the full Enterprise experience on a free trial.
+
+**Decision:**
+1. All plan onboarding fees are set to **$0** (UI-managed; the Plans tab is the source of truth).
+2. New subscriptions are created with `onboarding_fee_paid = true` via the `ONBOARDING_FEE_PAID_ON_CREATE` config switch (`config/onboarding.php`), so no pay-onboarding screen ever shows and the subscription starts in TRIAL (see ADR-035). The switch is set in `.env` for dev/test/staging/production; production `.env` must add `ONBOARDING_FEE_PAID_ON_CREATE=true` at deploy.
+3. `SubscriptionPaymentActionResolver` never emits a `pay_onboarding` intent when the fee is $0 or already paid, so the FE has no onboarding payment path to render.
+
+**Why:** Removes the biggest conversion killer, aligns billing with the "zero cost to start, pay only if you stay" message, and simplifies the resolver/billing surface (one payment type fewer).
+
+**Consequences / open follow-ups:**
+- **Referral economics break:** referral discounts and rewards were computed against the amount actually paid, and the onboarding fee was the first paid base. With fee = $0 that base collapses to $0, so the discount/reward path at onboarding is now moot. The reward base needs re-designing (e.g., first subscription renewal) — **not yet done**. The 19 failing referral/billing tests seen earlier trace to hardcoded pre-zeroing fee expectations.
+- Revenue is deferred, not deleted: the trial→paid subscription conversion is now the single monetization point and must be measured.
+- Legacy businesses upgraded by ADR-034's migration are unaffected (they were already `onboarding_fee_paid = true`).
+- Tests updated to derive expectations from live plan values (`ProrationAccuracyTest`, `PaymentInitiateAccuracyTest`, `OnboardingPaymentPlanTest`, `SubscriptionBillingTest`).
+
+**Gates:** `composer vera:fast` passed; `BusinessTest|PlanTest|SubscriptionBillingTest` 45/45; `ProrationAccuracyTest|PaymentInitiateAccuracyTest|OnboardingPaymentPlanTest|PlanTest` 29/29.
