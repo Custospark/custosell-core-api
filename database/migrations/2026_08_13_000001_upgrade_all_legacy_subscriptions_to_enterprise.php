@@ -23,10 +23,6 @@ use Illuminate\Support\Facades\DB;
  * onboarding_fee_paid = false). Idempotent: once on Enterprise the legacy
  * filter no longer changes them.
  *
- * The trial clock is reset so the Enterprise trial starts from the moment the
- * migration runs: trial_ends_at is set to now + the Enterprise plan's
- * trial_days (falling back to 30 days if the plan has no trial_days).
- *
  * It also deactivates the stale Free/Pro/Premium plans so they stop appearing
  * in the active plans list (Plans tab / dropdown) after all legacy
  * subscriptions have been migrated off them.
@@ -51,7 +47,6 @@ return new class extends Migration
                 'price_monthly_usd' => $enterprise->price_monthly_usd,
                 'price_yearly_usd' => $enterprise->price_yearly_usd,
                 'onboarding_fee_usd' => $enterprise->onboarding_fee_usd,
-                'trial_ends_at' => Carbon::now()->addDays($enterprise->trial_days ?? 30),
                 'updated_at' => Carbon::now(),
             ]);
 
