@@ -10,16 +10,15 @@ use App\Models\DocumentFolder;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use ZipStream\OperationMode;
-use ZipStream\ZipStream;
 
 class DocumentFolderService
 {
     public function __construct(
         protected DocumentAccessService $access,
         protected DocumentActivityService $activity,
+        protected DocumentFolderZipExporter $zipExporter,
+        protected DocumentFolderHierarchy $hierarchy,
     ) {}
 
     /** @return list<array<string, mixed>> */
@@ -83,7 +82,7 @@ class DocumentFolderService
 
         return array_merge(
             $this->serializeFolder($folder, $user, true),
-            ['breadcrumbs' => $this->breadcrumbs($folder)],
+            ['breadcrumbs' => $this->hierarchy->breadcrumbs($folder)],
         );
     }
 
@@ -170,7 +169,7 @@ class DocumentFolderService
 
         return [
             'folder' => $this->serializeFolder($folder, $user, true),
-            'breadcrumbs' => $this->breadcrumbs($folder),
+            'breadcrumbs' => $this->hierarchy->breadcrumbs($folder),
             'folders' => $children['data'],
             'folders_meta' => $children['meta'],
             'documents' => $documentPage['data'],
@@ -297,7 +296,7 @@ class DocumentFolderService
         }
 
         if ($parentId !== null && $parentId !== $folder->parent_id) {
-            $this->moveFolder($businessId, $folder, $parentId);
+            $this->hierarchy->move($businessId, $folder, $parentId);
         }
 
         $folder->save();
@@ -350,23 +349,8 @@ class DocumentFolderService
     public function exportFolder(int $businessId, User $user, int $folderId): StreamedResponse
     {
         $folder = $this->findFolder($businessId, $folderId);
-        $this->access->assertCanView($user, $folder);
 
-        $safeName = $this->safeZipEntryName($folder->name);
-        $fileName = $safeName.'.zip';
-
-        return response()->streamDownload(function () use ($businessId, $user, $folder, $safeName): void {
-            $zip = new ZipStream(
-                operationMode: OperationMode::NORMAL,
-                outputName: $safeName.'.zip',
-                sendHttpHeaders: false,
-            );
-
-            $this->appendFolderToZip($zip, $folder, $businessId, $user, $safeName);
-            $zip->finish();
-        }, $fileName, [
-            'Content-Type' => 'application/zip',
-        ]);
+        return $this->zipExporter->export($businessId, $user, $folder);
     }
 
     /**
@@ -375,81 +359,8 @@ class DocumentFolderService
     public function buildFolderZipBytes(int $businessId, User $user, int $folderId): array
     {
         $folder = $this->findFolder($businessId, $folderId);
-        $this->access->assertCanView($user, $folder);
 
-        $safeName = $this->safeZipEntryName($folder->name);
-
-        ob_start();
-        $zip = new ZipStream(
-            operationMode: OperationMode::NORMAL,
-            outputName: $safeName.'.zip',
-            sendHttpHeaders: false,
-        );
-        $this->appendFolderToZip($zip, $folder, $businessId, $user, $safeName);
-        $zip->finish();
-        $bytes = ob_get_clean();
-
-        return [
-            'bytes' => $bytes === false ? '' : $bytes,
-            'filename' => $safeName.'.zip',
-        ];
-    }
-
-    protected function appendFolderToZip(
-        ZipStream $zip,
-        DocumentFolder $folder,
-        int $businessId,
-        User $user,
-        string $basePath,
-    ): void {
-        if (! $this->access->canView($user, $folder)) {
-            return;
-        }
-
-        $documents = Document::query()
-            ->where('business_id', $businessId)
-            ->where('folder_id', $folder->id)
-            ->orderBy('title')
-            ->get();
-
-        foreach ($documents as $document) {
-            if (! $this->access->canView($user, $document)) {
-                continue;
-            }
-
-            $entryName = $basePath.'/'.$this->safeZipEntryName($document->file_name ?: $document->title);
-
-            if ($document->type === 'link' && $document->url) {
-                $zip->addFile($entryName.'.url', "[InternetShortcut]\r\nURL={$document->url}\r\n");
-
-                continue;
-            }
-
-            if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-                $zip->addFileFromPath(
-                    $entryName,
-                    Storage::disk('public')->path($document->file_path),
-                );
-            }
-        }
-
-        $children = DocumentFolder::query()
-            ->where('business_id', $businessId)
-            ->where('parent_id', $folder->id)
-            ->orderBy('name')
-            ->get();
-
-        foreach ($children as $child) {
-            $childPath = $basePath.'/'.$this->safeZipEntryName($child->name);
-            $this->appendFolderToZip($zip, $child, $businessId, $user, $childPath);
-        }
-    }
-
-    protected function safeZipEntryName(string $name): string
-    {
-        $cleaned = trim(str_replace(['\\', '/', "\0"], '-', $name));
-
-        return $cleaned !== '' ? $cleaned : 'untitled';
+        return $this->zipExporter->buildZipBytes($businessId, $user, $folder);
     }
 
     protected function cascadeDeleteFolder(DocumentFolder $folder, int $businessId): void
@@ -469,7 +380,7 @@ class DocumentFolderService
             ->get();
 
         foreach ($documents as $document) {
-            app(DocumentService::class)->deleteFileFromDisk($document);
+            app(DocumentFileStorage::class)->deleteFileFromDisk($document);
             $document->memberLinks()->delete();
             $document->tags()->detach();
             $document->delete();
@@ -479,105 +390,9 @@ class DocumentFolderService
         $folder->delete();
     }
 
-    protected function moveFolder(int $businessId, DocumentFolder $folder, int $newParentId): void
-    {
-        if ($newParentId === $folder->id) {
-            abort(422, 'A folder cannot be moved into itself.');
-        }
-
-        $newParent = $this->findFolder($businessId, $newParentId);
-        if ($this->isDescendant($newParent, $folder->id)) {
-            abort(422, 'A folder cannot be moved into its own subfolder.');
-        }
-
-        $newDepth = $newParent->depth + 1;
-        $maxSubtreeDepth = $this->maxSubtreeDepth($folder);
-        if ($newDepth + $maxSubtreeDepth - 1 > (int) config('documents.max_depth', 5)) {
-            abort(422, 'Move would exceed maximum folder depth.');
-        }
-
-        $depthDelta = $newDepth - $folder->depth;
-        $folder->parent_id = $newParent->id;
-        $folder->depth = $newDepth;
-        $this->applyDepthDelta($folder, $businessId, $depthDelta);
-    }
-
-    protected function isDescendant(DocumentFolder $candidate, int $ancestorId): bool
-    {
-        $current = $candidate;
-        $visited = [];
-
-        while ($current !== null) {
-            if (in_array($current->id, $visited, true)) {
-                return false;
-            }
-            $visited[] = $current->id;
-
-            if ((int) $current->id === $ancestorId) {
-                return true;
-            }
-
-            if ($current->parent_id === null) {
-                return false;
-            }
-
-            $current = DocumentFolder::query()->find($current->parent_id);
-        }
-
-        return false;
-    }
-
-    protected function maxSubtreeDepth(DocumentFolder $folder): int
-    {
-        $children = DocumentFolder::query()->where('parent_id', $folder->id)->get();
-        if ($children->isEmpty()) {
-            return 1;
-        }
-
-        return 1 + $children->map(fn (DocumentFolder $child) => $this->maxSubtreeDepth($child))->max();
-    }
-
-    protected function applyDepthDelta(DocumentFolder $folder, int $businessId, int $delta): void
-    {
-        if ($delta === 0) {
-            return;
-        }
-
-        $children = DocumentFolder::query()
-            ->where('business_id', $businessId)
-            ->where('parent_id', $folder->id)
-            ->get();
-
-        foreach ($children as $child) {
-            $child->depth += $delta;
-            $child->save();
-            $this->applyDepthDelta($child, $businessId, $delta);
-        }
-    }
-
-    /** @return list<array{id: int, name: string}> */
-    protected function breadcrumbs(DocumentFolder $folder): array
-    {
-        $crumbs = [];
-        $current = $folder;
-
-        while ($current !== null) {
-            array_unshift($crumbs, ['id' => $current->id, 'name' => $current->name]);
-            if ($current->parent_id === null) {
-                break;
-            }
-            $current = DocumentFolder::query()->find($current->parent_id);
-        }
-
-        return $crumbs;
-    }
-
     protected function findFolder(int $businessId, int $folderId): DocumentFolder
     {
-        return DocumentFolder::query()
-            ->where('business_id', $businessId)
-            ->whereKey($folderId)
-            ->firstOrFail();
+        return $this->hierarchy->findFolder($businessId, $folderId);
     }
 
     protected function reloadFolder(DocumentFolder $folder): DocumentFolder
