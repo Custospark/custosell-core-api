@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Contracts\SubscriptionScheduledChangeServiceInterface;
 use App\Services\Contracts\SubscriptionStateMachineServiceInterface;
 use App\Services\Platform\PlatformAdminService;
 use Closure;
@@ -13,6 +14,7 @@ class EnsureActiveSubscription
     public function __construct(
         protected PlatformAdminService $platformAdminService,
         protected SubscriptionStateMachineServiceInterface $stateMachineService,
+        protected SubscriptionScheduledChangeServiceInterface $scheduledChangeService,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -40,6 +42,7 @@ class EnsureActiveSubscription
         }
 
         // Request-time lifecycle detection (no cron - drive transitions from user requests)
+        $this->scheduledChangeService->applyPendingChanges();
         $this->stateMachineService->processDueTransitions($subscription);
         $subscription = $subscription->fresh();
 

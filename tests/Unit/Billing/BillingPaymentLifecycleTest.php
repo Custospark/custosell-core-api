@@ -4,6 +4,7 @@ namespace Tests\Unit\Billing;
 
 use App\Enums\Billing\SubscriptionStatus;
 use App\Models\Subscription;
+use App\Models\SubscriptionScheduledChange;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
@@ -277,5 +278,50 @@ class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
 
         $pending = $this->scheduledChangeService->getPendingForSubscription($subscription->id);
         $this->assertNull($pending);
+    }
+
+    public function test_cannot_schedule_downgrade_when_subscription_not_active(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->analyticalEngine);
+
+        // Move to past_due (grace) - a downgrade cannot be scheduled here.
+        $this->subscriptionService->markPastDue($subscription);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('A downgrade can only be scheduled while the subscription is active.');
+
+        $this->scheduledChangeService->schedulePlanChange(
+            $subscription->id,
+            $this->noTrial->id,
+            'downgrade',
+        );
+    }
+
+    public function test_downgrade_applies_even_when_subscription_past_due(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->analyticalEngine);
+
+        $this->scheduledChangeService->schedulePlanChange(
+            $subscription->id,
+            $this->noTrial->id,
+            'downgrade',
+        );
+
+        $change = SubscriptionScheduledChange::where('subscription_id', $subscription->id)->first();
+        $change->update(['effective_at' => Carbon::now()->subHour()]);
+
+        // Renewal raced ahead: subscription is now past_due (grace), not active.
+        $this->subscriptionService->markPastDue($subscription->fresh());
+        $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->fresh()->status);
+
+        $this->scheduledChangeService->applyPendingChanges();
+
+        $change->refresh();
+        $subscription->refresh();
+
+        $this->assertEquals(\App\Enums\Billing\ScheduledChangeStatus::APPLIED, $change->status);
+        $this->assertSame($this->noTrial->id, $subscription->plan_id);
+        // Subscription/payment status carried forward - still past_due, not cancelled.
+        $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->status);
     }
 }

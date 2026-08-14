@@ -2,6 +2,8 @@
 
 namespace App\Services\Billing;
 
+use App\Enums\Billing\ScheduledChangeType;
+use App\Enums\Billing\SubscriptionStatus;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionScheduledChange;
@@ -34,6 +36,17 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
 
         if ($subscription->plan_id === $targetPlan->id) {
             throw new \RuntimeException('Business is already on this plan');
+        }
+
+        // A downgrade is only schedulable while the subscription is active.
+        // (It is applied later regardless of the subscription's status - the
+        // guard lives in applyPendingChanges().)
+        $status = $subscription->status instanceof SubscriptionStatus
+            ? $subscription->status->value
+            : $subscription->status;
+
+        if ($changeType === 'downgrade' && $status !== 'active') {
+            throw new \RuntimeException('A downgrade can only be scheduled while the subscription is active.');
         }
 
         $this->scheduledChangeRepo->cancelPendingForSubscription($subscriptionId);
@@ -142,9 +155,15 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
                         ? $subscription->status->value
                         : $subscription->status;
 
-                    $isPlanChange = $changeType !== 'cancel';
+                    // A downgrade needs no payment and simply carries the existing
+                    // subscription/payment state forward, so it is applied regardless
+                    // of the subscription's current status. Cancellations are applied
+                    // in any status too. Only payment-gated / state-sensitive changes
+                    // (upgrade, generic plan_change, billing_cycle_change) require an
+                    // active subscription to land.
+                    $requiresActive = in_array($changeType, ['upgrade', 'plan_change', 'billing_cycle_change'], true);
 
-                    if ($isPlanChange && $status !== 'active') {
+                    if ($requiresActive && $status !== 'active') {
                         Log::info('[SubscriptionScheduledChange] Skipped - subscription not active', [
                             'change_id' => $change->id,
                             'subscription_id' => $subscription->id,
