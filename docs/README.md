@@ -6,6 +6,7 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 
 | If you need… | Start here |
 |--------------|------------|
+| Deploy to the server (staging/production) | [deployment.md](./deployment.md) |
 
 ## Architecture decisions (ADR)
 
