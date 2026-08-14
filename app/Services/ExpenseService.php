@@ -228,7 +228,7 @@ class ExpenseService implements ExpenseServiceInterface
                 ->map(fn($i) => [
                     'type' => 'income',
                     'amount' => (float) $i->amount,
-                    'description' => $i->source_name . ($i->description ? ' — ' . $i->description : ''),
+                    'description' => $i->source_name . ($i->description ? ' - ' . $i->description : ''),
                     'date' => $i->income_date->toISOString(),
                     'id' => $i->id,
                 ]);
@@ -239,7 +239,7 @@ class ExpenseService implements ExpenseServiceInterface
             ->map(fn($e) => [
                 'type' => 'expense',
                 'amount' => (float) $e->amount,
-                'description' => ($e->expenseCategory?->name ?? 'Uncategorized') . ($e->description ? ' — ' . $e->description : ''),
+                'description' => ($e->expenseCategory?->name ?? 'Uncategorized') . ($e->description ? ' - ' . $e->description : ''),
                 'date' => $e->expense_date?->toISOString(),
                 'id' => $e->id,
             ]);

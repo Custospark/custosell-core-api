@@ -8,7 +8,7 @@ trait ResolvesPersonalPlanModules
 {
     /**
      * Modules a personal account is granted from its live subscription plan.
-     * Mirrors UserResource::resolveModules and the frontend's getAccessibleModules —
+     * Mirrors UserResource::resolveModules and the frontend's getAccessibleModules -
      * the mutable `user.modules` array is never the source of truth for personal
      * accounts. Requires an active/trial/past-due-in-grace subscription.
      *

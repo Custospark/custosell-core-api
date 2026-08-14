@@ -19,11 +19,11 @@ column, which was set at subscription creation.
 
 The cycle resolution diverged across three backend sites:
 
-- `GatewayService::initiatePayment()` — computed the *authoritative amount* using
+- `GatewayService::initiatePayment()` - computed the *authoritative amount* using
   `$subscription->billing_cycle`.
-- `PaymentValidator::validatePaymentAmount()` — computed the *expected* amount using
+- `PaymentValidator::validatePaymentAmount()` - computed the *expected* amount using
   `$subscription->billing_cycle`.
-- `InitiatesGatewayPayments` — built the provider description/log using
+- `InitiatesGatewayPayments` - built the provider description/log using
   `$subscription->billing_cycle`.
 
 Additionally, the frontend `useInitiatePayment()` never sent a `billing_cycle` field,
@@ -59,7 +59,7 @@ so the request carried no information about whether the user picked monthly or y
 
 | Type | Effective cycle | Amount source | Result |
 |------|-----------------|---------------|--------|
-| `onboarding` | Request (irrelevant — fixed fee) | `plan.onboarding_fee_usd` | Cycle-independent one-time fee |
+| `onboarding` | Request (irrelevant - fixed fee) | `plan.onboarding_fee_usd` | Cycle-independent one-time fee |
 | `subscription` | Request cycle (chosen in UI) `??` stored | `plan.price_yearly_usd` or `price_monthly_usd` | Charges what the user selected |
 | `renewal` | **Stored cycle only** | `plan.price_yearly_usd` or `price_monthly_usd` | Cannot silently change contract |
 | `upgrade_proration` | Request cycle (via metadata) | Frontend proration (validated) | Unaffected; proration-based |
@@ -101,4 +101,4 @@ effectiveCycle =
 - Provider description, validated amount, recorded amount, and renewal cycle all agree.
 - Renewal contracts cannot be silently changed (yearly→monthly) through a toggle.
 - Fixes the earlier symptom: "Payment amount USD 100 does not match expected amount
-  USD 10" — the expected amount now honors the chosen cycle.
+  USD 10" - the expected amount now honors the chosen cycle.

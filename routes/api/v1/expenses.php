@@ -13,7 +13,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
 });
 
 /**
- * Shift expense API — sales module (My Shift UI) or expenses module.
+ * Shift expense API - sales module (My Shift UI) or expenses module.
  * The Expenses nav is not shown to sales-only staff; this route group exists for My Shift.
  */
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales,expenses'])->group(function () {

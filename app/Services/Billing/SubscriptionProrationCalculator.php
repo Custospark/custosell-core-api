@@ -23,7 +23,7 @@ class SubscriptionProrationCalculator
 
         $daysInPeriod = max(1, (int) $periodStart->diffInDays($periodEnd));
         // Remaining paid coverage starts when the free trial ends (or now if the
-        // trial has already lapsed) — never before, so free trial days are not
+        // trial has already lapsed) - never before, so free trial days are not
         // credited as if the user had paid for them.
         $paidStart = $trialEndsAt && $trialEndsAt->startOfDay()->gt($now)
             ? $trialEndsAt->copy()->startOfDay()

@@ -23,7 +23,7 @@ use Tests\TestCase;
 
 /**
  * Correctness tests: forecasting must match Accounting GL closing balances
- * and produce exact ladder / BvA math — not merely a non-empty payload.
+ * and produce exact ladder / BvA math - not merely a non-empty payload.
  */
 class ForecastingAccountingCorrectnessTest extends TestCase
 {

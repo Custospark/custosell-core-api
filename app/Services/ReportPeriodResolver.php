@@ -120,7 +120,7 @@ class ReportPeriodResolver
 
         $label = $periods->count() === 1
             ? $first->name
-            : $first->start_date->format('M Y').' – '.$last->end_date->format('M Y');
+            : $first->start_date->format('M Y').' - '.$last->end_date->format('M Y');
 
         return new ReportPeriodContext(
             periodIds: $periodIds,

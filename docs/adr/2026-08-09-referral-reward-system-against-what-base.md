@@ -1,4 +1,4 @@
-# ADR: Referral Reward System — How it Works and Against What Base
+# ADR: Referral Reward System - How it Works and Against What Base
 
 ## Date
 2026-08-09
@@ -12,18 +12,18 @@ Document exactly how the referral program computes the **referee discount** and 
 ## One-Line Model
 A referral code is a **one-shot offer per new signup**:
 
-- **Referee:** gets a discount on a **fixed number of billing periods** (`discount_duration_months`, default 1). After those, full price — forever.
+- **Referee:** gets a discount on a **fixed number of billing periods** (`discount_duration_months`, default 1). After those, full price - forever.
 - **Referrer:** earns a **one-time** reward credit (no recurring commission), sized as a percentage/flat of what the referee **actually paid**.
-- **Code itself:** remains redeemable unless `expires_at` (date) or `max_uses` (cap) is set. One redemption **per business/account** — unlimited different referrees can use a code whose cap is unlimited.
+- **Code itself:** remains redeemable unless `expires_at` (date) or `max_uses` (cap) is set. One redemption **per business/account** - unlimited different referrees can use a code whose cap is unlimited.
 
 Duration and usage limits are **independent dials**: `discount_duration_months` = number of periods ONE signup's discount lasts; `max_uses`/`used_count` = how many different signups can redeem the code.
 
 ---
 
-## Part 1 — The Referee Discount
+## Part 1 - The Referee Discount
 
 ### What Is the Base?
-The discount percentage is always computed against the **amount the charge actually uses at payment time** — the RESOLVED plan, not the plan captured at registration:
+The discount percentage is always computed against the **amount the charge actually uses at payment time** - the RESOLVED plan, not the plan captured at registration:
 
 | Charge type | Discount base |
 |---|---|
@@ -33,8 +33,8 @@ The discount percentage is always computed against the **amount the charge actua
 | Top-up | monthly (or yearly/12) rate × months |
 
 ### Where It is Materialized
-1. `processReferral()` — on code application, stores `referral.discount_applied` as an **estimate** (registration-time plan) + transitions status `pending`. Creates **no** credit.
-2. `GatewayService::initiatePayment()` — recomputes the discount against the **resolved** plan via `ReferralService::resolveDiscountForCharge($referral, $plan, $paymentType, $effectiveCycle)` and subtracts it directly from the amount handed to the gateway. If the effective discount differs from the stored one, it persists the corrected `discount_applied`. (This is the fix for the "10% against $40 Essential vs $95 Professional" bug.)
+1. `processReferral()` - on code application, stores `referral.discount_applied` as an **estimate** (registration-time plan) + transitions status `pending`. Creates **no** credit.
+2. `GatewayService::initiatePayment()` - recomputes the discount against the **resolved** plan via `ReferralService::resolveDiscountForCharge($referral, $plan, $paymentType, $effectiveCycle)` and subtracts it directly from the amount handed to the gateway. If the effective discount differs from the stored one, it persists the corrected `discount_applied`. (This is the fix for the "10% against $40 Essential vs $95 Professional" bug.)
 3. The discount is **stored in USD** on the referral. `original_amount` (post-discount) is recorded in the payment's `metadata`.
 
 ### Formula (PERCENTAGE & FLAT & FREE_MONTH)
@@ -48,7 +48,7 @@ discount      = min(discount, base)          // cap at the charge itself
 
 ### Discount Duration → Credit for Later Months
 - First period's discount is applied directly to the first charge.
-- `markActive()` then creates a BillingCredit for the referee **per remaining period, sized against the RECURRING charge** — the monthly price (or the monthly equivalent on a yearly cycle, `yearly/12`) — not the fee-shaped `discount_applied`. So "N months at X%" gives a genuine X% off the current charge each period.
+- `markActive()` then creates a BillingCredit for the referee **per remaining period, sized against the RECURRING charge** - the monthly price (or the monthly equivalent on a yearly cycle, `yearly/12`) - not the fee-shaped `discount_applied`. So "N months at X%" gives a genuine X% off the current charge each period.
 - Formula: `credit = round(discountAgainstBase(code, recurring_monthly) * (duration − 1), 2)`.
 - Example (Professional: fee $95, monthly $54, 10% off, duration 2): month-1 charge $61.00 (95 − 9.50), then one remaining month credit = 10% × $54 = **$5.40** (not $9.50), consumed FIFO on the next renewal.
 
@@ -57,16 +57,16 @@ Older `markActive` created the lump as `discount_applied × (duration − 1)`, w
 
 ---
 
-## Part 2 — The Referrer Reward (and Sales-Rep Commission)
+## Part 2 - The Referrer Reward (and Sales-Rep Commission)
 
 ### The Reward Base (THE answer to "against what?")
-The reward is a percentage/flat of **the amount the referee actually paid** — defined as:
+The reward is a percentage/flat of **the amount the referee actually paid** - defined as:
 
 > the confirmed payment's `metadata.original_amount` (USD, **after** the referral discount, **before** credit/gateway convert).
 
 This is read from the most recent `completed` payment on the subscription (`markActive()`). If no paid amount is present, it falls back to `plan base − discount_applied`.
 
-This base is deliberate: the referrer earns **in proportion to real cash flow**. A free-month referee (paid $0) yields a $0 reward — the structural cap.
+This base is deliberate: the referrer earns **in proportion to real cash flow**. A free-month referee (paid $0) yields a $0 reward - the structural cap.
 
 ### Formula
 ```
@@ -76,16 +76,16 @@ reward       = PERCENTAGE  ? round(paid_base * reward_value/100, 2)
           | FREE_MONTH  ? min(recurring_monthly, paid_base)   // ONE month of the referee's plan, capped at what they actually paid
 ```
 - Default program: `reward_value = 15`, i.e. **15% of what the referee paid**. The DB default `reward_type` is `percentage` (was `free_month` before 2026-08-10) so normal codes can never inherit a full-payout reward.
-- A `FREE_MONTH` **reward** pays the referrer exactly ONE month of the referee's **recurring** subscription value (monthly price, or the monthly equivalent on a yearly cycle), **capped at the amount actually paid** — never the full paid amount. Before the 2026-08-10 fix, `FREE_MONTH => paid_base` paid the referrer 100% of what the referee paid (e.g. $180 credit on a $180 onboarding payment) — the money-leak this ADR supersedes.
+- A `FREE_MONTH` **reward** pays the referrer exactly ONE month of the referee's **recurring** subscription value (monthly price, or the monthly equivalent on a yearly cycle), **capped at the amount actually paid** - never the full paid amount. Before the 2026-08-10 fix, `FREE_MONTH => paid_base` paid the referrer 100% of what the referee paid (e.g. $180 credit on a $180 onboarding payment) - the money-leak this ADR supersedes.
 - Sales-rep codes: commission follows the same base logic (`commission_rate` % or flat of `paid_base`).
-- **CAMPAIGN codes (company-owned, created by platform admins): earn NO reward.** The company shouldn't credit itself free months for its own promotions. `reward_amount` is forced to 0 and no `BillingCredit` is created; referee discount still applies. (Fix 2026-08-09 — the DB default `reward_type = 'free_month'` plus the admin form not sending `reward_type` was silently granting the company a full free-month credit per signup.)
+- **CAMPAIGN codes (company-owned, created by platform admins): earn NO reward.** The company shouldn't credit itself free months for its own promotions. `reward_amount` is forced to 0 and no `BillingCredit` is created; referee discount still applies. (Fix 2026-08-09 - the DB default `reward_type = 'free_month'` plus the admin form not sending `reward_type` was silently granting the company a full free-month credit per signup.)
 
 ### When
-At settlement (`markActive()`, after payment confirms). Before that the referral sits `pending`. No payment → no reward — zero prepaid liability.
+At settlement (`markActive()`, after payment confirms). Before that the referral sits `pending`. No payment → no reward - zero prepaid liability.
 
 ---
 
-## Part 3 — Duration / Cap / Expiry Semantics
+## Part 3 - Duration / Cap / Expiry Semantics
 
 | Dial | Meaning | Default |
 |---|---|---|
@@ -103,7 +103,7 @@ At settlement (`markActive()`, after payment confirms). Before that the referral
 | Company net, month 1 | $153 |
 | Renewals 2+ | full $200 each, no discount, no reward |
 
-Payback? none — the ultimate is a one-time reward (~$27) + N discount periods. e.g. a 12-month duration nets ~$127 less than a no-code year of $2,400 (3-month: −$47, 9-month: −$107, 12-month: −$127).
+Payback? none - the ultimate is a one-time reward (~$27) + N discount periods. e.g. a 12-month duration nets ~$127 less than a no-code year of $2,400 (3-month: −$47, 9-month: −$107, 12-month: −$127).
 
 ## Audit trail (`PaymentAudit`, `[logs]`)
 `[PaymentAudit]` on: initiate-payment resolved (plan fees, disc base, discount_applied), referral reward/commission computed (reward_base_usd, discount_applied, reward_amount_usd, commission_earned_usd), referral credit created (owner).
@@ -127,5 +127,5 @@ Payback? none — the ultimate is a one-time reward (~$27) + N discount periods.
 |---|---|
 | Reward-base message ("15% of what your friend pays") feels too complex for marketing | The net-base model is honest but harder to slogan; a full-price-base campaign intentionally bypasses the cap and must be gated |
 | Introduce single-plan models | The dynamic base collapses; simpler flat 10/10 symmetric becomes viable |
-| Need recurring (vested) referrer earnings | Requires a vests ledger + scheduled renewals — currently not modeled |
+| Need recurring (vested) referrer earnings | Requires a vests ledger + scheduled renewals - currently not modeled |
 | Free-month codes as primary channel | Under net-base, they pay $0 reward; if that kills energy, revisit with a flat referrer payout |

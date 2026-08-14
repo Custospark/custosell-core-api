@@ -25,7 +25,7 @@ class UpdateUserRequest extends BaseFormRequest
             'location_id' => ['nullable', 'integer'],
             'location_ids' => ['nullable', 'array'],
             'location_ids.*' => ['integer'],
-            // Org membership uses detach/attach — business actors cannot toggle is_active.
+            // Org membership uses detach/attach - business actors cannot toggle is_active.
             'modules' => ['sometimes', 'array'],
             'modules.*' => ['string', Rule::in(ModuleAccessService::assignableModuleSlugs())],
         ];

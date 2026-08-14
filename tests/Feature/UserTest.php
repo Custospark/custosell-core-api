@@ -261,7 +261,7 @@ class UserTest extends TestCase
                 'is_active' => false,
             ]);
 
-        // is_active stripped from request rules — if present as unexpected, may be ignored;
+        // is_active stripped from request rules - if present as unexpected, may be ignored;
         // force via service by sending only when validated. Without rule, Laravel strips unknown.
         // Explicitly assert staff stays active when client tries deactivate via modules-only path.
         $this->staff->refresh();

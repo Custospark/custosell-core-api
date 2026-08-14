@@ -4,7 +4,7 @@
 @php
   $items = $sale->saleItems ?? collect();
   $currency = $currency ?? ($business->currency ?? 'UGX');
-  $salesPersonName = $sale->user?->name ?? '—';
+  $salesPersonName = $sale->user?->name ?? '-';
   $customer = $sale->customer;
   $branch = $branch ?? $sale->location?->name ?? $business->defaultLocation?->name ?? null;
   $discount = (float) $sale->discount_amount;
@@ -176,7 +176,7 @@
       </p>
       @foreach($payments as $i => $p)
         <p style="font-size:9px; color:#166534; margin:0 0 2px 0;">
-          #{{ $i + 1 }} {{ $p->receipt_number }} — {{ $formatter->formatMoney((float) $p->amount, $currency) }}
+          #{{ $i + 1 }} {{ $p->receipt_number }} - {{ $formatter->formatMoney((float) $p->amount, $currency) }}
         </p>
       @endforeach
     </div>

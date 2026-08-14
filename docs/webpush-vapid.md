@@ -1,4 +1,4 @@
-# Web Push — VAPID keys (how-to)
+# Web Push - VAPID keys (how-to)
 
 Web Push uses **VAPID** (Voluntary Application Server Identification) so push services trust that notifications really come from this server. You need one public/private key pair, set once, then reused.
 
@@ -7,7 +7,7 @@ Web Push uses **VAPID** (Voluntary Application Server Identification) so push se
 - **Config:** `config/webpush.php` reads `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `WEB_PUSH_ENABLED`, `VAPID_SUBJECT`, `WEB_PUSH_ICON`, `WEB_PUSH_ROUTE` from the environment.
 - **Env files** (all git-ignored): `.env`, `.env.local`, `.env.staging`, `.env.production`. The public key is served to the frontend by `GET /api/v1/webpush/status`; the private key never leaves the server.
 
-> `.env.example` is the committed template — keep its `VAPID_*` values **blank** on purpose so secrets never land in git.
+> `.env.example` is the committed template - keep its `VAPID_*` values **blank** on purpose so secrets never land in git.
 
 ## Generate the keys (once)
 
@@ -73,4 +73,4 @@ Keys can be regenerated anytime. The browser reads the new public key from `/web
 
 ## Frontend contract
 
-The frontend does not hardcode VAPID — it fetches it from `GET /api/v1/webpush/status` and calls `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })`. See `Frontend/docs/adr/2026-08-05-web-push-notifications.md` for the end-to-end design.
+The frontend does not hardcode VAPID - it fetches it from `GET /api/v1/webpush/status` and calls `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })`. See `Frontend/docs/adr/2026-08-05-web-push-notifications.md` for the end-to-end design.

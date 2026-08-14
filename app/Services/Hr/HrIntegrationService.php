@@ -21,7 +21,7 @@ class HrIntegrationService
 
     /**
      * Import approved project timesheets into HR attendance days (minutes_worked).
-     * Timesheets remain the source of truth for project costing — this only mirrors hours for HR review.
+     * Timesheets remain the source of truth for project costing - this only mirrors hours for HR review.
      *
      * @return array{imported: int, skipped: int}
      */

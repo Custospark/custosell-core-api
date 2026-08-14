@@ -13,6 +13,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // No rollback — data already removed
+        // No rollback - data already removed
     }
 };

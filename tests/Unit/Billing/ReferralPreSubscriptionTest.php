@@ -11,7 +11,7 @@ use App\Models\Plan;
 use App\Models\ReferralCode;
 
 /**
- * Pre-subscription referral application — a fresh, never-subscribed business
+ * Pre-subscription referral application - a fresh, never-subscribed business
  * applies a referral/coupon code BEFORE any subscription exists. The referral
  * is stored against the business (subscription_id null) and stays PENDING; the
  * first initiatePayment binds it to the new subscription and applies the
@@ -63,7 +63,7 @@ class ReferralPreSubscriptionTest extends AbstractBillingLifecycleTestCase
         $personal = Plan::where('slug', 'personal')->first();
         $code = $this->createReferralCode('WELCOME10', DiscountType::PERCENTAGE, 10);
 
-        // Business has NO subscription yet — code applied against the business.
+        // Business has NO subscription yet - code applied against the business.
         $referral = $this->referralService->processReferral(
             $code->code,
             null,
@@ -154,7 +154,7 @@ class ReferralPreSubscriptionTest extends AbstractBillingLifecycleTestCase
     public function test_flat_discount_clamped_to_charge_on_first_payment(): void
     {
         $personal = Plan::where('slug', 'personal')->first();
-        // Flat $5000 far exceeds the $10 Personal monthly charge — no negative fees.
+        // Flat $5000 far exceeds the $10 Personal monthly charge - no negative fees.
         $code = $this->createReferralCode('BIGFLAT', DiscountType::FLAT_AMOUNT, 5000);
 
         $this->referralService->processReferral(

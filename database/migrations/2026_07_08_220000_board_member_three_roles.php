@@ -16,7 +16,7 @@ return new class extends Migration
             return;
         }
 
-        // Expand enum first — 'contributor' is invalid while column is still viewer|editor.
+        // Expand enum first - 'contributor' is invalid while column is still viewer|editor.
         DB::statement(
             "ALTER TABLE pipeline_board_members MODIFY COLUMN role ENUM('viewer', 'editor', 'contributor', 'manager') NOT NULL DEFAULT 'editor'"
         );

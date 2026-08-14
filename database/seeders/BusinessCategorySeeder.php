@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Curated business categories for storefront filtering.
- * Idempotent by slug — safe to re-run.
+ * Idempotent by slug - safe to re-run.
  */
 class BusinessCategorySeeder extends Seeder
 {

@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Hash;
  * Replaces the legacy info@custospark.com owner account (mirrors how we seed
  * test businesses): if the target email already exists it is updated in place
  * (update-or-create), if only the legacy email exists it is renamed, and if
- * neither exists the account + business are created. Idempotent — safe to re-run.
+ * neither exists the account + business are created. Idempotent - safe to re-run.
  *
  * Platform admin access is granted through PlatformAdminService::assignIfEligible()
  * only when the owner email is listed in config('platform.admin_emails')
@@ -44,7 +44,7 @@ class PromoteOwnerBusinessSeeder extends Seeder
     public function run(): void
     {
         if (!in_array(app()->environment(), ['production', 'local'], true)) {
-            $this->command?->warn('PromoteOwnerBusinessSeeder skipped — it only runs in production or local development.');
+            $this->command?->warn('PromoteOwnerBusinessSeeder skipped - it only runs in production or local development.');
 
             return;
         }

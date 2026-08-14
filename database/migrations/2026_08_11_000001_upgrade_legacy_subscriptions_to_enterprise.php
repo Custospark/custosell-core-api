@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  * 2026_07_21_124239_create_subscriptions_for_legacy_businesses granted them the
  * Essential plan, which omits accounting, HR, forecasting, documents, etc.).
  *
- * Targets only the rows the legacy backfill inserted — status TRIAL with
+ * Targets only the rows the legacy backfill inserted - status TRIAL with
  * trial_used = true and onboarding_fee_paid = true. New registrations never
  * match (they are created with trial_used = false, onboarding_fee_paid = false),
  * and the update is idempotent: once moved to Enterprise the WHERE clause no

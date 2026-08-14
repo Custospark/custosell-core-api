@@ -1,4 +1,4 @@
-# Email Verification, 2FA & Account Activity Audit Log — backend
+# Email Verification, 2FA & Account Activity Audit Log - backend
 
 ## Status
 
@@ -86,8 +86,8 @@ Password changes made via the existing `PUT /auth/profile` are now audited as
   completes login, invalid code, email-verify chaining into 2FA, 2FA rejected when
   disabled, resend rejected when verified, toggle + audit, activity feed, logout audited,
   password change audited.
-- `AuthTest` (10 tests) still passes — existing login/register flows unchanged.
-- `composer vera:fast`: php -l (all changed files) + logic — passed. `migrate --pretend`
+- `AuthTest` (10 tests) still passes - existing login/register flows unchanged.
+- `composer vera:fast`: php -l (all changed files) + logic - passed. `migrate --pretend`
   clean for the three new migrations.
 
 ## Related files

@@ -138,7 +138,7 @@ class OnboardingService
             $secondary = null;
         }
 
-        // Preference only — never mutates module access.
+        // Preference only - never mutates module access.
         $business->forceFill([
             'primary_intent' => $primary,
             'secondary_intent' => $secondary,

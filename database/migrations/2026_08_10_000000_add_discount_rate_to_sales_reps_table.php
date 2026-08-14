@@ -14,7 +14,7 @@ return new class extends Migration
             $table->decimal('discount_rate', 8, 2)
                 ->default(20)
                 ->after('commission_rate')
-                ->comment('Percentage the referee gets off — independent of the rep commission.');
+                ->comment('Percentage the referee gets off - independent of the rep commission.');
         });
 
         // One-off migration of existing reps into the approved safe zone

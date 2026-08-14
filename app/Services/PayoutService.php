@@ -159,7 +159,7 @@ class PayoutService
                 }
             }
 
-            // Audit log — cash paid out to the referrer / sales rep for the distributed commission.
+            // Audit log - cash paid out to the referrer / sales rep for the distributed commission.
             // Goal: verify payout totals reconcile with earned reward/commission.
             \Illuminate\Support\Facades\Log::info('[PaymentAudit] payout recorded', [
                 'payout_id' => $payout->id,

@@ -1,5 +1,5 @@
 /**
- * Custosell service worker — offline-first caching
+ * Custosell service worker - offline-first caching
  *
  * | Request type   | Online                         | Offline              |
  * |----------------|--------------------------------|----------------------|
@@ -136,7 +136,7 @@ function toApiCacheRequest(request) {
   });
 }
 
-/** Cache-first: JS, CSS, images — online and offline. */
+/** Cache-first: JS, CSS, images - online and offline. */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);

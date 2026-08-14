@@ -90,7 +90,7 @@ class PipelineBoardConversationService
         ->firstOrFail();
 
       if ($parent->parent_id !== null) {
-        abort(422, 'Replies cannot be nested further — reply to the main message instead.');
+        abort(422, 'Replies cannot be nested further - reply to the main message instead.');
       }
     }
 

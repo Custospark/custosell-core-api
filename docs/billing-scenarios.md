@@ -1,4 +1,4 @@
-# Billing — Real-Life Subscription Scenarios
+# Billing - Real-Life Subscription Scenarios
 
 ## Characters
 
@@ -11,7 +11,7 @@
 
 ---
 
-## Scenario 1: Oscar Signs Up — Free Trial
+## Scenario 1: Oscar Signs Up - Free Trial
 
 **Oscar** opens **Kikuubo Retail Ltd** (retail shop in Kampala). Registers the business, chooses the **Essential** plan (UGX 75,000/mo, 14-day trial).
 
@@ -54,8 +54,8 @@ Oscar can use the POS immediately during the 14-day trial.
 ### Failure states
 | Condition | Result | How it's handled |
 |-----------|--------|-------------------|
-| Plan not found | 500 | `Plan not found` — `PlanRepository::find()` returns null |
-| Business already subscribed | 500 | `Business already has a subscription` — repository guard |
+| Plan not found | 500 | `Plan not found` - `PlanRepository::find()` returns null |
+| Business already subscribed | 500 | `Business already has a subscription` - repository guard |
 | Invalid billing_cycle | 422 | `InitiatePaymentRequest` validation |
 
 ---
@@ -122,18 +122,18 @@ POST /api/v1/billing/gateway/pesapal/webhook
 ### Failure states
 | Condition | Result | How it's handled |
 |-----------|--------|-------------------|
-| Gateway disabled | 502 | `Gateway 'pesapal' is not currently enabled` — isEnabled() guard |
-| Invalid gateway name | 502 | `Payment gateway 'stripe' is not registered` — GatewayManager driver() guard |
-| No active subscription | 404 | `No active subscription found` — Controller guard |
+| Gateway disabled | 502 | `Gateway 'pesapal' is not currently enabled` - isEnabled() guard |
+| Invalid gateway name | 502 | `Payment gateway 'stripe' is not registered` - GatewayManager driver() guard |
+| No active subscription | 404 | `No active subscription found` - Controller guard |
 | Missing request fields | 422 | InitiatePaymentRequest validation rules |
 | PesaPal API timeout | 502 | Gateway initiates, PesaPal unreachable → payment marked `failed` in DB, exception returned |
-| Webhook invalid signature | 403/logged | `Invalid webhook signature` — signature verification guard |
-| Duplicate webhook | Idempotent | `payment->isCompleted()` → throws `Payment #1 is already completed` — safely re-thrown, no double-activation |
-| Invalid subscription for activation | 500 | `Cannot activate subscription with status 'active'` — only trial/past_due can activate |
+| Webhook invalid signature | 403/logged | `Invalid webhook signature` - signature verification guard |
+| Duplicate webhook | Idempotent | `payment->isCompleted()` → throws `Payment #1 is already completed` - safely re-thrown, no double-activation |
+| Invalid subscription for activation | 500 | `Cannot activate subscription with status 'active'` - only trial/past_due can activate |
 
 ---
 
-## Scenario 3: Payment Bounces — Grace Period
+## Scenario 3: Payment Bounces - Grace Period
 
 **Oscar's** second month payment (UGX 75,000) fails. A cron job detects `next_billing_date` has passed with no completed payment.
 
@@ -191,7 +191,7 @@ Oscar is locked out of the POS.
 
 ## Scenario 4: Grace Upgrades from Essential to Professional
 
-**Grace** from **Sino Hardware & General Supplies** (Gulu) started on Professional (UGX 200,000/mo). Business is growing fast — she wants to upgrade mid-cycle.
+**Grace** from **Sino Hardware & General Supplies** (Gulu) started on Professional (UGX 200,000/mo). Business is growing fast - she wants to upgrade mid-cycle.
 
 This uses `SubscriptionScheduledChange` with the `SubscriptionProrationCalculator`:
 
@@ -243,7 +243,7 @@ Creates `SubscriptionScheduledChange` with `effective_at = next_billing_date`. P
 
 ## Scenario 5: David Cancels at Period End
 
-**David** from **Pearl Tech Solutions** (Kampala, USD, Enterprise $135/mo) is closing his business. He cancels politely — at period end.
+**David** from **Pearl Tech Solutions** (Kampala, USD, Enterprise $135/mo) is closing his business. He cancels politely - at period end.
 
 ```
 POST /api/v1/subscriptions/{id}/cancel
@@ -303,7 +303,7 @@ ends_at → now
 GET /api/v1/subscriptions/access → { "has_access": false }
 ```
 
-Sarah can't use the POS. She can still re-subscribe (subscribe endpoint will throw "Business already has a subscription" — she needs to contact support to reset).
+Sarah can't use the POS. She can still re-subscribe (subscribe endpoint will throw "Business already has a subscription" - she needs to contact support to reset).
 
 ---
 
@@ -427,13 +427,13 @@ POST /api/v1/billing/payments/initiate
 ### Renewal lock (important)
 For `payment_type = renewal`, the effective cycle **always** comes from the
 subscription's stored cycle, never the request. A user on yearly cannot be silently
-switched to monthly by renewing — the dedicated billing-cycle-change flow
+switched to monthly by renewing - the dedicated billing-cycle-change flow
 (`billing_cycle_change` + proration) is the only way to change it.
 
 ### Failure states
 | Condition | Result | How it's handled |
 |-----------|--------|-------------------|
-| Yearly chosen but validator used stored monthly | 502 | Fixed — validator now uses the same effective cycle as the amount |
+| Yearly chosen but validator used stored monthly | 502 | Fixed - validator now uses the same effective cycle as the amount |
 | No `billing_cycle` sent | Falls back to stored cycle | `?? stored_billing_cycle` fallback |
 | Renewal with mismatched request cycle | Request ignored | `payment_type === 'renewal'` → stored cycle always wins |
 | Paid cycle differs from stored on approval | Subscription cycle updated | `persistPaidBillingCycle()` → `applyBillingCycleChange()` |
@@ -488,8 +488,8 @@ Registered as `subscription.active` in `bootstrap/app.php`. Applied to all core 
 
 ## Trial-Once / Grace-Once Rules
 
-- `trial_used` column marks when trial is given — subsequent subscriptions skip trial
-- `grace_used` column marks when grace is entered — each subscription lifecycle gets only ONE grace period
+- `trial_used` column marks when trial is given - subsequent subscriptions skip trial
+- `grace_used` column marks when grace is entered - each subscription lifecycle gets only ONE grace period
 - If `trial_used` is true on a re-subscribe (future feature), subscription starts in `past_due` instead
 
 ---

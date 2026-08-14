@@ -94,7 +94,7 @@ class ReportsController extends Controller
             $exportRows[] = [
                 $sale->receipt_number,
                 $sale->sale_date->format('Y-m-d'),
-                $sale->user?->name ?? '—',
+                $sale->user?->name ?? '-',
                 $sale->saleItems->count(),
                 $this->metrics->paymentMethodLabel($this->metrics->normalizePaymentMethod($sale->payment_method)),
                 $this->metrics->paymentStatusLabel($sale->payment_status),
@@ -195,7 +195,7 @@ class ReportsController extends Controller
         $headers = ['Date', 'Category', 'Description', 'Amount'];
         $exportRows = $expenses->map(fn ($expense) => [
             $expense->expense_date instanceof \Carbon\Carbon ? $expense->expense_date->format('Y-m-d') : $expense->expense_date,
-            $expense->expenseCategory?->name ?? '—',
+            $expense->expenseCategory?->name ?? '-',
             $expense->description,
             (float) $expense->amount,
         ])->toArray();
@@ -241,8 +241,8 @@ class ReportsController extends Controller
 
             return [
                 $product->name,
-                $product->category?->name ?? '—',
-                $product->sku ?? '—',
+                $product->category?->name ?? '-',
+                $product->sku ?? '-',
                 $product->stock_quantity,
                 $product->low_stock_threshold,
                 (float) $product->unit_price,
@@ -428,8 +428,8 @@ class ReportsController extends Controller
             $row['date'],
             $row['category'],
             $row['description'],
-            $row['supplier_tin'] ?? '—',
-            $row['supplier_invoice_no'] ?? '—',
+            $row['supplier_tin'] ?? '-',
+            $row['supplier_invoice_no'] ?? '-',
             $row['amount'],
             $row['vat_amount'],
         ], $inputRows);

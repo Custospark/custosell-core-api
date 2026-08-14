@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
  *
  * The original legacy backfill (2026_07_21_124239) assigned plan_id pointing at
  * whatever plan existed first by sort_order at the time. In production that was
- * the STALE 'free' plan (id 1) from the original Free/Pro/Premium seed set —
+ * the STALE 'free' plan (id 1) from the original Free/Pro/Premium seed set -
  * NOT 'essential' as the dev database had. The prior enterprise upgrade
  * (2026_08_11_000001) only matched plan_id = essential, so it upgraded zero
  * legacy subscriptions in production, leaving every legacy business on 'Free'.

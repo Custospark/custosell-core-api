@@ -174,7 +174,7 @@ class HrPayrollAffordabilityTest extends TestCase
 
     public function test_payroll_affordability_422_without_period(): void
     {
-        // COA only — no accounting period for this business.
+        // COA only - no accounting period for this business.
         (new \Database\Seeders\DefaultAccountingTemplateSeeder())->run();
 
         $this->authJson('POST', '/api/v1/hr/reports/payroll-affordability', [

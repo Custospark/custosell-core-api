@@ -116,7 +116,7 @@ class PipelineColumnMetricsService
                     'stage_name' => $stage->name,
                     'type' => 'bottleneck',
                     'message' => sprintf(
-                        'High dwell (%.0f days) with %d items in column — consider redistributing work or adding capacity.',
+                        'High dwell (%.0f days) with %d items in column - consider redistributing work or adding capacity.',
                         $dwell,
                         (int) $wip,
                     ),
@@ -130,7 +130,7 @@ class PipelineColumnMetricsService
                     'stage_name' => $stage->name,
                     'type' => 'healthy',
                     'message' => sprintf(
-                        'Column processed %d moves in the last %d days — sustainable weekly pace is about %d.',
+                        'Column processed %d moves in the last %d days - sustainable weekly pace is about %d.',
                         (int) $throughput,
                         $lookbackDays,
                         $weeklyCapacity,

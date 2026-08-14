@@ -54,7 +54,7 @@ trait ComputesSaleMetrics
         return max(0, $this->saleGross($sale) - $this->saleRefunds($sale));
     }
 
-    /** @deprecated Use saleNetAfterRefunds — kept for internal call sites */
+    /** @deprecated Use saleNetAfterRefunds - kept for internal call sites */
     public function saleNet(Sale $sale): float
     {
         return $this->saleNetAfterRefunds($sale);

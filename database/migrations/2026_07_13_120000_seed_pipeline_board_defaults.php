@@ -48,6 +48,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Keep gallery backgrounds and guiding cards — removing them would blank customized boards.
+        // Keep gallery backgrounds and guiding cards - removing them would blank customized boards.
     }
 };

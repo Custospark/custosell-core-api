@@ -30,15 +30,15 @@ attached to `oscar@custospark.com`, on the **Enterprise** plan, with
 - **Subscription:** upserted to Enterprise (yearly, ACTIVE, trial used, onboarding
   fee paid), `next_billing_date = 2030-12-31`.
 - **Role:** owner granted `platform-admin` **via
-  `PlatformAdminService::assignIfEligible()`** — only when the email is in
+  `PlatformAdminService::assignIfEligible()`** - only when the email is in
   `config('platform.admin_emails')` (`PLATFORM_ADMIN_EMAILS`), so
   `is_platform_admin` surfaces to the frontend and unlocks the admin platform
   module. No unconditional role grant.
 
 ## Files
 
-- `database/seeders/PromoteOwnerBusinessSeeder.php` — new seeder.
-- `database/seeders/DatabaseSeeder.php` — registered for `production`/`local`.
+- `database/seeders/PromoteOwnerBusinessSeeder.php` - new seeder.
+- `database/seeders/DatabaseSeeder.php` - registered for `production`/`local`.
 
 ## Failure states
 

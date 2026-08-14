@@ -1,4 +1,4 @@
-# Subscription State Machine — Date-Driven Transitions and Fairness
+# Subscription State Machine - Date-Driven Transitions and Fairness
 
 **Date:** 2026-08-02
 **Status:** Accepted
@@ -9,14 +9,14 @@
 Oscar asked two questions that this ADR formalizes:
 
 1. When are `trial_ends_at` and `next_billing_date` set, and on which events?
-2. Does the access gate keep the system fair — no party (company or user) gains or loses — regardless of whether the user pays well, in part, or not at all?
+2. Does the access gate keep the system fair - no party (company or user) gains or loses - regardless of whether the user pays well, in part, or not at all?
 
 ## 1. Where the two key dates are set
 
 `subscriptions` is a single row per business with exactly **one `status` at a time** (`subscriptions.status`, a string enum). The two dates are set in different lifecycle events:
 
 ### `trial_ends_at`
-Set in `SubscriptionService::subscribe()` — **at subscription creation, if and only if the plan has a trial** (`plan.trial_days > 0`):
+Set in `SubscriptionService::subscribe()` - **at subscription creation, if and only if the plan has a trial** (`plan.trial_days > 0`):
 
 ```php
 if (!$skipTrial) {
@@ -28,11 +28,11 @@ if (!$skipTrial) {
 }
 ```
 
-- No payment is required to set it — it is created at signup for trial-enabled plans.
+- No payment is required to set it - it is created at signup for trial-enabled plans.
 - Re-spun in `activateAfterOnboarding()` only when the trial was never used / still-unexpired; otherwise a fresh trial starts with a new `trial_ends_at`.
 
 ### `next_billing_date`
-Set/computed from a "billing from" date in several places — always anchored externally, never decremented by time:
+Set/computed from a "billing from" date in several places - always anchored externally, never decremented by time:
 
 | Event | Service method | Derived from |
 |-------|----------------|--------------|
@@ -76,7 +76,7 @@ Transitions table (from `SubscriptionStateMachineService`):
 
 Every mutation is wrapped in `DB::transaction` and guarded by status assertions, so an impossible move throws rather than silently corrupting state.
 
-### `hasAccess()` — the single fairness gate
+### `hasAccess()` - the single fairness gate
 
 ```php
 match ($this->status) {
@@ -89,9 +89,9 @@ match ($this->status) {
 
 Used by: `EnsureActiveSubscription` middleware (403), `SubscriptionService::hasAccess()` (the `/subscriptions/access` API), and `UserResource::resolveModules()` (gates personal-plan module list delivered to the frontend at login).
 
-## 3. Fairness analysis — does anyone lose?
+## 3. Fairness analysis - does anyone lose?
 
-**Access is granted strictly proportionally to paid state.** The benefit and the access are derived **from the same persisted fields** — there is no second, checkable-to-access dimension:
+**Access is granted strictly proportionally to paid state.** The benefit and the access are derived **from the same persisted fields** - there is no second, checkable-to-access dimension:
 
 - A paying user keeps `status=active` and `next_billing_date` pushed forward on each successful renewal ⇒ **uninterrupted access; nobody is short**: the user is never cut off before the paid-through date.
 - A non-paying (or missed-payment) user moves `trial→past_due` at `trial_ends_at`, getting only a **bounded 7-day grace**, then `past_due→suspended` at `grace_period_ends_at`. If suspension, `hasAccess()` returns `false`; modules collapse to `account/guide/discover`; guarded API routes return **403**. So a non-payer **cannot keep consuming** beyond their granted window, and cannot "cheat" by re-reading stored data that was never granted.
@@ -104,7 +104,7 @@ The single `status` field is the invariant. Because:
 3. the gate reads the same persisted status,
 4. and `processDueTransitions()` runs on the request/auth path (no reliance on a cron that may not fire),
 
-**neither the company's revenue nor the user's access can be silently shortchanged by stale state.** The user who pays is granted; the user who stops paying loses access at the deterministic boundary — the same for everyone.
+**neither the company's revenue nor the user's access can be silently shortchanged by stale state.** The user who pays is granted; the user who stops paying loses access at the deterministic boundary - the same for everyone.
 
 ## Decisions recorded
 

@@ -10,7 +10,7 @@ use App\Models\Sale;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * B2C buyer document access — sale receipt / invoice for storefront orders only.
+ * B2C buyer document access - sale receipt / invoice for storefront orders only.
  */
 class StorefrontBuyerDocumentService
 {

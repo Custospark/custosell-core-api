@@ -6,7 +6,7 @@ use App\Enums\Billing\SubscriptionStatus;
 use Illuminate\Support\Carbon;
 
 /**
- * Early renewal — an active subscription can prepay a full period, extending
+ * Early renewal - an active subscription can prepay a full period, extending
  * next_billing_date from its existing value (schedule preserved, no proration).
  */
 class EarlyRenewalTest extends AbstractBillingLifecycleTestCase

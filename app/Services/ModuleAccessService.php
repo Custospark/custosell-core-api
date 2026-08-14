@@ -142,7 +142,7 @@ class ModuleAccessService
         }
 
         // Personal accounts have full access to the Expenses workflow (and its
-        // underlying Sales dependency) from authentication alone — the expenses
+        // underlying Sales dependency) from authentication alone - the expenses
         // records for personal accounts are not scoped by plan or module grants.
         if ($user->account_type === 'personal' && in_array($module, ['sales', 'expenses'], true)) {
             return true;
@@ -154,7 +154,7 @@ class ModuleAccessService
         }
 
         // Personal accounts resolve module grants from the live subscription plan
-        // features — mirror of UserResource::resolveModules and the frontend's
+        // features - mirror of UserResource::resolveModules and the frontend's
         // getAccessibleModules. The mutable `user.modules` array can go stale or be
         // decorated by offline/business sync, so it is never the source of truth here.
         if ($user->account_type === 'personal') {
@@ -165,7 +165,7 @@ class ModuleAccessService
             return in_array($module, $this->personalPlanModules($user), true);
         }
 
-        // Sales and Customers are base modules — every business user needs them
+        // Sales and Customers are base modules - every business user needs them
         // regardless of stored module permissions. The Staff modules UI controls
         // navigation visibility, but the backend never blocks these.
         if ($user->business_id && in_array($module, ['sales', 'customers'], true)) {
@@ -447,7 +447,7 @@ class ModuleAccessService
 
     /**
      * Maps legacy permission keys to the business module that grants them.
-     * Staff module access is the source of truth — role permission flags are not enforced.
+     * Staff module access is the source of truth - role permission flags are not enforced.
      */
     public function moduleForPermission(string $permission): ?string
     {
@@ -475,7 +475,7 @@ class ModuleAccessService
         };
     }
 
-    /** Sales or Expenses module — record/read shift and general expenses. */
+    /** Sales or Expenses module - record/read shift and general expenses. */
     public function canAccessExpenseWorkflow(User $user): bool
     {
         return $this->canAccess($user, 'sales') || $this->canAccess($user, 'expenses');

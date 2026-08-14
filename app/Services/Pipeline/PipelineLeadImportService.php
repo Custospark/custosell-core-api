@@ -65,13 +65,13 @@ class PipelineLeadImportService
         $example = [
             'Follow up with Acme order',
             $firstStage,
-            'Optional notes — delete this example row before importing',
+            'Optional notes - delete this example row before importing',
             'Jane Contact',
             'jane.contact@example.com',
             '+256700000000',
             '150000',
             '2026-07-14',
-            '', // Assignee Email optional — leave blank or use a team login email
+            '', // Assignee Email optional - leave blank or use a team login email
             'medium',
         ];
         foreach ($example as $i => $val) {
@@ -93,10 +93,10 @@ class PipelineLeadImportService
         $sheet->freezePane('A2');
 
         $stageNames = $stages->pluck('name')->all();
-        $hint = 'Sample formats — Due Date: YYYY-MM-DD (example 2026-07-14; Excel date cells also work). '
+        $hint = 'Sample formats - Due Date: YYYY-MM-DD (example 2026-07-14; Excel date cells also work). '
             .'Priority: low | medium | high | urgent. '
             .'Estimated Value: numbers only (example 150000). '
-            .'Assignee Email and Contact Email are optional — leave blank if unassigned; '
+            .'Assignee Email and Contact Email are optional - leave blank if unassigned; '
             .'if set, Assignee Email must match a team member login email on this business.';
         if ($stageNames !== []) {
             $hint .= ' See the "Stages Reference" sheet below for all valid stage names.';
@@ -134,9 +134,9 @@ class PipelineLeadImportService
             foreach ($stages as $index => $stage) {
                 $row = 5 + $index;
                 $stageSheet->setCellValue("A{$row}", $stage->name);
-                $stageSheet->setCellValue("B{$row}", $stage->color ?? '—');
-                $stageSheet->setCellValue("C{$row}", $stage->is_won ? 'Yes' : '—');
-                $stageSheet->setCellValue("D{$row}", $stage->is_lost ? 'Yes' : '—');
+                $stageSheet->setCellValue("B{$row}", $stage->color ?? '-');
+                $stageSheet->setCellValue("C{$row}", $stage->is_won ? 'Yes' : '-');
+                $stageSheet->setCellValue("D{$row}", $stage->is_lost ? 'Yes' : '-');
                 $stageSheet->setCellValue("E{$row}", $stage->sort_order);
             }
         }
@@ -316,7 +316,7 @@ class PipelineLeadImportService
 
     /**
      * Excel often stores dates as serial numbers or DateTime objects when cells are date-formatted.
-     * Normalize to YYYY-MM-DD before Laravel date validation (UTC calendar day — no TZ day-shift).
+     * Normalize to YYYY-MM-DD before Laravel date validation (UTC calendar day - no TZ day-shift).
      */
     protected function normalizeDueDate(mixed $value): ?string
     {

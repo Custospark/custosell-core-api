@@ -88,11 +88,11 @@ class PlatformUserMetricsService
             'growth' => $growth,
             'decisions' => [
                 $joinedToday > 0
-                    ? "{$joinedToday} new user(s) joined today — prioritize welcome onboarding."
-                    : 'No new signups today — focus on re-activating dormant accounts.',
+                    ? "{$joinedToday} new user(s) joined today - prioritize welcome onboarding."
+                    : 'No new signups today - focus on re-activating dormant accounts.',
                 $joinedThisMonth > 0
                     ? "{$joinedThisMonth} user(s) joined this month."
-                    : 'No new users this month — review acquisition channels.',
+                    : 'No new users this month - review acquisition channels.',
                 $logins30d > 0
                     ? "{$logins30d} of {$totalUsers} users signed in within the last 30 days."
                     : 'No user sign-ins recorded in the last 30 days.',

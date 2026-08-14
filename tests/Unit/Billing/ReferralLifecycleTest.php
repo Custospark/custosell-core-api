@@ -359,7 +359,7 @@ class ReferralLifecycleTest extends TestCase
 
         // Platform hard-delete wipes the referred business. The referral row is
         // an earnings ledger record for the referrer and must not be cascade
-        // deleted with it — deleting a referred business must NOT reset earnings.
+        // deleted with it - deleting a referred business must NOT reset earnings.
         $this->business->forceDelete();
 
         $this->assertDatabaseHas('referrals', ['id' => $referral->id]);

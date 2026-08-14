@@ -79,7 +79,7 @@ class StorefrontController
         return response()->json(['data' => new InvoiceResource($invoice)]);
     }
 
-    /** B2C buyer — shop-letterhead invoice PDF (same builder as seller download). */
+    /** B2C buyer - shop-letterhead invoice PDF (same builder as seller download). */
     public function myOrderInvoicePdf(Request $request, int $order): Response
     {
         $userId = $this->requireBuyerId($request);
@@ -241,7 +241,7 @@ class StorefrontController
     }
 
     /**
-     * Single storefront product by slug. Public — guests can open shared links.
+     * Single storefront product by slug. Public - guests can open shared links.
      */
     public function product(Request $request, string $slug, string $productSlug): JsonResponse
     {

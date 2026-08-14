@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('business_id')->constrained('businesses')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->unsignedTinyInteger('rating'); // 1–5
+            $table->unsignedTinyInteger('rating'); // 1-5
             $table->timestamps();
 
             $table->unique(['business_id', 'user_id']);

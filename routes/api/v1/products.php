@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductImportController;
 use Illuminate\Support\Facades\Route;
 
-/** POS catalog — sales staff need active products without full inventory module access. */
+/** POS catalog - sales staff need active products without full inventory module access. */
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:sales,inventory'])->group(function () {
     Route::get('/products/active', [ProductController::class, 'active']);
 });

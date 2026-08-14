@@ -9,9 +9,9 @@
 - Introduce a `UserRegistered` domain event carrying the `User` and, when present, the `Business`.
 - Dispatch it from both registration paths:
   - `UserService::register` (personal / storefront-buyer accounts, `POST /auth/register`)
-  - `BusinessService::register` (business accounts, `POST /businesses/register` — dispatched **after** the transaction commits)
+  - `BusinessService::register` (business accounts, `POST /businesses/register` - dispatched **after** the transaction commits)
 - A synchronous `SendWelcomeEmail` listener sends the existing `StandardEmail` mailable (brand name, logo, personalised greeting, feature list, "Get Started" CTA to `FRONTEND_URL`, offline-first pro tip).
-- Email failures are caught and logged — they never fail or roll back registration.
+- Email failures are caught and logged - they never fail or roll back registration.
 - Fixed a latent bug in `StandardEmail::content()` that passed the logo as `logoPath` while the view reads `logoUrl`, so the header logo now actually renders.
 
 **Consequences:**

@@ -34,6 +34,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Non-destructive backfill — leave receipt rows in place on rollback.
+        // Non-destructive backfill - leave receipt rows in place on rollback.
     }
 };

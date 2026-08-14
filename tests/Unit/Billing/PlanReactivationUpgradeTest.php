@@ -13,7 +13,7 @@ use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
 /**
  * Regression coverage for the "reactivate / resubscribe stays on the OLD plan"
  * bug: a suspended (or otherwise reactivated) subscription was never moved onto
- * the plan the user actually paid for — plan_id, prices and next_billing_date
+ * the plan the user actually paid for - plan_id, prices and next_billing_date
  * kept the identity of the pre-suspension plan.
  */
 class PlanReactivationUpgradeTest extends AbstractBillingLifecycleTestCase

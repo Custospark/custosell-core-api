@@ -50,7 +50,7 @@ class AccountForInvoiceSent
         if ($invoice->sale_id) {
             $saleEntry = $this->journalEntryService->getEntryByReference('sale', $invoice->sale_id, $businessId);
             if ($saleEntry) {
-                Log::info('Accounting automation: Invoice send skipped — revenue already posted on linked sale', [
+                Log::info('Accounting automation: Invoice send skipped - revenue already posted on linked sale', [
                     'invoice_id' => $invoice->id,
                     'sale_id' => $invoice->sale_id,
                 ]);

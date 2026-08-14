@@ -145,7 +145,7 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
                     $isPlanChange = $changeType !== 'cancel';
 
                     if ($isPlanChange && $status !== 'active') {
-                        Log::info('[SubscriptionScheduledChange] Skipped — subscription not active', [
+                        Log::info('[SubscriptionScheduledChange] Skipped - subscription not active', [
                             'change_id' => $change->id,
                             'subscription_id' => $subscription->id,
                             'status' => $status,

@@ -1,4 +1,4 @@
-# Custosell — Architecture Decision Records
+# Custosell - Architecture Decision Records
 
 ## ADR-001: Offline-First Desktop Architecture
 
@@ -246,7 +246,7 @@
 
 **Consequences:**
 - `ReferralService::markActive()` now computes `$paidBase` and applies it to PERCENTAGE/FREE_MONTH rewards and PERCENTAGE commissions
-- **ADR-015 (2026-08-10):** normal referral codes are generated with `reward_type = percentage / 15%` — the DB default was `free_month` and a code created without an explicit reward silently paid the referrer the **full paid amount** as credit. Default flipped to `percentage`; a `FREE_MONTH` reward is now `min(recurring_monthly, paid_base)` (one month of the referee's plan, capped at what was actually paid), never the full paid base.
+- **ADR-015 (2026-08-10):** normal referral codes are generated with `reward_type = percentage / 15%` - the DB default was `free_month` and a code created without an explicit reward silently paid the referrer the **full paid amount** as credit. Default flipped to `percentage`; a `FREE_MONTH` reward is now `min(recurring_monthly, paid_base)` (one month of the referee's plan, capped at what was actually paid), never the full paid base.
 - Defaults updated in `UserService`, `BusinessService`, `SimulateCreditDeduction`
 - Referrer incentive slightly reduced (20% → ~13.5% of base) but still exceeds the referee's 10% saving
 
@@ -261,7 +261,7 @@
 
 **Decision:**
 - `UserRegistered` domain event carrying `User` + optional `Business`, dispatched from `UserService::register` and `BusinessService::register` (the latter after the transaction commits)
-- Synchronous `SendWelcomeEmail` listener sends the existing `StandardEmail` mailable — brand name, logo, personalised greeting, feature list, "Get Started" CTA to `FRONTEND_URL`, offline-first pro tip
+- Synchronous `SendWelcomeEmail` listener sends the existing `StandardEmail` mailable - brand name, logo, personalised greeting, feature list, "Get Started" CTA to `FRONTEND_URL`, offline-first pro tip
 - Email failures are caught and logged; they never fail or roll back registration
 - Fixed `StandardEmail::content()` passing `logoPath` where the view reads `logoUrl`, so the header logo now renders
 
@@ -280,11 +280,11 @@
 
 **Decision:**
 - **Default on** for new/imported products: migration sets both flags to `true` (with `change()`); `ProductService::create` sets `(bool)($data[$flag] ?? true)`; `ProductImportService` sets both flags `true` per row. Existing products keep current state (opt-in via bulk List).
-- **Bulk list/unlist**: `ProductService::bulkUpdateListing($ids, $businessId, $channel, $listed)` — business-scoped, channel `supply|storefront`. Supply list auto-fills `supply_price` from `wholesale_price ?? unit_price` (when null) and `supply_min_qty` to `1`; sets/clears `listed_at` / `storefront_listed_at`. Returns updated count.
+- **Bulk list/unlist**: `ProductService::bulkUpdateListing($ids, $businessId, $channel, $listed)` - business-scoped, channel `supply|storefront`. Supply list auto-fills `supply_price` from `wholesale_price ?? unit_price` (when null) and `supply_min_qty` to `1`; sets/clears `listed_at` / `storefront_listed_at`. Returns updated count.
 - `POST /products/bulk-listing` → `{ updated: int }`, validated by `ProductBulkListingRequest` (ids 1..5000, channel enum, listed boolean).
 - Listing mutations remain online-only (no offline queueing).
 
-**Tests:** `tests/Feature/ProductListingTest.php` — 6 tests, 31 assertions.
+**Tests:** `tests/Feature/ProductListingTest.php` - 6 tests, 31 assertions.
 
 **Full detail:** `docs/adr/2026-08-01-default-listed-products-bulk-listing.md`
 
@@ -299,34 +299,34 @@
 
 **Decision:**
 - `SupplyChainTest::setUp` now calls `ensureSubscription()` for the seller and buyer businesses (matching `ProductListingTest`/`DashboardTest`); the cross-tenant "other buyer" also gets a subscription so the test verifies authorization, not subscription gating.
-- Added `use App\Models\Customer;` to `app/Services/InvoiceService.php` — PO accept (`createFromPurchaseOrder`) creates/finds the seller's `Customer` by buyer name.
+- Added `use App\Models\Customer;` to `app/Services/InvoiceService.php` - PO accept (`createFromPurchaseOrder`) creates/finds the seller's `Customer` by buyer name.
 
-**Tests:** `tests/Feature/SupplyChainTest.php` — 12/12 passing (81 assertions).
+**Tests:** `tests/Feature/SupplyChainTest.php` - 12/12 passing (81 assertions).
 
 **Note:** `InvoiceCreateSaleLinkTest` / `InvoiceSaleLinkTest` / `InvoiceLinkedSalePaymentSyncTest` have 6 **pre-existing** failures (missing accounting period + subscription setup) unrelated to this change; verified identical with these changes stashed.
 
 ---
 
-## ADR-018: Invoice link tests fixed — accounting period date lookup + subscriptions
+## ADR-018: Invoice link tests fixed - accounting period date lookup + subscriptions
 
 **Date:** 2026-08-01
 **Status:** Accepted
 
 **Context:** `InvoiceCreateSaleLinkTest` (3) and `InvoiceLinkedSalePaymentSyncTest` (3) failed pre-existing:
-1. Every HTTP call returned **403** — the test businesses had no active subscription, but `subscription.active` middleware now guards all operational route groups (added in `dc65716`).
+1. Every HTTP call returned **403** - the test businesses had no active subscription, but `subscription.active` middleware now guards all operational route groups (added in `dc65716`).
 2. Journal entry posting threw **"No open accounting period found"** even though `setUp` seeded one: `AccountingPeriodRepository::getPeriodByDate`/`getCurrentPeriod` compared a bare `Y-m-d` string against date columns Eloquent stores as `Y-m-d H:i:s`. In SQLite's string comparison, `'2026-08-01 00:00:00' <= '2026-08-01'` is **false**, so lookups silently failed **on the first day of a period** (e.g., journal entries posted on the 1st of the month).
 
 **Decision:**
 - `AccountingPeriodRepository::getPeriodByDate` + `getCurrentPeriod` now use `whereDate(...)` so only the date part is compared (SQLite `strftime`, MySQL `DATE()`). Real production bug fix.
 - Added `ensureSubscription($business->id)` to `setUp` in both test classes (same pattern as `ProductListingTest` / `SupplyChainTest`).
 
-**Tests:** `InvoiceCreateSaleLinkTest` + `InvoiceLinkedSalePaymentSyncTest` + `InvoiceSaleLinkTest` — **7/7 passing (35 assertions)**.
+**Tests:** `InvoiceCreateSaleLinkTest` + `InvoiceLinkedSalePaymentSyncTest` + `InvoiceSaleLinkTest` - **7/7 passing (35 assertions)**.
 
-**Note:** `AccountingTest` (20) and `ReportPeriodRangeTest` (3) have the same 403 root cause plus a July-vs-current period date mismatch — pre-existing, unchanged by this fix.
+**Note:** `AccountingTest` (20) and `ReportPeriodRangeTest` (3) have the same 403 root cause plus a July-vs-current period date mismatch - pre-existing, unchanged by this fix.
 
 ---
 
-## ADR-019: AccountingTest + ReportPeriodRangeTest fixed — plan-gated modules, date rotation, response wrapping
+## ADR-019: AccountingTest + ReportPeriodRangeTest fixed - plan-gated modules, date rotation, response wrapping
 
 **Date:** 2026-08-01
 **Status:** Accepted
@@ -334,7 +334,7 @@
 **Context:** `AccountingTest` (20) and `ReportPeriodRangeTest` (3) failed pre-existing. Root causes, once the missing `subscription.active` setup was added (ADR-018 pattern):
 1. **Module plan gating:** accounting routes are also guarded by `module:accounting`. `ModuleAccessService::planAllowsModule` requires `plan->features['accounting'] === true`. The default `ensureSubscription` plan (`essential`) does not include accounting → every call still 403. Only `enterprise` (and `personal`) include it.
 2. **Date rotation:** `AccountingTest` seeded a static **July 2026** period and hard-coded `2026-07-15/16` journal dates, while the suite now runs in **August 2026**. `current_period_returns_period` (which calls the `whereDate`-fixed `getCurrentPeriod`) and entries dated outside the seeded period would fail. The fixed-assets chart also lacked account **1203**, so `can_create_fixed_asset` crashed with `ErrorException` (null `->id`).
-3. **Unwrapped single-resource responses:** `ChartOfAccountController::store` and `AccountingPeriodController::store/close/reopen` returned `response()->json(new Resource)` — this bypasses Laravel's `ResourceResponse` auto-wrap, so the body had **no `data` key** (`data.code` / `data.is_closed` were null). Every other single-resource response in the codebase (e.g. `JournalEntryController`) wraps in `['data' => ...]`, and the frontend (`useCreateChartOfAccount`, `useClosePeriod`) reads `data.data`.
+3. **Unwrapped single-resource responses:** `ChartOfAccountController::store` and `AccountingPeriodController::store/close/reopen` returned `response()->json(new Resource)` - this bypasses Laravel's `ResourceResponse` auto-wrap, so the body had **no `data` key** (`data.code` / `data.is_closed` were null). Every other single-resource response in the codebase (e.g. `JournalEntryController`) wraps in `['data' => ...]`, and the frontend (`useCreateChartOfAccount`, `useClosePeriod`) reads `data.data`.
 
 **Decision:**
 - Both test classes now subscribe to the **`enterprise` plan** (`ensureSubscription($business->id, Plan::where('slug','enterprise')->first()?->id)`).
@@ -342,9 +342,9 @@
 - Fixed production response shape: `ChartOfAccountController::store` and `AccountingPeriodController::store/close/reopen` now wrap resources in `['data' => ...]` (matches `JournalEntryController`, matches frontend contract).
 - `JournalEntryService::createEntry` now throws `ValidationException` (→ **422**) for unbalanced entries instead of `RuntimeException` (→ 500); `JournalEntryServiceTest::test_rejects_unbalanced_entry` updated to match the validation contract.
 
-**Tests:** `AccountingTest` — 21/21 (92 assertions); `ReportPeriodRangeTest` — 3/3 (10 assertions); `JournalEntryServiceTest` — 4/4. `BoardProgressTest`, `ForecastingAccountingCorrectnessTest`, `PipelineTest`, `ReportTest` failures verified **pre-existing on HEAD** (identical with these changes stashed).
+**Tests:** `AccountingTest` - 21/21 (92 assertions); `ReportPeriodRangeTest` - 3/3 (10 assertions); `JournalEntryServiceTest` - 4/4. `BoardProgressTest`, `ForecastingAccountingCorrectnessTest`, `PipelineTest`, `ReportTest` failures verified **pre-existing on HEAD** (identical with these changes stashed).
 
-## ADR-022: Full-suite restoration to 608 green — module-gating test setup, storefront-buyer contract, HR test split
+## ADR-022: Full-suite restoration to 608 green - module-gating test setup, storefront-buyer contract, HR test split
 
 **Date:** 2026-08-01
 **Status:** Accepted
@@ -352,22 +352,22 @@
 **Context:** Full suite (`php artisan test`) had **110 failures** in three buckets: (1) ~20 `{data: ...}` sweep shape regressions in tests never re-run (Subscription/Shift/Stock/Invoice/Referral); (2) ~78 pre-existing 403s because test setUps created no subscription for `subscription.active`/`module:*` gated routes; (3) ~10 value mismatches (LedgerServiceTest double-posting, stale SupplyChainTest/StorefrontTest expectations, InvoiceCreateSaleLink send 404).
 
 **Decision:**
-- **Bucket 2:** Added `ensureSubscription(...)` to 10 setUps (`UserTest`, `HrModuleTest`, `ForecastingModuleTest`, `ProductServiceSalesTest`, `CompanyAssetsTest`, `EfrisFiscalizationTest`, `CustomerContactResolveTest`, `CustomerDocumentEmailTest`, `TaxTest`, `SupplyChainReceiveAndPartyTest`) — `enterprise` plan where routes are hr/documents/forecasting-gated, default otherwise.
+- **Bucket 2:** Added `ensureSubscription(...)` to 10 setUps (`UserTest`, `HrModuleTest`, `ForecastingModuleTest`, `ProductServiceSalesTest`, `CompanyAssetsTest`, `EfrisFiscalizationTest`, `CustomerContactResolveTest`, `CustomerDocumentEmailTest`, `TaxTest`, `SupplyChainReceiveAndPartyTest`) - `enterprise` plan where routes are hr/documents/forecasting-gated, default otherwise.
 - **Bucket 1:** Updated remaining tests to the `{data: ...}` single-resource shape (`ShiftTest`, `StockMovementTest`, `SubscriptionBillingTest`, `ReferralBillingTest`, `SubscriptionTest`, `InvoiceCreateSaleLinkTest`, `TaxTest`, `ProductServiceSalesTest`, `SupplyChainTest`, `SupplyChainReceiveAndPartyTest`, `UserTest`). `POST /invoices/{id}/email` and `POST /auth/register` confirmed **flat by design** (raw service result / embedded resource) and tests aligned.
 - **Storefront-buyer contract:** `UserService::register` no longer creates a personal workspace for `storefront_buyer` (FE copy: "no business setup"); `UserResource::resolveModules()` returns `[]` for personal accounts without a business. FE `getAccessibleModules` seeds `account/guide/discover` client-side, so no FE change. Also exposed `default_vat_rate` on the user resource business section (FE already reads it).
-- **Bucket 3:** `LedgerServiceTest` — removed redundant `postEntryToLedger` calls (already run by `createAndPostEntry`; they double-posted 2x). `BusinessAccountDeletionTest` — `forgetGuards()` between requests (in-process auth-guard cache hid the revoked token). `PipelineBoardProgressService` — added `resolvePeriod()` forwarder (Refactor 4 moved it to `PipelineBoardProgressPeriodService`; `HrPerformanceService` still called it → 500s).
-- **File-size-500:** Split `HrModuleTest` (1048 lines) into `HrModuleTest` (500), `HrPerformanceTest`, `HrPayrollTest`, `HrPayrollAffordabilityTest` — never gutted, each reuses setUp + `authJson` helper.
+- **Bucket 3:** `LedgerServiceTest` - removed redundant `postEntryToLedger` calls (already run by `createAndPostEntry`; they double-posted 2x). `BusinessAccountDeletionTest` - `forgetGuards()` between requests (in-process auth-guard cache hid the revoked token). `PipelineBoardProgressService` - added `resolvePeriod()` forwarder (Refactor 4 moved it to `PipelineBoardProgressPeriodService`; `HrPerformanceService` still called it → 500s).
+- **File-size-500:** Split `HrModuleTest` (1048 lines) into `HrModuleTest` (500), `HrPerformanceTest`, `HrPayrollTest`, `HrPayrollAffordabilityTest` - never gutted, each reuses setUp + `authJson` helper.
 
-**Tests:** `composer vera:fast` — passed (php -l + 6 logic rules incl. file-size-500). `php artisan test` — **608 passed, 1 skipped, 0 failed** (was 110 failures).
+**Tests:** `composer vera:fast` - passed (php -l + 6 logic rules incl. file-size-500). `php artisan test` - **608 passed, 1 skipped, 0 failed** (was 110 failures).
 
 ---
 
-## ADR-023: Frontend hook response-shape hardening — hooks return the unwrapped resource
+## ADR-023: Frontend hook response-shape hardening - hooks return the unwrapped resource
 
 **Date:** 2026-08-01
 **Status:** Accepted
 
-**Context:** ADR-021 (audit) + ADR-022 (backend sweep) normalized every single-resource endpoint to `{data: ...}`. The frontend has no response unwrap interceptor — each hook unwraps itself. The FE audit found no flat-read bugs, but several hooks returned the `{data: T}` envelope instead of the resource; they only worked because every consumer read `.data`. Latent silent-break hazard for future consumers.
+**Context:** ADR-021 (audit) + ADR-022 (backend sweep) normalized every single-resource endpoint to `{data: ...}`. The frontend has no response unwrap interceptor - each hook unwraps itself. The FE audit found no flat-read bugs, but several hooks returned the `{data: T}` envelope instead of the resource; they only worked because every consumer read `.data`. Latent silent-break hazard for future consumers.
 
 **Decision:** All wrapper-returning hooks now return the **unwrapped resource**; consumers aligned. 12 files, commit `fa31ad3`:
 - Queries: `useBookingSettings`, `useBookingInfo`, `useBookingSlots`, `useCheckBooking`, `usePaymentInfo`, `usePayoutHistory` → return `data.data`.
@@ -375,21 +375,21 @@
 - Consumers aligned: `BookingSettingsSection`, `LegacyBookingSection`, `CardBookingSection`, `BoardMemberPicker`, `AccountReferralsWinsTab`, `PublicBookingPage`, `PublicBookingCheckPage`.
 - **Not changed (correct as-is):** `useCreateBooking` (bespoke top-level `reference_code`/`check_url` contract), `useUpdatePaymentInfo` (`{message}` matches backend).
 
-**Tests:** `npx tsc --noEmit` — clean; `npm run vera:fast` — passed (12 files). Backend untouched.
+**Tests:** `npx tsc --noEmit` - clean; `npm run vera:fast` - passed (12 files). Backend untouched.
 
 ---
 
-## ADR-024: Third account type — Shopping (storefront_buyer)
+## ADR-024: Third account type - Shopping (storefront_buyer)
 
 **Date:** 2026-08-01
 **Status:** Accepted
 
-**Context:** Online storefront buyers — visitors who browse Discover, add to cart, and place orders — were flattened into the Personal flow: `UserService::register` stored `storefront_buyer` as `account_type = 'personal'`, which auto-created a workspace + Personal-plan subscription. Every shopper silently became a workspace owner with a dashboard, plans, and billing surface they never asked for. Oscar asked for a distinct **shopping account** type: Discover & My Orders only, bottom nav hides Dashboard, register page shows it, store signup modals create it, FAQ seeder documents it.
+**Context:** Online storefront buyers - visitors who browse Discover, add to cart, and place orders - were flattened into the Personal flow: `UserService::register` stored `storefront_buyer` as `account_type = 'personal'`, which auto-created a workspace + Personal-plan subscription. Every shopper silently became a workspace owner with a dashboard, plans, and billing surface they never asked for. Oscar asked for a distinct **shopping account** type: Discover & My Orders only, bottom nav hides Dashboard, register page shows it, store signup modals create it, FAQ seeder documents it.
 
 **Decision:**
-- Canonical type is **`storefront_buyer`** (already accepted by `RegisterRequest`), exposed as `account_type: 'storefront_buyer'`; FE labels it "Shopping". `UserService::register` preserves it (no flatten to personal) — same no-business branch: `role_id = null`, `modules = []`, no workspace/subscription.
+- Canonical type is **`storefront_buyer`** (already accepted by `RegisterRequest`), exposed as `account_type: 'storefront_buyer'`; FE labels it "Shopping". `UserService::register` preserves it (no flatten to personal) - same no-business branch: `role_id = null`, `modules = []`, no workspace/subscription.
 - `UserResource`: `active_plans` is `[]` for `storefront_buyer` (shoppers don't buy Custosell plans); `modules` stays `[]` (FE seeds `account/guide/discover` client-side + new `isStorefrontBuyer()` helper).
-- Migration `2026_08_01_000100_backfill_storefront_buyer_account_type.php` re-classifies legacy buyers: `personal AND business_id IS NULL` → `storefront_buyer` (reliable predicate — personal flow always sets `business_id`).
+- Migration `2026_08_01_000100_backfill_storefront_buyer_account_type.php` re-classifies legacy buyers: `personal AND business_id IS NULL` → `storefront_buyer` (reliable predicate - personal flow always sets `business_id`).
 - `SendWelcomeEmail` branches on `storefront_buyer` (shopping intro/showcase/quick-start/tip); `GuideFaqSeeder` gains a "For Shopping Accounts" section.
 - FE: `AccountTypeSelector`/`RegisterPage` third "For shopping" option via new reusable `SimpleAccountForm`; `ConnectedStorefrontStrip` hides the Dashboard tab (`onHome={undefined}`) for shopping accounts; `DiscoverAccountMenu` hides the App-home item; `Navbar` brand shows "Shopping". `getDefaultRoute` already lands shopping users on Discover.
 
@@ -404,7 +404,7 @@
 **Date:** 2026-08-02
 **Status:** Accepted
 
-**Context:** `StockMovementService::transfer()` deducted/incremented `location_product` quantities and wrote a `type = transfer` movement for service lines — inconsistent with the receive path (`d484fca`), which skips stock movements for services because they are not quantitative.
+**Context:** `StockMovementService::transfer()` deducted/incremented `location_product` quantities and wrote a `type = transfer` movement for service lines - inconsistent with the receive path (`d484fca`), which skips stock movements for services because they are not quantitative.
 
 **Decision:** `transfer()` now loads each `Product` and, when `!$product->tracksStock()`, `continue`s the item (no stock validation, no movement). Frontend `BranchTransferModal` also filters services out via `isServiceItem()`. Rule now matches receipt semantics across stacks.
 
@@ -426,11 +426,11 @@
 - credit-only completion path in `GatewayService::initiatePayment()`
 - gateway test bypass path in `InitiatesGatewayPayments`
 
-`PaymentReceiptService::sendReceiptIfDue()` only sends when the payment is **completed**, **amount > 0**, and **`receipt_sent_at` is null**; on a successful send it stamps `receipt_sent_at` so webhook + confirm firing together cannot double-email. Zero-amount payments (free onboarding, zero-cost upgrades) are skipped. The manual resend endpoint remains for retries. Sending is synchronous (no queue) — `email()` already catches and logs failures, so it never breaks payment completion.
+`PaymentReceiptService::sendReceiptIfDue()` only sends when the payment is **completed**, **amount > 0**, and **`receipt_sent_at` is null**; on a successful send it stamps `receipt_sent_at` so webhook + confirm firing together cannot double-email. Zero-amount payments (free onboarding, zero-cost upgrades) are skipped. The manual resend endpoint remains for retries. Sending is synchronous (no queue) - `email()` already catches and logs failures, so it never breaks payment completion.
 
 **Migration:** `2026_08_05_000001_add_receipt_sent_at_to_billing_payments.php` (nullable `receipt_sent_at` timestamp).
 
-**Tests:** `PaymentReceiptAndHistoryTest` 8/8 — includes new auto-send, zero-amount skip, and duplicate-guard tests. Full billing lifecycle suites 79 passed. `composer vera:fast` passed (php -l + logic incl. file-size-500), `migrate --pretend` clean.
+**Tests:** `PaymentReceiptAndHistoryTest` 8/8 - includes new auto-send, zero-amount skip, and duplicate-guard tests. Full billing lifecycle suites 79 passed. `composer vera:fast` passed (php -l + logic incl. file-size-500), `migrate --pretend` clean.
 
 **Full detail:** `docs/adr/2026-08-05-auto-send-subscription-receipts.md`
 
@@ -441,7 +441,7 @@
 **Date:** 2026-08-05
 **Status:** Accepted
 
-**Context:** When a platform admin assigned a plan under Platform > All users to a user who had no linked business, the request failed with "This account has no linked business." — blocking legitimate grants for incomplete sign-ups.
+**Context:** When a platform admin assigned a plan under Platform > All users to a user who had no linked business, the request failed with "This account has no linked business." - blocking legitimate grants for incomplete sign-ups.
 
 **Decision:** `PlatformSubscriptionPrivilegeService::resolveSubscription()` now auto-creates and links a business for the target user instead of throwing. The business is owned by the user, named after them (unique slug), defaulted to USD, and the user's `business_id`, `account_type` (personal -> business), and business modules are set before the subscription is created. Bulk grants now process these users successfully too.
 
@@ -473,7 +473,7 @@
 
 **Context:** Notifications were delivered in-app only (bell polling every 60s while the app is open) plus email. For a POS, urgent signals like a new open order are lost the moment the tab is closed.
 
-**Decision:** Add Web Push via `minishlink/web-push` (VAPID, aes128gcm). A `push_subscriptions` table stores per-user subscriptions (`endpoint` unique per user, `p256dh`, `auth_secret`). `GET /api/v1/webpush/status` exposes `enabled` + the VAPID `public_key`; `POST /webpush/subscribe` stores a subscription; `DELETE /webpush/unsubscribe` removes it. `NotificationService::sendToUser` now also pushes newly-persisted in-app notifications to the user's active subscriptions (deduped by the existing contentKey; 410-expired endpoints pruned). Push is additive — email and in-app channels are unchanged.
+**Decision:** Add Web Push via `minishlink/web-push` (VAPID, aes128gcm). A `push_subscriptions` table stores per-user subscriptions (`endpoint` unique per user, `p256dh`, `auth_secret`). `GET /api/v1/webpush/status` exposes `enabled` + the VAPID `public_key`; `POST /webpush/subscribe` stores a subscription; `DELETE /webpush/unsubscribe` removes it. `NotificationService::sendToUser` now also pushes newly-persisted in-app notifications to the user's active subscriptions (deduped by the existing contentKey; 410-expired endpoints pruned). Push is additive - email and in-app channels are unchanged.
 
 **Tests:** `WebPushSubscriptionTest` 7/7 (status, store, idempotency, validation, unsubscribe, auth). `composer vera:fast` passed; `migrate --pretend` verified the `push_subscriptions` schema.
 
@@ -490,7 +490,7 @@
 
 **Context:** Personal-account users wanted to download a budget as a printable document (plan, linked income, and spend), and manage budgets across years.
 
-**Decision:** Add `BudgetPdfBuilder` (app/Services) that reuses the canonical PDF pipeline — `ReportExportService::downloadPdf` → DomPDF on `reports.layouts.base`, matching estimates/invoices/reports. Exposed as `GET /api/v1/budgets/{budget}/download`, guarded and ownership-checked like `show`. For `account_type === 'personal'` the PDF header + filename use the **user's name** (business model replicated in memory with `name` overridden), since budgets are personal documents. PDF contents: summary cards (Planned/Spent/Income/Remaining), plan-lines table, income table, spend table, remaining total. No schema change; data derives from existing `lines`, `expenses`, `income`, and `summarise()`.
+**Decision:** Add `BudgetPdfBuilder` (app/Services) that reuses the canonical PDF pipeline - `ReportExportService::downloadPdf` → DomPDF on `reports.layouts.base`, matching estimates/invoices/reports. Exposed as `GET /api/v1/budgets/{budget}/download`, guarded and ownership-checked like `show`. For `account_type === 'personal'` the PDF header + filename use the **user's name** (business model replicated in memory with `name` overridden), since budgets are personal documents. PDF contents: summary cards (Planned/Spent/Income/Remaining), plan-lines table, income table, spend table, remaining total. No schema change; data derives from existing `lines`, `expenses`, `income`, and `summarise()`.
 
 **Frontend:** mirrors invoice/estimate PDF download (blob + Content-Disposition parse); adds a Download button on the budget card and a year filter + name search on My Budgets.
 
@@ -506,7 +506,7 @@
 
 **Context:** A new personal or business account had no pipeline board until one was created, so the CRM board looked empty on first sign-in. Separately, `PipelineNotificationService` built board email CTAs with the numeric `$board->id`, but the frontend opens boards by their opaque `code`, so emailed board links were invalid.
 
-**Decision:** Wire a new `SeedDefaultPipelineBoard` listener to the existing `UserRegistered` event. It resolves the business and calls `PipelineBoardService::ensureBusinessSetup()` to create a default `Main sales pipeline` board (workspace `pipeline`, `is_default = true`) with standard stages, default labels/appearance, and guiding cards — so the board is never empty. Storefront buyers (no workspace) are skipped; seeding failures are caught and only logged so they never block registration. Separately, `PipelineNotificationService::boardCta` and `boardConversationCta` now emit `/boards/{code}` instead of `/boards/{id}`.
+**Decision:** Wire a new `SeedDefaultPipelineBoard` listener to the existing `UserRegistered` event. It resolves the business and calls `PipelineBoardService::ensureBusinessSetup()` to create a default `Main sales pipeline` board (workspace `pipeline`, `is_default = true`) with standard stages, default labels/appearance, and guiding cards - so the board is never empty. Storefront buyers (no workspace) are skipped; seeding failures are caught and only logged so they never block registration. Separately, `PipelineNotificationService::boardCta` and `boardConversationCta` now emit `/boards/{code}` instead of `/boards/{id}`.
 
 **Why event, not the registration services:** Board seeding is best-effort and should never roll back a successful registration, so it stays out of `UserService`/`BusinessService` (unlike the transactional chart-of-accounts seed, ADR 2026-08-11). `ensureBusinessSetup` is idempotent, so re-runs are safe.
 
@@ -520,7 +520,7 @@
 **Date:** 2026-08-13
 **Status:** Accepted
 
-**Context:** Branches are represented by the `locations` table; a business's default branch is the row with `is_default = true` (created as `Main Branch`, code `MAIN`), and per-branch stock lives in the `location_product` pivot (`stock_quantity`, `low_stock_threshold`). The original `2026_08_02_000000` migration backfilled a default branch only at the moment it ran, and `LocationService::ensureDefaultLocation()` covers new businesses at runtime. Businesses that were created after that backfill ran, or that never hit the runtime path, could be left with **no default branch** and therefore no `location_product` rows — meaning their stock was not linked to any branch.
+**Context:** Branches are represented by the `locations` table; a business's default branch is the row with `is_default = true` (created as `Main Branch`, code `MAIN`), and per-branch stock lives in the `location_product` pivot (`stock_quantity`, `low_stock_threshold`). The original `2026_08_02_000000` migration backfilled a default branch only at the moment it ran, and `LocationService::ensureDefaultLocation()` covers new businesses at runtime. Businesses that were created after that backfill ran, or that never hit the runtime path, could be left with **no default branch** and therefore no `location_product` rows - meaning their stock was not linked to any branch.
 
 **Decision:** Add an idempotent data backfill migration (`2026_08_13_000000_backfill_default_branch_for_all_businesses.php`) that iterates every business and, for each one lacking a default location, creates a `Main Branch` (`is_default = true`, `is_active = true`). It then backfills `location_id` on orphaned rows in `users`, `shifts`, `sales`, `stock_movements`, `invoices`, and `orders`, links every user via `location_user`, and links **all of the business's stock** by upserting a `location_product` row for every product (carrying over `stock_quantity` and `low_stock_threshold`). The logic mirrors `LocationService::ensureDefaultLocation()` so runtime and migration behaviour stay consistent.
 
@@ -550,7 +550,7 @@
 **Date:** 2026-08-13
 **Status:** Accepted
 
-**Context:** Production was seeded under the ORIGINAL plan set — `free`, `pro`, `premium` (ids 1–3) — before plans were renamed to `essential`/`professional`/`enterprise`/`personal`. The legacy backfill (`2026_07_21_124239`) assigned subscriptions to whichever plan sorted first at the time — which in production was the stale `free` plan (id 1), not `essential` as in dev. The prior enterprise upgrade (`2026_08_11_000001`) only matched `plan_id = essential`, so it upgraded ZERO legacy subscriptions in production; every legacy business stayed on 'Free' and lost access to accounting, HR, forecasting, documents, and other premium features. A production diagnostic confirmed 21 of 22 subscriptions still point at plan id 1 (`free`), and the stale `free`/`pro`/`premium` plans remain active alongside the current set.
+**Context:** Production was seeded under the ORIGINAL plan set - `free`, `pro`, `premium` (ids 1-3) - before plans were renamed to `essential`/`professional`/`enterprise`/`personal`. The legacy backfill (`2026_07_21_124239`) assigned subscriptions to whichever plan sorted first at the time - which in production was the stale `free` plan (id 1), not `essential` as in dev. The prior enterprise upgrade (`2026_08_11_000001`) only matched `plan_id = essential`, so it upgraded ZERO legacy subscriptions in production; every legacy business stayed on 'Free' and lost access to accounting, HR, forecasting, documents, and other premium features. A production diagnostic confirmed 21 of 22 subscriptions still point at plan id 1 (`free`), and the stale `free`/`pro`/`premium` plans remain active alongside the current set.
 
 **Decision:** Add a new idempotent data-fix migration (`2026_08_13_000001_upgrade_all_legacy_subscriptions_to_enterprise.php`) that matches the legacy backfill signature (status = TRIAL, trial_used = true, onboarding_fee_paid = true) REGARDLESS of which plan the subscription points at, and moves them all to Enterprise (syncing price snapshots). New registrations never match (they are created with trial_used = false, onboarding_fee_paid = false). The migration also deactivates the stale `free`/`pro`/`premium` plans (`is_active = false`) so they stop appearing in the Plans tab / dropdown.
 
@@ -564,10 +564,10 @@
 **Date:** 2026-08-13
 **Status:** Accepted
 
-**Context:** PlanSeeder previously used `updateOrCreate`, so every seed run overwrote plan pricing/features with the hardcoded values in the file. With pricing now managed in the UI (per Oscar: "changes in plans shall always be done in the UI"), re-running the seeder could silently clobber live prices and surprise the team. Separately, new business registrations created subscriptions with status PAST_DUE (the `subscribe()` default) because `BusinessService::register()` passed `skipTrial = true` — new accounts showed "Payment Due" instead of a trial, and `business.trial_ends_at` was never set.
+**Context:** PlanSeeder previously used `updateOrCreate`, so every seed run overwrote plan pricing/features with the hardcoded values in the file. With pricing now managed in the UI (per Oscar: "changes in plans shall always be done in the UI"), re-running the seeder could silently clobber live prices and surprise the team. Separately, new business registrations created subscriptions with status PAST_DUE (the `subscribe()` default) because `BusinessService::register()` passed `skipTrial = true` - new accounts showed "Payment Due" instead of a trial, and `business.trial_ends_at` was never set.
 
 **Decision:**
-1. PlanSeeder now uses `firstOrCreate` for all four plans (essential, professional, personal, enterprise) — it only inserts plans that don't exist and never overwrites existing ones. The old per-module personal-plan cleanup delete remains.
+1. PlanSeeder now uses `firstOrCreate` for all four plans (essential, professional, personal, enterprise) - it only inserts plans that don't exist and never overwrites existing ones. The old per-module personal-plan cleanup delete remains.
 2. `BusinessService::register()` calls `subscribe(..., skipTrial = false)` so new businesses get status TRIAL with `trial_ends_at = now + plan.trial_days`.
 3. Registration mirrors `subscription.trial_ends_at` onto `business.trial_ends_at` so both surfaces agree.
 
@@ -597,7 +597,7 @@
 **Date:** 2026-08-13  
 **Status:** Accepted  
 
-**Context:** Registration charged a one-time onboarding fee per plan (e.g., Essential $40, Professional $95, Enterprise $200) and subscriptions were created PAST_DUE until the fee was paid. For the Ugandan small-business market this upfront payment right after signup was the biggest activation barrier — a double payment (fee + subscription) that new owners bailed on. The fee also ran against the new product story: default new registrations to the full Enterprise experience on a free trial.
+**Context:** Registration charged a one-time onboarding fee per plan (e.g., Essential $40, Professional $95, Enterprise $200) and subscriptions were created PAST_DUE until the fee was paid. For the Ugandan small-business market this upfront payment right after signup was the biggest activation barrier - a double payment (fee + subscription) that new owners bailed on. The fee also ran against the new product story: default new registrations to the full Enterprise experience on a free trial.
 
 **Decision:**
 1. All plan onboarding fees are set to **$0** (UI-managed; the Plans tab is the source of truth).
@@ -607,7 +607,7 @@
 **Why:** Removes the biggest conversion killer, aligns billing with the "zero cost to start, pay only if you stay" message, and simplifies the resolver/billing surface (one payment type fewer).
 
 **Consequences / open follow-ups:**
-- **Referral economics break:** referral discounts and rewards were computed against the amount actually paid, and the onboarding fee was the first paid base. With fee = $0 that base collapses to $0, so the discount/reward path at onboarding is now moot. The reward base needs re-designing (e.g., first subscription renewal) — **not yet done**. The 19 failing referral/billing tests seen earlier trace to hardcoded pre-zeroing fee expectations.
+- **Referral economics break:** referral discounts and rewards were computed against the amount actually paid, and the onboarding fee was the first paid base. With fee = $0 that base collapses to $0, so the discount/reward path at onboarding is now moot. The reward base needs re-designing (e.g., first subscription renewal) - **not yet done**. The 19 failing referral/billing tests seen earlier trace to hardcoded pre-zeroing fee expectations.
 - Revenue is deferred, not deleted: the trial→paid subscription conversion is now the single monetization point and must be measured.
 - Legacy businesses upgraded by ADR-034's migration are unaffected (they were already `onboarding_fee_paid = true`).
 - Tests updated to derive expectations from live plan values (`ProrationAccuracyTest`, `PaymentInitiateAccuracyTest`, `OnboardingPaymentPlanTest`, `SubscriptionBillingTest`).
@@ -630,7 +630,7 @@
 **Why:** A durable per-subscription conversion timestamp is the honest event source for funnel analytics; it survives renewal/activation replays and lets both monthly and yearly charts be computed from one consistent definition.
 
 **Consequences:**
-- `converted_at` is the single monetization signal going forward — analytics, MRR, and referral-reward redesign (ADR-037 open follow-up) can all anchor to it.
+- `converted_at` is the single monetization signal going forward - analytics, MRR, and referral-reward redesign (ADR-037 open follow-up) can all anchor to it.
 - Metrics queries run per month/plan; fine for platform scale, could be pre-aggregated if it ever grows large.
 - New permission means role-assignments must be re-migrated on existing environments (standard `php artisan migrate`).
 

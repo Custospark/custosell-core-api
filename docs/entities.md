@@ -1,4 +1,4 @@
-# Custosell — Entity Documentation
+# Custosell - Entity Documentation
 
 ## Plan - 2026-06-02 08:43:00
 
@@ -46,9 +46,9 @@
 | DELETE | `/api/v1/plans/{plan}` | Delete plan |
 
 ### Seeded Data
-- **Free** — UGX 0/mo, 1 staff, 50 products, 100 monthly sales
-- **Pro** — UGX 30,000/mo, 5 staff, 1,000 products, unlimited sales
-- **Premium** — UGX 100,000/mo, unlimited everything
+- **Free** - UGX 0/mo, 1 staff, 50 products, 100 monthly sales
+- **Pro** - UGX 30,000/mo, 5 staff, 1,000 products, unlimited sales
+- **Premium** - UGX 100,000/mo, unlimited everything
 
 ### Test Results
 - Lint: ✅ Passed
@@ -138,8 +138,8 @@
 - timestamps
 
 ### Seeded Roles per Business
-- **Admin** — all 23 permissions true
-- **Staff** — sales.create, sales.view, inventory.view, customers.view, customers.create only
+- **Admin** - all 23 permissions true
+- **Staff** - sales.create, sales.view, inventory.view, customers.view, customers.create only
 
 ---
 
@@ -394,10 +394,10 @@
 
 ### Architecture
 - **Strategy pattern** with gateway-agnostic interface
-- `PaymentGatewayInterface` — contract all gateways implement
-- `GatewayManager` — registry + singleton driver resolver
-- `GatewayService` — orchestration: initiate, webhook, callback
-- `PesaPalGateway` — PesaPal v3 driver (sandbox + production)
+- `PaymentGatewayInterface` - contract all gateways implement
+- `GatewayManager` - registry + singleton driver resolver
+- `GatewayService` - orchestration: initiate, webhook, callback
+- `PesaPalGateway` - PesaPal v3 driver (sandbox + production)
 
 ### Files Generated
 - [x] Interface: `app/Services/Payment/Contracts/PaymentGatewayInterface.php`
@@ -527,9 +527,9 @@
 - Unit tests (ReferralCodeTest): 5/5 ✅
 - Unit tests (ReferralTest): 5/5 ✅
 - Feature tests (ReferralBillingTest): 2/2 ✅
-- Unit tests (CampaignReferralCodeRequestTest): 7/7 ✅ — campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) + sales-rep clamp regression + status-toggle not blocked
-- Unit tests (ReferralCodeBusinessRewardRequestTest): 5/5 ✅ — business-owner reward safe zone: free_month reward rejected, % reward < 50, flat reward < half cheapest plan fee, status-toggle not blocked, sales-rep/campaign untouched
-- Unit tests (ReferralActivationTest): 11/11 ✅ — includes business flat reward capped below half of paid base ($17.99 on $36)
+- Unit tests (CampaignReferralCodeRequestTest): 7/7 ✅ - campaign safe-zone guard (duration=1, no reward, % ≤ 30, flat < half cheapest fee) + sales-rep clamp regression + status-toggle not blocked
+- Unit tests (ReferralCodeBusinessRewardRequestTest): 5/5 ✅ - business-owner reward safe zone: free_month reward rejected, % reward < 50, flat reward < half cheapest plan fee, status-toggle not blocked, sales-rep/campaign untouched
+- Unit tests (ReferralActivationTest): 11/11 ✅ - includes business flat reward capped below half of paid base ($17.99 on $36)
 - Unit tests (ReferralLifecycleTest): 11/11 ✅
 - Total: 41 tests, 89 assertions, 0 failures
 - Vera Fast: ✅ (php -l on 46 files + logic rules)
@@ -552,7 +552,7 @@
 
 ---
 
-## Onboarding Payment Flow — 2026-07-22 20:00:00
+## Onboarding Payment Flow - 2026-07-22 20:00:00
 
 ### User Journey
 ```
@@ -566,24 +566,24 @@ Register (name/email/password + plan_id)
 
 ### Key Decisions
 - **Onboarding fee is mandatory** before any app access
-- **`EnsureActiveSubscription` middleware** naturally blocks `past_due` status — no additional route guards needed
-- **No new subscription status** added — reuses existing `past_due` → `trial`/`active` lifecycle
+- **`EnsureActiveSubscription` middleware** naturally blocks `past_due` status - no additional route guards needed
+- **No new subscription status** added - reuses existing `past_due` → `trial`/`active` lifecycle
 - **Sandbox keys** for dev, production keys saved as `PESAPAL_PRODUCTION_*`
 
 ### Files Changed
 
 **Backend (7 files):**
-- [x] `app/Http/Requests/BusinessRegisterRequest.php` — Added `plan_id` (required, exists:plans), `billing_cycle` (sometimes, in:monthly,yearly)
-- [x] `app/Services/BusinessService.php` — Injected `SubscriptionServiceInterface`, calls `subscribe()` after business creation with `skipTrial=true`
-- [x] `app/Services/Contracts/SubscriptionServiceInterface.php` — Added `$skipTrial` param to `subscribe()`, added `activateAfterOnboarding()`
-- [x] `app/Services/SubscriptionService.php` — Modified `subscribe()` to accept `$skipTrial`, added `activateAfterOnboarding()` method (transitions PAST_DUE → TRIAL/ACTIVE, sets `onboarding_fee_paid = true`)
-- [x] `app/Services/Payment/GatewayService.php` — Split `autoApprove` match: `onboarding` → `activateAfterOnboarding()`, `subscription` → `activateSubscription()`
-- [x] `app/Http/Controllers/Api/AuthController.php` — Load `business.subscription` in `login()` and `me()`
-- [x] `app/Http/Resources/UserResource.php` — Added `subscription` object to business payload in auth response
+- [x] `app/Http/Requests/BusinessRegisterRequest.php` - Added `plan_id` (required, exists:plans), `billing_cycle` (sometimes, in:monthly,yearly)
+- [x] `app/Services/BusinessService.php` - Injected `SubscriptionServiceInterface`, calls `subscribe()` after business creation with `skipTrial=true`
+- [x] `app/Services/Contracts/SubscriptionServiceInterface.php` - Added `$skipTrial` param to `subscribe()`, added `activateAfterOnboarding()`
+- [x] `app/Services/SubscriptionService.php` - Modified `subscribe()` to accept `$skipTrial`, added `activateAfterOnboarding()` method (transitions PAST_DUE → TRIAL/ACTIVE, sets `onboarding_fee_paid = true`)
+- [x] `app/Services/Payment/GatewayService.php` - Split `autoApprove` match: `onboarding` → `activateAfterOnboarding()`, `subscription` → `activateSubscription()`
+- [x] `app/Http/Controllers/Api/AuthController.php` - Load `business.subscription` in `login()` and `me()`
+- [x] `app/Http/Resources/UserResource.php` - Added `subscription` object to business payload in auth response
 
 **Test files (2 files fixed):**
-- [x] `tests/Feature/BusinessTest.php` — Added `plan_id` + `privacy_consent` to registration payloads
-- [x] `tests/Feature/PlatformTest.php` — Added `PlanSeeder` to setUp, added `plan_id` + `privacy_consent` to registration payload
+- [x] `tests/Feature/BusinessTest.php` - Added `plan_id` + `privacy_consent` to registration payloads
+- [x] `tests/Feature/PlatformTest.php` - Added `PlanSeeder` to setUp, added `plan_id` + `privacy_consent` to registration payload
 
 ### Subscription State Transitions (Onboarding Flow)
 | Step | Status | Onboarding Fee Paid | Notes |
@@ -633,28 +633,28 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 12. On completion: redirect to dashboard
 
 ### BE Changes
-- `BusinessRegisterRequest` — requires `plan_id`, optional `billing_cycle`
-- `BusinessService::register()` — skips trial for new registrations (calls `subscribe()` with `skipTrial=true`)
-- `SubscriptionService::subscribe()` — accepts `$skipTrial` param; when true, sets status to `past_due`
-- `SubscriptionService::activateAfterOnboarding()` — transitions `past_due` to `trial`/`active`; sets `onboarding_fee_paid=true`
-- `GatewayService::autoApprove()` — routes `onboarding` payment type to `activateAfterOnboarding()`
-- `AuthController::login()` + `me()` — loads `business.subscription`
-- `UserResource` — inline `subscription` object with `plan_id`, `status`, `billing_cycle`, `onboarding_fee_paid`
-- `InitiatePaymentRequest` — added optional `phone` field
-- `PaymentController` — passes `phone_number` to gateway init
+- `BusinessRegisterRequest` - requires `plan_id`, optional `billing_cycle`
+- `BusinessService::register()` - skips trial for new registrations (calls `subscribe()` with `skipTrial=true`)
+- `SubscriptionService::subscribe()` - accepts `$skipTrial` param; when true, sets status to `past_due`
+- `SubscriptionService::activateAfterOnboarding()` - transitions `past_due` to `trial`/`active`; sets `onboarding_fee_paid=true`
+- `GatewayService::autoApprove()` - routes `onboarding` payment type to `activateAfterOnboarding()`
+- `AuthController::login()` + `me()` - loads `business.subscription`
+- `UserResource` - inline `subscription` object with `plan_id`, `status`, `billing_cycle`, `onboarding_fee_paid`
+- `InitiatePaymentRequest` - added optional `phone` field
+- `PaymentController` - passes `phone_number` to gateway init
 
 ### FE Changes
-- `shared/types/index.ts` — `Plan`/`Subscription` interfaces updated
-- `AccountTypes.ts` — `BusinessRegisterRequest` gains `plan_id`, `billing_cycle`
-- `authSlice.ts` — `BusinessInfo` gains `subscription: SubscriptionInfo`
-- `AccountQueries.ts` — onboarding redirect + `useInitiateOnboardingPayment()` + `useBillingPayment()`
-- `moduleAccess.ts` — `getDefaultRoute` checks `onboarding_fee_paid` before dashboard
-- New: `shared/components/plans/PlanCards.tsx` — plan card grid + `useActivePlans()` hook
-- New: `modules/auth/PaymentPage.tsx` — payment page with STK push + polling
-- Updated: `modules/auth/RegisterPage.tsx` — plan selection step
-- Updated: `modules/landing/PricingPage.tsx` — live plan display
-- Updated: `routes/index.tsx` — lazy import + route for PaymentPage
-- Updated: `endpoints.ts` — `BILLING` endpoints added
+- `shared/types/index.ts` - `Plan`/`Subscription` interfaces updated
+- `AccountTypes.ts` - `BusinessRegisterRequest` gains `plan_id`, `billing_cycle`
+- `authSlice.ts` - `BusinessInfo` gains `subscription: SubscriptionInfo`
+- `AccountQueries.ts` - onboarding redirect + `useInitiateOnboardingPayment()` + `useBillingPayment()`
+- `moduleAccess.ts` - `getDefaultRoute` checks `onboarding_fee_paid` before dashboard
+- New: `shared/components/plans/PlanCards.tsx` - plan card grid + `useActivePlans()` hook
+- New: `modules/auth/PaymentPage.tsx` - payment page with STK push + polling
+- Updated: `modules/auth/RegisterPage.tsx` - plan selection step
+- Updated: `modules/landing/PricingPage.tsx` - live plan display
+- Updated: `routes/index.tsx` - lazy import + route for PaymentPage
+- Updated: `endpoints.ts` - `BILLING` endpoints added
 
 ### API Endpoints Used
 | Method | Endpoint | Purpose |
@@ -674,7 +674,7 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 ## Pricing & Subscription Pages Overhaul - 2026-07-23
 
 ### DB Fix
-- Migration `2026_07_21_000001_add_billing_fields_to_plans_table` was pending — ran it
+- Migration `2026_07_21_000001_add_billing_fields_to_plans_table` was pending - ran it
 - `PlanSeeder` ran successfully → 3 plans seeded (Essential, Professional, Enterprise)
 - Root cause: plans table was missing 8 columns (`price_monthly_usd`, `price_yearly_usd`, `onboarding_fee_ugx`, `onboarding_fee_usd`, `trial_days`, `billing_cycle`, `is_popular`, `metadata`)
 
@@ -687,14 +687,14 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 | In-app | `/settings/subscription` | `SubscriptionSettingsPage.tsx` | Yes (owner) | Current plan, limits, upgrade/downgrade, payment history |
 
 ### New/Updated Files
-- `shared/components/plans/PlanCards.tsx` — Added `FEATURE_CATALOG` (14 feature keys → label + description), `LIMIT_LABELS`, limits display, feature descriptions
-- `modules/settings/SubscriptionSettingsPage.tsx` — Full rewrite: plan info, status badge, limits with progress bars, upgrade/downgrade grid, payment history
-- `modules/platform/PlatformManagePlansPage.tsx` — New: card view of all plans with features, limits, pricing
-- `modules/platform/PlatformManageSubscriptionsPage.tsx` — New: table view of all business subscriptions with status, billing info
-- `shared/components/layout/sidebarNavGroups.ts` — Added "Billing & Subscription" to Settings nav (owner-only), added "Manage Plans" + "Manage Subscriptions" to Platform nav
-- `app/routes/constants/shared.paths.ts` — Added `PLATFORM.PLANS`, `PLATFORM.SUBSCRIPTIONS`
-- `app/routes/index.tsx` — Uncommented subscription route, added platform plan/subscription routes
-- `modules/landing/PricingPage.tsx` — Updated with live plan data
+- `shared/components/plans/PlanCards.tsx` - Added `FEATURE_CATALOG` (14 feature keys → label + description), `LIMIT_LABELS`, limits display, feature descriptions
+- `modules/settings/SubscriptionSettingsPage.tsx` - Full rewrite: plan info, status badge, limits with progress bars, upgrade/downgrade grid, payment history
+- `modules/platform/PlatformManagePlansPage.tsx` - New: card view of all plans with features, limits, pricing
+- `modules/platform/PlatformManageSubscriptionsPage.tsx` - New: table view of all business subscriptions with status, billing info
+- `shared/components/layout/sidebarNavGroups.ts` - Added "Billing & Subscription" to Settings nav (owner-only), added "Manage Plans" + "Manage Subscriptions" to Platform nav
+- `app/routes/constants/shared.paths.ts` - Added `PLATFORM.PLANS`, `PLATFORM.SUBSCRIPTIONS`
+- `app/routes/index.tsx` - Uncommented subscription route, added platform plan/subscription routes
+- `modules/landing/PricingPage.tsx` - Updated with live plan data
 
 ### Plan Feature Catalog
 | Feature | Essential | Professional | Enterprise |
@@ -705,13 +705,13 @@ When a user registers a new business, they must select a plan (Free/Pro/Premium)
 | Customer Management | ✅ | ✅ | ✅ |
 | Expense Tracking | ✅ | ✅ | ✅ |
 | Online Storefront | ✅ | ✅ | ✅ |
-| Sales Pipeline | — | ✅ | ✅ |
-| Estimates & Projects | — | ✅ | ✅ |
-| Supply Marketplace | — | ✅ | ✅ |
-| Document Management | — | ✅ | ✅ |
-| Full Accounting | — | — | ✅ |
-| HR & Payroll | — | — | ✅ |
-| Forecasting & Budgets | — | — | ✅ |
+| Sales Pipeline | - | ✅ | ✅ |
+| Estimates & Projects | - | ✅ | ✅ |
+| Supply Marketplace | - | ✅ | ✅ |
+| Document Management | - | ✅ | ✅ |
+| Full Accounting | - | - | ✅ |
+| HR & Payroll | - | - | ✅ |
+| Forecasting & Budgets | - | - | ✅ |
 
 ### Plan Limits
 | Limit | Essential | Professional | Enterprise |

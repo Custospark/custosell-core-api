@@ -18,7 +18,7 @@ use Tests\TestCase;
  * The block applies ONLY when a user on an annual plan upgrades to a monthly
  * higher plan whose monthly charge is LOWER than their remaining annual credit
  * (e.g. Personal $100/yr credit → Professional $54/mo). That path yields $0 due
- * while the user still holds more credit than the plan costs — a revenue-loss /
+ * while the user still holds more credit than the plan costs - a revenue-loss /
  * chargeback scenario.
  *
  * When the monthly charge EXCEEDS the unused credit (e.g. $20 credit → $35/mo),

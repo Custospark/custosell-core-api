@@ -148,7 +148,7 @@ class HrPayrollService
 
     /**
      * Soft-delete compensation. Soft-deleted rows are excluded from latestCompensation
-     * (and list queries) via SoftDeletes — historical pay-run lines are left intact.
+     * (and list queries) via SoftDeletes - historical pay-run lines are left intact.
      */
     public function deleteCompensation(int $businessId, int $id, ?int $actorUserId = null): void
     {
@@ -431,7 +431,7 @@ class HrPayrollService
             $entry = $this->journalEntries->createAndPostEntry(
                 $businessId,
                 $payRun->period_end->toDateString(),
-                "Payroll {$payRun->period_start->toDateString()} – {$payRun->period_end->toDateString()}",
+                "Payroll {$payRun->period_start->toDateString()} - {$payRun->period_end->toDateString()}",
                 $intendedLines,
                 'hr_pay_run',
                 $payRun->id,
@@ -506,7 +506,7 @@ class HrPayrollService
         $totalNet = round((float) $lines->sum('net') + (float) $lines->sum('other_deductions'), 2);
         if ($totalNet <= 0.009) {
             throw ValidationException::withMessages([
-                'lines' => 'Nothing to settle — net pay is zero.',
+                'lines' => 'Nothing to settle - net pay is zero.',
             ]);
         }
 
@@ -523,7 +523,7 @@ class HrPayrollService
             $entry = $this->journalEntries->createAndPostEntry(
                 $businessId,
                 now()->toDateString(),
-                "Payroll settlement {$payRun->period_start->toDateString()} – {$payRun->period_end->toDateString()}",
+                "Payroll settlement {$payRun->period_start->toDateString()} - {$payRun->period_end->toDateString()}",
                 $journalLines,
                 'hr_pay_run_settlement',
                 $payRun->id,
@@ -581,7 +581,7 @@ class HrPayrollService
 
         if ($total <= 0.009) {
             throw ValidationException::withMessages([
-                'lines' => 'Nothing to remit — PAYE and NSSF are zero.',
+                'lines' => 'Nothing to remit - PAYE and NSSF are zero.',
             ]);
         }
 
@@ -603,7 +603,7 @@ class HrPayrollService
             $entry = $this->journalEntries->createAndPostEntry(
                 $businessId,
                 now()->toDateString(),
-                "Payroll statutory remittance {$payRun->period_start->toDateString()} – {$payRun->period_end->toDateString()}",
+                "Payroll statutory remittance {$payRun->period_start->toDateString()} - {$payRun->period_end->toDateString()}",
                 $journalLines,
                 'hr_pay_run_statutory',
                 $payRun->id,

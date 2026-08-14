@@ -1,4 +1,4 @@
-# ADR: Referral Reward Economics — Amount-Actually-Paid Base with Balanced Split
+# ADR: Referral Reward Economics - Amount-Actually-Paid Base with Balanced Split
 
 ## Date
 2026-07-31
@@ -18,7 +18,7 @@ The product wants to keep referral energy (both parties benefit) while guarantee
 
 Three concrete options were evaluated:
 
-### Option 1 — Symmetric 10/10 (flat, on full amount)
+### Option 1 - Symmetric 10/10 (flat, on full amount)
 Referee 10% off; referrer earns 10% of the **undiscounted** base.
 
 | | Value |
@@ -30,7 +30,7 @@ Referee 10% off; referrer earns 10% of the **undiscounted** base.
 **Pros:** Simple, symmetric, easy to communicate ("10% for you, 10% for a friend").
 **Cons:** Halves the referrer incentive from today (20% → 10%), risking referral energy; rewards are still measured against the full base, so a free-month or deep-discount code can still make the reward disproportionate to what was paid.
 
-### Option 2 — Acquirer-favored but capped (CHOSEN)
+### Option 2 - Acquirer-favored but capped (CHOSEN)
 Referee 10% off; referrer earns **15% of the amount actually paid** (base minus the referral discount).
 
 | | Value |
@@ -42,25 +42,25 @@ Referee 10% off; referrer earns **15% of the amount actually paid** (base minus 
 **Pros:**
 - Referrer still earns **more than the referee saves** (15% of the paid amount ≈ 13.5% of base, vs. 10% saved), preserving referral energy.
 - **The give-away never exceeds what's collected.** On a free-month code (referee pays $0) the referrer earns $0; on a 50%-off code the reward shrinks proportionally. Cap is structural, not an estimate.
-- Referrer earnings stay correlated with real cash flow — the more the referee actually pays, the more the referrer earns.
+- Referrer earnings stay correlated with real cash flow - the more the referee actually pays, the more the referrer earns.
 
 **Cons:**
 - Referrer reward drops from 20% → ~13.5% of base (mild incentive reduction vs. today).
 - Slightly more complex math to communicate: "15% of what your friend pays" instead of "20% of their plan."
 
-### Option 3 — Retention-vested
+### Option 3 - Retention-vested
 Small upfront reward (e.g., 5%) plus a vested reward on renewals (e.g., 5% of each month the referee stays subscribed, credited at renewal).
 
 **Pros:** Strongest long-term retention incentive; aligns referrer earnings with lifetime value.
-**Cons:** Most complex — requires scheduled reward crediting per renewal, a vests ledger, and deferred-credit bookkeeping; weakest for driving immediate conversions; over-engineered for the current monthly-billing model.
+**Cons:** Most complex - requires scheduled reward crediting per renewal, a vests ledger, and deferred-credit bookkeeping; weakest for driving immediate conversions; over-engineered for the current monthly-billing model.
 
 ## Decision
 
 Adopt **Option 2**:
 
 - Default program stays **referee 10% off**, referrer reward default drops from **20% → 15%**.
-- The reward (and sales-rep commission, for consistency) is calculated as a percentage of the **amount actually paid**, i.e. `max(0, base − discount_applied)` — NOT the undiscounted base.
-- This applies **uniformly to every code type** — default business codes, sales-rep codes, and campaign codes. All percentage commissions/rewards are based on what was actually collected; the configured `reward_value`/`commission_rate` percentage itself is always respected, only the base is the net amount. Confirmed by the product owner: fair to referrers, sales reps, and the company alike.
+- The reward (and sales-rep commission, for consistency) is calculated as a percentage of the **amount actually paid**, i.e. `max(0, base − discount_applied)` - NOT the undiscounted base.
+- This applies **uniformly to every code type** - default business codes, sales-rep codes, and campaign codes. All percentage commissions/rewards are based on what was actually collected; the configured `reward_value`/`commission_rate` percentage itself is always respected, only the base is the net amount. Confirmed by the product owner: fair to referrers, sales reps, and the company alike.
 - Flat-amount rewards and commissions are unchanged (they are already absolute, not percentage-of-base).
 - A free-month code yields a $0 referrer reward, since the referee paid $0. This is the cap working as designed.
 
@@ -82,13 +82,13 @@ Adopt **Option 2**:
 
 | Trigger | Why |
 |---------|-----|
-| Referral-driven conversion rate drops meaningfully after the 20% → 15% change | The 5-point incentive cut may cost more in acquisition than it saves — restore a higher reward or switch to Option 3's renewal-vested model |
+| Referral-driven conversion rate drops meaningfully after the 20% → 15% change | The 5-point incentive cut may cost more in acquisition than it saves - restore a higher reward or switch to Option 3's renewal-vested model |
 | Marketing wants a "referrer gets 20% of the full plan" campaign | Percentage-of-full-base campaigns bypass the cap by design; either disallow them for default codes or revisit the cap for campaign-specific codes |
-| A sales-rep commission program matures independently | Commission was aligned to the paid base for consistency; a dedicated sales-rep compensation policy may warrant its own base (e.g., full price) — revisit if sales incentive targets conflict |
+| A sales-rep commission program matures independently | Commission was aligned to the paid base for consistency; a dedicated sales-rep compensation policy may warrant its own base (e.g., full price) - revisit if sales incentive targets conflict |
 | The product moves to annual-only billing or standardizes no-free-tier plans | The dynamic base collapses to a single number; simpler "10% / 10% of plan price" symmetric models become viable (Option 1) |
 | Free-month codes become a primary acquisition channel | Under this ADR free-month codes pay the referrer $0; if that kills free-month referral energy, revisit whether free-month codes should carry a fixed referrer reward instead |
 | Renewal/recurring reward crediting infrastructure exists (scheduled credits, vests ledger) | Unblocks Option 3, which is strictly better for retention if the bookkeeping cost is acceptable |
 
 ## References
 - Supersedes the reward-rate portion of `2026-07-30-referral-discount-architecture.md` (base definition remains dynamic; reward base now = amount actually paid).
-- `2026-07-26-referral-credit-system.md` — reward is credited to the referrer as a `BillingCredit` at settlement.
+- `2026-07-26-referral-credit-system.md` - reward is credited to the referrer as a `BillingCredit` at settlement.

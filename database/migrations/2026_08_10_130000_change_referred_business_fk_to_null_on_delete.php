@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Referrals are an earnings ledger for the referrer. When a referred business is
  * deleted (platform hard delete), the referral row must survive so the referrer's
- * earned reward history is not erased — otherwise earnings reset to zero while
+ * earned reward history is not erased - otherwise earnings reset to zero while
  * payouts stay, producing a negative "Bal." in the referrer's account.
  *
  * The business reference is retained as a soft pointer (nulled on delete) only

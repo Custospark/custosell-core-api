@@ -17,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Alias payment payables only — do not use enforceMorphMap (breaks Spatie User roles, etc.)
+        // Alias payment payables only - do not use enforceMorphMap (breaks Spatie User roles, etc.)
         Relation::morphMap([
             'invoice' => \App\Models\Invoice::class,
             'sale' => \App\Models\Sale::class,

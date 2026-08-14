@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DocumentNumberGenerator
 {
-    /** First 4 alphanumeric chars from slug/name — unique per business, uppercase. */
+    /** First 4 alphanumeric chars from slug/name - unique per business, uppercase. */
     public static function businessCode(Business $business): string
     {
         $raw = preg_replace('/[^a-zA-Z0-9]/', '', (string) ($business->slug ?: $business->name ?: ''));
@@ -52,7 +52,7 @@ class DocumentNumberGenerator
         return sprintf('%s-EST-%s-%s', $code, $date, $rand);
     }
 
-    /** {BIZ4}-PO-{YYYYMM}-{00001} — scoped by buyer_business_id */
+    /** {BIZ4}-PO-{YYYYMM}-{00001} - scoped by buyer_business_id */
     public static function purchaseOrderNumber(Business $buyer, string $modelClass, string $column): string
     {
         $code = self::businessCode($buyer);

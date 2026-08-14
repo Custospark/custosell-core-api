@@ -53,7 +53,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  C1 — activateAfterOnboarding accepts TRIAL status
+    //  C1 - activateAfterOnboarding accepts TRIAL status
     // ════════════════════════════════════════════════════════════════════
 
     public function test_c1_activate_after_onboarding_with_trial_and_future_trial_ends_at_keeps_trial(): void
@@ -127,7 +127,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  C2 — trial_used not set on subscribe, only when trial actually starts
+    //  C2 - trial_used not set on subscribe, only when trial actually starts
     // ════════════════════════════════════════════════════════════════════
 
     public function test_c2_subscribe_with_trial_does_not_set_trial_used(): void
@@ -172,7 +172,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  H2 — Trial expired → PAST_DUE (not EXPIRED)
+    //  H2 - Trial expired → PAST_DUE (not EXPIRED)
     // ════════════════════════════════════════════════════════════════════
 
     public function test_h2_trial_expired_transitions_to_past_due(): void
@@ -225,7 +225,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  H3 — grace_used + past billing → SUSPENDED directly
+    //  H3 - grace_used + past billing → SUSPENDED directly
     // ════════════════════════════════════════════════════════════════════
 
     public function test_h3_grace_used_subscription_goes_to_suspended_when_billing_past(): void
@@ -267,7 +267,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  H5 — Idempotency key prevents duplicate payments
+    //  H5 - Idempotency key prevents duplicate payments
     // ════════════════════════════════════════════════════════════════════
 
     public function test_h5_idempotency_key_returns_existing_payment(): void
@@ -305,7 +305,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  H1 — changePlan method on SubscriptionService
+    //  H1 - changePlan method on SubscriptionService
     // ════════════════════════════════════════════════════════════════════
 
     public function test_h1_change_plan_updates_subscription_plan(): void
@@ -340,7 +340,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  M2 — getByBusiness uses fresh(), not a second DB query
+    //  M2 - getByBusiness uses fresh(), not a second DB query
     // ════════════════════════════════════════════════════════════════════
 
     public function test_m2_get_by_business_returns_updated_subscription(): void
@@ -364,7 +364,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  H4 — Payment metadata propagation
+    //  H4 - Payment metadata propagation
     // ════════════════════════════════════════════════════════════════════
 
     public function test_h4_payment_metadata_stored_correctly(): void
@@ -394,7 +394,7 @@ class ForensicGapFixTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  EXPIRED acceptance — activateSubscription and activateAfterOnboarding
+    //  EXPIRED acceptance - activateSubscription and activateAfterOnboarding
     // ════════════════════════════════════════════════════════════════════
 
     public function test_activate_subscription_accepts_expired_status(): void

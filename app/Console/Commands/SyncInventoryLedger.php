@@ -47,12 +47,12 @@ class SyncInventoryLedger extends Command
         }
 
         if ($report['requires_force'] && !$this->option('force')) {
-            $this->error('Adjustment exceeds safe limit — use --force after reviewing product data.');
+            $this->error('Adjustment exceeds safe limit - use --force after reviewing product data.');
             return 1;
         }
 
         if ($this->option('dry-run')) {
-            $this->warn('Dry run — no journal entry posted.');
+            $this->warn('Dry run - no journal entry posted.');
             return 0;
         }
 

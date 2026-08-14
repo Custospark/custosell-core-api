@@ -53,7 +53,7 @@ class GatewayService
             ? $businessCurrency
             : 'USD';
 
-        // 2. For non-USD currencies, resolve exchange rate NOW — fail hard if unavailable
+        // 2. For non-USD currencies, resolve exchange rate NOW - fail hard if unavailable
         $exchangeRate = null;
         if ($paymentCurrency !== 'USD') {
             $exchangeRate = $this->currencyExchange->getExchangeRate('USD', $paymentCurrency);
@@ -68,7 +68,7 @@ class GatewayService
         // 3. Compute authoritative amount for known payment types (ignore frontend value)
         // Always uses live plan prices so promotions (Black Friday, etc.) apply to everyone.
         // The billing cycle is taken from the request when the user picked one (e.g. resubscribing
-        // yearly), but renewals always follow the subscription's stored cycle — a user on yearly
+        // yearly), but renewals always follow the subscription's stored cycle - a user on yearly
         // must not be switched to monthly (or vice versa) through a renewal payment.
         $paymentType = $data['payment_type'] ?? 'subscription';
         $effectiveCycle = $paymentType === 'renewal' || $paymentType === 'topup'
@@ -80,7 +80,7 @@ class GatewayService
         $plan = $this->resolveEffectivePlan($subscription, $data);
 
         // Top-up: charge the chosen number of months prorated to the stored
-        // billing cycle — monthly rate on monthly subs, yearly/12 on yearly subs.
+        // billing cycle - monthly rate on monthly subs, yearly/12 on yearly subs.
         if ($paymentType === 'topup') {
             $topupMonths = (int) ($data['topup_months'] ?? 0);
             if ($topupMonths < 1) {
@@ -136,7 +136,7 @@ class GatewayService
             }
         }
 
-        // H5: Idempotency check — return existing payment if same key used
+        // H5: Idempotency check - return existing payment if same key used
         $idempotencyKey = $data['idempotency_key'] ?? null;
         if ($idempotencyKey) {
             $existing = $this->paymentRepo->findByIdempotencyKey($idempotencyKey);
@@ -168,7 +168,7 @@ class GatewayService
             }
         }
 
-        // Audit log — full amount breakdown of the resolved payment (before any currency conversion).
+        // Audit log - full amount breakdown of the resolved payment (before any currency conversion).
         // Goal: verify the exact figure we hand to the gateway and the discounts/credits that shaped it.
         Log::info('[PaymentAudit] initiate-payment resolved', [
             'payment_type' => $paymentType,
@@ -331,7 +331,7 @@ class GatewayService
         }
 
         if (!$payment->isPending()) {
-            Log::info("[GatewayService] Payment #{$payment->id} already processed — skipping.");
+            Log::info("[GatewayService] Payment #{$payment->id} already processed - skipping.");
             return;
         }
 
@@ -377,7 +377,7 @@ class GatewayService
         $payment = $this->paymentValidator->resolvePaymentFromWebhook($callbackData);
 
         if (!$payment) {
-            Log::error("[GatewayService] Callback — payment not found", $callbackData);
+            Log::error("[GatewayService] Callback - payment not found", $callbackData);
             return ['success' => false, 'message' => 'Payment record not found.', 'payment_id' => null];
         }
 

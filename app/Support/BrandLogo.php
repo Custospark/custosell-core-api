@@ -11,8 +11,8 @@ namespace App\Support;
  * embedded as base64 data URIs so DomPDF can render them without a web server.
  *
  * Files:
- * - `custosell-logo-pdf.png`   — Custosell product logo (PDF-optimized).
- * - `custospark-logo-pdf.png`  — Custospark Company logo (PDF-optimized).
+ * - `custosell-logo-pdf.png`   - Custosell product logo (PDF-optimized).
+ * - `custospark-logo-pdf.png`  - Custospark Company logo (PDF-optimized).
  */
 class BrandLogo
 {

@@ -12,15 +12,15 @@ use Tests\TestCase;
  * Billing lifecycle tests with real user stories, real names, and actual Plan prices.
  *
  * Coverage:
- *   User Story 9  — Access checks for every subscription status
- *   User Story 10 — Past due → grace → suspend → reactivate
- *   User Story 11 — Renewal processing
- *   User Story 12 — Cancel-at-period-end cron processing
+ *   User Story 9  - Access checks for every subscription status
+ *   User Story 10 - Past due → grace → suspend → reactivate
+ *   User Story 11 - Renewal processing
+ *   User Story 12 - Cancel-at-period-end cron processing
  */
 class BillingAccessLifecycleTest extends AbstractBillingLifecycleTestCase
 {
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 9 — Access checks for every subscription status
+    //  USER STORY 9 - Access checks for every subscription status
     // ════════════════════════════════════════════════════════════════════
 
     public function test_access_is_granted_for_trial_within_window(): void
@@ -147,7 +147,7 @@ class BillingAccessLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 10 — Past due → grace → suspend → reactivate
+    //  USER STORY 10 - Past due → grace → suspend → reactivate
     // ════════════════════════════════════════════════════════════════════
 
     public function test_grace_hopper_goes_past_due_and_gets_grace_period(): void
@@ -215,7 +215,7 @@ class BillingAccessLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 11 — Renewal processing (cron simulation)
+    //  USER STORY 11 - Renewal processing (cron simulation)
     // ════════════════════════════════════════════════════════════════════
 
     public function test_renewal_processing_marks_overdue_as_past_due(): void
@@ -252,7 +252,7 @@ class BillingAccessLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 12 — Cancel-at-period-end cron processing
+    //  USER STORY 12 - Cancel-at-period-end cron processing
     // ════════════════════════════════════════════════════════════════════
 
     public function test_cancel_at_period_end_processing(): void

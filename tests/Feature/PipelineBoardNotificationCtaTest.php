@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
- * Board notification emails must deep-link to the board by its opaque CODE —
+ * Board notification emails must deep-link to the board by its opaque CODE -
  * the UI opens boards at /pipeline/boards/{code}, not by numeric id.
  */
 class PipelineBoardNotificationCtaTest extends TestCase

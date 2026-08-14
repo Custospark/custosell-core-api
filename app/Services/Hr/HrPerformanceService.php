@@ -141,7 +141,7 @@ class HrPerformanceService
         }
 
         $periodLabel = sprintf(
-            'Work performance %s (%s – %s)',
+            'Work performance %s (%s - %s)',
             $periodType,
             $start->toDateString(),
             $end->toDateString(),

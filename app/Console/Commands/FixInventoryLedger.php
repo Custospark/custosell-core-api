@@ -55,7 +55,7 @@ class FixInventoryLedger extends Command
         $this->line("Current GL inventory: {$balance}");
 
         if ($balance >= 0) {
-            $this->info('Inventory ledger is not negative — nothing to fix.');
+            $this->info('Inventory ledger is not negative - nothing to fix.');
             return 0;
         }
 

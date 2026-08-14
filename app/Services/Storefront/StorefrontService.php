@@ -81,7 +81,7 @@ class StorefrontService
     }
 
     /**
-     * Upsert a 1–5 star rating for a listed storefront product (Sanctum buyer).
+     * Upsert a 1-5 star rating for a listed storefront product (Sanctum buyer).
      *
      * @return array<string, mixed>
      */
@@ -162,7 +162,7 @@ class StorefrontService
     }
 
     /**
-     * Upsert a 1–5 star rating for a public storefront shop (Sanctum buyer).
+     * Upsert a 1-5 star rating for a public storefront shop (Sanctum buyer).
      *
      * @return array<string, mixed>
      */

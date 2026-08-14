@@ -413,7 +413,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                 /** @var Product $product */
                 $product = $pair['product'];
 
-                // Services are not quantitative — skip stock movements for them.
+                // Services are not quantitative - skip stock movements for them.
                 if ($product->tracksStock()) {
                     $stockBefore = (int) $product->stock_quantity;
                     $stockAfter = $stockBefore + (int) $item->quantity;

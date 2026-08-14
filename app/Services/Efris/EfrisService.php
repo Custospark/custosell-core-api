@@ -192,7 +192,7 @@ class EfrisService implements EfrisServiceInterface
 
     private function isNetworkUsable(): bool
     {
-        // Laravel app "online" for outbound URA — use a quick DNS/connectivity heuristic.
+        // Laravel app "online" for outbound URA - use a quick DNS/connectivity heuristic.
         // Controllers still complete sales when this is false (sync_later).
         try {
             $host = parse_url((string) config('efris.base_url'), PHP_URL_HOST);

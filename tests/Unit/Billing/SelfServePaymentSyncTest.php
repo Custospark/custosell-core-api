@@ -8,13 +8,13 @@ use App\Services\Payment\Gateways\PesaPalGateway;
 use Illuminate\Support\Carbon;
 
 /**
- * Self-serve payment sync — the /billing/payments/{id}/confirm endpoint lets a
+ * Self-serve payment sync - the /billing/payments/{id}/confirm endpoint lets a
  * user reconcile a payment that PesaPal collected but whose webhook/IPN never
  * reached us (e.g. a network failure after payment).
  *
  * confirmPayment() asks the gateway for the real transaction status
  * (GetTransactionStatus) and, when successful, runs the SAME autoApprove path
- * the webhook uses — so the subscription is applied and access granted exactly
+ * the webhook uses - so the subscription is applied and access granted exactly
  * as if the webhook had arrived.
  */
 class SelfServePaymentSyncTest extends AbstractBillingLifecycleTestCase
@@ -99,7 +99,7 @@ class SelfServePaymentSyncTest extends AbstractBillingLifecycleTestCase
         $this->assertSame(PaymentStatus::COMPLETED, $payment->status);
         $this->assertTrue((bool) $subscription->onboarding_fee_paid, 'onboarding fee must be marked paid');
         // Onboarding payment grants access by paying the setup fee and starting
-        // the trial — the subscription stays in TRIAL (with a future trial end).
+        // the trial - the subscription stays in TRIAL (with a future trial end).
         $this->assertContains($subscription->status, [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE], 'onboarding payment must leave the subscription usable');
         $this->assertTrue($subscription->trial_ends_at === null || $subscription->trial_ends_at->isFuture(), 'trial must not be in the past after onboarding');
     }
@@ -181,7 +181,7 @@ class SelfServePaymentSyncTest extends AbstractBillingLifecycleTestCase
             'gateway_transaction_id' => self::TXN_ID,
         ]);
 
-        // Gateway has no confirmation yet — verify returns pending.
+        // Gateway has no confirmation yet - verify returns pending.
         $this->mock(PesaPalGateway::class, function ($mock) {
             $mock->shouldReceive('verify')->andReturn([
                 'success' => false,

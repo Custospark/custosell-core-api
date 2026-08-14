@@ -64,7 +64,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         return Business::factory()->create(['owner_id' => $user->id]);
     }
 
-    // ─── Story 1: Percentage discount — discount_applied is calculated, price_monthly_usd unchanged ───
+    // ─── Story 1: Percentage discount - discount_applied is calculated, price_monthly_usd unchanged ───
 
     public function test_percentage_discount_applied_does_not_change_subscription_price(): void
     {
@@ -83,11 +83,11 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertEquals(
             $this->essential->price_monthly_usd,
             (float) $subscription->price_monthly_usd,
-            'Subscription price_monthly_usd must remain unchanged — referral discount is informational only'
+            'Subscription price_monthly_usd must remain unchanged - referral discount is informational only'
         );
     }
 
-    // ─── Story 2: Flat discount — discount_applied is calculated, price_monthly_usd unchanged ───
+    // ─── Story 2: Flat discount - discount_applied is calculated, price_monthly_usd unchanged ───
 
     public function test_flat_discount_applied_does_not_change_subscription_price(): void
     {
@@ -109,7 +109,7 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         );
     }
 
-    // ─── Story 3: Free month discount — discount_applied equals price, price_monthly_usd unchanged ───
+    // ─── Story 3: Free month discount - discount_applied equals price, price_monthly_usd unchanged ───
 
     public function test_free_month_discount_applied_does_not_change_subscription_price(): void
     {

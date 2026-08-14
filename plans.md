@@ -1,4 +1,4 @@
-# Custosell Backend — Execution Plan
+# Custosell Backend - Execution Plan
 
 **Project:** Custosell (Lightweight POS)  
 **Stack:** Laravel 12 + MySQL (cloud) / SQLite (desktop local)  
@@ -9,7 +9,7 @@
 
 ## Phase 0: Project Scaffolding
 
-### Task 0.1 — Create Laravel Project
+### Task 0.1 - Create Laravel Project
 ```bash
 composer create-project laravel/laravel Backend
 ```
@@ -27,7 +27,7 @@ SANCTUM_STATEFUL_DOMAINS=localhost
 SESSION_DRIVER=cookie
 ```
 
-### Task 0.2 — Install Dependencies (from Custocare)
+### Task 0.2 - Install Dependencies (from Custocare)
 
 **Production:**
 | Package | Version | Purpose |
@@ -35,7 +35,7 @@ SESSION_DRIVER=cookie
 | `laravel/framework` | ^12.0 | Core framework |
 | `laravel/sanctum` | ^4.0 | API token auth (SPA + tokens) |
 | `laravel/tinker` | ^2.10.1 | Artisan REPL |
-| `spatie/laravel-permission` | ^6.24 | Role/permission management (optional — may use JSON on Role instead) |
+| `spatie/laravel-permission` | ^6.24 | Role/permission management (optional - may use JSON on Role instead) |
 | `barryvdh/laravel-dompdf` | ^3.1 | PDF receipt generation |
 | `paragonie/constant_time_encoding` | ^3.1 | Constant-time encoding (security) |
 | `pragmarx/google2fa` | ^9.0 | 2FA support |
@@ -52,7 +52,7 @@ SESSION_DRIVER=cookie
 | `nunomaduro/collision` | ^8.6 |
 | `phpunit/phpunit` | ^11.5.3 |
 
-### Task 0.3 — Set Up Project Structure
+### Task 0.3 - Set Up Project Structure
 - Remove default migrations (keep users, cache, jobs)
 - Create directory structure:
   ```
@@ -73,10 +73,10 @@ SESSION_DRIVER=cookie
 - Set up `bootstrap/providers.php` for Service Provider registration
 - Configure CORS for Electron app
 
-### Task 0.4 — Create Vera Scripts
+### Task 0.4 - Create Vera Scripts
 Copy from Custocare:
-- `scripts/vera-fast.php` — `php -l` on changed PHP files
-- `scripts/vera-extended.php` — vera-fast + migrate --pretend + filtered PHPUnit
+- `scripts/vera-fast.php` - `php -l` on changed PHP files
+- `scripts/vera-extended.php` - vera-fast + migrate --pretend + filtered PHPUnit
 
 Add to `composer.json`:
 ```json
@@ -143,7 +143,7 @@ All entities produce 12 files: migration, model, repository interface, repositor
 | soft_deletes | | nullable | deleted_at |
 
 **Indexes:** unique on `email`, index on `business_id`, index on `role_id`, index on `created_by`
-**Important:** All FKs nullable — circular dependency User↔Business handled at app level
+**Important:** All FKs nullable - circular dependency User↔Business handled at app level
 **Endpoints:** Register, Login (Sanctum), Profile, List (business-scoped), Delete (owner only)
 **Dependencies:** Laravel default auth migration
 
@@ -278,7 +278,7 @@ All entities produce 12 files: migration, model, repository interface, repositor
 ### Order 8: Shift
 
 **Table:** `shifts`
-**Purpose:** Track user work sessions — clock in/out.
+**Purpose:** Track user work sessions - clock in/out.
 
 | Column | Type | Modifiers | Notes |
 |--------|------|-----------|-------|
@@ -304,7 +304,7 @@ All entities produce 12 files: migration, model, repository interface, repositor
 ### Order 9: Sale
 
 **Table:** `sales`
-**Purpose:** Transaction header — one sale = one receipt.
+**Purpose:** Transaction header - one sale = one receipt.
 
 | Column | Type | Modifiers | Notes |
 |--------|------|-----------|-------|
@@ -363,7 +363,7 @@ All entities produce 12 files: migration, model, repository interface, repositor
 ### Order 11: StockMovement
 
 **Table:** `stock_movements`
-**Purpose:** Inventory ledger — every stock change with before/after snapshot.
+**Purpose:** Inventory ledger - every stock change with before/after snapshot.
 
 | Column | Type | Modifiers | Notes |
 |--------|------|-----------|-------|
@@ -457,18 +457,18 @@ All entities produce 12 files: migration, model, repository interface, repositor
 
 ## Phase 6: Sync API (for Electron Desktop)
 
-### Task 6.1 — Sync Endpoints
-- `POST /api/v1/sync/push` — Accept bulk JSON of new/changed records
-- `GET /api/v1/sync/pull?since={timestamp}` — Return records updated after timestamp
-- `GET /api/v1/sync/full` — Full data dump for first-time setup
+### Task 6.1 - Sync Endpoints
+- `POST /api/v1/sync/push` - Accept bulk JSON of new/changed records
+- `GET /api/v1/sync/pull?since={timestamp}` - Return records updated after timestamp
+- `GET /api/v1/sync/full` - Full data dump for first-time setup
 
-### Task 6.2 — Sync Logic
+### Task 6.2 - Sync Logic
 - Each table uses `updated_at` for delta sync
-- Receipt numbers: `{business_slug}-{increment}` — collision-free across devices
+- Receipt numbers: `{business_slug}-{increment}` - collision-free across devices
 - Push validates `business_id` matches authenticated user's business
 - Sync queue table (local SQLite only) tracks pending changes
 
-### Task 6.3 — Plan Enforcement on Sync
+### Task 6.3 - Plan Enforcement on Sync
 - Free plan: block expense sync, reject if product/customer count exceeds limits
 - Pro/Premium: full sync
 
@@ -478,7 +478,7 @@ All entities produce 12 files: migration, model, repository interface, repositor
 
 | Seq | Migration | FKs |
 |-----|-----------|-----|
-| 1 | `create_plans_table` | — |
+| 1 | `create_plans_table` | - |
 | 2 | `create_users_table` | Laravel default (business_id/role_id nullable) |
 | 3 | `create_businesses_table` | owner_id → users |
 | 4 | `create_roles_table` | business_id → businesses |
@@ -573,7 +573,7 @@ User ────┤
 | Receipt snapshots on SaleItem | Receipts survive product changes/deletion |
 | StockMovement before/after snapshots | Full audit trail |
 | JSON permissions on Role | Flexible, no extra tables, easy to seed |
-| JSON features/limits on Plan | Same — one column, no schema changes for new tiers |
+| JSON features/limits on Plan | Same - one column, no schema changes for new tiers |
 | Shift cached totals | Avoids aggregate queries on reconciliation |
 | Auto-sync (no manual button) | Sync on reconnect + periodic background sync |
 | Vera scripts (from Custocare) | `vera:fast` = php -l on changed files; `vera:extended` includes --pretend migrate |

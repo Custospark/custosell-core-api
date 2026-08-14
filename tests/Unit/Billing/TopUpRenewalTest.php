@@ -6,7 +6,7 @@ use App\Enums\Billing\SubscriptionStatus;
 use Illuminate\Support\Carbon;
 
 /**
- * Renewal top-up — an active subscription can prepay a chosen number of months
+ * Renewal top-up - an active subscription can prepay a chosen number of months
  * at a rate prorated to its stored billing cycle (monthly rate on monthly,
  * yearly/12 on yearly), anchored to the existing next_billing_date.
  */

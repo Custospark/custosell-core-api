@@ -1,4 +1,4 @@
-# Subscription Receipts & Unified Billing History — backend
+# Subscription Receipts & Unified Billing History - backend
 
 ## Status
 

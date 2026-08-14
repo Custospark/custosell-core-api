@@ -1,4 +1,4 @@
-# Subscription State Machine — Transition Map and Loophole Audit
+# Subscription State Machine - Transition Map and Loophole Audit
 
 **Date:** 2026-08-10
 **Status:** Accepted (audit findings; no behavior change yet)
@@ -6,7 +6,7 @@
 
 ## Context
 
-Oscar asked to map every subscription status transition from creation: which statuses are set, on which trigger date, in which method — and whether the current handling has transition loopholes (users gaining access they didn't pay for, or state rows that never converge).
+Oscar asked to map every subscription status transition from creation: which statuses are set, on which trigger date, in which method - and whether the current handling has transition loopholes (users gaining access they didn't pay for, or state rows that never converge).
 
 This ADR records the complete map and the audit verdict. It complements `2026-08-02-subscription-state-machine-date-driven.md`, which documents the intended design. This one documents what the code actually does and where the holes are.
 
@@ -16,7 +16,7 @@ This ADR records the complete map and the audit verdict. It complements `2026-08
 
 ---
 
-## 1. Birth — `SubscriptionService::subscribe()`
+## 1. Birth - `SubscriptionService::subscribe()`
 
 Applied at `app/Services/SubscriptionService.php:91`. Sets `status`, `trial_ends_at`, `next_billing_date`, `onboarding_fee_paid=false`, `trial_used=false`.
 
@@ -29,15 +29,15 @@ Applied at `app/Services/SubscriptionService.php:91`. Sets `status`, `trial_ends
 
 Personal-plan subscriptions are created the same way but `onboarding_fee_paid` is force-set to `true` immediately after (`UserService.php:115`), so no pay screen ever shows for personal accounts.
 
-> The no-trial initial status is **`PAST_DUE`** — that is a "pending setup fee" state, not a payment failure. It carries no `grace_period_ends_at` and no `grace_used`, and access is denied until the onboarding fee is paid.
+> The no-trial initial status is **`PAST_DUE`** - that is a "pending setup fee" state, not a payment failure. It carries no `grace_period_ends_at` and no `grace_used`, and access is denied until the onboarding fee is paid.
 
 ---
 
-## 2. Transition map — status → trigger → method → result
+## 2. Transition map - status → trigger → method → result
 
 Only two engine surfaces mutate status:
 
-- **Live**: `SubscriptionStateMachineService::processDueTransitions()` — run on login/`me` (`AuthController::reconcileSubscription`), on every guarded route (`EnsureActiveSubscription`), inside `SubscriptionService::hasAccess()` / `getByBusiness()`, and by the `/subscriptions/access` endpoint.
+- **Live**: `SubscriptionStateMachineService::processDueTransitions()` - run on login/`me` (`AuthController::reconcileSubscription`), on every guarded route (`EnsureActiveSubscription`), inside `SubscriptionService::hasAccess()` / `getByBusiness()`, and by the `/subscriptions/access` endpoint.
 - **Cron**: four scheduled commands in `routes/console.php` (daily): `subscriptions:expire-trials` 02:00, `subscriptions:renew` 02:15, `subscriptions:suspend-past-due` 02:30, `subscriptions:cancel-at-period-end` 02:45.
 - **Payment-driven**: webhook/callback → `GatewayService::autoApprove()` → `HandlesPaymentApproval::handlePaymentType()`.
 
@@ -65,7 +65,7 @@ Only two engine surfaces mutate status:
 
 ---
 
-## 3. The access gate — `Subscription::hasAccess()`
+## 3. The access gate - `Subscription::hasAccess()`
 
 `app/Models/Subscription.php:130`. The middleware, `/subscriptions/access`, `UserResource::resolveModules()` (personal plans), and frontend offline mirror all read this.
 
@@ -82,18 +82,18 @@ The gate re-reads the dates, so even a stale, un-reconciled row is denied if its
 
 ---
 
-## 4. Audit verdict — what is correct
+## 4. Audit verdict - what is correct
 
 1. **Past-due users can pay and recover cleanly.** FE `planActionMatrix.ts:104` maps the `renew` intent → `payment_type='subscription'` → `activateSubscription()`, which accepts `past_due`. No dead-end: `past_due` is never stuck unless intentionally unpaiable.
 2. **Grace is exactly once per lifecycle.** `markPastDue()` throws if `grace_used` (`:155`); `reactivate`/`renew`/`activate` never reset it. Tests assert `grace_hopper_cannot_use_grace_twice`. The latch is permanent by design (anti-ghost-hopper).
-3. **The live path is the safety net.** Status is reconciled on login/me, every guarded request, and `/subscriptions/access` — a stale `active` row cannot outlive its billing date once the user hits the API.
-4. **Gate is date-based, not status-trusting** — the same persisted grant dates are re-verified at check time.
+3. **The live path is the safety net.** Status is reconciled on login/me, every guarded request, and `/subscriptions/access` - a stale `active` row cannot outlive its billing date once the user hits the API.
+4. **Gate is date-based, not status-trusting** - the same persisted grant dates are re-verified at check time.
 
 ---
 
 ## 5. Loopholes / rough edges (recommendations)
 
-### L1 — Cron cannot suspend grace-expired subscriptions; suspension depends on a live request
+### L1 - Cron cannot suspend grace-expired subscriptions; suspension depends on a live request
 
 `processRenewals()` (02:15 cron) calls `markPastDue()` directly and swallows the `RuntimeException` in a `catch` block. For an `active + grace_used=true + past next_billing_date` subscription, `markPastDue()` throws (grace already used), the exception is skipped, and the row is **never moved to `suspended`** by the cron. It only suspends if a live `processDueTransitions()` runs for that business (i.e., someone logs in or hits a guarded route).
 
@@ -101,15 +101,15 @@ The gate re-reads the dates, so even a stale, un-reconciled row is denied if its
 
 **Recommendation (unresolved)**: make the cron use the same guarded transition logic (`processDueTransitions` per eligible row) instead of bare `markPastDue()`, and/or force backend-arbitrated status on offline reconnect before granting offline access.
 
-### L2 — `EXPIRED` is dead weight
+### L2 - `EXPIRED` is dead weight
 
 Nothing in application code ever sets `subscription.status = expired`. Trial expiry goes straight to `past_due`. Yet `EnsureActiveSubscription` has an `'expired'` message, and `SubscriptionPaymentActionResolver` has an `EXPIRED → resubscribe` intent. They are unreachable unless a platform admin force-sets the status in the admin UI. Confusing but harmless; either wire the state or remove the messages.
 
-### L3 — Cron transitions bypass `processDueTransitions` guardrails
+### L3 - Cron transitions bypass `processDueTransitions` guardrails
 
 The four cron methods call `markPastDue()` / `suspend()` / repository updates directly (with `try/catch` swallowing). They use the same methods as the live path, so not exploitable, but the exception-swallowing means a failed downgrade is silent (`L1` is the concrete consequence).
 
-### L4 — Offline FE trusts cached `active`
+### L4 - Offline FE trusts cached `active`
 
 `computeOfflineAccess` (frontend `SubscriptionGuard.tsx`) returns `true` for status `active` up front; only the online `/subscriptions/access` call can deny. Combine with `L1`: a grace-expired user with the app open but no connection keeps full access until reconnect.
 

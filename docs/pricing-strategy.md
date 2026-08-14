@@ -1,18 +1,18 @@
-# Custosell — Pricing Strategy
+# Custosell - Pricing Strategy
 
 **Date:** 2026-07-21  
-**Author:** Mike (Orchestrator) — with input from Sales, Marketing, CEO, and Product Engineering perspectives  
-**Status:** Draft — awaiting Oscar's feedback before implementation
+**Author:** Mike (Orchestrator) - with input from Sales, Marketing, CEO, and Product Engineering perspectives  
+**Status:** Draft - awaiting Oscar's feedback before implementation
 
 ---
 
 ## 1. Product Positioning
 
-Custosell is not "just a POS" — it is a **Business Operating System** for Ugandan and African SMEs. It competes with:
+Custosell is not "just a POS" - it is a **Business Operating System** for Ugandan and African SMEs. It competes with:
 
-- **Local POS-only solutions** (UGX 100k–200k/month) — narrow feature set
-- **International ERPs** (QuickBooks $15–$100/mo, Zoho $0–$30/mo, Sage 50 $50–$100/mo) — expensive, no offline, no local compliance
-- **Manual/book entry** — free but inefficient, error-prone, no analytics
+- **Local POS-only solutions** (UGX 100k-200k/month) - narrow feature set
+- **International ERPs** (QuickBooks $15-$100/mo, Zoho $0-$30/mo, Sage 50 $50-$100/mo) - expensive, no offline, no local compliance
+- **Manual/book entry** - free but inefficient, error-prone, no analytics
 
 Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-commerce + Inventory), EFRIS-compliant, built for Uganda.
 
@@ -30,7 +30,7 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | 6 | Invoicing | `invoices` | Sales & supplier invoices, line items, PDF/email, payment recording |
 | 7 | Sales Pipeline / CRM | `pipeline` | Kanban boards, leads, activities, reminders, automation, public booking, insights |
 | 8 | Estimates & Projects | `estimates` | Quotes, project management, tasks, timesheets, budget tracking, profitability, templates |
-| 9 | Purchase Orders & Supply | — | PO management, incoming orders, supplier management |
+| 9 | Purchase Orders & Supply | - | PO management, incoming orders, supplier management |
 | 10 | B2B Marketplace | `marketplace` | Supplier discovery, shortlisting, supply-side presence |
 | 11 | Storefront / E-commerce | `storefront` | Public shop, multi-business cart, customer orders, wishlist, QR sharing |
 | 12 | Document Management | `documents` | Cabinets, folders, ACL, tags, cross-module linking, search |
@@ -38,14 +38,14 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | 14 | HR & Payroll | `hr` | Employees, attendance, leave, payroll (Uganda-compliant), talent/recruitment, reports |
 | 15 | Financial Forecasting | `forecasting` | Budgets (BvA), KPIs, what-if scenarios, cash runway projections |
 | 16 | Roles & Permissions | `settings` | Role-based access control, per-module staff access toggles |
-| 17 | Multi-Business / Multi-Location | — | Multiple businesses under one account with separate data |
+| 17 | Multi-Business / Multi-Location | - | Multiple businesses under one account with separate data |
 | 18 | Platform Admin | `platform` | Tenant management, user management, platform-wide analytics |
 
 ---
 
 ## 3. Tier Structure: Three Plans
 
-### Essential — *"Get Started"*
+### Essential - *"Get Started"*
 
 **Target customer:** Small retail shops, roadside stores, market vendors, single-location businesses  
 **Value prop:** Professional POS at a price any shop can afford. Everything you need to ring up sales and track customers.
@@ -72,14 +72,14 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | **Yearly** (pay 10, get 12) | **750,000** | **$200** |
 | **Onboarding Fee** (one-time) | **150,000** | **$40** |
 
-**Annual commitment saves:** UGX 150,000 ($40) — effectively 2 months free.
+**Annual commitment saves:** UGX 150,000 ($40) - effectively 2 months free.
 
 ---
 
-### Professional — *"Grow Your Business"*
+### Professional - *"Grow Your Business"*
 
 **Target customer:** Growing businesses, wholesalers, restaurants, mid-size operations  
-**Value prop:** Full operations suite — inventory, invoices, pipeline, e-commerce, and team management under one roof.
+**Value prop:** Full operations suite - inventory, invoices, pipeline, e-commerce, and team management under one roof.
 
 | Feature | Limit / Detail |
 |---------|----------------|
@@ -110,7 +110,7 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 
 ---
 
-### Enterprise — *"Command Your Empire"*
+### Enterprise - *"Command Your Empire"*
 
 **Target customer:** Chains, multi-location operations, large distributors, franchise networks  
 **Value prop:** The complete ERP. Accounting, HR, payroll, forecasting, and multi-location management with white-glove support.
@@ -144,20 +144,20 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 ### 👔 CEO Perspective
 
 - **Recurring revenue:** Three tiers create a predictable revenue funnel. Essential is the volume driver, Professional is the margin engine, Enterprise captures flagship clients.
-- **Onboarding fees are mandatory:** They cover activation cost (account setup, product configuration, staff training material) and create financial commitment from the customer — reducing churn.
+- **Onboarding fees are mandatory:** They cover activation cost (account setup, product configuration, staff training material) and create financial commitment from the customer - reducing churn.
 - **Yearly discounts:** Pay-10-get-12 model drives annual commitment, improves cash flow predictability, and reduces billing overhead.
-- **Upgrade path:** Each tier naturally exposes features the next tier has — small shops grow into Professional when they need pipeline and invoicing; growing businesses grow into Enterprise when they need accounting and multi-location.
+- **Upgrade path:** Each tier naturally exposes features the next tier has - small shops grow into Professional when they need pipeline and invoicing; growing businesses grow into Enterprise when they need accounting and multi-location.
 
 ### 📈 Sales Perspective
 
-- **Essential at UGX 75k/month is a no-brainer.** That's UGX 2,500/day — less than a lunch in Kampala. No shop owner thinks twice about that. The onboarding fee (150k) is roughly the cost of a single bulk sale — recouped immediately.
+- **Essential at UGX 75k/month is a no-brainer.** That's UGX 2,500/day - less than a lunch in Kampala. No shop owner thinks twice about that. The onboarding fee (150k) is roughly the cost of a single bulk sale - recouped immediately.
 - **Professional (UGX 200k) is the sweet spot.** It's 2.7x Essential but unlocks 10x the value (pipeline, invoicing, storefront, PO management, full CRM). The jump feels justified.
 - **Enterprise (UGX 500k) prices for value, not cost.** A multi-location business doing UGX 50M+/month in revenue will happily pay 1% for their entire operating system. The onboarding fee (750k) is less than a single day of lost productivity from system downtime.
 - **Onboarding fee as a qualification tool:** If a prospect hesitates at a one-time 150k fee, they're likely not serious. It filters out tire-kickers.
 
 ### 🎯 Marketing Perspective
 
-- **Positioning:** "Your Business Operating System" — not "POS software." We're competing with QuickBooks, not just the local POS guy.
+- **Positioning:** "Your Business Operating System" - not "POS software." We're competing with QuickBooks, not just the local POS guy.
 - **Early Access launch strategy:** Current "Coming Soon" / "Free for all" phase is grandfather opportunity. First 100-200 businesses get locked-in founder pricing (e.g., Essential at 50k/month for life). Creates urgency and a testimonial base.
 - **Tier naming:** Essential → Professional → Enterprise is universally understood. No need to educate the market on clever names.
 - **Price anchoring:** Display all three tiers together. Essential at 75k makes Professional at 200k feel reasonable. Professional at 200k makes Enterprise at 500k feel premium but justified.
@@ -173,9 +173,9 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 | `price_yearly` | Single currency, ambiguous | Rename to `price_yearly_ugx`, add `price_yearly_usd` |
 | *(missing)* | No onboarding fee | Add `onboarding_fee_ugx` and `onboarding_fee_usd` |
 | *(missing)* | No trial configuration | Add `trial_days` (defaults to 14 for Essential, 7 for Pro/Enterprise) |
-| `features` | `Record<string, boolean>` | Good — maps to module slugs. Keep as-is. |
-| `limits` | `Record<string, number\|null>` | Good — stores max_staff, max_products, max_businesses, etc. Keep as-is. |
-| *(missing)* | No billing cycle field | Add `billing_cycle` — `monthly`, `yearly`, or `both` |
+| `features` | `Record<string, boolean>` | Good - maps to module slugs. Keep as-is. |
+| `limits` | `Record<string, number\|null>` | Good - stores max_staff, max_products, max_businesses, etc. Keep as-is. |
+| *(missing)* | No billing cycle field | Add `billing_cycle` - `monthly`, `yearly`, or `both` |
 
 **Feature-to-module mapping strategy:**
 
@@ -238,10 +238,10 @@ Registration → Free Trial (14 days) → Payment → Active
 ## 6. Questions for Oscar
 
 - Pricing numbers: too high, too low, or just right?
-- Essential at UGX 75k — should there be a Free tier (e.g., 50 transactions/month, 1 user) to drive adoption?
-- Onboarding fee structure — flat per tier, or negotiable for Enterprise?
-- Feature grouping — any module you'd move to a different tier?
-- Annual pricing structure — pay-10-get-12, or a different discount model (e.g., 15% off)?
+- Essential at UGX 75k - should there be a Free tier (e.g., 50 transactions/month, 1 user) to drive adoption?
+- Onboarding fee structure - flat per tier, or negotiable for Enterprise?
+- Feature grouping - any module you'd move to a different tier?
+- Annual pricing structure - pay-10-get-12, or a different discount model (e.g., 15% off)?
 
 ---
 

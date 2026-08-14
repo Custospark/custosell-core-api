@@ -44,7 +44,7 @@ class BudgetPdfBuilder
 
         $filename = $this->export->buildFilename($headerBusiness, 'budget-' . $this->export->sanitizeFilenamePart($budget->name ?: (string) $budget->id));
 
-        $periodLabel = ($budget->period_start?->format('M d, Y') ?? '…') . ' — ' . ($budget->period_end?->format('M d, Y') ?? '…');
+        $periodLabel = ($budget->period_start?->format('M d, Y') ?? '…') . ' - ' . ($budget->period_end?->format('M d, Y') ?? '…');
 
         return [
             'view' => 'budgets.pdf',

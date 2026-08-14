@@ -108,7 +108,7 @@ class ReferralService implements ReferralServiceInterface
             }
 
             // Only a CLAIMED (paid) referral permanently locks the account. A
-            // PENDING referral is just a preview of a code's worth — trying a
+            // PENDING referral is just a preview of a code's worth - trying a
             // code must never earmark the account or consume the code (usage is
             // counted in markActive, once a payment is actually claimed).
             $businessReferrals = $this->referralRepository->findByBusiness($businessId);
@@ -157,11 +157,11 @@ class ReferralService implements ReferralServiceInterface
                 'reward_amount' => 0,
             ]);
 
-            // No BillingCredit created here — the discount is applied directly
+            // No BillingCredit created here - the discount is applied directly
             // to the payment amount in GatewayService. After payment confirms,
             // markActive() creates any remaining months as a credit.
             // NOTE: usage is NOT counted here. A code is only ever counted as
-            // "used" in markActive(), once a payment has been claimed with it —
+            // "used" in markActive(), once a payment has been claimed with it -
             // merely previewing/applying a code must not consume it.
 
             return $referral;
@@ -226,7 +226,7 @@ class ReferralService implements ReferralServiceInterface
                 throw new \RuntimeException('Referral not found');
             }
 
-            // A referral may only be activated once — a code counts as "used"
+            // A referral may only be activated once - a code counts as "used"
             // only when a payment has actually been claimed with it.
             if ($referral->status === ReferralStatus::ACTIVE) {
                 return $referral;
@@ -272,7 +272,7 @@ class ReferralService implements ReferralServiceInterface
             // commission is configured, the referrer can never take >= 50% of
             // what the referee actually paid. Hard clamp at apply time kills
             // legacy/live codes that slipped past the request guard (or predate
-            // it) — e.g. the FREE_MONTH $135-on-$180 Enterprise leak.
+            // it) - e.g. the FREE_MONTH $135-on-$180 Enterprise leak.
             $maxReferrerShare = max(0, round($paidBase * 0.5, 2) - 0.01);
 
             if ($referralCode->owner_type === ReferralCodeOwnerType::SALES_REP) {
@@ -287,7 +287,7 @@ class ReferralService implements ReferralServiceInterface
             } elseif ($referralCode->owner_type === ReferralCodeOwnerType::BUSINESS) {
                 // Staff who work in a business they don't own keep their earned
                 // reward as a personal commission credit (see CreditService::
-                // createFromReferral) — their referrals never fund the business
+                // createFromReferral) - their referrals never fund the business
                 // promo-credit pool. The referee still gets the discount.
                 $cycle = (string) ($subscription?->billing_cycle ?? 'monthly');
                 $yearlyUsd = (float) ($plan?->price_yearly_usd ?? 0) ?: $monthlyPriceUsd * 12;
@@ -309,7 +309,7 @@ class ReferralService implements ReferralServiceInterface
             // the company shouldn't credit itself credits/free months for its own
             // promotions. Referee discount still applies via markActive's credit below.
 
-            // Audit log — distribution computed for referrer (reward/commission) and referee (discount base)
+            // Audit log - distribution computed for referrer (reward/commission) and referee (discount base)
             // that passed through to BillingCredit / payout. Goal: verify commission distribution accuracy.
             Log::info('[PaymentAudit] referral reward/commission computed', [
                 'referral_id' => $referral->id,
@@ -333,7 +333,7 @@ class ReferralService implements ReferralServiceInterface
             // Each remaining period is sized against the RECURRING charge (the monthly
             // price, or the monthly equivalent on a yearly cycle), not the one-time
             // onboarding fee, so "N months at X%" means X% off the current charge each
-            // month — not a fee-shaped lump that inflates the later periods' discount.
+            // month - not a fee-shaped lump that inflates the later periods' discount.
             $discountDuration = max(1, (int) ($referralCode->discount_duration_months ?? 1));
             $remainingMonths = $discountDuration - 1;
 
@@ -390,7 +390,7 @@ class ReferralService implements ReferralServiceInterface
     {
         // Sales rep code takes precedence while the rep is active. If the rep has
         // been terminated (is_active=false / code deactivated), the user falls
-        // back to their personal referral code. Resolution never creates a code —
+        // back to their personal referral code. Resolution never creates a code -
         // it returns whatever exists.
         $salesRep = SalesRep::where('user_id', $userId)->with('referralCode')->first();
         $isSalesRep = $salesRep !== null && (bool) $salesRep->is_active;

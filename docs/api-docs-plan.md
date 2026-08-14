@@ -1,4 +1,4 @@
-# Custosell — API Documentation Plan
+# Custosell - API Documentation Plan
 
 **Goal:** Create a complete API reference that frontend (Electron + React) developers can build against without guessing. One source of truth for all request/response contracts.
 
@@ -11,7 +11,7 @@ Single markdown file: `docs/api-reference.md`
 Structure per endpoint:
 
 ```
-## [Module] — [Entity]
+## [Module] - [Entity]
 
 ### [HTTP Method] `[URL]`
 **Auth:** [required/optional]

@@ -23,10 +23,10 @@ class SendWelcomeEmail
             : '';
 
         $intro = $isBusiness
-            ? 'Everything your business needs to sell, manage, and grow — all in one system that works with or without the internet:'
+            ? 'Everything your business needs to sell, manage, and grow - all in one system that works with or without the internet:'
             : ($isStorefrontBuyer
-                ? 'Browse and order from every business on the ' . $brandName . ' Discover marketplace — no setup, no fees:'
-                : 'Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more — stay organized and productive, even offline.');
+                ? 'Browse and order from every business on the ' . $brandName . ' Discover marketplace - no setup, no fees:'
+                : 'Project Management, Productivity, Expense Tracking, Bookkeeping, Document Management &amp; more - stay organized and productive, even offline.');
 
         $showcase = $isBusiness
             ? $this->businessShowcase()
@@ -47,14 +47,14 @@ class SendWelcomeEmail
                    <li style="margin-bottom:8px;">Stay productive, even when offline</li>');
 
         $tip = $isBusiness
-            ? $brandName . ' works fully offline — sales, inventory, and customers keep running without internet, and everything syncs when you are back online.'
+            ? $brandName . ' works fully offline - sales, inventory, and customers keep running without internet, and everything syncs when you are back online.'
             : ($isStorefrontBuyer
                 ? 'Your cart and wishlist are saved to your account, so you can pick up where you left off on any device.'
-                : $brandName . ' works fully offline — projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.');
+                : $brandName . ' works fully offline - projects, tasks, expenses, and documents keep working without internet, and everything syncs when you are back online.');
 
         $mailBody = '
             <p>Hello <strong>' . e($user->name) . '</strong>,</p>
-            <p>Welcome aboard — your ' . $brandName . ' account' . $businessLine . ' is ready to go.</p>
+            <p>Welcome aboard - your ' . $brandName . ' account' . $businessLine . ' is ready to go.</p>
             <p>' . $intro . '</p>
             ' . $showcase . '
             <p>Here is what you can do right away:</p>

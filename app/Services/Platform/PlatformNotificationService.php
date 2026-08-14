@@ -60,7 +60,7 @@ class PlatformNotificationService
                 '<p>Hello,</p>'
                     .'<p>Your business <strong>'.e($business->name).'</strong> has a recent message on file from the Custosell team.</p>'
                     .$reasonLine
-                    .'<p>Your account is still fully active — no action is needed unless we asked you to respond.</p>',
+                    .'<p>Your account is still fully active - no action is needed unless we asked you to respond.</p>',
                 'Sign in to Custosell',
                 $loginUrl,
                 'No action is required unless you received a separate message asking you to respond.',
@@ -73,7 +73,7 @@ class PlatformNotificationService
                     .'<p>You and your staff can sign in and continue using the platform.</p>',
                 'Sign in to Custosell',
                 $loginUrl,
-                'Welcome back — your data and settings are unchanged.',
+                'Welcome back - your data and settings are unchanged.',
             ],
         };
 

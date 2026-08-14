@@ -45,7 +45,7 @@ class PipelineBoardPermissionService
 
     /**
      * Whether the user owns the business the board belongs to. Business owners
-     * enjoy full board rights only within their own business — an external
+     * enjoy full board rights only within their own business - an external
      * contributor who owns a different business must NOT inherit owner powers
      * (or the "Manager" role) on this board.
      */

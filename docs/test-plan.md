@@ -1,4 +1,4 @@
-# Custosell — Backend Test Plan
+# Custosell - Backend Test Plan
 
 **Version:** 1.0  
 **Date:** 2026-06-02  
@@ -12,21 +12,21 @@
 ```
 tests/
   Feature/
-    AuthTest.php           — register, login, logout, me
-    PlanTest.php           — CRUD + plan seeding
-    BusinessTest.php       — registration, settings, owner-only
-    RoleTest.php           — CRUD + permission seeding
-    UserTest.php           — staff management, business scoped
-    CategoryTest.php       — CRUD, business scoped
-    ProductTest.php        — CRUD, low stock, stock tracking
-    CustomerTest.php       — CRUD, purchase history
-    ShiftTest.php          — clock in/out, active shift
-    SaleTest.php           — POS checkout, refund, daily sales
-    SaleItemTest.php       — nested line items
-    StockMovementTest.php  — ledger audit trail
-    SubscriptionTest.php   — plan linking, upgrade
-    ExpenseTest.php        — CRUD, net sales
-    SyncTest.php           — push, pull, full
+    AuthTest.php           - register, login, logout, me
+    PlanTest.php           - CRUD + plan seeding
+    BusinessTest.php       - registration, settings, owner-only
+    RoleTest.php           - CRUD + permission seeding
+    UserTest.php           - staff management, business scoped
+    CategoryTest.php       - CRUD, business scoped
+    ProductTest.php        - CRUD, low stock, stock tracking
+    CustomerTest.php       - CRUD, purchase history
+    ShiftTest.php          - clock in/out, active shift
+    SaleTest.php           - POS checkout, refund, daily sales
+    SaleItemTest.php       - nested line items
+    StockMovementTest.php  - ledger audit trail
+    SubscriptionTest.php   - plan linking, upgrade
+    ExpenseTest.php        - CRUD, net sales
+    SyncTest.php           - push, pull, full
 ```
 
 Each test file covers: **Authentication** (auth required), **Happy Path** (create/read/update/delete), **Scoping** (user cannot see other business's data), **Validation** (rejects bad input), **Authorization** (owner vs staff permissions).

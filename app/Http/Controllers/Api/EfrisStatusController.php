@@ -8,7 +8,7 @@ use App\Services\Efris\EfrisServiceInterface;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Safe EFRIS status for Settings — never exposes credentials or key paths.
+ * Safe EFRIS status for Settings - never exposes credentials or key paths.
  */
 class EfrisStatusController
 {

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Find users who registered without a business (no business_id).
         // These are orphan accounts created before the personal account
-        // system existed — the default was 'business' but they never
+        // system existed - the default was 'business' but they never
         // completed business registration via POST /api/v1/businesses/register.
         $orphans = User::query()
             ->whereNull('business_id')
@@ -55,7 +55,7 @@ return new class extends Migration
                     ]);
                 }
 
-                // Update the user — link to business and mark as personal
+                // Update the user - link to business and mark as personal
                 $user->business_id = $business->id;
                 $user->account_type = 'personal';
                 $user->modules = [];

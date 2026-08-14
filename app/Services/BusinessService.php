@@ -148,7 +148,7 @@ class BusinessService implements BusinessServiceInterface
                             $business->id
                         );
                     } catch (\RuntimeException) {
-                        // Invalid, expired, or duplicate — registration proceeds without referral
+                        // Invalid, expired, or duplicate - registration proceeds without referral
                     }
                 }
             }
@@ -257,7 +257,7 @@ class BusinessService implements BusinessServiceInterface
             return [
                 'available' => false,
                 'slug' => $normalized,
-                'reason' => 'Use lowercase letters, numbers, and hyphens (2–80 characters).',
+                'reason' => 'Use lowercase letters, numbers, and hyphens (2-80 characters).',
             ];
         }
         if (StorefrontSlug::isReserved($normalized)) {

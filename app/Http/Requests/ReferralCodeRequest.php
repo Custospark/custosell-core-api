@@ -53,8 +53,8 @@ class ReferralCodeRequest extends BaseFormRequest
 
             // Sales-rep codes are ALWAYS single-period (see SalesRepService::create).
             // The referee discount applies to the first charge only; a longer duration
-            // would create recurring monthly discount credits — the one recurring
-            // company cost — with no extra rep earnings. This clamp blocks raising it
+            // would create recurring monthly discount credits - the one recurring
+            // company cost - with no extra rep earnings. This clamp blocks raising it
             // through the admin referral-code CRUD surface too.
             if ($ownerType === \App\Enums\Billing\ReferralCodeOwnerType::SALES_REP->value
                 && (int) ($this->input('discount_duration_months') ?? 1) !== 1) {
@@ -78,7 +78,7 @@ class ReferralCodeRequest extends BaseFormRequest
                 $rewardType = $this->input('reward_type') ?? $existing?->reward_type?->value;
                 $rewardValue = (float) ($this->input('reward_value') ?? $existing?->reward_value ?? 0);
                 if ($rewardSubmitted && ($rewardType !== null || $rewardValue > 0)) {
-                    $validator->errors()->add('reward_value', 'Campaign codes are discount-only — they never carry a reward.');
+                    $validator->errors()->add('reward_value', 'Campaign codes are discount-only - they never carry a reward.');
                 }
 
                 // Discount cap so Company > Referee holds on the cheapest plan.
@@ -119,7 +119,7 @@ class ReferralCodeRequest extends BaseFormRequest
                     $rewardValue = (float) ($this->input('reward_value') ?? $existing?->reward_value ?? 0);
 
                     if ($rewardType === RewardType::FREE_MONTH->value) {
-                        $validator->errors()->add('reward_type', 'Business codes can not use a free_month reward — it pays a full recurring month and breaks Company > Referrer. Use a percentage or flat reward below 50%.');
+                        $validator->errors()->add('reward_type', 'Business codes can not use a free_month reward - it pays a full recurring month and breaks Company > Referrer. Use a percentage or flat reward below 50%.');
                     } elseif ($rewardType === RewardType::PERCENTAGE->value && $rewardValue >= 50) {
                         $validator->errors()->add('reward_value', 'Business percentage reward must be below 50 so the company keeps the largest share.');
                     } elseif ($rewardType === RewardType::FLAT_AMOUNT->value) {

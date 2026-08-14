@@ -1,4 +1,4 @@
-# Plan identity follows payment — reactivation / resubscription plan reconciliation
+# Plan identity follows payment - reactivation / resubscription plan reconciliation
 
 **Date:** 2026-08-10
 **Status:** Implemented
@@ -9,7 +9,7 @@ When a suspended (or otherwise reactivated/resubscribed) subscription moved onto
 different plan, the subscription **kept the OLD plan it held before suspension**.
 
 Concretely: a user who suspended as **Professional** and then paid to stay as
-**Enterprise** was reactivated but remained on Professional — `plan_id`,
+**Enterprise** was reactivated but remained on Professional - `plan_id`,
 `price_*_usd` and `next_billing_date` all kept the pre-suspension identity. The
 amount was charged against whichever plan the subscription happened to hold, so
 the user was both **under-provisioned** (wrong plan access) and **mis-billed**
@@ -18,14 +18,14 @@ amount because it disagreed with the old price).
 
 ## Root cause (three seams, none of which carried the chosen plan)
 
-1. **Frontend** — `PlansTab.getPaymentMetadata()` returned `undefined` for the
+1. **Frontend** - `PlansTab.getPaymentMetadata()` returned `undefined` for the
    `reactivate` action. The plan the user clicked was only ever shown in the UI;
    it never travelled to the backend payment metadata.
-2. **Backend amount resolution** — `GatewayService::resolveEffectivePlan()` and
+2. **Backend amount resolution** - `GatewayService::resolveEffectivePlan()` and
    `PaymentValidator::validatePaymentAmount()` resolved the charged plan from
    metadata **only** for `onboarding` payments (`plan_id`). A `subscription`
    payment resolved the plan from the subscription's *current* state.
-3. **Backend activation** — `HandlesPaymentApproval::handleSubscriptionPayment()`
+3. **Backend activation** - `HandlesPaymentApproval::handleSubscriptionPayment()`
    called `reactivate()` / `activateSubscription()`, which manipulate status,
    dates and approval fields but never touch `plan_id`.
 
@@ -39,7 +39,7 @@ amount because it disagreed with the old price).
   `plan_id`, plan prices and `next_billing_date` via the existing
   `SubscriptionService::changePlan()` when the metadata target differs from the
   subscription's current plan. It is applied only for `onboarding` and
-  `subscription` payment types — `upgrade_proration` already swaps plans inside
+  `subscription` payment types - `upgrade_proration` already swaps plans inside
   its own `changePlan()` transaction and must not double-apply.
 - `resolveEffectivePlan()` and `PaymentValidator` now honour `to_plan_id` /
   `plan_id` for `subscription` (reactivate / subscribe / resubscribe) payments in
@@ -74,12 +74,12 @@ amount because it disagreed with the old price).
 - The offline stale-active risk already documented in the 2026-08-10
   subscription state machine audit is unaffected.
 
-## Hardening — no plan/subscription effect without a confirmed payment
+## Hardening - no plan/subscription effect without a confirmed payment
 
 Audit of every HTTP surface that can mutate plan identity or subscription state
 (2026-08-10):
 
-- **Removed** `POST /subscriptions/{id}/reactivate` — a suspended subscription
+- **Removed** `POST /subscriptions/{id}/reactivate` - a suspended subscription
   could be flipped to `ACTIVE` with no payment, no atomic money check. The
   payment modal flow (initiate → confirm → `autoApprove` → `reactivate()`) is now
   the only reactivation path, and it only runs inside `autoApprove`'s
@@ -88,7 +88,7 @@ Audit of every HTTP surface that can mutate plan identity or subscription state
   `/subscriptions`. `SubscriptionRequest` accepted `plan_id` + `status` from any
   authenticated business user, so `POST /subscriptions` could mint an `active`
   subscription on an arbitrary `business_id` with an arbitrary plan, and
-  `PUT /subscriptions/{id}` could change plan/status directly — no payment, no
+  `PUT /subscriptions/{id}` could change plan/status directly - no payment, no
   ownership scoping.
 - **Gated** `GET /subscriptions` (read-all registry) and `GET /subscriptions/{id}`
   behind `platform:platform.businesses.view`. Previously any business user could

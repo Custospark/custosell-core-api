@@ -8,7 +8,7 @@
       <li>Net output VAT: {{ $formatter->formatMoney($summary['net_output_vat'], $ccy) }}</li>
       <li>Input VAT (claimable): {{ $formatter->formatMoney($summary['input_vat'], $ccy) }}</li>
       <li>Estimated VAT payable: {{ $formatter->formatMoney($summary['vat_payable'], $ccy) }}</li>
-      <li>Jurisdiction: {{ $jurisdictionLabel ?? '—' }}</li>
+      <li>Jurisdiction: {{ $jurisdictionLabel ?? '-' }}</li>
       <li>{{ $filingHint ?? 'Submit through your tax authority\'s online portal.' }} This report is a workbook, not a filing submission.</li>
     </ul>
   </div>
@@ -51,8 +51,8 @@
             <td class="text-left">{{ $row['date'] }}</td>
             <td class="text-left">{{ $row['category'] }}</td>
             <td class="text-left">{{ $row['description'] }}</td>
-            <td class="text-left">{{ $row['supplier_tin'] ?? '—' }}</td>
-            <td class="text-left">{{ $row['supplier_invoice_no'] ?? '—' }}</td>
+            <td class="text-left">{{ $row['supplier_tin'] ?? '-' }}</td>
+            <td class="text-left">{{ $row['supplier_invoice_no'] ?? '-' }}</td>
             <td class="col-money">{{ $formatter->formatTableNumber($row['amount']) }}</td>
             <td class="col-money">{{ $formatter->formatTableNumber($row['vat_amount']) }}</td>
           </tr>

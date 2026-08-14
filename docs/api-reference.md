@@ -1,4 +1,4 @@
-# Custosell — API Reference
+# Custosell - API Reference
 
 **Version:** 1.0  
 **Base URL:** `http://localhost:8000/api/v1`  
@@ -12,7 +12,7 @@
 
 ### Authentication
 - Public endpoints: no token required
-- Protected endpoints: require `Authorization: Bearer {token}` — returns 401 if missing/expired
+- Protected endpoints: require `Authorization: Bearer {token}` - returns 401 if missing/expired
 
 ### Business Scoping
 All scoped entities (categories, products, customers, sales, etc.) automatically filter by the authenticated user's `business_id`. Staff users only see their own business's data.
@@ -88,7 +88,7 @@ All list endpoints return Laravel pagination format:
 | password | string | Yes | min:6 |
 | password_confirmation | string | Yes | must match password |
 | phone | string | No | max:50 |
-| account_type | string | No | `storefront_buyer` — customer-only (`business_id` null, empty modules, no shift). Merchants use `POST /businesses/register`. |
+| account_type | string | No | `storefront_buyer` - customer-only (`business_id` null, empty modules, no shift). Merchants use `POST /businesses/register`. |
 
 **Response (201):**
 ```json
@@ -111,7 +111,7 @@ All list endpoints return Laravel pagination format:
 }
 ```
 
-**Errors:** 422 — email already taken, password too short, confirmation mismatch
+**Errors:** 422 - email already taken, password too short, confirmation mismatch
 
 ---
 
@@ -153,7 +153,7 @@ All list endpoints return Laravel pagination format:
 }
 ```
 
-**Errors:** 401 — invalid credentials
+**Errors:** 401 - invalid credentials
 
 ---
 
@@ -170,7 +170,7 @@ All list endpoints return Laravel pagination format:
 }
 ```
 
-**Errors:** 401 — no token
+**Errors:** 401 - no token
 
 ---
 
@@ -234,7 +234,7 @@ All list endpoints return Laravel pagination format:
 }
 ```
 
-**Errors:** 401 — no token
+**Errors:** 401 - no token
 
 ---
 
@@ -330,7 +330,7 @@ All list endpoints return Laravel pagination format:
 **Description:** Get single plan by ID.
 
 **Response (200):** Single plan resource  
-**Errors:** 404 — plan not found
+**Errors:** 404 - plan not found
 
 ---
 
@@ -341,7 +341,7 @@ All list endpoints return Laravel pagination format:
 **Request Body:** Same fields as POST (all optional for PUT)
 
 **Response (200):** Updated plan resource  
-**Errors:** 404 — plan not found, 422 — validation
+**Errors:** 404 - plan not found, 422 - validation
 
 ---
 
@@ -350,7 +350,7 @@ All list endpoints return Laravel pagination format:
 **Description:** Delete a plan.
 
 **Response:** 204 No Content  
-**Errors:** 404 — plan not found
+**Errors:** 404 - plan not found
 
 ---
 
@@ -395,7 +395,7 @@ All list endpoints return Laravel pagination format:
 
 **Frontend notes:**
 - After registration, the user is created and linked as business owner
-- The response returns only the business. User is authenticated — use `/auth/login` with the password to get a token
+- The response returns only the business. User is authenticated - use `/auth/login` with the password to get a token
 - Default currency is `UGX`
 
 ---
@@ -405,7 +405,7 @@ All list endpoints return Laravel pagination format:
 **Description:** Get the business owned by the authenticated user.
 
 **Response (200):** Business resource (see above)  
-**Errors:** 404 — user doesn't own a business
+**Errors:** 404 - user doesn't own a business
 
 ---
 
@@ -414,7 +414,7 @@ All list endpoints return Laravel pagination format:
 **Description:** Get a specific business by ID.
 
 **Response (200):** Business resource  
-**Errors:** 404 — not found
+**Errors:** 404 - not found
 
 ---
 
@@ -656,7 +656,7 @@ All list endpoints return Laravel pagination format:
 | sort_order | integer | No | default 0 |
 
 **Response (201):** Category resource  
-**Errors:** 422 — duplicate name within same business
+**Errors:** 422 - duplicate name within same business
 
 ---
 
@@ -699,7 +699,7 @@ Standard CRUD. PUT accepts same fields as POST (all optional).
 
 **Frontend notes:**
 - `unit_price` is the selling price in UGX
-- `cost_price` is optional — used for profit calculation
+- `cost_price` is optional - used for profit calculation
 - `stock_quantity` is the live count (updated by sales + stock movements)
 
 ---
@@ -874,7 +874,7 @@ Standard CRUD.
 **Description:** Get the currently active shift for the authenticated user.
 
 **Response (200):** Shift resource  
-**Errors:** 404 — no active shift
+**Errors:** 404 - no active shift
 
 ---
 
@@ -1076,7 +1076,7 @@ Standard CRUD.
 ```
 
 **Frontend notes:**
-- `product_name` and `product_price` are snapshots frozen at sale time — they don't change if the product is later edited
+- `product_name` and `product_price` are snapshots frozen at sale time - they don't change if the product is later edited
 - `refunded_quantity` tracks partial refunds per line item
 - Use `product_name` for display on receipts (not a live product lookup)
 

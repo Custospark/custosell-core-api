@@ -173,7 +173,7 @@ trait ComputesDashboardAndVat
             ->get()
             ->map(fn (Expense $expense) => [
                 'date' => $expense->expense_date?->format('Y-m-d'),
-                'category' => $expense->expenseCategory?->name ?? '—',
+                'category' => $expense->expenseCategory?->name ?? '-',
                 'description' => $expense->description,
                 'supplier_tin' => $expense->supplier_tin,
                 'supplier_invoice_no' => $expense->supplier_invoice_no,

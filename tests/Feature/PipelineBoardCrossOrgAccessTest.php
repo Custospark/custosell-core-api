@@ -18,7 +18,7 @@ use Tests\TestCase;
 
 /**
  * Cross-organisation board collaboration. The external collaborator OWNS their
- * own business — they must never inherit board owner/manager powers purely by
+ * own business - they must never inherit board owner/manager powers purely by
  * being a business owner in their own (unrelated) account.
  */
 class PipelineBoardCrossOrgAccessTest extends TestCase

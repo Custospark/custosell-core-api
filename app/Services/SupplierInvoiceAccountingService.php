@@ -55,7 +55,7 @@ class SupplierInvoiceAccountingService
                 'account_code' => $codes['inventory'],
                 'debit' => $inventorySum,
                 'credit' => 0,
-                'description' => "Supplier invoice {$invoice->invoice_number} — inventory",
+                'description' => "Supplier invoice {$invoice->invoice_number} - inventory",
             ];
         }
 
@@ -64,7 +64,7 @@ class SupplierInvoiceAccountingService
                 'account_code' => $codes['operating_expense'] ?? '6101',
                 'debit' => $expenseSum,
                 'credit' => 0,
-                'description' => "Supplier invoice {$invoice->invoice_number} — services/expense",
+                'description' => "Supplier invoice {$invoice->invoice_number} - services/expense",
             ];
         }
 
@@ -74,7 +74,7 @@ class SupplierInvoiceAccountingService
                 'account_code' => $codes['vat_payable'],
                 'debit' => $taxTotal,
                 'credit' => 0,
-                'description' => "Supplier invoice {$invoice->invoice_number} — input VAT",
+                'description' => "Supplier invoice {$invoice->invoice_number} - input VAT",
             ];
         }
 
@@ -87,7 +87,7 @@ class SupplierInvoiceAccountingService
 
         $debitTotal = collect($lines)->sum(fn ($l) => (float) $l['debit']);
         if (abs($debitTotal - $totalAmount) > 0.02) {
-            Log::warning('Supplier invoice buyer JE skipped — unbalanced draft', [
+            Log::warning('Supplier invoice buyer JE skipped - unbalanced draft', [
                 'invoice_id' => $invoice->id,
                 'debit_total' => $debitTotal,
                 'total_amount' => $totalAmount,

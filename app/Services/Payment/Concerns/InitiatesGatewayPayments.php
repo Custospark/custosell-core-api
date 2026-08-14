@@ -59,7 +59,7 @@ trait InitiatesGatewayPayments
                 }
             }
 
-            // TEMP DEBUG: amount sent to provider at initiation — remove after test
+            // TEMP DEBUG: amount sent to provider at initiation - remove after test
             \Illuminate\Support\Facades\Log::info('[DEBUG][GatewayService] Initiate payload to provider', [
                 'amount' => $driverPayload['amount'],
                 'currency' => $driverPayload['currency'],

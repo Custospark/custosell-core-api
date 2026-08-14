@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Vera Extended — fast checks + targeted BE gates (no full suite).
+ * Vera Extended - fast checks + targeted BE gates (no full suite).
  * Usage: php scripts/vera-extended.php
  */
 
@@ -98,7 +98,7 @@ if ($testFilters !== []) {
         }
     }
 } else {
-    echo "🧪 Vera extended: no targeted tests inferred — skipped PHPUnit.\n";
+    echo "🧪 Vera extended: no targeted tests inferred - skipped PHPUnit.\n";
 }
 
 echo "🧪 Vera extended: done.\n";

@@ -15,7 +15,7 @@ interface OrderServiceInterface
     public function create(int $businessId, int $userId, array $data): Order;
 
     /**
-     * Guest storefront order — attributed to business owner; no stock reservation.
+     * Guest storefront order - attributed to business owner; no stock reservation.
      *
      * @param  array{customer_name: string, customer_phone: string, notes?: string|null, items: list<array<string, mixed>>}  $data
      */

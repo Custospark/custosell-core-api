@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Comprehensive city reference for the storefront city filter — East Africa
+ * Comprehensive city reference for the storefront city filter - East Africa
  * cities first, then sub-Saharan Africa, then major cities worldwide. Adding a
  * city here makes it selectable in the filter even before any business has set it.
  */
@@ -13,7 +13,7 @@ return [
     'Arua', 'Jinja', 'Mbale', 'Soroti', 'Mbarara', 'Fort Portal', 'Masaka',
     'Kabale', 'Hoima', 'Tororo', 'Busia', 'Iganga', 'Kasese', 'Mityana',
     'Ntungamo', 'Rukungiri', 'Kitgum', 'Kotido', 'Moroto', 'Nebbi', 'Pader',
-    // Uganda — full district/town coverage
+    // Uganda - full district/town coverage
     'Abim', 'Adjumani', 'Agago', 'Alebtong', 'Amolatar', 'Amudat', 'Amuria',
     'Amuru', 'Apac', 'Arua', 'Budaka', 'Bududa', 'Bugiri', 'Bugweri', 'Buhweju',
     'Buikwe', 'Bukedea', 'Bukomansimbi', 'Bukwo', 'Bulambuli', 'Buliisa',

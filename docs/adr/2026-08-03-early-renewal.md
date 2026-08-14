@@ -11,7 +11,7 @@ near future. Today there is no way to pay in advance before that date arrives.
 When `next_billing_date` passes, `SubscriptionStateMachineService::processDueTransitions()`
 flips the subscription to `past_due` (7-day grace) or directly `suspended` if the
 single `grace_used` flag is already consumed. This lockout disrupts the business
-(for an offline-first POS this is especially damaging — a shop can lose access
+(for an offline-first POS this is especially damaging - a shop can lose access
 mid-operation).
 
 Because the system is date-driven and enforces lockout **synchronously on every
@@ -22,15 +22,15 @@ period in advance** so `next_billing_date` is always in the future.
 
 Key observations from the current state:
 
-- `renewSubscription()` exists (state-machine L53–72) but only accepts `ACTIVE`
+- `renewSubscription()` exists (state-machine L53-72) but only accepts `ACTIVE`
   and extends **from `now`**, not from the existing schedule.
 - The `renewal` payment type already exists and is amount-computed server-side
   in `GatewayService::initiatePayment()` using the subscription's stored
-  `billing_cycle` (L72–85). The payment primitive is fully reusable.
+  `billing_cycle` (L72-85). The payment primitive is fully reusable.
 - There is **no UI affordance** for renewing an active subscription: the plan
   matrix returns `{ type: 'current', label: 'Current Plan' }` for `active` rows
-  (`planActionMatrix.ts` L42–46), and the payment-action resolver returns no
-  payment intent for `ACTIVE` (`SubscriptionPaymentActionResolver.php` L127–142).
+  (`planActionMatrix.ts` L42-46), and the payment-action resolver returns no
+  payment intent for `ACTIVE` (`SubscriptionPaymentActionResolver.php` L127-142).
 
 ## Decision
 
@@ -43,9 +43,9 @@ preserved, no proration needed). Do not wait for `past_due`/`suspended`.
 1. **New state-machine method `renewEarly(Subscription $subscription)`:**
    - Allowed only when `status === ACTIVE`.
    - Rejected (throw) when the subscription is set to cancel
-     (`cancel_at_period_end`) — a cancelling subscriber should not be charged.
+     (`cancel_at_period_end`) - a cancelling subscriber should not be charged.
    - Sets `next_billing_date = nextBillingDate(current_next_billing_date, billing_cycle)`
-     — i.e. adds one full period to the **existing** date, preserving the
+     - i.e. adds one full period to the **existing** date, preserving the
      schedule (per Oscar's decision: extend from existing `next_billing_date`,
      not from today). Clears `grace_period_ends_at`.
    - Optionally records the pre-payment in metadata/notes for auditability.
@@ -74,7 +74,7 @@ preserved, no proration needed). Do not wait for `past_due`/`suspended`.
 2. **`PlanCard`** surfaces the button → opens `SubscriptionPaymentModal` with
    `paymentType='renewal'`.
 
-3. **PlansTab banner / header** (`PlansTab.tsx` L199–225) gains a
+3. **PlansTab banner / header** (`PlansTab.tsx` L199-225) gains a
    **"Renew early"** CTA (secondary/secondary-button) next to the
    `Next bill: {date}` so the user can act before expiry.
 
@@ -85,7 +85,7 @@ preserved, no proration needed). Do not wait for `past_due`/`suspended`.
 
 Extending from the **current** `next_billing_date`:
 - Preserves the original billing schedule (no drift).
-- Requires **no credit/proration math** — the subscriber pays exactly one full
+- Requires **no credit/proration math** - the subscriber pays exactly one full
   period at the normal recurring price for one full period of future service.
 - Avoids the revenue-loss edge cases that a "extend from today" approach would
   introduce (double-billing / overlapping periods).
@@ -95,7 +95,7 @@ Extending from the **current** `next_billing_date`:
 | Scenario | Behavior |
 |----------|----------|
 | Subscriber not `ACTIVE` (past_due / suspended / trial / expired / cancelled) | `renewEarly` throws; only the existing on-time `renewal`/`reactivate` paths apply. UI only shows "Renew Early" for `active`. |
-| Subscriber is `cancel_at_period_end` | Early renewal rejected — they shouldn't be charged for a period they intend to end. |
+| Subscriber is `cancel_at_period_end` | Early renewal rejected - they shouldn't be charged for a period they intend to end. |
 | Payment initiated twice (double-click / retry) | Existing `idempotency_key` + pending-payment flow already guards; a single renewal is captured. |
 | Payment succeeds then webhook confirms | `next_billing_date` advanced server-side; frontend refetch reflects it. |
 | Payment fails | Subscription stays `ACTIVE`, unchanged; user can retry. `SubscriptionsExpirePendingPayments` marks stuck pendings failed after 24h. |
@@ -107,7 +107,7 @@ Extending from the **current** `next_billing_date`:
 Choice to keep scope small: early renewal is a **full-period prepayment at full
 price**, no proration. If Oscar later wants "pay only the outstanding amount for
 the current period", that is a separate proration feature using
-`SubscriptionProrationCalculator`/`PaymentQuoteService` — out of scope here.
+`SubscriptionProrationCalculator`/`PaymentQuoteService` - out of scope here.
 
 ## Files Changed (planned)
 
@@ -124,10 +124,10 @@ the current period", that is a separate proration feature using
 
 ## Consequences
 
-- Active subscribers can pre-pay to avoid any lockout window — reducing business
+- Active subscribers can pre-pay to avoid any lockout window - reducing business
   disruption (important for an offline-first POS).
 - Keeps the billing schedule stable and the amount authoritative server-side.
 - Requires backend + frontend BOTH changes (cross-stack) → Blue/Architect + Nora
   (smoke) + Vera both stacks per the standalone rule.
-- Reuses the existing `renewal` payment type — no new enums, no new routes, small
+- Reuses the existing `renewal` payment type - no new enums, no new routes, small
   surface area.

@@ -81,7 +81,7 @@ class ReferralTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // Applying/previewing a code must NOT consume it — usage only counts
+        // Applying/previewing a code must NOT consume it - usage only counts
         // once a payment has actually been claimed with the code.
         $this->assertEquals(0, $this->referralCode->fresh()->used_count);
     }
@@ -103,7 +103,7 @@ class ReferralTest extends TestCase
 
     public function test_previewing_then_applying_other_code_swaps_pending_referral(): void
     {
-        // A PENDING (unpaid) code is only a preview — a different code applied
+        // A PENDING (unpaid) code is only a preview - a different code applied
         // before any payment is claimed replaces it (latest code wins).
         $first = $this->service->processReferral(
             $this->referralCode->code,

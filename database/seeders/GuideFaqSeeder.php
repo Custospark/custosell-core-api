@@ -13,17 +13,17 @@ class GuideFaqSeeder extends Seeder
             // ── Getting Started ─────────────────────────────────
             [
                 'question' => 'What is Custosell?',
-                'answer' => 'Custosell is an all-in-one business operating system for businesses of all sizes — from solopreneurs managing personal projects to large retail chains running multi-department operations. It combines point of sale, inventory management, customer relationships, expenses, invoicing, payroll, accounting, and an online storefront into a single app that works with or without internet.',
+                'answer' => 'Custosell is an all-in-one business operating system for businesses of all sizes - from solopreneurs managing personal projects to large retail chains running multi-department operations. It combines point of sale, inventory management, customer relationships, expenses, invoicing, payroll, accounting, and an online storefront into a single app that works with or without internet.',
                 'sort_order' => 1,
             ],
             [
                 'question' => 'What is the difference between a Personal, Business, and Shopping account?',
-                'answer' => "A Shopping account is free and designed for storefront buyers. It gives you access to Discover and My Orders only — browse products & services, follow businesses, save items to your wishlist, and place and track orders. There is no dashboard, no business setup, and no subscription or fees.\n\nA Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.",
+                'answer' => "A Shopping account is free and designed for storefront buyers. It gives you access to Discover and My Orders only - browse products & services, follow businesses, save items to your wishlist, and place and track orders. There is no dashboard, no business setup, and no subscription or fees.\n\nA Personal account is designed for freelancers, solopreneurs, and individuals who need tools like project management, expense tracking, document storage, and accounting without a full retail POS. You pay a flat monthly fee and buy only the modules you need.\n\nA Business account is built for registered businesses with physical or online stores. It includes point of sale, inventory management, customer management, staff roles, shift management, and a public storefront. Business plans are tiered (Essential, Professional, Enterprise) with increasing features.",
                 'sort_order' => 2,
             ],
             [
                 'question' => 'How do I get started with Custosell?',
-                'answer' => "Create a free account and choose your account type:\n\n- Shopping — free for storefront buyers. Start browsing and ordering from every business on Discover immediately. No plan, no setup, no fees.\n\n- Personal — pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n- Business — pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor Personal and Business accounts, you can upgrade, downgrade, or cancel anytime. You can also upgrade from a Shopping account later if you decide to start selling.",
+                'answer' => "Create a free account and choose your account type:\n\n- Shopping - free for storefront buyers. Start browsing and ordering from every business on Discover immediately. No plan, no setup, no fees.\n\n- Personal - pick a Personal plan, pay the monthly fee, and start using your selected modules immediately. A free trial is included.\n\n- Business - pick a Business plan (Essential, Professional, or Enterprise), pay the one-time setup fee, and you get a 30-day trial to test everything. No credit card required to start.\n\nFor Personal and Business accounts, you can upgrade, downgrade, or cancel anytime. You can also upgrade from a Shopping account later if you decide to start selling.",
                 'sort_order' => 3,
             ],
             [
@@ -35,7 +35,7 @@ class GuideFaqSeeder extends Seeder
             // ── Plans & Billing ───────────────────────────────────
             [
                 'question' => 'How much does Custosell cost?',
-                'answer' => "Pricing depends on your account type and chosen plan:\n\n- Personal — a flat monthly fee that includes access to the modules you subscribe to. No long-term contract.\n\n- Business — tiered plans (Essential, Professional, Enterprise). Each includes a one-time setup fee followed by a monthly or yearly subscription. See our Plans page for current pricing in your currency region (USD or UGX).",
+                'answer' => "Pricing depends on your account type and chosen plan:\n\n- Personal - a flat monthly fee that includes access to the modules you subscribe to. No long-term contract.\n\n- Business - tiered plans (Essential, Professional, Enterprise). Each includes a one-time setup fee followed by a monthly or yearly subscription. See our Plans page for current pricing in your currency region (USD or UGX).",
                 'sort_order' => 5,
             ],
             [
@@ -50,14 +50,14 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'Can I switch plans or cancel anytime?',
-                'answer' => 'Yes. You can upgrade or downgrade your plan at any time. Upgrades take effect immediately. Downgrades take effect at the end of your current billing period. There are no lock-in contracts — cancel anytime and your access continues until the end of your billing period.',
+                'answer' => 'Yes. You can upgrade or downgrade your plan at any time. Upgrades take effect immediately. Downgrades take effect at the end of your current billing period. There are no lock-in contracts - cancel anytime and your access continues until the end of your billing period.',
                 'sort_order' => 8,
             ],
 
             // ── For Personal Accounts ────────────────────────────
             [
                 'question' => 'What tools are available on a Personal account?',
-                'answer' => "Personal accounts can choose from the following modules:\n\n- Sales CRM / Pipeline — Manage leads, deals, and customer interactions with a visual pipeline board. Track every stage from first contact to closed deal.\n- Projects & Estimates — Create professional estimates and invoices, manage projects with tasks and milestones, and collaborate with your team in real time.\n- Expenses — Track and categorize your business expenses. Record receipts, attach images, and generate expense reports for tax time.\n- Accounting — Full double-entry accounting with a chart of accounts, journal entries, trial balance, income statement, and balance sheet.\n- Documents — Store and organize your business files securely in the cloud. Upload contracts, receipts, reports, and any other documents you need to keep.\n\nEach module is available on a monthly subscription basis. You only pay for what you use.",
+                'answer' => "Personal accounts can choose from the following modules:\n\n- Sales CRM / Pipeline - Manage leads, deals, and customer interactions with a visual pipeline board. Track every stage from first contact to closed deal.\n- Projects & Estimates - Create professional estimates and invoices, manage projects with tasks and milestones, and collaborate with your team in real time.\n- Expenses - Track and categorize your business expenses. Record receipts, attach images, and generate expense reports for tax time.\n- Accounting - Full double-entry accounting with a chart of accounts, journal entries, trial balance, income statement, and balance sheet.\n- Documents - Store and organize your business files securely in the cloud. Upload contracts, receipts, reports, and any other documents you need to keep.\n\nEach module is available on a monthly subscription basis. You only pay for what you use.",
                 'sort_order' => 9,
             ],
             [
@@ -67,7 +67,7 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'How does module purchasing work for Personal accounts?',
-                'answer' => 'On a Personal plan, you select which modules you want to use — Sales CRM / Pipeline, Projects & Estimates, Expenses, Accounting, or Documents. Each module adds to your monthly fee. You can enable or disable modules from your account settings anytime; changes take effect on your next billing cycle.',
+                'answer' => 'On a Personal plan, you select which modules you want to use - Sales CRM / Pipeline, Projects & Estimates, Expenses, Accounting, or Documents. Each module adds to your monthly fee. You can enable or disable modules from your account settings anytime; changes take effect on your next billing cycle.',
                 'sort_order' => 11,
             ],
 
@@ -86,12 +86,12 @@ class GuideFaqSeeder extends Seeder
             // ── For Shopping Accounts ────────────────────────────
             [
                 'question' => 'What is a Shopping account?',
-                'answer' => 'A Shopping account is a free account for storefront buyers. It gives you access to Discover and My Orders only — browse products & services from every business on Custosell, follow businesses you like, save items to your wishlist, and place and track orders. Shopping accounts have no dashboard, no business setup, and no subscription or fees.',
+                'answer' => 'A Shopping account is a free account for storefront buyers. It gives you access to Discover and My Orders only - browse products & services from every business on Custosell, follow businesses you like, save items to your wishlist, and place and track orders. Shopping accounts have no dashboard, no business setup, and no subscription or fees.',
                 'sort_order' => 14,
             ],
             [
                 'question' => 'Do Shopping accounts cost anything?',
-                'answer' => 'No. Shopping accounts are completely free. You never subscribe to a plan and there is nothing to pay — you only pay a business directly for the products or services you order from them.',
+                'answer' => 'No. Shopping accounts are completely free. You never subscribe to a plan and there is nothing to pay - you only pay a business directly for the products or services you order from them.',
                 'sort_order' => 15,
             ],
             [
@@ -108,13 +108,13 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'Is my data safe with Custosell?',
-                'answer' => 'Absolutely. All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Your data belongs to you — we never share or sell it to third parties. Local backups ensure you never lose data even if your device is lost or damaged. Install Custosell on a new device, log in, and your data restores from the cloud.',
+                'answer' => 'Absolutely. All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Your data belongs to you - we never share or sell it to third parties. Local backups ensure you never lose data even if your device is lost or damaged. Install Custosell on a new device, log in, and your data restores from the cloud.',
                 'sort_order' => 15,
             ],
         // ── Features & Tools ──────────────────────────────
             [
                 'question' => 'Does Custosell include Point of Sale (POS) and how does it work offline?',
-                'answer' => "Yes. Custosell is powerful Point of Sale software for retail, restaurants, and services. Cashiers ring up sales, apply discounts, choose payment methods, and print or share receipts in seconds — on a computer, tablet, or phone. Because it's offline-first, sales keep flowing even when the internet drops. Open a shift, record every transaction, then close with a clear cash-at-handover report.",
+                'answer' => "Yes. Custosell is powerful Point of Sale software for retail, restaurants, and services. Cashiers ring up sales, apply discounts, choose payment methods, and print or share receipts in seconds - on a computer, tablet, or phone. Because it's offline-first, sales keep flowing even when the internet drops. Open a shift, record every transaction, then close with a clear cash-at-handover report.",
                 'sort_order' => 17,
             ],
             [
@@ -124,17 +124,17 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'Does Custosell include inventory and supply chain management?',
-                'answer' => "Yes. Custosell keeps a live count of every product you hold. Sales from your POS and storefront reduce stock automatically, and you can raise purchase orders to suppliers, track fulfillment, and record receipt. You always know what to reorder, what is moving, and what is sitting on the shelf — across branches and registers.",
+                'answer' => "Yes. Custosell keeps a live count of every product you hold. Sales from your POS and storefront reduce stock automatically, and you can raise purchase orders to suppliers, track fulfillment, and record receipt. You always know what to reorder, what is moving, and what is sitting on the shelf - across branches and registers.",
                 'sort_order' => 20,
             ],
             [
                 'question' => 'Does Custosell include HR and payroll software?',
-                'answer' => "Yes. Custosell includes HR and payroll tools for growing teams: attendance, leave, and payroll in one place. Control who has access to what with role-based permissions, and keep team records organized — all from the same platform you use to run sales and inventory.",
+                'answer' => "Yes. Custosell includes HR and payroll tools for growing teams: attendance, leave, and payroll in one place. Control who has access to what with role-based permissions, and keep team records organized - all from the same platform you use to run sales and inventory.",
                 'sort_order' => 21,
             ],
             [
                 'question' => 'Does Custosell provide an e-commerce storefront?',
-                'answer' => "Yes. Custosell turns your business into e-commerce with a public storefront. Share a shop link so customers browse your catalog, save wishlists, place order requests, and track status — while stock stays tied to your real inventory. There's no separate database to reconcile.",
+                'answer' => "Yes. Custosell turns your business into e-commerce with a public storefront. Share a shop link so customers browse your catalog, save wishlists, place order requests, and track status - while stock stays tied to your real inventory. There's no separate database to reconcile.",
                 'sort_order' => 22,
             ],
             [
@@ -144,7 +144,7 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'Does Custosell include project management tools?',
-                'answer' => "Yes. Custosell includes projects, estimates, and productivity tools — quotes that turn into projects, shared boards for tasks and deadlines, and team collaboration. Because projects sit beside invoicing and expenses, you can quote a job, track its costs, and send an invoice the moment it's done.",
+                'answer' => "Yes. Custosell includes projects, estimates, and productivity tools - quotes that turn into projects, shared boards for tasks and deadlines, and team collaboration. Because projects sit beside invoicing and expenses, you can quote a job, track its costs, and send an invoice the moment it's done.",
                 'sort_order' => 24,
             ],
             [
@@ -154,12 +154,12 @@ class GuideFaqSeeder extends Seeder
             ],
             [
                 'question' => 'Does Custosell include financial forecasting?',
-                'answer' => "Yes. Financial forecasting in Custosell turns your recorded sales and expense history into a forward-looking cash outlook and what-if scenarios — so you can plan hires, stock, and growth with more confidence instead of guesswork.",
+                'answer' => "Yes. Financial forecasting in Custosell turns your recorded sales and expense history into a forward-looking cash outlook and what-if scenarios - so you can plan hires, stock, and growth with more confidence instead of guesswork.",
                 'sort_order' => 26,
             ],
             [
                 'question' => 'Does Custosell include document management?',
-                'answer' => 'Yes. Document management in Custosell keeps contracts, invoices, quotations, and records organized for the whole team — searchable, and linked to the customers, jobs, and invoices that need them.',
+                'answer' => 'Yes. Document management in Custosell keeps contracts, invoices, quotations, and records organized for the whole team - searchable, and linked to the customers, jobs, and invoices that need them.',
                 'sort_order' => 27,
             ],
         ];

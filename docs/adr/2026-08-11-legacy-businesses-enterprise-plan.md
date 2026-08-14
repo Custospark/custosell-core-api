@@ -1,8 +1,8 @@
-# ADR — Legacy businesses upgraded from Essential to Enterprise plan
+# ADR - Legacy businesses upgraded from Essential to Enterprise plan
 
 - **Date:** 2026-08-11
 - **Status:** Accepted
-- **Stack:** Backend (data migration — the original backfill migration is left untouched per repo rules).
+- **Stack:** Backend (data migration - the original backfill migration is left untouched per repo rules).
 
 ## Context
 
@@ -12,7 +12,7 @@
 
 Upgrade legacy backfilled subscriptions to the **Enterprise** plan so existing businesses can explore every module. Implemented as a **new idempotent migration** (`2026_08_11_000001_upgrade_legacy_subscriptions_to_enterprise`) rather than editing the historical migration.
 
-The `up()` targets exactly the rows the legacy backfill inserted — `status = trial`, `trial_used = true`, `onboarding_fee_paid = true` on the essential plan — and moves them to enterprise (plan + pricing snapshot fields). New registrations never match (they are created with `trial_used = false`, `onboarding_fee_paid = false` via `SubscriptionService::subscribe`), and once upgraded the WHERE clause no longer matches, so re-running is a no-op. `down()` reverses the same signature.
+The `up()` targets exactly the rows the legacy backfill inserted - `status = trial`, `trial_used = true`, `onboarding_fee_paid = true` on the essential plan - and moves them to enterprise (plan + pricing snapshot fields). New registrations never match (they are created with `trial_used = false`, `onboarding_fee_paid = false` via `SubscriptionService::subscribe`), and once upgraded the WHERE clause no longer matches, so re-running is a no-op. `down()` reverses the same signature.
 
 ## Why not edit the original migration
 

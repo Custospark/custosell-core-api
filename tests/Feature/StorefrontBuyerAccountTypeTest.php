@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Shopping account (storefront_buyer) contract — Discover-only buyers.
+ * Shopping account (storefront_buyer) contract - Discover-only buyers.
  * Kept separate from StorefrontTest (which is over the 500-line cap).
  */
 class StorefrontBuyerAccountTypeTest extends TestCase
@@ -39,7 +39,7 @@ class StorefrontBuyerAccountTypeTest extends TestCase
         $this->assertSame('storefront_buyer', $res->json("$userPath.account_type"));
         $this->assertNull($res->json("$userPath.business_id"));
         $this->assertSame([], $res->json("$userPath.modules") ?? []);
-        // No plans to subscribe to — shopping accounts buy from shops, not Custosell.
+        // No plans to subscribe to - shopping accounts buy from shops, not Custosell.
         $this->assertSame([], $res->json("$userPath.active_plans") ?? []);
     }
 
@@ -61,7 +61,7 @@ class StorefrontBuyerAccountTypeTest extends TestCase
         $this->assertNull($user->role_id);
         $this->assertSame([], $user->modules ?? []);
 
-        // A shopping account is a buyer — can't manage payments or see business modules.
+        // A shopping account is a buyer - can't manage payments or see business modules.
         $login = $this->postJson('/api/v1/auth/login', [
             'email' => 'shopper@example.com',
             'password' => 'secret12',

@@ -54,7 +54,7 @@
   <tbody>
     <tr>
       <td class="text-left">Product</td>
-      <td class="text-right">Custosell — {{ $plan?->name ?? 'Subscription' }}</td>
+      <td class="text-right">Custosell - {{ $plan?->name ?? 'Subscription' }}</td>
     </tr>
     @if($subscription->next_billing_date)
       <tr>
@@ -122,6 +122,6 @@
 </table>
 
 <p style="margin-top:10px; font-size:9px; color:#047857; text-align:center; font-weight:bold;">
-  PAID IN FULL — Thank you for your business.
+  PAID IN FULL - Thank you for your business.
 </p>
 @endsection

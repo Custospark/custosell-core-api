@@ -113,7 +113,7 @@ class Product extends Model
 
     /**
      * Build a business-unique slug from the product name (or fall back to id).
-     * Never user-entered — always derived from the name.
+     * Never user-entered - always derived from the name.
      */
     public static function makeUniqueSlug(int $businessId, string $name, ?int $ignoreId = null): string
     {

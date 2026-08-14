@@ -134,7 +134,7 @@
   </p>
 @else
   <p style="margin-top:12px; font-size:9px; color:#047857; text-align:center; font-weight:bold;">
-    PAID IN FULL — Thank you for your business.
+    PAID IN FULL - Thank you for your business.
   </p>
 @endif
 @endsection

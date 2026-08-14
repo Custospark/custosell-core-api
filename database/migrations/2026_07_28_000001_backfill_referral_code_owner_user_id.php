@@ -20,6 +20,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Irreversible — we don't know which were auto-set
+        // Irreversible - we don't know which were auto-set
     }
 };

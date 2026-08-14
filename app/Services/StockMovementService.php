@@ -163,7 +163,7 @@ class StockMovementService implements StockMovementServiceInterface
                     throw new \RuntimeException("Product #{$productId} does not belong to this business.");
                 }
 
-                // Services are not quantitative — never hold branch stock, so skip transfers.
+                // Services are not quantitative - never hold branch stock, so skip transfers.
                 if (!$product->tracksStock()) {
                     continue;
                 }

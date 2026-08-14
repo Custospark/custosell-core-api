@@ -47,7 +47,7 @@ class PipelineActivityService
             }
 
             if ($parent->parent_id !== null) {
-                abort(422, 'Replies cannot be nested further — reply to the main comment instead.');
+                abort(422, 'Replies cannot be nested further - reply to the main comment instead.');
             }
         }
 

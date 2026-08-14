@@ -82,7 +82,7 @@ class PlatformBusinessMetricsService
                 $decisionNote = $withSales === 0
                     ? "No {$currency} businesses recorded gross sales in the last {$this->activityWindowDays()} days."
                     : sprintf(
-                        '%d of %d %s businesses had gross sales (30d). %d%% sit in the lowest tier — consider an entry plan. %d%% are in the top tier — candidates for premium pricing.',
+                        '%d of %d %s businesses had gross sales (30d). %d%% sit in the lowest tier - consider an entry plan. %d%% are in the top tier - candidates for premium pricing.',
                         $withSales,
                         $totalBusinesses,
                         $currency,
@@ -226,11 +226,11 @@ class PlatformBusinessMetricsService
             'growth' => $growth,
             'decisions' => [
                 $joinedToday > 0
-                    ? "{$joinedToday} new business(es) joined today — prioritize welcome onboarding."
-                    : 'No new signups today — focus on re-activating dormant accounts.',
+                    ? "{$joinedToday} new business(es) joined today - prioritize welcome onboarding."
+                    : 'No new signups today - focus on re-activating dormant accounts.',
                 $joinedThisMonth > 0
                     ? "{$joinedThisMonth} joined this month ({$growthRateWeek}% weekly growth vs existing base)."
-                    : 'No new businesses this month — review acquisition channels.',
+                    : 'No new businesses this month - review acquisition channels.',
                 $withGrossSales30d > 0
                     ? "{$withGrossSales30d} of {$totalBusinesses} businesses recorded sales in the last {$this->activityWindowDays()} days."
                     : "No businesses recorded sales in the last {$this->activityWindowDays()} days.",
@@ -242,7 +242,7 @@ class PlatformBusinessMetricsService
     }
 
     /**
-     * Activity is based on recency of the latest sale OR staff login — not lifetime sale volume.
+     * Activity is based on recency of the latest sale OR staff login - not lifetime sale volume.
      *
      * @return array{
      *     activity_status: string,

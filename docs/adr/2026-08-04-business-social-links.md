@@ -12,7 +12,7 @@ an open list of links.
 Two design options were considered:
 
 1. **Discrete columns** on `businesses` (one per known platform). Abandoned after the
-   requirement clarified that platforms are **open-ended** — new networks keep
+   requirement clarified that platforms are **open-ended** - new networks keep
    appearing, so closing the set to a fixed enum would force a migration every time.
 2. **Dedicated child table** with a free-text `platform`. Chosen.
 
@@ -32,7 +32,7 @@ Two design options were considered:
 
 ## Why a dedicated table supports unlimited platforms
 
-Because `platform` is a plain string column, adding a new network is data-entry only —
+Because `platform` is a plain string column, adding a new network is data-entry only -
 no schema or enum change. Each business is kept to **one row per platform** by the
 unique constraint + upsert path.
 

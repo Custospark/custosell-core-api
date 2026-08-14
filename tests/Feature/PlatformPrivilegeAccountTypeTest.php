@@ -74,7 +74,7 @@ class PlatformPrivilegeAccountTypeTest extends TestCase
             ->assertOk();
 
         $fresh = $target->fresh();
-        // UI explicitly chose personal — honor it, don't force business.
+        // UI explicitly chose personal - honor it, don't force business.
         $this->assertSame('personal', $fresh->account_type);
         $this->assertNotNull($fresh->business_id);
     }

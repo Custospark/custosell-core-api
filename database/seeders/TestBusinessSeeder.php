@@ -35,7 +35,7 @@ class TestBusinessSeeder extends Seeder
     public function run(): void
     {
         if (!in_array(app()->environment(), ['staging', 'local'])) {
-            $this->command?->warn('TestBusinessSeeder skipped — it only runs in staging or local development.');
+            $this->command?->warn('TestBusinessSeeder skipped - it only runs in staging or local development.');
 
             return;
         }

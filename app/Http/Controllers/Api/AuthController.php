@@ -170,7 +170,7 @@ class AuthController extends Controller
         $user->forceFill(['email_verified_at' => now()])->save();
         $this->auditLogService->log($user, 'email_verified', [], $request->ip(), $request->userAgent());
 
-        // Email verification only opens the account — if 2FA is enabled, the
+        // Email verification only opens the account - if 2FA is enabled, the
         // sign-in still needs the second factor before completing.
         if ($user->refresh()->two_factor_enabled) {
             $this->verificationService->issue($user, AccountVerificationServiceInterface::PURPOSE_TWO_FACTOR, $request->ip(), $request->userAgent());

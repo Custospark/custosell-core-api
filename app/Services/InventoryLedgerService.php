@@ -40,7 +40,7 @@ class InventoryLedgerService
 
         $warnings = $analysis['warnings'];
         if ($analysis['excluded_count'] > 0) {
-            $warnings[] = "{$analysis['excluded_count']} product(s) excluded due to unrealistic stock or cost — review Inventory.";
+            $warnings[] = "{$analysis['excluded_count']} product(s) excluded due to unrealistic stock or cost - review Inventory.";
         }
 
         return [
@@ -81,7 +81,7 @@ class InventoryLedgerService
 
         if ($report['included_sku_count'] === 0 && $adjustment > 0) {
             throw new RuntimeException(
-                'No eligible products with stock and cost — fix product data before establishing opening inventory.'
+                'No eligible products with stock and cost - fix product data before establishing opening inventory.'
             );
         }
 
@@ -211,7 +211,7 @@ class InventoryLedgerService
 
         $warnings = [];
         if ($trackedOnly && $trackedProductIds->isEmpty()) {
-            $warnings[] = 'No stock movements yet — record sales or stock adjustments before establishing opening inventory.';
+            $warnings[] = 'No stock movements yet - record sales or stock adjustments before establishing opening inventory.';
         } elseif ($trackedOnly) {
             $warnings[] = 'Only products with stock movement history are included (operational catalog).';
         }

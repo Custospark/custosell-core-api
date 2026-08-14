@@ -25,7 +25,7 @@
   animation: skeleton-glow 2s ease-in-out infinite;
 }
 
-/* Custosell brand loader — spinning dotted arcs */
+/* Custosell brand loader - spinning dotted arcs */
 @keyframes custosell-loader-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

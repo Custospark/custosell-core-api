@@ -284,7 +284,7 @@ class PipelineGoalDecompositionService
         $rootSlices = $this->periodSlices($rootLevel, $horizonStart, $horizonEnd);
 
         foreach ($rootSlices as $slice) {
-            // Root: T × days(slice ∩ horizon) / days(horizon) — not equal bucket counts.
+            // Root: T × days(slice ∩ horizon) / days(horizon) - not equal bucket counts.
             $rootTimeShare = $targetValue * $this->dayWeightedShare(
                 $slice['start'],
                 $slice['end'],

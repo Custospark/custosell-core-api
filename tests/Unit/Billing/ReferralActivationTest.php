@@ -53,7 +53,7 @@ class ReferralActivationTest extends TestCase
         $this->referralService = app(ReferralService::class);
     }
 
-    // ─── Scenario 2: markActive (payment confirmed) — BUSINESS codes ───
+    // ─── Scenario 2: markActive (payment confirmed) - BUSINESS codes ───
 
     public function test_mark_active_calculates_reward_for_business_percentage_code(): void
     {
@@ -262,7 +262,7 @@ class ReferralActivationTest extends TestCase
         $this->assertEquals(8.00, (float) $credit->amount, '2 remaining months × 20% of $20 recurring = $8');
     }
 
-    // ─── Scenario 2b: markActive — CAMPAIGN codes earn no reward ───
+    // ─── Scenario 2b: markActive - CAMPAIGN codes earn no reward ───
 
     public function test_mark_active_earns_no_reward_for_campaign_code(): void
     {
@@ -294,7 +294,7 @@ class ReferralActivationTest extends TestCase
         );
     }
 
-    // ─── Scenario 3: markActive (payment confirmed) — SALES_REP codes ───
+    // ─── Scenario 3: markActive (payment confirmed) - SALES_REP codes ───
 
     public function test_mark_active_calculates_commission_for_sales_rep_percentage(): void
     {

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Vera Logic — Backend repo rules & contracts (not php -l).
+ * Vera Logic - Backend repo rules & contracts (not php -l).
  * Usage: php scripts/vera-logic.php
  * Also runs from vera-fast.php after syntax checks.
  */
@@ -88,7 +88,7 @@ function veraLogicCheckFileSize(string $root, array $changed): array
             'id' => 'file-size-500',
             'ok' => true,
             'detail' => $changed === []
-                ? 'No changed app/tests PHP — size check skipped'
+                ? 'No changed app/tests PHP - size check skipped'
                 : 'Changed app/tests PHP ≤ ' . VERA_MAX_LINES . ' lines (' . count($changed) . ' checked)',
         ];
     }
@@ -173,7 +173,7 @@ function veraLogicPhpImports(string $root, array $changed): array
         return [
             'id' => 'php-imports',
             'ok' => true,
-            'detail' => 'No changed app/tests PHP — import check skipped',
+            'detail' => 'No changed app/tests PHP - import check skipped',
         ];
     }
 

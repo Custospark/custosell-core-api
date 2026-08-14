@@ -1,4 +1,4 @@
-# ADR: Plan Upgrade — Proration Charging, Billing-Cycle Preservation, and Promo Exclusion
+# ADR: Plan Upgrade - Proration Charging, Billing-Cycle Preservation, and Promo Exclusion
 
 ## Date
 2026-08-09
@@ -11,11 +11,11 @@ Fix two defects found while verifying the upgrade flow for subscription 25 (Prof
 
 ## The Two Bugs
 
-### P1 — Consumed promo discount shown (but not charged) on upgrade
+### P1 - Consumed promo discount shown (but not charged) on upgrade
 `UpgradeFlowConfirmStep` / `UpgradeFlowModal` subtracted `subscription.referral.discount_applied` (the $28.50 onboarding promo) from the upgrade amount due, so the UI read `$900.00` while the backend charged `$928.45` (`referral_discount_usd: 0` in `[PaymentAudit]`). The referral discount applies to the first `discount_duration_months` billing periods (see `2026-08-09-referral-reward-system-against-what-base.md`); it is a **subscription-period** discount and does **not** carry into a new-plan prorated up-charge.
 
-### P2 — Paid billing cycle dropped, `next_billing_date` reset to +1 month
-`GatewayService::initiatePayment()` writes `metadata.billing_cycle` defaulting to `$subscription->billing_cycle` when the top-level request omits it, and `HandlesPaymentApproval::handleUpgradeProration()` read that field to apply the plan change. Because the frontend sent `billing_cycle` only inside `metadata` (not top-level), the payment recorded `billing_cycle: monthly` for a **yearly** upgrade and `SubscriptionService::changePlan()` then set `next_billing_date = now() + 1 month` — wiping the paid full-year coverage and double-billing the user a month later.
+### P2 - Paid billing cycle dropped, `next_billing_date` reset to +1 month
+`GatewayService::initiatePayment()` writes `metadata.billing_cycle` defaulting to `$subscription->billing_cycle` when the top-level request omits it, and `HandlesPaymentApproval::handleUpgradeProration()` read that field to apply the plan change. Because the frontend sent `billing_cycle` only inside `metadata` (not top-level), the payment recorded `billing_cycle: monthly` for a **yearly** upgrade and `SubscriptionService::changePlan()` then set `next_billing_date = now() + 1 month` - wiping the paid full-year coverage and double-billing the user a month later.
 
 ## Decisions
 

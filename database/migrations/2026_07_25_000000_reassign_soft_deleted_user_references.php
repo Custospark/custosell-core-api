@@ -75,6 +75,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // No rollback — reassignment is data normalization; original values are gone.
+        // No rollback - reassignment is data normalization; original values are gone.
     }
 };

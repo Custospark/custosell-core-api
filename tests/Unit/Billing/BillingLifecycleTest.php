@@ -12,19 +12,19 @@ use Tests\TestCase;
  * Billing lifecycle tests with real user stories, real names, and actual Plan prices.
  *
  * Coverage:
- *   User Story 1  — Grace Hopper: register, subscribe to Essential (trial), pay onboarding, activate
- *   User Story 2  — Alan Turing: subscribe to Professional (trial), let trial expire
- *   User Story 3  — Margaret Hamilton: subscribe to Essential (no trial), pay onboarding, activate
- *   User Story 4  — Tim Berners-Lee: subscribe to Enterprise, upgrade to Enterprise
- *   User Story 5  — Ada Lovelace: subscribe to Essential, schedule downgrade
- *   User Story 6  — Linus Torvalds: subscribe to Essential, cancel at period end
- *   User Story 7  — Dennis Ritchie: subscribe to Essential, cancel immediately
- *   User Story 8  — Grace Hopper: use referral code during subscription
+ *   User Story 1  - Grace Hopper: register, subscribe to Essential (trial), pay onboarding, activate
+ *   User Story 2  - Alan Turing: subscribe to Professional (trial), let trial expire
+ *   User Story 3  - Margaret Hamilton: subscribe to Essential (no trial), pay onboarding, activate
+ *   User Story 4  - Tim Berners-Lee: subscribe to Enterprise, upgrade to Enterprise
+ *   User Story 5  - Ada Lovelace: subscribe to Essential, schedule downgrade
+ *   User Story 6  - Linus Torvalds: subscribe to Essential, cancel at period end
+ *   User Story 7  - Dennis Ritchie: subscribe to Essential, cancel immediately
+ *   User Story 8  - Grace Hopper: use referral code during subscription
  */
 class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
 {
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 1 — Grace Hopper: Trial → Pay onboarding → Active
+    //  USER STORY 1 - Grace Hopper: Trial → Pay onboarding → Active
     // ════════════════════════════════════════════════════════════════════
 
     public function test_grace_hopper_registers_and_subscribes_to_essential_trial(): void
@@ -116,7 +116,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 2 — Alan Turing: Subscribe to Professional, let trial expire
+    //  USER STORY 2 - Alan Turing: Subscribe to Professional, let trial expire
     // ════════════════════════════════════════════════════════════════════
 
     public function test_alan_turing_subscribes_to_professional_trial(): void
@@ -172,7 +172,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 3 — Margaret Hamilton: No-trial plan → Pay onboarding → Active
+    //  USER STORY 3 - Margaret Hamilton: No-trial plan → Pay onboarding → Active
     // ════════════════════════════════════════════════════════════════════
 
     public function test_margaret_hamilton_subscribes_without_trial(): void
@@ -233,12 +233,12 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
         // But the subscribe method doesn't set grace_period_ends_at.
         // hasAccess checks: PAST_DUE => grace_period_ends_at?->isFuture()
         // Since grace_period_ends_at is null, it returns false.
-        // This is correct — user must pay onboarding to continue.
+        // This is correct - user must pay onboarding to continue.
         $this->assertFalse($this->subscriptionService->hasAccess($this->apolloSoft->id));
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 4 — Tim Berners-Lee: Upgrade from Essential → Enterprise
+    //  USER STORY 4 - Tim Berners-Lee: Upgrade from Essential → Enterprise
     // ════════════════════════════════════════════════════════════════════
 
     public function test_tim_berners_lee_upgrades_immediately(): void
@@ -313,7 +313,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
         $periodStart = $periodEnd->copy()->subMonth()->startOfDay();
         $daysInPeriod = max(1, (int) $periodStart->diffInDays($periodEnd));
         // Paid coverage starts when the preserved trial ends (or now if the trial
-        // already lapsed) — free trial days are never credited toward an upgrade.
+        // already lapsed) - free trial days are never credited toward an upgrade.
         $paidStart = $subscription->trial_ends_at && $subscription->trial_ends_at->startOfDay()->gt($now)
             ? $subscription->trial_ends_at->copy()->startOfDay()
             : $now;
@@ -340,7 +340,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 5 — Ada Lovelace: Schedule downgrade from Essential → Starter
+    //  USER STORY 5 - Ada Lovelace: Schedule downgrade from Essential → Starter
     // ════════════════════════════════════════════════════════════════════
 
     public function test_ada_lovelace_schedules_downgrade(): void
@@ -402,7 +402,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 6 — Linus Torvalds: Cancel at period end
+    //  USER STORY 6 - Linus Torvalds: Cancel at period end
     // ════════════════════════════════════════════════════════════════════
 
     public function test_linus_torvalds_cancels_at_period_end(): void
@@ -446,7 +446,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 7 — Dennis Ritchie: Cancel immediately
+    //  USER STORY 7 - Dennis Ritchie: Cancel immediately
     // ════════════════════════════════════════════════════════════════════
 
     public function test_dennis_ritchie_cancels_immediately(): void
@@ -481,7 +481,7 @@ class BillingLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 8 — Grace Hopper: Use referral code during subscription
+    //  USER STORY 8 - Grace Hopper: Use referral code during subscription
     // ════════════════════════════════════════════════════════════════════
 
     public function test_grace_hopper_subscribes_with_referral_code(): void

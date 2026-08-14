@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->unsignedTinyInteger('rating'); // 1–5
+            $table->unsignedTinyInteger('rating'); // 1-5
             $table->timestamps();
 
             $table->unique(['product_id', 'user_id']);

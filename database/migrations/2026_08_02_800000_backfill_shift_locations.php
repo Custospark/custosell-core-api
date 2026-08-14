@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Irreversible — the backfill only fills NULLs.
+        // Irreversible - the backfill only fills NULLs.
     }
 };

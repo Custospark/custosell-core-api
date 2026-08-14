@@ -47,7 +47,7 @@ class PesaPalGateway implements PaymentGatewayInterface
     {
         if ($this->isBypassMode()) {
             $merchantRef = 'CUSTO-' . $payload['payment_id'] . '-' . now()->format('YmdHis');
-            Log::info('[PesaPal] Bypass mode — payment auto-approved', [
+            Log::info('[PesaPal] Bypass mode - payment auto-approved', [
                 'payment_id' => $payload['payment_id'],
                 'reference' => $merchantRef,
             ]);
@@ -74,7 +74,7 @@ class PesaPalGateway implements PaymentGatewayInterface
             $ipnId = $this->ipnId ?: $this->registerIpn($accessToken);
         } catch (GatewayException $e) {
             if ($this->isHttpStatus($e, 401) && !$isRetry) {
-                Log::warning('[PesaPal] IPN registration got 401 — retrying with fresh token');
+                Log::warning('[PesaPal] IPN registration got 401 - retrying with fresh token');
                 $this->forgetTokenCache();
                 return $this->initiateWithRetry($payload, true);
             }
@@ -108,7 +108,7 @@ class PesaPalGateway implements PaymentGatewayInterface
 
         if (!$response->successful() || empty($data['redirect_url'])) {
             if ($response->status() === 401 && !$isRetry) {
-                Log::warning('[PesaPal] Order submission got 401 — retrying with fresh token');
+                Log::warning('[PesaPal] Order submission got 401 - retrying with fresh token');
                 $this->forgetTokenCache();
                 return $this->initiateWithRetry($payload, true);
             }
@@ -169,7 +169,7 @@ class PesaPalGateway implements PaymentGatewayInterface
                 'gateway_txn_id' => $transactionId,
                 'amount' => 0,
                 'currency' => '',
-                'message' => 'Bypass mode — auto-verified.',
+                'message' => 'Bypass mode - auto-verified.',
                 'raw_response' => ['bypass' => true],
             ];
         }
@@ -297,7 +297,7 @@ class PesaPalGateway implements PaymentGatewayInterface
                 }
             }
 
-            $detail = $errorMsg ?? "HTTP {$response->status()} (no token in response — check PesaPal credentials)";
+            $detail = $errorMsg ?? "HTTP {$response->status()} (no token in response - check PesaPal credentials)";
 
             throw new GatewayException(
                 "PesaPal token request failed: {$detail}",

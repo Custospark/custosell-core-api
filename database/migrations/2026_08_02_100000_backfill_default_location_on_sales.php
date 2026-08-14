@@ -33,6 +33,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Irreversible — the backfill only fills NULLs, so there is nothing safe to undo.
+        // Irreversible - the backfill only fills NULLs, so there is nothing safe to undo.
     }
 };

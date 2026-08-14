@@ -160,7 +160,7 @@ class PipelineGoalDecompositionServiceTest extends TestCase
 
     public function test_preview_uses_day_weighted_shares_not_equal_buckets(): void
     {
-        // Non-leap 2025: Jan=31, Feb=28 — equal buckets would assign identical month shares.
+        // Non-leap 2025: Jan=31, Feb=28 - equal buckets would assign identical month shares.
         $preview = $this->service->preview($this->business->id, $this->board, [
             'planning_level' => 'year',
             'target_value' => 365,

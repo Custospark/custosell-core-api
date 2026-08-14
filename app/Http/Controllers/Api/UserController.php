@@ -126,7 +126,7 @@ class UserController extends Controller
             $data['modules'] = $this->moduleAccess->normalizeOwnerModules($request->input('modules'));
         }
 
-        // Owner module toggles are personal workspace visibility only — never rewrite staff grants.
+        // Owner module toggles are personal workspace visibility only - never rewrite staff grants.
         $user->update($data);
         $user->load('business');
 

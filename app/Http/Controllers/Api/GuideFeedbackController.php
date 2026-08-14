@@ -46,7 +46,7 @@ class GuideFeedbackController extends Controller
 
         return response()->json([
             'data' => $this->serializeMine($row->fresh()),
-            'message' => 'Thank you — we received your submission.',
+            'message' => 'Thank you - we received your submission.',
         ], 201);
     }
 

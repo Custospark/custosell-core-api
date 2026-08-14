@@ -197,7 +197,7 @@ class PaymentInitiateAccuracyTest extends TestCase
             'trial',
         );
 
-        // Send a deliberately wrong amount — backend must recompute to the plan price,
+        // Send a deliberately wrong amount - backend must recompute to the plan price,
         // validate in USD, then convert to UGX: 54 × 3708.59 = 200,263.86.
         $response = $this->withHeaders($this->authHeaders())
             ->postJson('/api/v1/billing/payments/initiate', [
@@ -229,7 +229,7 @@ class PaymentInitiateAccuracyTest extends TestCase
             Carbon::now()->addMonth()->startOfDay(),
         );
 
-        // Sent amount ignored — backend recomputes authoritative $20/mo → 20 × 3708.59 = 74,171.80 UGX.
+        // Sent amount ignored - backend recomputes authoritative $20/mo → 20 × 3708.59 = 74,171.80 UGX.
         $response = $this->withHeaders($this->authHeaders())
             ->postJson('/api/v1/billing/payments/initiate', [
                 'gateway_name' => 'pesapal',

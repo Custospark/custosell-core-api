@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Seed a default pipeline board (stages, labels, guiding cards) the moment an
- * account is created — personal workspaces and business accounts alike — so the
+ * account is created - personal workspaces and business accounts alike - so the
  * CRM board is never empty on first sign-in. Storefront buyers have no business
  * workspace, so they are skipped. Seeding failures never block registration.
  */

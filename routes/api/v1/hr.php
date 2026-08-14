@@ -25,7 +25,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
         Route::delete('/positions/{id}', [HrOrgController::class, 'destroyPosition'])->whereNumber('id');
     });
 
-    // Employees — list/show for all HR; mutations require full HR
+    // Employees - list/show for all HR; mutations require full HR
     Route::get('/employees', [HrEmployeeController::class, 'index']);
     Route::get('/employees/{id}', [HrEmployeeController::class, 'show'])->whereNumber('id');
     Route::post('/employees/sync-staff', [HrEmployeeController::class, 'syncStaff']);
@@ -42,7 +42,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
         Route::post('/employees/{id}/remove-account', [HrEmployeeController::class, 'removeAccount'])->whereNumber('id');
     });
 
-    // Attendance — self-service clock/events/register; admin corrections require full HR
+    // Attendance - self-service clock/events/register; admin corrections require full HR
     Route::post('/attendance/clock', [HrAttendanceController::class, 'clock']);
     Route::get('/attendance/events', [HrAttendanceController::class, 'events']);
     Route::get('/attendance/register', [HrAttendanceController::class, 'register']);
@@ -53,7 +53,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
         Route::get('/attendance/pos-shifts', [HrAttendanceController::class, 'posShifts']);
     });
 
-    // Leave — self-service request/cancel/list + read leave types; type CRUD / ensure / approve require full HR
+    // Leave - self-service request/cancel/list + read leave types; type CRUD / ensure / approve require full HR
     Route::get('/leave/types', [HrLeaveController::class, 'indexTypes']);
     Route::get('/leave/balances', [HrLeaveController::class, 'indexBalances']);
     Route::get('/leave/requests', [HrLeaveController::class, 'indexRequests']);
@@ -91,7 +91,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
         Route::post('/payroll/pay-runs/{id}/void', [HrPayrollController::class, 'voidPayRun'])->whereNumber('id');
     });
 
-    // Talent — tasks index/update for all HR; templates/assign/reviews require full HR
+    // Talent - tasks index/update for all HR; templates/assign/reviews require full HR
     Route::get('/talent/onboarding-tasks', [HrTalentController::class, 'indexTasks']);
     Route::patch('/talent/onboarding-tasks/{id}', [HrTalentController::class, 'updateTask'])->whereNumber('id');
 

@@ -39,7 +39,7 @@ class SimulateCreditDeduction extends Command
             return Command::FAILURE;
         }
 
-        $this->components->twoColumnDetail('Plan', "{$plan->name} — \${$plan->price_monthly_usd}/mo, \$".$plan->onboarding_fee_usd.' onboarding');
+        $this->components->twoColumnDetail('Plan', "{$plan->name} - \${$plan->price_monthly_usd}/mo, \$".$plan->onboarding_fee_usd.' onboarding');
 
         // ── Step 2: Create Alice (referrer) ─────────────────────────────
         $alice = User::factory()->create([
@@ -52,7 +52,7 @@ class SimulateCreditDeduction extends Command
             'name' => "Alice's Shop",
             'currency' => 'USD',
         ]);
-        $this->components->twoColumnDetail('Alice (referrer)', "#{$alice->id} — {$alice->name} / {$aliceBusiness->name}");
+        $this->components->twoColumnDetail('Alice (referrer)', "#{$alice->id} - {$alice->name} / {$aliceBusiness->name}");
 
         // Alice subscribes
         $aliceSubscription = $subscriptionService->subscribe(
@@ -60,7 +60,7 @@ class SimulateCreditDeduction extends Command
             $plan->id,
             'monthly',
         );
-        $this->components->twoColumnDetail('Alice subscription', "#{$aliceSubscription->id} — {$aliceSubscription->status->value}");
+        $this->components->twoColumnDetail('Alice subscription', "#{$aliceSubscription->id} - {$aliceSubscription->status->value}");
 
         // ── Step 3: Create Alice's referral code ────────────────────────
         $referralCode = ReferralCode::create([
@@ -73,7 +73,7 @@ class SimulateCreditDeduction extends Command
             'reward_value' => 15,
             'is_active' => true,
         ]);
-        $this->components->twoColumnDetail('Referral code', "{$referralCode->code} — 15% reward on amount paid");
+        $this->components->twoColumnDetail('Referral code', "{$referralCode->code} - 15% reward on amount paid");
 
         // ── Step 4: Create Bob (referred) ───────────────────────────────
         $bob = User::factory()->create([
@@ -86,7 +86,7 @@ class SimulateCreditDeduction extends Command
             'name' => "Bob's Store",
             'currency' => 'USD',
         ]);
-        $this->components->twoColumnDetail('Bob (referred)', "#{$bob->id} — {$bob->name} / {$bobBusiness->name}");
+        $this->components->twoColumnDetail('Bob (referred)', "#{$bob->id} - {$bob->name} / {$bobBusiness->name}");
 
         // Bob subscribes
         $bobSubscription = $subscriptionService->subscribe(
@@ -94,7 +94,7 @@ class SimulateCreditDeduction extends Command
             $plan->id,
             'monthly',
         );
-        $this->components->twoColumnDetail('Bob subscription', "#{$bobSubscription->id} — {$bobSubscription->status->value}");
+        $this->components->twoColumnDetail('Bob subscription', "#{$bobSubscription->id} - {$bobSubscription->status->value}");
 
         // ── Step 5: Apply Alice's referral code to Bob's subscription ───
         $this->components->task('Applying referral code ALICE20 to Bob', function () use ($referralService, $referralCode, $bobSubscription, $bobBusiness) {
@@ -130,7 +130,7 @@ class SimulateCreditDeduction extends Command
             return Command::FAILURE;
         }
 
-        $this->components->twoColumnDetail('Billing credit', "#{$aliceCredit->id} — \$" . number_format($aliceCredit->amount_remaining, 2) . ' available');
+        $this->components->twoColumnDetail('Billing credit', "#{$aliceCredit->id} - \$" . number_format($aliceCredit->amount_remaining, 2) . ' available');
 
         $creditBalance = $creditService->getBusinessCredit($aliceBusiness->id);
         $this->components->twoColumnDetail('Credit balance', '$' . number_format($creditBalance, 2));
@@ -164,8 +164,8 @@ class SimulateCreditDeduction extends Command
         });
 
         $aliceCredit->refresh();
-        $this->components->twoColumnDetail('After reversal — credit status', $aliceCredit->status);
-        $this->components->twoColumnDetail('After reversal — credit amount_used', '$' . number_format((float) $aliceCredit->amount_used, 2));
+        $this->components->twoColumnDetail('After reversal - credit status', $aliceCredit->status);
+        $this->components->twoColumnDetail('After reversal - credit amount_used', '$' . number_format((float) $aliceCredit->amount_used, 2));
         $this->assert($aliceCredit->status === 'available', 'Credit should be available again');
         $this->assert((float) $aliceCredit->amount_used === 0.0, 'Credit amount_used should be 0');
 

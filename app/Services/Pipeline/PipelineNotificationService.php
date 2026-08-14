@@ -243,7 +243,7 @@ class PipelineNotificationService
             $body = $this->wrapBody(
                 '<p><strong>'.e($actor->name).'</strong> started a poll on <em>'.e($board->name).'</em>.</p>'
                 .'<p style="font-size:15px;font-weight:600;color:#0f172a;">'.e($poll->question).'</p>'
-                .'<p style="color:#64748b;">Your vote helps the team decide — open the board to participate.</p>',
+                .'<p style="color:#64748b;">Your vote helps the team decide - open the board to participate.</p>',
             );
 
             $lead = $poll->lead_id ? $poll->lead : null;

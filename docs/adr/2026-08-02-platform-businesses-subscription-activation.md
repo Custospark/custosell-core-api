@@ -31,9 +31,9 @@ had also grown to 1008 lines, tripping the `file-size-500` gate on the same chan
     `billing_cycle` (`monthly|yearly`); 422 if the business already has a subscription.
   - `GET /platform/businesses` accepts `subscription_status` (including `none`).
 - **Backend service modularized.** `PlatformBusinessService` (1008 lines) was split into:
-  - `PlatformBusinessQueryBuilder` — attributed-sales metrics query + owner/staff resolution.
-  - `PlatformBusinessMetricsService` — analytics, transformation, onboarding dashboard, tiers.
-  - `PlatformBusinessAdminService` — status/delete/reset/notify + `activateSubscription`.
+  - `PlatformBusinessQueryBuilder` - attributed-sales metrics query + owner/staff resolution.
+  - `PlatformBusinessMetricsService` - analytics, transformation, onboarding dashboard, tiers.
+  - `PlatformBusinessAdminService` - status/delete/reset/notify + `activateSubscription`.
   - `PlatformBusinessService` is now a slim facade preserving the full public API, so
     `PlatformBusinessController` and `PlatformOverviewService` were unchanged.
 

@@ -1,4 +1,4 @@
-# Renewal Top-Up — Pay in Advance for Any Duration
+# Renewal Top-Up - Pay in Advance for Any Duration
 
 ## Status
 
@@ -9,7 +9,7 @@ Proposed 2026-08-03.
 The first "Renew Early" iteration (`2026-08-03-early-renewal.md`) lets an active
 subscription prepay **one full period** of its stored billing cycle. Oscar wants
 the natural next step: renewal as a **top-up**, where the user chooses how much
-to add (e.g. 3 months, 6 months, 1 year, 2 years) — still anchored to the
+to add (e.g. 3 months, 6 months, 1 year, 2 years) - still anchored to the
 existing `next_billing_date` so the schedule never drifts, but with the **amount
 computed correctly** for the chosen duration.
 
@@ -42,7 +42,7 @@ monthlyRate     = billing_cycle === 'yearly' ? price_yearly_usd / 12 : price_mon
 amount          = round(effectiveMonths × monthlyRate, 2)
 ```
 
-This keeps one consistent rate per subscription — no mixing of monthly and yearly
+This keeps one consistent rate per subscription - no mixing of monthly and yearly
 rates, no double-discount, no revenue-loss edge cases. The amount is computed
 **server-side** (authoritative), never trusted from the frontend.
 
@@ -63,7 +63,7 @@ A dedicated payment type keeps semantics clean and auditable, distinct from the
 
 `SubscriptionStateMachineService::renewEarly(Subscription $subscription, int $months = null)`:
 
-- `months = null` → default to one full stored period (monthly=1, yearly=12) —
+- `months = null` → default to one full stored period (monthly=1, yearly=12) -
   keeps the existing "single Renew Early" behavior working.
 - Guard: only from `ACTIVE`, rejected if `cancel_at_period_end`, `months >= 1`.
 - Extends `next_billing_date` from its existing value by `months`.
@@ -85,7 +85,7 @@ subscribers:
 | Scenario | Behavior |
 |----------|----------|
 | Not `ACTIVE` (trial / past_due / suspended / expired / cancelled) | `renewEarly` throws; picker only shown for `active`. |
-| `cancel_at_period_end` | Top-up rejected — don't charge a subscriber planning to end. |
+| `cancel_at_period_end` | Top-up rejected - don't charge a subscriber planning to end. |
 | `topup_months` missing / < 1 / > 60 | Request validation 422. |
 | Double-click / retry | Existing `idempotency_key` + pending-payment guard. |
 | Payment fails / never confirms | Subscription stays `ACTIVE` with original date; `SubscriptionsExpirePendingPayments` marks stuck pendings failed after 24h. |
@@ -113,6 +113,6 @@ subscribers:
 - Users control how far in advance they pay; amount is always correct and
   authoritative server-side.
 - No schedule drift; single consistent rate per subscription.
-- Reuses the existing gateway/payment/approval machinery — new surface is small
+- Reuses the existing gateway/payment/approval machinery - new surface is small
   and auditable via the `topup` type + `topup_months` metadata.
-- Cross-stack change (backend + frontend) — both stacks verified before commit.
+- Cross-stack change (backend + frontend) - both stacks verified before commit.

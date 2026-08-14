@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Default reward for a NEW referral code is the normal program (15%
-        // percentage reward) — not free_month. `free_month` as a schema default
+        // percentage reward) - not free_month. `free_month` as a schema default
         // silently granted a full paid-base reward credit to the referrer for any
         // code created without an explicit reward_type (backfill, admin, sales
         // rep, campaign). That leak was already fixed for CAMPAIGN codes in code;
@@ -24,7 +24,7 @@ return new class extends Migration
         // Repair existing BUSINESS-owner codes that inherited the buggy
         // free_month default with no reward value: normalize them to the standard
         // program (percentage / 15%) so a used code pays 15% of what the referee
-        // actually paid — never the full paid amount.
+        // actually paid - never the full paid amount.
         DB::table('referral_codes')
             ->where('owner_type', ReferralCodeOwnerType::BUSINESS->value)
             ->where('reward_type', RewardType::FREE_MONTH->value)

@@ -8,7 +8,7 @@ use App\Support\ReportPeriodContext;
 
 class FinancialStatementService
 {
-  /** Parent/header COA codes — excluded from statement line totals to avoid double-counting. */
+  /** Parent/header COA codes - excluded from statement line totals to avoid double-counting. */
   private const PARENT_GROUP_CODES = ['1000', '1100', '1200', '1300', '2000', '2100', '2200', '3000', '4000', '5000', '6000', '6100', '6200'];
 
   private const COGS_CODES = ['5100', '5200', '5300'];

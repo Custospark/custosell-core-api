@@ -94,6 +94,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Non-destructive attribution backfill — leave values on rollback.
+        // Non-destructive attribution backfill - leave values on rollback.
     }
 };

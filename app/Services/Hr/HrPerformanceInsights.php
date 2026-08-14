@@ -112,10 +112,10 @@ class HrPerformanceInsights
         $taskOverdue = (int) ($snapshot['project_tasks']['overdue'] ?? 0);
 
         if ($behind > 0) {
-            $parts[] = sprintf('%d goal(s) behind pace — review targets and blockers.', $behind);
+            $parts[] = sprintf('%d goal(s) behind pace - review targets and blockers.', $behind);
         }
         if ($atRisk > 0) {
-            $parts[] = sprintf('%d goal(s) at risk — tighten weekly follow-up.', $atRisk);
+            $parts[] = sprintf('%d goal(s) at risk - tighten weekly follow-up.', $atRisk);
         }
         if ($leadOverdue > 0) {
             $parts[] = sprintf('%d overdue pipeline card(s).', $leadOverdue);

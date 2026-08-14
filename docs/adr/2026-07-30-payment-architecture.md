@@ -10,30 +10,30 @@ event has the same correctness requirements:
   the user and sent to the payment provider
 - The **correct currency** (business currency or USD fallback) must be used
 - All **side effects** (plan changes, account conversions, referral rewards) must be
-  **atomic with payment confirmation** — if the payment confirms, all side effects
+  **atomic with payment confirmation** - if the payment confirms, all side effects
   apply; if it fails, none do
 
 ## Principles
 
-1. **Authoritative server-side amount** — The backend always computes or validates
+1. **Authoritative server-side amount** - The backend always computes or validates
    the amount to charge. The frontend-provided value is overwritten for fixed-price
    types and validated against stored pending amounts for variable types.
-2. **Atomic side effects** — Payment status update and all side effects run in a
+2. **Atomic side effects** - Payment status update and all side effects run in a
    single `DB::transaction()` inside `autoApprove()`. All nested transactions use
    MySQL savepoints so the outermost transaction controls the commit/rollback.
-3. **Currency resolved from business** — The business's configured currency is used;
+3. **Currency resolved from business** - The business's configured currency is used;
    USD is the fallback. Exchange rates are resolved at initiation time and validated
    before any amount is sent.
-4. **Deferred plan change** — Every plan change goes through the payment pipeline.
+4. **Deferred plan change** - Every plan change goes through the payment pipeline.
    Even zero-proration upgrades create a $0 completed payment and route through the
    same `handlePaymentType()` dispatch.
-5. **Referral discount at initiation, reward at confirmation** — The discount is
+5. **Referral discount at initiation, reward at confirmation** - The discount is
    consumed during payment initiation (reducing the gateway amount). The referral
    status moves from PENDING to APPLIED at this point. After payment confirms,
    `activateForSubscription()` → `markActive()` creates BillingCredit for remaining
    discount months and the referrer reward. Both the discount consumption and the
    reward creation are atomic with their respective stages.
-6. **All zero-cost paths must be atomic** — $0 completed payments (zero-proration
+6. **All zero-cost paths must be atomic** - $0 completed payments (zero-proration
    upgrades, full credit coverage) must create the payment record AND dispatch side
    effects inside a single `DB::transaction()`. A partial failure (payment created
    but side effects skipped) would leave the system in an inconsistent state.
@@ -87,7 +87,7 @@ event has the same correctness requirements:
 2. Compute authoritative amount in USD
    - onboarding: plan.onboarding_fee_usd
    - subscription/renewal: plan price (yearly or monthly)
-   - upgrade_proration: from frontend (trusted — already validated in Step 2)
+   - upgrade_proration: from frontend (trusted - already validated in Step 2)
 3. Validate amount against expected (PaymentValidator)
 4. Apply referral discount (PENDING → APPLIED, reduces amount)
 5. Apply billing credits (reduces amount further)
@@ -153,18 +153,18 @@ Each handler is responsible for:
 
 | Effective | Action | Atomicity |
 |-----------|--------|-----------|
-| `immediate` | Plan changed immediately via `subscriptionService->update(plan_id)` | Not wrapped in a transaction — single update, no side effects |
+| `immediate` | Plan changed immediately via `subscriptionService->update(plan_id)` | Not wrapped in a transaction - single update, no side effects |
 | `end_of_period` | `schedulePlanChange()` creates a scheduled change record; applied later by `applyPendingChanges()` | Each scheduled change application is wrapped in a transaction |
 
 ### Referral Lifecycle Per Type
 
 | Type | Discount Applied at Initiation? | Reward Created at Confirmation? | Rationale |
 |------|-------------------------------|--------------------------------|-----------|
-| `onboarding` | Yes | Yes — via `activateForSubscription()` | New user gets discount; referrer gets reward |
-| `subscription` | Yes | Yes — via `activateForSubscription()` | Converting from trial to paid; same treatment as onboarding |
-| `renewal` | Yes (if referral still PENDING) | No — referral already active from first payment | A renewal shouldn't create a second reward |
-| `upgrade_proration` | Yes | Yes — via `activateForSubscription()` | Upgrade triggers referral reward activation if not yet active |
-| `billing_cycle_change` | Yes (if referral still PENDING) | No — billing cycle change is not a conversion event | Referral should have been activated on first payment |
+| `onboarding` | Yes | Yes - via `activateForSubscription()` | New user gets discount; referrer gets reward |
+| `subscription` | Yes | Yes - via `activateForSubscription()` | Converting from trial to paid; same treatment as onboarding |
+| `renewal` | Yes (if referral still PENDING) | No - referral already active from first payment | A renewal shouldn't create a second reward |
+| `upgrade_proration` | Yes | Yes - via `activateForSubscription()` | Upgrade triggers referral reward activation if not yet active |
+| `billing_cycle_change` | Yes (if referral still PENDING) | No - billing cycle change is not a conversion event | Referral should have been activated on first payment |
 ## Atomicity Scenarios by Code Path
 
 ### Path 1: Gateway Payment (webhook/callback)
@@ -254,7 +254,7 @@ SubscriptionController::upgrade()
 
 **Atomicity guarantee:** ✅ The outer `DB::transaction()` wraps payment creation
 and all side effects. Nested transactions become MySQL savepoints. If any inner
-step fails, the entire operation rolls back — payment is never persisted as
+step fails, the entire operation rolls back - payment is never persisted as
 `completed`.
 
 ### Path 4: Deferred Upgrade (pending amount stored, paid later via gateway)
@@ -263,7 +263,7 @@ step fails, the entire operation rolls back — payment is never persisted as
 Upgrade Confirmation (SubscriptionController::upgrade)
   └─ Store pending_upgrade_amount_usd in subscription metadata
   └─ Return quote to frontend
-  └─ ⚠ This step is NOT wrapped in a transaction — single metadata update
+  └─ ⚠ This step is NOT wrapped in a transaction - single metadata update
 
 Payment Initiation (separate request)
   └─ Validate amount against stored pending_upgrade_amount_usd
@@ -271,7 +271,7 @@ Payment Initiation (separate request)
 ```
 
 **Rationale:** The pending amount is stored as a soft contract. It's just metadata
-on the subscription — not a critical business state. If the user never pays, the
+on the subscription - not a critical business state. If the user never pays, the
 pending metadata remains but doesn't affect anything. The payment initiation
 validates against it to prevent amount tampering.
 
@@ -287,7 +287,7 @@ processWebhook(gatewayName, Request)
   └─ autoApprove()  ←── same atomic path as Path 1
 ```
 
-**Atomicity guarantee:** ✅ Same as Path 1. The webhook handler is idempotent —
+**Atomicity guarantee:** ✅ Same as Path 1. The webhook handler is idempotent -
 if the same webhook arrives twice, the `isPending()` check skips processing.
 
 ### Account Type Promotion (personal → business)
@@ -362,7 +362,7 @@ POST /upgrade (to_plan_id, billing_cycle, effective=immediate)
                       ├─ If proration_due > 0:
                       │    Store pending_upgrade_amount_usd in subscription metadata
                       │    Return { proration: ..., proration_due: X }
-                      │    (Plan change deferred — no mutation yet)
+                      │    (Plan change deferred - no mutation yet)
                       │
                       ├─ If proration_due <= 0:
                       │    GatewayService::processZeroCostUpgrade()
@@ -413,11 +413,11 @@ User pays via PesaPal
 
 Two situations create $0 completed payments:
 
-1. **Zero-proration upgrade** — User upgrades to same-priced or lower plan.
+1. **Zero-proration upgrade** - User upgrades to same-priced or lower plan.
    `processZeroCostUpgrade()` creates the payment and dispatches side effects
    inside a single `DB::transaction()`.
 
-2. **Full credit coverage** — Existing credits or discounts bring the amount to $0.
+2. **Full credit coverage** - Existing credits or discounts bring the amount to $0.
    `initiatePayment()` consumes credits and creates the payment inside a
    `DB::transaction()` with a try-catch that reverses credits on failure.
 
@@ -430,7 +430,7 @@ Both paths create a payment record with:
 **Atomicity rule for zero-cost paths:** The payment record creation and
 `handlePaymentType()` dispatch MUST be inside the same `DB::transaction()`.
 A partial failure (payment persisted as completed but side effects skipped)
-would leave the system in an inconsistent state — subscription unchanged,
+would leave the system in an inconsistent state - subscription unchanged,
 payment says paid.
 
 ## File Map
@@ -450,12 +450,12 @@ payment says paid.
 
 ## Future Improvements
 
-1. **Include referral discount in quote response** — The quote endpoint currently
+1. **Include referral discount in quote response** - The quote endpoint currently
    doesn't return the expected amount after referral discount. The frontend manually
    computes it. Include `discount_applied` in the quote so the UI can use it
    directly.
 
-2. **Referral consumption on payment failure** — Currently, referral status moves to
+2. **Referral consumption on payment failure** - Currently, referral status moves to
    APPLIED during initiation. If payment never completes, the discount is consumed
    but no side effects ran. Options:
    a) Defer the PENDING→APPLIED transition to payment confirmation (alongside

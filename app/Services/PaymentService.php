@@ -182,7 +182,7 @@ class PaymentService
     }
 
     /**
-     * Operational mirror on the linked sale — no duplicate GL event.
+     * Operational mirror on the linked sale - no duplicate GL event.
      */
     public function mirrorPaymentOnSale(
         Sale $sale,

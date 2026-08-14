@@ -63,7 +63,7 @@ class InventoryCogsService
     }
 
     /**
-     * Invoices are billing documents — COGS is recognised on stock-moving sales only.
+     * Invoices are billing documents - COGS is recognised on stock-moving sales only.
      */
     public function calculateInvoiceCogs(Invoice $invoice): float
     {

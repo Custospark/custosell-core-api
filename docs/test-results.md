@@ -1,16 +1,16 @@
-# Custosell — Backend Test Results
+# Custosell - Backend Test Results
 
-## Migration Guard — 2026-08-10
+## Migration Guard - 2026-08-10
 
 Added `2026_08_10_010000_ensure_pipeline_collaboration_dismissals.php`: idempotent counterpart to `2026_07_08_160000_pipeline_collaboration_dismissals.php`. Guards `is_dismissed` / `dismissed_at` on `pipeline_board_announcement_reads` and the `pipeline_poll_dismissals` table behind `hasColumn` / `hasTable` checks, so rerun environments where the schema already exists but the migration was never recorded (e.g. interrupted applies) no longer fail with "Duplicate column". Verified on a consistent DB: migration no-ops (~22ms), batches cleanly, `migrate` reports "Nothing to migrate".
 
 ---
 
-N/A — full-suite records below are historical.  
+N/A - full-suite records below are historical.  
 **Date:** 2026-06-02  
 **Framework:** PHPUnit 11.5.55  
 **Database:** SQLite :memory:  
-**Suite:** 121 tests, 344 assertions — **All passed** ✅  
+**Suite:** 121 tests, 344 assertions - **All passed** ✅  
 **Duration:** 8.55 seconds
 
 ---
@@ -34,7 +34,7 @@ N/A — full-suite records below are historical.
 | 13 | SubscriptionTest | 5 | 12 | ✅ Passed |
 | 14 | ExpenseTest | 9 | 21 | ✅ Passed |
 | 15 | SyncTest | 8 | 14 | ✅ Passed |
-| — | ExampleTest (pre-existing) | 2 | 2 | ✅ Passed |
+| - | ExampleTest (pre-existing) | 2 | 2 | ✅ Passed |
 | | **Total** | **121** | **344** | **✅ All passed** |
 
 ---
@@ -59,12 +59,12 @@ N/A — full-suite records below are historical.
 - **Auth flow**: Register → login → token → logout → me. All gates enforce correctly.
 - **Seeded data**: PlanSeeder creates Free/Pro/Premium with correct JSON features/limits.
 - **Business scoping**: Every entity correctly filters by `business_id`. Cross-business data is invisible.
-- **CRUD consistency**: All 14 entities follow the same pattern — create returns 201, list returns 200, delete returns 204.
+- **CRUD consistency**: All 14 entities follow the same pattern - create returns 201, list returns 200, delete returns 204.
 - **Sale with items**: Creates sale + sale_items + stock_movements + updates product stock in one transaction.
 - **Sync API**: Push creates records, pull returns scoped data, full returns complete dump.
 
 ### Minor Notes
-- Delete non-existent plan returns 500 instead of 404 (exception in service layer — low priority, data never reaches controller if service throws).
+- Delete non-existent plan returns 500 instead of 404 (exception in service layer - low priority, data never reaches controller if service throws).
 - Duplicate subscription guard catches at DB unique constraint level.
 - Shift "clock in twice" returns 409 via controller check.
 
@@ -74,24 +74,24 @@ N/A — full-suite records below are historical.
 
 ```
 tests/Feature/
-├── AuthTest.php           — register, login, logout, me
-├── PlanTest.php           — CRUD + seeding
-├── BusinessTest.php       — registration + settings
-├── RoleTest.php           — CRUD + permissions
-├── UserTest.php           — staff management
-├── CategoryTest.php       — CRUD
-├── ProductTest.php        — CRUD + low stock
-├── CustomerTest.php       — CRUD + purchase history
-├── ShiftTest.php          — clock in/out
-├── SaleTest.php           — POS checkout + refund
-├── SaleItemTest.php       — line items
-├── StockMovementTest.php  — inventory ledger
-├── SubscriptionTest.php   — plan linking
-├── ExpenseTest.php        — expenses + categories
-└── SyncTest.php           — push/pull/full
+├── AuthTest.php           - register, login, logout, me
+├── PlanTest.php           - CRUD + seeding
+├── BusinessTest.php       - registration + settings
+├── RoleTest.php           - CRUD + permissions
+├── UserTest.php           - staff management
+├── CategoryTest.php       - CRUD
+├── ProductTest.php        - CRUD + low stock
+├── CustomerTest.php       - CRUD + purchase history
+├── ShiftTest.php          - clock in/out
+├── SaleTest.php           - POS checkout + refund
+├── SaleItemTest.php       - line items
+├── StockMovementTest.php  - inventory ledger
+├── SubscriptionTest.php   - plan linking
+├── ExpenseTest.php        - expenses + categories
+└── SyncTest.php           - push/pull/full
 
 tests/Unit/
-└── ExampleTest.php        — pre-existing
+└── ExampleTest.php        - pre-existing
 ```
 
 ## Factories Created/Updated

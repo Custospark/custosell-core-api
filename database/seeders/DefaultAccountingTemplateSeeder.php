@@ -10,7 +10,7 @@ class DefaultAccountingTemplateSeeder extends Seeder
 {
     /**
      * Runs the `accounting:seed-chart-of-accounts` command once, seeding the default
-     * chart for every business missing one (idempotent — existing codes are skipped).
+     * chart for every business missing one (idempotent - existing codes are skipped).
      */
     public function run(): void
     {

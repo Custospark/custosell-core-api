@@ -91,31 +91,31 @@ abstract class AbstractBillingLifecycleTestCase extends TestCase
         $this->paymentQuoteService = app(PaymentQuoteService::class);
         $this->prorationCalculator = app(SubscriptionProrationCalculator::class);
 
-        // Grace Hopper — Ace Hardware Kikuubo
+        // Grace Hopper - Ace Hardware Kikuubo
         $this->grace = User::factory()->create(['name' => 'Grace Hopper', 'email' => 'grace@acehardware.com', 'is_active' => true]);
         $this->aceHardware = Business::factory()->create(['owner_id' => $this->grace->id, 'name' => 'Ace Hardware Kikuubo', 'currency' => 'UGX']);
 
-        // Alan Turing — Enigma Tech Solutions
+        // Alan Turing - Enigma Tech Solutions
         $this->alan = User::factory()->create(['name' => 'Alan Turing', 'email' => 'alan@enigmatech.com', 'is_active' => true]);
         $this->enigmaTech = Business::factory()->create(['owner_id' => $this->alan->id, 'name' => 'Enigma Tech Solutions', 'currency' => 'UGX']);
 
-        // Margaret Hamilton — Apollo Software Ltd
+        // Margaret Hamilton - Apollo Software Ltd
         $this->margaret = User::factory()->create(['name' => 'Margaret Hamilton', 'email' => 'margaret@apollosoft.com', 'is_active' => true]);
         $this->apolloSoft = Business::factory()->create(['owner_id' => $this->margaret->id, 'name' => 'Apollo Software Ltd', 'currency' => 'UGX']);
 
-        // Tim Berners-Lee — Web Foundation
+        // Tim Berners-Lee - Web Foundation
         $this->tim = User::factory()->create(['name' => 'Tim Berners-Lee', 'email' => 'tim@webfoundation.org', 'is_active' => true]);
         $this->webFoundation = Business::factory()->create(['owner_id' => $this->tim->id, 'name' => 'Web Foundation', 'currency' => 'UGX']);
 
-        // Ada Lovelace — Analytical Engine Co
+        // Ada Lovelace - Analytical Engine Co
         $this->ada = User::factory()->create(['name' => 'Ada Lovelace', 'email' => 'ada@analyticalengine.com', 'is_active' => true]);
         $this->analyticalEngine = Business::factory()->create(['owner_id' => $this->ada->id, 'name' => 'Analytical Engine Co', 'currency' => 'UGX']);
 
-        // Linus Torvalds — Linux Foundation
+        // Linus Torvalds - Linux Foundation
         $this->linus = User::factory()->create(['name' => 'Linus Torvalds', 'email' => 'linus@linuxfoundation.org', 'is_active' => true]);
         $this->linuxFdn = Business::factory()->create(['owner_id' => $this->linus->id, 'name' => 'Linux Foundation', 'currency' => 'UGX']);
 
-        // Dennis Ritchie — Bell Labs Computing
+        // Dennis Ritchie - Bell Labs Computing
         $this->dennis = User::factory()->create(['name' => 'Dennis Ritchie', 'email' => 'dennis@bell-labs.com', 'is_active' => true]);
         $this->bellLabs = Business::factory()->create(['owner_id' => $this->dennis->id, 'name' => 'Bell Labs Computing', 'currency' => 'UGX']);
     }

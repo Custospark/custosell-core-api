@@ -147,7 +147,7 @@ class PersonalBudgetController extends Controller
 
         $afford = $plannedTotal <= $income;
         $recommendation = $afford
-            ? 'Your planned budgets fit within your income for this period. Great — you can handle your current plans.'
+            ? 'Your planned budgets fit within your income for this period. Great - you can handle your current plans.'
             : 'Your planned budgets (' . number_format($plannedTotal, 2) . ') are more than your income (' . number_format($income, 2) . '). Consider trimming some plans or boosting income.';
 
         return response()->json([
@@ -174,7 +174,7 @@ class PersonalBudgetController extends Controller
                     'level' => 'over',
                     'budget_id' => $b['id'],
                     'name' => $b['name'],
-                    'message' => 'You\u2019ve spent ' . number_format($pct, 1) . '% of "' . $b['name'] . '" — over your planned amount.',
+                    'message' => 'You\u2019ve spent ' . number_format($pct, 1) . '% of "' . $b['name'] . '" - over your planned amount.',
                     'remaining' => $b['remaining'],
                 ];
             } elseif ($pct >= 80) {
@@ -182,7 +182,7 @@ class PersonalBudgetController extends Controller
                     'level' => 'near',
                     'budget_id' => $b['id'],
                     'name' => $b['name'],
-                    'message' => 'You\u2019re at ' . number_format($pct, 1) . '% of "' . $b['name'] . '" — almost at your plan.',
+                    'message' => 'You\u2019re at ' . number_format($pct, 1) . '% of "' . $b['name'] . '" - almost at your plan.',
                     'remaining' => $b['remaining'],
                 ];
             }
@@ -236,7 +236,7 @@ class PersonalBudgetController extends Controller
             'plan_remaining' => round(max($remaining, 0), 2),
             'can_handle' => $canHandle,
             'recommendation' => $canHandle
-                ? 'You can handle this budget with your current income — it fits comfortably. Keep going.'
+                ? 'You can handle this budget with your current income - it fits comfortably. Keep going.'
                 : 'This plan (' . number_format($budget->planned_amount, 2) . ') is more than your income (' . number_format($income, 2) . '). Consider trimming this plan or adding income.',
         ];
     }

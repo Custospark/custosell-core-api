@@ -30,7 +30,7 @@ class CreditService
             if ($user && $user->business_id) {
                 // Business reward credit is an owner perk. A staff member who
                 // works in a business they don't own earns a PERSONAL commission
-                // credit instead — their referrals never fund the business
+                // credit instead - their referrals never fund the business
                 // promo-credit pool. The referee still gets the discount.
                 $ownsBusiness = Business::query()
                     ->whereKey($user->business_id)
@@ -53,7 +53,7 @@ class CreditService
             return null;
         }
 
-        // Audit log — the amount that lands as a spendable credit for the referee (owner).
+        // Audit log - the amount that lands as a spendable credit for the referee (owner).
         // Goal: verify commission distribution amounts against the paid base.
         Log::info('[PaymentAudit] referral credit created', [
             'referral_id' => $referral->id,

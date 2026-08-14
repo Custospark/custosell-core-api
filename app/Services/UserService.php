@@ -59,7 +59,7 @@ class UserService implements UserServiceInterface
         $accountType = $data['account_type'] ?? 'personal';
         $isPersonalType = in_array($accountType, ['personal', 'storefront_buyer'], true);
         // Preserve the distinct shopping (storefront_buyer) account type instead of
-        // flattening it to 'personal' — the frontend branches on it to show the
+        // flattening it to 'personal' - the frontend branches on it to show the
         // Discover-only shopping experience (no dashboard, no subscriptions).
         $data['account_type'] = $isPersonalType ? $accountType : 'business';
 
@@ -90,7 +90,7 @@ class UserService implements UserServiceInterface
         // Personal accounts get a minimal business record + Personal plan subscription.
         // Module access is gated by the subscription status, same as business accounts.
         // Storefront buyers (shopping accounts) stay account-only (no workspace, no
-        // subscription, no modules) — they shop, they don't sell.
+        // subscription, no modules) - they shop, they don't sell.
         if ($accountType === 'personal') {
             DB::transaction(function () use ($user, $data) {
                 $business = Business::create([
@@ -113,7 +113,7 @@ class UserService implements UserServiceInterface
                         null,
                         false,
                     );
-                    // Personal plan has $0 onboarding fee — mark as paid so no
+                    // Personal plan has $0 onboarding fee - mark as paid so no
                     // onboarding payment action is ever shown.
                     $subscription->update(['onboarding_fee_paid' => true]);
                 }
@@ -161,7 +161,7 @@ class UserService implements UserServiceInterface
             $this->assertRoleAvailableForBusiness($businessId, (int) $data['role_id']);
         }
 
-        // Every staff member must be assigned to a branch — default to the business default location.
+        // Every staff member must be assigned to a branch - default to the business default location.
         if (empty($data['location_id'])) {
             $defaultLocationId = \App\Models\Location::forBusiness($businessId)
                 ->where('is_default', true)
@@ -217,7 +217,7 @@ class UserService implements UserServiceInterface
 
         $updated = $this->userRepository->update($user, $data);
 
-        // Owner modules on self-update are personal visibility only — staff grants stay as assigned.
+        // Owner modules on self-update are personal visibility only - staff grants stay as assigned.
 
         if (
             array_key_exists('name', $data)
@@ -232,7 +232,7 @@ class UserService implements UserServiceInterface
 
     public function delete(int $id, int $businessId, int $actorId): bool
     {
-        // Business actors must detach staff from the organization — never delete accounts.
+        // Business actors must detach staff from the organization - never delete accounts.
         unset($id, $businessId, $actorId);
         throw ValidationException::withMessages([
             'user' => 'Staff accounts cannot be deleted. Detach them from this organization instead.',

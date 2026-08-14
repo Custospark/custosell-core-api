@@ -60,6 +60,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Intentionally no-op — backfill is a forward data correction.
+        // Intentionally no-op - backfill is a forward data correction.
     }
 };

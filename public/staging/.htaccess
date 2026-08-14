@@ -1,19 +1,19 @@
 # .htaccess for the Custosell SPA served from /staging or /production
 # Copy this file into the deployed folder (e.g. public_html/staging/.htaccess).
 #
-# IMPORTANT: no /assets/ remapping — the build uses relative asset paths
+# IMPORTANT: no /assets/ remapping - the build uses relative asset paths
 # (./assets/...), so real files are served as-is with correct MIME types and
 # only non-file routes fall back to index.html.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Serve real files/dirs as-is (JS, CSS, images, fonts) — correct MIME types
+  # Serve real files/dirs as-is (JS, CSS, images, fonts) - correct MIME types
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # SPA fallback — all other routes go to index.html in this folder
+  # SPA fallback - all other routes go to index.html in this folder
   RewriteRule ^ index.html [L]
 </IfModule>
 
@@ -46,7 +46,7 @@
   ExpiresByType font/woff "access plus 1 year"
   ExpiresByType font/woff2 "access plus 1 year"
 
-  # Override for sw.js — never HTTP-cache it (mod_headers no-cache wins).
+  # Override for sw.js - never HTTP-cache it (mod_headers no-cache wins).
   <FilesMatch "sw\.js$">
     ExpiresDefault "access plus 0 seconds"
   </FilesMatch>
@@ -58,14 +58,14 @@
   Header set X-Frame-Options "SAMEORIGIN"
   Header set X-XSS-Protection "1; mode=block"
 
-  # Never cache the service worker — the browser must revalidate it on every
+  # Never cache the service worker - the browser must revalidate it on every
   # load so new CACHE_VERSIONs (and stale-chunk purges) reach users immediately.
   <FilesMatch "sw\.js$">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
   </FilesMatch>
 
-  # Only content-hashed build assets are immutable — cache them hard.
+  # Only content-hashed build assets are immutable - cache them hard.
   <FilesMatch "\.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>

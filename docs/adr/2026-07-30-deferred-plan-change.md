@@ -1,4 +1,4 @@
-# ADR: Deferred Plan Change — Plan ID Updated on Payment Confirm, Not on Upgrade Request
+# ADR: Deferred Plan Change - Plan ID Updated on Payment Confirm, Not on Upgrade Request
 
 ## Date
 2026-07-30
@@ -10,14 +10,14 @@ Accepted
 When a user upgrades their plan (e.g., from Essential to Professional), the subscription `plan_id` was being updated immediately on the database during the `POST /api/v1/billing/upgrade` endpoint. Payment collection happened as a separate, subsequent step. This created a window where:
 
 1. The user's `plan_id` reflected the upgraded plan before payment cleared.
-2. If payment failed (STK push declined, timeout, insufficient funds), the subscription was already on the new plan — the user could access dashboard features gated on `plan_id` without having paid.
+2. If payment failed (STK push declined, timeout, insufficient funds), the subscription was already on the new plan - the user could access dashboard features gated on `plan_id` without having paid.
 3. The payment confirmation callback (`handleUpgradeProration`) had a guard that checked whether the subscription was already on the target plan and skipped the plan change, assuming it was already applied.
-4. For the OnboardingPage flow (subscribe to plan A, switch to plan B, pay onboarding fee), the `upgrade` endpoint changed `plan_id` but the payment was only for the onboarding fee — the plan upgrade was effectively granted without additional payment.
+4. For the OnboardingPage flow (subscribe to plan A, switch to plan B, pay onboarding fee), the `upgrade` endpoint changed `plan_id` but the payment was only for the onboarding fee - the plan upgrade was effectively granted without additional payment.
 
 A similar issue existed in the `handlePaymentType` onboarding path: when a user subscribed to plan A, then upgraded to plan B before paying the onboarding fee, the callback never updated `plan_id` because it assumed the current plan was correct.
 
 ## Decision
-Defer all `plan_id` mutations from the upgrade endpoint to the payment confirmation callback. The upgrade endpoint becomes a **quote-only** endpoint: it validates the request, computes the proration, and returns it — but does not mutate the subscription.
+Defer all `plan_id` mutations from the upgrade endpoint to the payment confirmation callback. The upgrade endpoint becomes a **quote-only** endpoint: it validates the request, computes the proration, and returns it - but does not mutate the subscription.
 
 | Step | Before (problem) | After (fix) |
 |------|-------------------|-------------|
@@ -33,18 +33,18 @@ For the onboarding path (`handlePaymentType('onboarding')`):
 
 ## Pros
 
-1. **Atomic plan change with payment** — The `plan_id` updates in the same database transaction as the payment confirmation. Either both succeed or both fail. No window exists where the plan is upgraded without payment.
-2. **Correct retry behavior** — If payment fails, the subscription is in its original state. Retrying the same upgrade flow works identically: same quote, same plan comparison, same payment.
-3. **Reconciliation is single-source** — The billing_payments record, with its `metadata.plan_id`, is the single source of truth for what plan the user intended to buy. The subscription's `plan_id` always reflects what was actually paid for.
-4. **Simpler callback logic** — The `handleUpgradeProration` no longer needs the "already on target plan" guard because that state never occurs. If the callback runs, the plan change is always needed.
-5. **Covers onboarding+upgrade edge case** — The `handlePaymentType` onboarding path now handles the case where a user changes plan before paying, closing a gap where users could get a higher-tier plan for the original plan's onboarding fee.
+1. **Atomic plan change with payment** - The `plan_id` updates in the same database transaction as the payment confirmation. Either both succeed or both fail. No window exists where the plan is upgraded without payment.
+2. **Correct retry behavior** - If payment fails, the subscription is in its original state. Retrying the same upgrade flow works identically: same quote, same plan comparison, same payment.
+3. **Reconciliation is single-source** - The billing_payments record, with its `metadata.plan_id`, is the single source of truth for what plan the user intended to buy. The subscription's `plan_id` always reflects what was actually paid for.
+4. **Simpler callback logic** - The `handleUpgradeProration` no longer needs the "already on target plan" guard because that state never occurs. If the callback runs, the plan change is always needed.
+5. **Covers onboarding+upgrade edge case** - The `handlePaymentType` onboarding path now handles the case where a user changes plan before paying, closing a gap where users could get a higher-tier plan for the original plan's onboarding fee.
 
 ## Cons
 
-1. **Quote is potentially stale** — Between the time the upgrade endpoint returns a proration quote and the payment callback runs, the proration amount could change (e.g., if the billing period advances). This was already a risk before; it is unchanged by this decision.
-2. **`upgrade` endpoint has no side effect** — Calling the endpoint without completing payment leaves no trace. This could be confusing operationally (no `scheduled_changes` record for an attempted upgrade).
-3. **Frontend must pass `to_plan_id` in payment metadata** — The payment callback for onboarding needs to know which plan to activate. This requires the frontend to include `plan_id` in the payment metadata payload. Failure to do so results in the subscription staying on the original plan after payment confirms.
-4. **Two code paths for plan changes** — `changePlan()` during onboarding (in `handlePaymentType`) and `changePlan()` during upgrade payment confirmation (in `handleUpgradeProration`) are conceptually the same operation but triggered from different contexts. If one diverges from the other behaviorally, the onboarding path could drift.
+1. **Quote is potentially stale** - Between the time the upgrade endpoint returns a proration quote and the payment callback runs, the proration amount could change (e.g., if the billing period advances). This was already a risk before; it is unchanged by this decision.
+2. **`upgrade` endpoint has no side effect** - Calling the endpoint without completing payment leaves no trace. This could be confusing operationally (no `scheduled_changes` record for an attempted upgrade).
+3. **Frontend must pass `to_plan_id` in payment metadata** - The payment callback for onboarding needs to know which plan to activate. This requires the frontend to include `plan_id` in the payment metadata payload. Failure to do so results in the subscription staying on the original plan after payment confirms.
+4. **Two code paths for plan changes** - `changePlan()` during onboarding (in `handlePaymentType`) and `changePlan()` during upgrade payment confirmation (in `handleUpgradeProration`) are conceptually the same operation but triggered from different contexts. If one diverges from the other behaviorally, the onboarding path could drift.
 
 ## Implementation
 

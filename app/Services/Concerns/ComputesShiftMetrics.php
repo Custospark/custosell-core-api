@@ -60,7 +60,7 @@ trait ComputesShiftMetrics
 
             return [
                 'shift' => $shift,
-                'cashier' => $shift->user?->name ?? '—',
+                'cashier' => $shift->user?->name ?? '-',
                 'transaction_count' => $sales->count(),
                 'gross_sales' => $gross,
                 'refunds' => $refunds,
@@ -141,7 +141,7 @@ trait ComputesShiftMetrics
 
         return [
             'shift' => $shift,
-            'cashier' => $shift->user?->name ?? '—',
+            'cashier' => $shift->user?->name ?? '-',
             'branch' => $branch,
             'duration' => $this->formatShiftDuration($shift),
             'transaction_count' => (int) $metrics['transaction_count'],

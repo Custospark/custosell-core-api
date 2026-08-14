@@ -9,7 +9,7 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
-        // Remove old per-module personal plans — replaced by the unified Personal plan below.
+        // Remove old per-module personal plans - replaced by the unified Personal plan below.
         Plan::whereIn('slug', [
             'pipeline-personal', 'accounting-personal',
             'estimates-personal', 'expenses-personal', 'documents-personal',
@@ -51,7 +51,7 @@ class PlanSeeder extends Seeder
             'name' => 'Professional',
             'slug' => 'professional',
             'type' => 'business',
-            'description' => 'Full business management suite for growing businesses — including pipeline, estimates, and document management.',
+            'description' => 'Full business management suite for growing businesses - including pipeline, estimates, and document management.',
             'price_monthly_usd' => 29.99,
             'price_yearly_usd' => 299.9,
             'onboarding_fee_usd' => 0,
@@ -85,7 +85,7 @@ class PlanSeeder extends Seeder
             'name' => 'Personal',
             'slug' => 'personal',
             'type' => 'personal',
-            'description' => 'All the tools you need for personal productivity — pipeline, estimates, expenses, accounting, and documents.',
+            'description' => 'All the tools you need for personal productivity - pipeline, estimates, expenses, accounting, and documents.',
             'price_monthly_usd' => 9.99,
             'price_yearly_usd' => 99.9,
             'onboarding_fee_usd' => 0,

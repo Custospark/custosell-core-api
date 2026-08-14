@@ -8,7 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Split payroll liabilities (2110–2112), settlement/remittance journal FKs, and void timestamps.
+ * Split payroll liabilities (2110-2112), settlement/remittance journal FKs, and void timestamps.
  */
 return new class extends Migration
 {

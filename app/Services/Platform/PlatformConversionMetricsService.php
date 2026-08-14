@@ -152,7 +152,7 @@ class PlatformConversionMetricsService
         $decisions = [];
 
         $decisions[] = $trialsInRange > 0
-            ? "{$trialsInRange} trial(s) started in range, {$convertedInRange} converted — {$this->rate($convertedInRange, $trialsInRange)}% rate."
+            ? "{$trialsInRange} trial(s) started in range, {$convertedInRange} converted - {$this->rate($convertedInRange, $trialsInRange)}% rate."
             : 'No trials started in the selected range.';
 
         $decisions[] = $activeNow > 0
@@ -160,7 +160,7 @@ class PlatformConversionMetricsService
             : 'No active subscribers platform-wide yet.';
 
         $decisions[] = $onTrialNow > 0
-            ? "{$onTrialNow} trial(s) currently running — nurture them toward conversion."
+            ? "{$onTrialNow} trial(s) currently running - nurture them toward conversion."
             : 'No trials currently running.';
 
         return $decisions;

@@ -123,7 +123,7 @@ class CustomerService implements CustomerServiceInterface
 
         return [
             ['key' => 'active', 'label' => 'Active (<30 days)', 'count' => $active],
-            ['key' => 'at_risk', 'label' => 'At risk (30–90 days)', 'count' => $atRisk],
+            ['key' => 'at_risk', 'label' => 'At risk (30-90 days)', 'count' => $atRisk],
             ['key' => 'lapsed', 'label' => 'Lapsed (>90 days)', 'count' => $lapsed],
             ['key' => 'never', 'label' => 'Never purchased', 'count' => $never],
         ];
@@ -154,8 +154,8 @@ class CustomerService implements CustomerServiceInterface
 
         return [
             ['bucket' => '1 purchase', 'count' => $one],
-            ['bucket' => '2–3 purchases', 'count' => $twoThree],
-            ['bucket' => '4–6 purchases', 'count' => $fourSix],
+            ['bucket' => '2-3 purchases', 'count' => $twoThree],
+            ['bucket' => '4-6 purchases', 'count' => $fourSix],
             ['bucket' => '7+ purchases', 'count' => $sevenPlus],
         ];
     }

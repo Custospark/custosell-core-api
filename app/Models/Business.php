@@ -194,7 +194,7 @@ class Business extends Model
     }
 
     /**
-     * Public Discover / shop visibility — enabled shops whose status is not platform-blocked
+     * Public Discover / shop visibility - enabled shops whose status is not platform-blocked
      * (same blocked list as EnsureBusinessActive: restricted / suspended).
      *
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query

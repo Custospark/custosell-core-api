@@ -90,7 +90,7 @@ class SalesRepService implements SalesRepServiceInterface
                 'discount_value' => $data['discount_rate'] ?? 20,
                 // Rep codes are ALWAYS single-period: the referee discount applies to
                 // the first charge only. A duration > 1 would create standing monthly
-                // discount credits — the one recurring company cost — with no extra
+                // discount credits - the one recurring company cost - with no extra
                 // earnings for the rep (commission is one-time). Locked to 1 on purpose.
                 'discount_duration_months' => 1,
                 'is_active' => true,
@@ -441,7 +441,7 @@ class SalesRepService implements SalesRepServiceInterface
         $refData = [
             ['Region', 'Central, Eastern, Northern, Western, Kampala', 'Case-insensitive; will be normalized on import.'],
             ['Commission Type', 'percentage, flat', 'percentage = % of referral value; flat = fixed amount. Defaults to percentage.'],
-            ['Commission Rate', 'Up to you', 'For percentage: 0–100 (e.g. 10). For flat: any positive number (e.g. 50000).'],
+            ['Commission Rate', 'Up to you', 'For percentage: 0-100 (e.g. 10). For flat: any positive number (e.g. 50000).'],
             ['Name', 'Any text', 'Required.'],
             ['Email', 'Valid email', 'Required. If no user with this email exists, a new login will be auto-created.'],
             ['Phone', 'Any text', 'Optional. Stored as-is.'],

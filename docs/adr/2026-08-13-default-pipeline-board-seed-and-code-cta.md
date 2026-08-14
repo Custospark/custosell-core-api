@@ -1,8 +1,8 @@
-# ADR — Default pipeline board seeded on account creation; email CTAs deep-link by board code
+# ADR - Default pipeline board seeded on account creation; email CTAs deep-link by board code
 
 - **Date:** 2026-08-13
 - **Status:** Accepted
-- **Stack:** Backend (no DB migration — reuses the existing `PipelineBoardService` and board `code` column).
+- **Stack:** Backend (no DB migration - reuses the existing `PipelineBoardService` and board `code` column).
 
 ## Context
 
@@ -14,9 +14,9 @@
 1. **Seed a default board on registration, via the `UserRegistered` event.**
    - New `App\Listeners\SeedDefaultPipelineBoard` listens to `UserRegistered` (registered in `EventServiceProvider`).
    - It resolves the business (`$event->business ?? $user->business`) and calls `PipelineBoardService::ensureBusinessSetup($businessId, $userId)`.
-   - `ensureBusinessSetup` (existing) seeds sources if missing and creates a default `Main sales pipeline` board (workspace `pipeline`, `is_default = true`) with the standard kanban stages, default labels, default appearance, and guiding cards — so the board is never empty.
+   - `ensureBusinessSetup` (existing) seeds sources if missing and creates a default `Main sales pipeline` board (workspace `pipeline`, `is_default = true`) with the standard kanban stages, default labels, default appearance, and guiding cards - so the board is never empty.
    - Storefront buyers (no business workspace) are skipped (`if (!$business) return`).
-   - Seeding failures are caught and only logged — they never block registration.
+   - Seeding failures are caught and only logged - they never block registration.
 
 2. **Board notification CTAs deep-link by `code`, not `id`.**
    - `PipelineNotificationService::boardCta` and `boardConversationCta` now use `$board->code` in place of `$board->id`, matching how the frontend routes boards (`/pipeline/boards/{code}` and `/estimates/boards/{code}`).
@@ -37,8 +37,8 @@ The chart-of-accounts seeding (ADR 2026-08-11) seeds inside the registration `DB
 
 ## References
 
-- `app/Listeners/SeedDefaultPipelineBoard.php` — new listener.
-- `app/Providers/EventServiceProvider.php` — wires the listener to `UserRegistered`.
+- `app/Listeners/SeedDefaultPipelineBoard.php` - new listener.
+- `app/Providers/EventServiceProvider.php` - wires the listener to `UserRegistered`.
 - `app/Services/Pipeline/PipelineBoardService.php::ensureBusinessSetup` / `createBoard`.
 - `app/Services/Pipeline/PipelineNotificationService.php::boardCta` / `boardConversationCta`.
 - `tests/Feature/AuthTest.php`, `tests/Feature/BusinessTest.php`, `tests/Feature/PipelineBoardNotificationCtaTest.php`.

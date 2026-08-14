@@ -17,7 +17,7 @@ interface EfrisServiceInterface
 
     /**
      * Attempt to fiscalize a POS sale (or enqueue when offline / soft-fail).
-     * Never throws out of SaleService — sale must succeed regardless.
+     * Never throws out of SaleService - sale must succeed regardless.
      */
     public function fiscalizeSale(Sale $sale, bool $forceSync = false): Sale;
 

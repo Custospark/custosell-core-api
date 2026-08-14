@@ -50,6 +50,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Keep gallery backgrounds — removing them would blank customized canvases.
+        // Keep gallery backgrounds - removing them would blank customized canvases.
     }
 };

@@ -232,7 +232,7 @@ class ProrationAccuracyTest extends TestCase
     {
         $nextBillingDate = Carbon::now()->addDays(30)->startOfDay();
 
-        // Subscription was created when Professional cost $54/mo — its snapshot
+        // Subscription was created when Professional cost $54/mo - its snapshot
         // columns still hold the OLD price (36,908.70 UGX in the field case).
         $this->professional->update([
             'price_monthly_usd' => 0.30,

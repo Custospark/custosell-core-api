@@ -92,12 +92,12 @@ class ChartOfAccountService
         }
 
         if ($account->journalEntryLines()->exists()) {
-            // Has transactions — soft deactivate instead
+            // Has transactions - soft deactivate instead
             $this->chartOfAccountRepository->update($account, ['is_active' => false]);
             return;
         }
 
-        // No transactions — hard delete
+        // No transactions - hard delete
         $this->chartOfAccountRepository->delete($account);
     }
 

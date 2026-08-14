@@ -39,7 +39,7 @@ class EnsureActiveSubscription
             ], 403);
         }
 
-        // Request-time lifecycle detection (no cron — drive transitions from user requests)
+        // Request-time lifecycle detection (no cron - drive transitions from user requests)
         $this->stateMachineService->processDueTransitions($subscription);
         $subscription = $subscription->fresh();
 

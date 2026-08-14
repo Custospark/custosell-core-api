@@ -11,15 +11,15 @@ use Tests\TestCase;
  * Billing lifecycle tests with real user stories, real names, and actual Plan prices.
  *
  * Coverage:
- *   User Story 13 — Duplicate subscription prevention
- *   User Story 14 — Invalid state transitions
- *   User Story 15 — Payment lifecycle (pending → complete / fail / refund)
- *   User Story 16 — Scheduled change: apply pending changes (cron)
+ *   User Story 13 - Duplicate subscription prevention
+ *   User Story 14 - Invalid state transitions
+ *   User Story 15 - Payment lifecycle (pending → complete / fail / refund)
+ *   User Story 16 - Scheduled change: apply pending changes (cron)
  */
 class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
 {
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 13 — Duplicate subscription prevention
+    //  USER STORY 13 - Duplicate subscription prevention
     // ════════════════════════════════════════════════════════════════════
 
     public function test_business_cannot_have_duplicate_subscriptions(): void
@@ -40,7 +40,7 @@ class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 14 — Invalid state transitions
+    //  USER STORY 14 - Invalid state transitions
     // ════════════════════════════════════════════════════════════════════
 
     public function test_cannot_activate_non_trial_or_past_due_subscription(): void
@@ -92,7 +92,7 @@ class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 15 — Payment lifecycle
+    //  USER STORY 15 - Payment lifecycle
     // ════════════════════════════════════════════════════════════════════
 
     public function test_payment_goes_through_full_lifecycle(): void
@@ -224,7 +224,7 @@ class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  USER STORY 16 — Scheduled change: apply pending changes (cron)
+    //  USER STORY 16 - Scheduled change: apply pending changes (cron)
     // ════════════════════════════════════════════════════════════════════
 
     public function test_apply_pending_changes_processes_due_scheduled_changes(): void

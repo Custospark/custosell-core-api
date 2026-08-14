@@ -15,7 +15,7 @@ subscription receipts, shift-close tickets, and accounting-export reports).
   `resources/views/reports/layouts/base.blade.php` as a **base64 data URI**
   (`data:<mime>;base64,<bytes>`).
 - The logo is read directly from the `public` disk using the business's `logo_path`
-  (with the `/storage/` prefix stripped) — no symlink resolution at render time, so it
+  (with the `/storage/` prefix stripped) - no symlink resolution at render time, so it
   works in DomPDF, which cannot follow relative web URLs.
 - The `<img>` renders **above the business name** in the centered header; CSS caps it at
   `max-height: 56px; max-width: 180px`.
@@ -39,7 +39,7 @@ logo appears consistently without touching individual report views.
 - No new API surface or migration; `logo_path` already existed.
 - DomPDF renders data-URI images natively; a PNG test logo produced a valid `%PDF`
   output in the suite.
-- Backend-only by design — the frontend storefront already displays `logo_path`.
+- Backend-only by design - the frontend storefront already displays `logo_path`.
 
 ## Tests
 

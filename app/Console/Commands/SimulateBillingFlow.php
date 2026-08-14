@@ -34,7 +34,7 @@ class SimulateBillingFlow extends Command
         $this->currency = $currency;
 
         $businessId = (int) $this->argument('business');
-        $this->components->info("Billing flow simulation — business #{$businessId}");
+        $this->components->info("Billing flow simulation - business #{$businessId}");
         $this->newLine();
 
         try {
@@ -49,7 +49,7 @@ class SimulateBillingFlow extends Command
             $this->stepSummary($businessId);
 
             $this->newLine();
-            $this->components->success('Simulation complete — all assertions passed. Oscar, the flow is verified end-to-end.');
+            $this->components->success('Simulation complete - all assertions passed. Oscar, the flow is verified end-to-end.');
             return Command::SUCCESS;
         } catch (Throwable $e) {
             $this->components->error("Simulation failed: {$e->getMessage()}");
@@ -62,7 +62,7 @@ class SimulateBillingFlow extends Command
 
     protected function login(): void
     {
-        $this->components->info('Step 0 — Login via real endpoint POST /auth/login');
+        $this->components->info('Step 0 - Login via real endpoint POST /auth/login');
         $res = $this->callApi('POST', '/auth/login', [
             'email' => $this->option('email'),
             'password' => $this->option('password'),
@@ -83,7 +83,7 @@ class SimulateBillingFlow extends Command
             return;
         }
 
-        $this->components->info("Step 1 — Reset subscription/billing data for business #{$businessId}");
+        $this->components->info("Step 1 - Reset subscription/billing data for business #{$businessId}");
         $subIds = DB::table('subscriptions')->where('business_id', $businessId)->pluck('id')->all();
         $paymentIds = DB::table('billing_payments')->where('business_id', $businessId)->pluck('id')->all();
         $creditIds = DB::table('billing_credits')
@@ -119,7 +119,7 @@ class SimulateBillingFlow extends Command
 
     protected function stepSubscribe(int $businessId): int
     {
-        $this->components->info('Step 2 — Subscribe (plan 6 Professional, monthly) with referral ' . $this->option('referral'));
+        $this->components->info('Step 2 - Subscribe (plan 6 Professional, monthly) with referral ' . $this->option('referral'));
         $res = $this->callApi('POST', '/subscriptions/subscribe', [
             'plan_id' => 6,
             'billing_cycle' => 'monthly',
@@ -164,7 +164,7 @@ class SimulateBillingFlow extends Command
 
     protected function stepOnboardingPayment(int $subscriptionId): void
     {
-        $this->components->info('Step 3 — Onboarding payment (payment_type=onboarding)');
+        $this->components->info('Step 3 - Onboarding payment (payment_type=onboarding)');
         $feeUsd = 95.00;
         $discountUsd = round($feeUsd * 0.30, 2); // DEZFQBBB = 30% off first 2 periods
         $chargeUsd = round($feeUsd - $discountUsd, 2);
@@ -222,7 +222,7 @@ class SimulateBillingFlow extends Command
 
     protected function stepSubscriptionPayment(int $subscriptionId): void
     {
-        $this->components->info('Step 4 — Subscribe now (payment_type=subscription, monthly $54)');
+        $this->components->info('Step 4 - Subscribe now (payment_type=subscription, monthly $54)');
         $monthlyUsd = 54.00;
         $creditUsd = 16.20;
         $chargeUsd = round($monthlyUsd - $creditUsd, 2);
@@ -265,7 +265,7 @@ class SimulateBillingFlow extends Command
 
     protected function stepTopupPayment(int $subscriptionId): void
     {
-        $this->components->info('Step 5 — Top-up (payment_type=topup, 6 months)');
+        $this->components->info('Step 5 - Top-up (payment_type=topup, 6 months)');
         $monthlyUsd = 54.00;
         $months = 6;
         $chargeUsd = round($monthlyUsd * $months, 2);
@@ -301,7 +301,7 @@ class SimulateBillingFlow extends Command
 
     protected function stepUpgrade(int $subscriptionId): void
     {
-        $this->components->info('Step 6 — Upgrade to Enterprise (plan 8) yearly');
+        $this->components->info('Step 6 - Upgrade to Enterprise (plan 8) yearly');
 
         $quote = $this->callApi('GET', "/subscriptions/{$subscriptionId}/proration-quote", [
             'to_plan_id' => 8,
@@ -364,24 +364,24 @@ class SimulateBillingFlow extends Command
 
     protected function stepSummary(int $businessId): void
     {
-        $this->components->info('Step 7 — Final state and payment confirmations');
+        $this->components->info('Step 7 - Final state and payment confirmations');
         $sub = Subscription::where('business_id', $businessId)->first();
         $payments = BillingPayment::where('business_id', $businessId)->orderBy('id')->get();
         $referral = Referral::where('referred_business_id', $businessId)->first();
         $credit = BillingCredit::where('owner_type', 'business')->where('owner_id', $businessId)->first();
 
         $this->newLine();
-        $this->components->twoColumnDetail('Subscription', $sub ? "#{$sub->id} — plan {$sub->plan_id} {$sub->billing_cycle} ({$this->str($sub->status)})" : 'none');
+        $this->components->twoColumnDetail('Subscription', $sub ? "#{$sub->id} - plan {$sub->plan_id} {$sub->billing_cycle} ({$this->str($sub->status)})" : 'none');
         $this->components->twoColumnDetail('Next billing', $sub?->next_billing_date?->toDateString() ?? 'n/a');
 
         $this->components->twoColumnDetail('Payments', $payments->map(fn (BillingPayment $p) => "{$this->str($p->payment_type)}: {$p->currency} {$p->amount} [{$this->str($p->status)}]")->implode("\n"));
 
         $this->components->twoColumnDetail('Referral', $referral
-            ? "{$this->str($referral->status)} — discount \${$referral->discount_applied}, reward \${$referral->reward_amount}"
+            ? "{$this->str($referral->status)} - discount \${$referral->discount_applied}, reward \${$referral->reward_amount}"
             : 'none');
 
         $this->components->twoColumnDetail('Referee credit', $credit
-            ? "\${$credit->amount} (used \${$credit->amount_used}) — {$this->str($credit->status)}"
+            ? "\${$credit->amount} (used \${$credit->amount_used}) - {$this->str($credit->status)}"
             : 'none');
     }
 
@@ -459,7 +459,7 @@ class SimulateBillingFlow extends Command
         $this->assert($status >= 200 && $status < 300, "{$message} (HTTP {$status})");
         if ($status >= 400) {
             throw new \RuntimeException(
-                "{$message} — HTTP {$status}: " . json_encode($res['body'] ?? [])
+                "{$message} - HTTP {$status}: " . json_encode($res['body'] ?? [])
             );
         }
     }

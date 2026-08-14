@@ -32,7 +32,7 @@ trait StorefrontBrowseConcern
         $query = Business::query()->publicStorefront();
 
         if ($q !== null && trim($q) !== '') {
-            // Discover invites "@username" — strip so slug LIKE matches.
+            // Discover invites "@username" - strip so slug LIKE matches.
             $normalized = ltrim(trim($q), '@');
             $term = '%'.$normalized.'%';
             $slugTerm = '%'.StorefrontSlug::normalize($normalized).'%';
@@ -351,7 +351,7 @@ trait StorefrontBrowseConcern
         );
     }
 
-    /** Effective price SQL — mirrors Product::effectiveUnitPrice(). */
+    /** Effective price SQL - mirrors Product::effectiveUnitPrice(). */
     private function effectivePriceSql(): string
     {
         $driver = $this->connectionDriver();
@@ -363,7 +363,7 @@ trait StorefrontBrowseConcern
             .'ELSE products.unit_price END)';
     }
 
-    /** DB driver name — SQLite lacks LEAST()/GREATEST(), so facets clamp differently. */
+    /** DB driver name - SQLite lacks LEAST()/GREATEST(), so facets clamp differently. */
     private function connectionDriver(): string
     {
         return (string) \Illuminate\Support\Facades\DB::connection()->getDriverName();

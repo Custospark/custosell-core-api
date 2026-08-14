@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Vera Fast — syntax on changed PHP + Vera Logic (repo rules/contracts).
+ * Vera Fast - syntax on changed PHP + Vera Logic (repo rules/contracts).
  * Usage: php scripts/vera-fast.php
  */
 
@@ -41,7 +41,7 @@ $failed = false;
 $files = veraCollectChangedPhpFiles($root);
 
 if ($files === []) {
-    echo "🧪 Vera fast: no changed PHP files — php -l skipped.\n";
+    echo "🧪 Vera fast: no changed PHP files - php -l skipped.\n";
 } else {
     echo '🧪 Vera fast: php -l on ' . count($files) . " file(s)\n";
     foreach ($files as $file) {

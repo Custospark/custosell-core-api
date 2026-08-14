@@ -151,7 +151,7 @@ class PlatformBusinessAdminService
             $counts['invoices'] = DB::table('invoices')
                 ->where('business_id', $businessId)->delete();
 
-            // ── 2. Payments (polymorphic — clear by business_id) ──
+            // ── 2. Payments (polymorphic - clear by business_id) ──
             $counts['payments'] = DB::table('payments')
                 ->where('business_id', $businessId)->delete();
 

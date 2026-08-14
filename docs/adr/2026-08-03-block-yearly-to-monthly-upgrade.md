@@ -17,7 +17,7 @@ significant time left, the proration math produces a revenue-loss path:
 - `proration_due = max(0, 54 − 100) = $0`.
 
 The user gets the higher plan with **$0 due** while the company holds their $100
-and still owes ~$100 of service — i.e. the user would effectively be demanding
+and still owes ~$100 of service - i.e. the user would effectively be demanding
 money back (or getting a higher plan for free). This is not a valid upgrade path.
 
 ## Decision
@@ -29,20 +29,20 @@ ban.
 - `credit_usd` = prorated unused credit from the current annual plan.
 - `charge_usd` = the new plan's monthly price (the amount the user would start
   paying).
-- Block when `credit_usd > charge_usd` — this is the only situation where the
+- Block when `credit_usd > charge_usd` - this is the only situation where the
   user holds more prepaid value than the new monthly plan costs, i.e. the
   revenue-loss / chargeback path.
-- Allow when `credit_usd <= charge_usd` — e.g. $20 unused credit → $35/mo plan:
+- Allow when `credit_usd <= charge_usd` - e.g. $20 unused credit → $35/mo plan:
   the user pays the $15 difference and the company keeps the prepaid value
   working toward the new plan. No money is demanded back.
 
 Enforcement points (backend is authoritative; frontend surfaces the message):
 
-1. **`SubscriptionController::upgrade()`** — computes the quote, then `422` when
+1. **`SubscriptionController::upgrade()`** - computes the quote, then `422` when
    `current_cycle === 'yearly' && requested_cycle === 'monthly' && credit > charge`.
-2. **`SubscriptionController::prorationQuote()`** — same guard, so the UI shows
+2. **`SubscriptionController::prorationQuote()`** - same guard, so the UI shows
    the rejection message when a blocked monthly quote is requested.
-3. **Frontend `UpgradeFlowModal` / `UpgradeFlowConfirmStep`** — the monthly
+3. **Frontend `UpgradeFlowModal` / `UpgradeFlowConfirmStep`** - the monthly
    option stays available; if the backend rejects, the backend's message is
    shown on the quote error state.
 
@@ -53,7 +53,7 @@ A yearly→yearly upgrade is unaffected.
 
 A blanket "no yearly→monthly upgrades" was too strict. A user near the end of
 their annual term (tiny remaining credit) switching to a *more expensive* monthly
-plan is legitimate — they pay the difference. The anomaly only exists when the
+plan is legitimate - they pay the difference. The anomaly only exists when the
 unused credit is *larger* than the new monthly charge, so the rule is scoped
 exactly to that case.
 
@@ -78,5 +78,5 @@ exactly to that case.
 - Only the true anomaly is blocked: unused credit exceeding the new monthly charge.
 - Legitimate upgrades to a more expensive monthly plan (e.g. $20 credit → $35/mo)
   remain available.
-- Backend remains authoritative — a hand-crafted blocked monthly request is
+- Backend remains authoritative - a hand-crafted blocked monthly request is
   rejected even if the frontend is bypassed.

@@ -9,7 +9,7 @@
 Platform operators needed to grant and modify per-user (and per-linked-business)
 privileges directly from the admin UI without a dev or DB hand-edit: subscription
 plan, billing cycle, subscription status, onboarding-fee paid state, next billing
-date, account type, and — as a last line of defense — user email and password.
+date, account type, and - as a last line of defense - user email and password.
 The Users/Businesses admin listings also needed server-side pagination and
 filtering on server-computed fields (`account_type`, `subscription_status`).
 
@@ -17,14 +17,14 @@ filtering on server-computed fields (`account_type`, `subscription_status`).
 
 ### Routes
 
-- `PATCH /platform/users/{id}/privileges` — single-user privileges update.
-- `POST /platform/users/bulk-privileges` — bulk update across multiple users.
+- `PATCH /platform/users/{id}/privileges` - single-user privileges update.
+- `POST /platform/users/bulk-privileges` - bulk update across multiple users.
 - Both under the `platform:platform.users.manage` middleware.
 
 ### Service (`PlatformUserService`)
 
 - `updatePrivileges()` / `bulkUpdatePrivileges()`:
-  - Update each field independently — only supplied fields change.
+  - Update each field independently - only supplied fields change.
   - No existing subscription → create one via `subscribe()` then immediately
     `activateAfterOnboarding()` (never left in a pending state).
   - Password set as plaintext (min 8 chars).
@@ -69,13 +69,13 @@ filtering on server-computed fields (`account_type`, `subscription_status`).
   server-computed fields.
 - Email is normalized (lowercase/trimmed) and uniqueness enforced case-insensitively.
 
-## Update — Status-Aware Subscription Dates & Before/After Diffs (2026-08-05)
+## Update - Status-Aware Subscription Dates & Before/After Diffs (2026-08-05)
 
 ### Context
 
 The privileges editor previously sent a single `next_billing_date` regardless of
 status. An admin picking "trial" expected to see the trial end date, but the UI
-and service only handled "next billing" — the date shown and written did not
+and service only handled "next billing" - the date shown and written did not
 match the status being selected.
 
 ### Decision
@@ -92,7 +92,7 @@ match the status being selected.
 - **Before/after audit**: every privilege change is recorded as a `diff` map of
   `field => { from, to }` in audit metadata (`user.privileges.fields` for account
   fields, `user.privileges.subscription` for subscription fields). Password is
-  recorded only as `password_changed` — the stored hash cannot be read back.
+  recorded only as `password_changed` - the stored hash cannot be read back.
 - Extracted the subscription change logic from `PlatformUserService` into
   `PlatformSubscriptionPrivilegeService` to keep both files ≤500 lines.
 - `PlatformUserResource` now exposes all lifecycle dates
@@ -113,5 +113,5 @@ match the status being selected.
 
 ## Related
 
-- `2026-08-05-owner-business-seeder.md` — owner/admin seeder guarantee.
+- `2026-08-05-owner-business-seeder.md` - owner/admin seeder guarantee.
 - Frontend ADR `2026-08-05-platform-user-privileges-and-server-pagination.md`.
