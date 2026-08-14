@@ -258,6 +258,88 @@ function veraLogicBuyerApTest(string $root): array
     ];
 }
 
+/**
+ * Collect all changed/untracked text files in the repo (any extension),
+ * skipping binaries, vendored deps, build output, and dotfiles.
+ *
+ * @return list<string>
+ */
+function veraLogicChangedFiles(string $root): array
+{
+    $commands = [
+        'git diff --name-only --diff-filter=ACMRTUXB HEAD',
+        'git diff --cached --name-only --diff-filter=ACMRTUXB',
+        'git ls-files --others --exclude-standard',
+    ];
+
+    $binaryExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp3', '.mp4', '.pdf', '.zip', '.gz', '.wasm'];
+    $skipPaths = ['/node_modules/', '/vendor/', '/dist/', '/.git/'];
+
+    $files = [];
+    foreach ($commands as $command) {
+        $output = shell_exec($command . ' 2>nul') ?? shell_exec($command . ' 2>/dev/null') ?? '';
+        foreach (preg_split('/\R/', trim($output)) as $path) {
+            if ($path === '') {
+                continue;
+            }
+            $normalized = str_replace('\\', '/', $path);
+            $lower = strtolower($normalized);
+            if (str_ends_with($lower, '.lock')) {
+                continue;
+            }
+            foreach ($skipPaths as $skip) {
+                if (str_contains($lower, $skip)) {
+                    continue 2;
+                }
+            }
+            $ext = strtolower(pathinfo($normalized, PATHINFO_EXTENSION));
+            if (in_array('.' . $ext, $binaryExt, true)) {
+                continue;
+            }
+            $full = $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+            if (is_file($full)) {
+                $files[$normalized] = $normalized;
+            }
+        }
+    }
+
+    return array_values($files);
+}
+
+/**
+ * @return array{id: string, ok: bool, detail: string}
+ */
+function veraLogicNoLongDashes(string $root): array
+{
+    $offenders = [];
+    foreach (veraLogicChangedFiles($root) as $file) {
+        $text = veraLogicRead($root, $file);
+        if ($text === null) {
+            continue;
+        }
+        if (preg_match('/[\x{2014}\x{2013}]/u', $text)) {
+            $offenders[] = $file;
+        }
+    }
+
+    if ($offenders !== []) {
+        $shown = array_slice($offenders, 0, 8);
+        $extra = count($offenders) > 8 ? ' (+' . (count($offenders) - 8) . ' more)' : '';
+
+        return [
+            'id' => 'no-long-dashes',
+            'ok' => false,
+            'detail' => 'Long dash (em/en) found in changed file(s): ' . implode(', ', $shown) . $extra . ' - use a plain hyphen instead',
+        ];
+    }
+
+    return [
+        'id' => 'no-long-dashes',
+        'ok' => true,
+        'detail' => 'No em/en dashes in changed files',
+    ];
+}
+
 $changed = veraLogicChangedPhpFiles($root);
 $results = array_merge(
     veraLogicCheckFileSize($root, $changed),
@@ -267,6 +349,7 @@ $results = array_merge(
         veraLogicBuyerApService($root),
         veraLogicBuyerApAccounts($root),
         veraLogicBuyerApTest($root),
+        veraLogicNoLongDashes($root),
     ],
 );
 
