@@ -13,38 +13,20 @@ use Illuminate\Support\Collection;
 
 class DocumentAccessService
 {
+    use ResolvesDocumentAcl;
+
     public const VISIBILITIES = ['inherit', 'all_staff', 'selected_staff', 'owner_only'];
 
     public const FOLDER_VISIBILITIES = ['inherit', 'all_staff', 'selected_staff', 'owner_only'];
 
-    public const ROLES = ['viewer', 'contributor', 'manager'];
-
-    /** @var array<string, int> */
-    private const ROLE_RANK = [
-        'viewer' => 1,
-        'contributor' => 2,
-        'manager' => 3,
-    ];
-
     public function __construct(
         protected ModuleAccessService $moduleAccess,
+        protected DocumentCabinetAccess $cabinetAccess,
     ) {}
 
-    public function isOwner(User $user): bool
+    protected function moduleAccessService(): ModuleAccessService
     {
-        return $this->moduleAccess->isBusinessOwner($user);
-    }
-
-    public function hasDocumentsModule(User $user): bool
-    {
-        return $this->moduleAccess->canAccess($user, 'documents');
-    }
-
-    public function assertHasDocumentsModule(User $user): void
-    {
-        if (! $this->hasDocumentsModule($user) && ! $this->isOwner($user)) {
-            abort(403, 'You do not have access to Documents.');
-        }
+        return $this->moduleAccess;
     }
 
     /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, source_cabinet: DocumentCabinet|null, members: Collection<int, User>} */
@@ -65,7 +47,7 @@ class DocumentAccessService
 
             if ($resource->folder_id === null) {
                 if ($resource->cabinet_id !== null) {
-                    return $this->resolveCabinetAcl($this->loadCabinet((int) $resource->cabinet_id));
+                    return $this->cabinetAccess->resolveAcl($this->cabinetAccess->loadCabinet((int) $resource->cabinet_id));
                 }
 
                 return $this->defaultAcl();
@@ -111,7 +93,7 @@ class DocumentAccessService
 
             if ($current->parent_id === null) {
                 if ($current->cabinet_id !== null) {
-                    return $this->resolveCabinetAcl($this->loadCabinet((int) $current->cabinet_id));
+                    return $this->cabinetAccess->resolveAcl($this->cabinetAccess->loadCabinet((int) $current->cabinet_id));
                 }
 
                 break;
@@ -120,162 +102,16 @@ class DocumentAccessService
             $current = $current->relationLoaded('parent') && $current->parent
                 ? $current->parent
                 : DocumentFolder::query()->find($current->parent_id);
+
+            if ($current === null) {
+                break;
+            }
         }
 
         return $this->defaultAcl();
     }
 
     /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, source_cabinet: DocumentCabinet|null, members: Collection<int, User>} */
-    protected function resolveCabinetAcl(DocumentCabinet $cabinet): array
-    {
-        return [
-            'visibility' => $cabinet->visibility,
-            'source_folder' => null,
-            'source_document' => null,
-            'source_cabinet' => $cabinet,
-            'members' => $cabinet->relationLoaded('members')
-                ? $cabinet->members
-                : $cabinet->members()->get(),
-        ];
-    }
-
-    protected function loadCabinet(int $cabinetId): DocumentCabinet
-    {
-        return DocumentCabinet::query()
-            ->with(['members:id,name,avatar'])
-            ->findOrFail($cabinetId);
-    }
-
-    public function canViewCabinet(User $user, DocumentCabinet $cabinet): bool
-    {
-        if ($this->isOwner($user)) {
-            return true;
-        }
-
-        if (! $this->hasDocumentsModule($user) || ! $user->is_active) {
-            return false;
-        }
-
-        if ((int) $cabinet->created_by === (int) $user->id) {
-            return true;
-        }
-
-        return match ($cabinet->visibility) {
-            'all_staff' => true,
-            'owner_only' => false,
-            'selected_staff' => $cabinet->relationLoaded('members')
-                ? $cabinet->members->contains(fn (User $member) => (int) $member->id === (int) $user->id)
-                : $cabinet->members()->where('users.id', $user->id)->exists(),
-            default => false,
-        };
-    }
-
-    public function roleForCabinet(User $user, DocumentCabinet $cabinet): ?string
-    {
-        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
-            return 'manager';
-        }
-
-        if (! $this->canViewCabinet($user, $cabinet)) {
-            return null;
-        }
-
-        return match ($cabinet->visibility) {
-            'all_staff' => 'contributor',
-            'selected_staff' => $this->memberRole(
-                $user,
-                $cabinet->relationLoaded('members') ? $cabinet->members : $cabinet->members()->get(),
-            ),
-            'owner_only' => null,
-            default => null,
-        };
-    }
-
-    public function canContributeToCabinet(User $user, DocumentCabinet $cabinet): bool
-    {
-        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
-            return true;
-        }
-
-        $role = $this->roleForCabinet($user, $cabinet);
-
-        return $role !== null && self::ROLE_RANK[$role] >= self::ROLE_RANK['contributor'];
-    }
-
-    public function canManageCabinet(User $user, DocumentCabinet $cabinet): bool
-    {
-        if ($this->isOwner($user) || (int) $cabinet->created_by === (int) $user->id) {
-            return true;
-        }
-
-        return $this->roleForCabinet($user, $cabinet) === 'manager';
-    }
-
-    public function assertCanViewCabinet(User $user, DocumentCabinet $cabinet): void
-    {
-        if (! $this->canViewCabinet($user, $cabinet)) {
-            abort(403, 'You do not have access to this cabinet.');
-        }
-    }
-
-    public function assertCanContributeToCabinet(User $user, DocumentCabinet $cabinet): void
-    {
-        if (! $this->canContributeToCabinet($user, $cabinet)) {
-            abort(403, 'You cannot add content to this cabinet.');
-        }
-    }
-
-    public function assertCanManageCabinet(User $user, DocumentCabinet $cabinet): void
-    {
-        if (! $this->canManageCabinet($user, $cabinet)) {
-            abort(403, 'You cannot manage this cabinet.');
-        }
-    }
-
-    /** @return array<string, mixed> */
-    public function cabinetPermissionFlags(User $user, DocumentCabinet $cabinet): array
-    {
-        $role = $this->roleForCabinet($user, $cabinet);
-        $canView = $this->canViewCabinet($user, $cabinet);
-        $canManage = $this->canManageCabinet($user, $cabinet);
-        $canContribute = $this->canContributeToCabinet($user, $cabinet);
-
-        return [
-            'can_view' => $canView,
-            'can_contribute' => $canContribute,
-            'can_edit' => $canManage,
-            'can_delete' => $canManage,
-            'can_manage' => $canManage,
-            'effective_visibility' => $cabinet->visibility,
-            'inherited_from_folder_id' => null,
-            'inherited_from_cabinet_id' => null,
-            'current_member_role' => $role,
-        ];
-    }
-
-    /** @param  list<int>  $memberUserIds
-     * @param  array<int, string>  $memberRoles
-     */
-    public function syncCabinetMembers(DocumentCabinet $cabinet, int $businessId, array $memberUserIds, array $memberRoles = []): void
-    {
-        if ($cabinet->visibility !== 'selected_staff') {
-            $cabinet->memberLinks()->delete();
-
-            return;
-        }
-
-        $validIds = $this->filterValidMemberIds($businessId, $memberUserIds);
-        $cabinet->memberLinks()->whereNotIn('user_id', $validIds)->delete();
-
-        foreach ($validIds as $userId) {
-            $cabinet->memberLinks()->updateOrCreate(
-                ['user_id' => $userId],
-                ['role' => $this->assertValidRole($memberRoles[$userId] ?? null)],
-            );
-        }
-    }
-
-    /** @return array{visibility: string, source_folder: DocumentFolder|null, source_document: Document|null, members: Collection<int, User>} */
     protected function defaultAcl(): array
     {
         return [
@@ -338,19 +174,6 @@ class DocumentAccessService
         };
     }
 
-    /** @param  Collection<int, User>  $members */
-    protected function memberRole(User $user, Collection $members): ?string
-    {
-        $member = $members->first(fn (User $item) => (int) $item->id === (int) $user->id);
-        if ($member === null) {
-            return null;
-        }
-
-        $role = $member->pivot->role ?? 'viewer';
-
-        return in_array($role, self::ROLES, true) ? $role : 'viewer';
-    }
-
     public function canContribute(User $user, DocumentFolder $folder): bool
     {
         if ($this->isOwner($user)) {
@@ -359,7 +182,7 @@ class DocumentAccessService
 
         $role = $this->roleFor($user, $folder);
 
-        return $role !== null && self::ROLE_RANK[$role] >= self::ROLE_RANK['contributor'];
+        return $role !== null && $this->roleRank($role) >= $this->roleRank('contributor');
     }
 
     public function canManage(User $user, DocumentFolder|Document $resource): bool
@@ -382,7 +205,7 @@ class DocumentAccessService
         if ((int) $document->uploaded_by === (int) $user->id) {
             $role = $this->roleFor($user, $document);
 
-            return $role !== null && self::ROLE_RANK[$role] >= self::ROLE_RANK['contributor'];
+            return $role !== null && $this->roleRank($role) >= $this->roleRank('contributor');
         }
 
         return false;
@@ -433,15 +256,6 @@ class DocumentAccessService
         }
     }
 
-    public function assertValidRole(?string $role): string
-    {
-        if ($role === null || ! in_array($role, self::ROLES, true)) {
-            return 'viewer';
-        }
-
-        return $role;
-    }
-
     /** @return list<array{id: int, name: string, avatar: string|null}> */
     public function listAccessibleMembers(int $businessId): array
     {
@@ -469,7 +283,7 @@ class DocumentAccessService
         $canContribute = $resource instanceof DocumentFolder
             ? $this->canContribute($user, $resource)
             : ($canManage || ($this->roleFor($user, $resource) !== null
-                && self::ROLE_RANK[$this->roleFor($user, $resource) ?? 'viewer'] >= self::ROLE_RANK['contributor']));
+                && $this->roleRank($this->roleFor($user, $resource) ?? 'viewer') >= $this->roleRank('contributor')));
         $canEdit = $resource instanceof Document
             ? $this->canEditDocument($user, $resource)
             : $canManage;
@@ -533,30 +347,58 @@ class DocumentAccessService
         }
     }
 
-    /** @param  list<int>  $memberUserIds
-     * @return list<int>
-     */
-    protected function filterValidMemberIds(int $businessId, array $memberUserIds): array
+    // Cabinet delegation (implementation lives in DocumentCabinetAccess).
+    public function resolveCabinetAcl(DocumentCabinet $cabinet): array
     {
-        $ids = collect($memberUserIds)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->filter(fn (int $id) => $id > 0)
-            ->values();
+        return $this->cabinetAccess->resolveAcl($cabinet);
+    }
 
-        $allowed = User::query()
-            ->where('business_id', $businessId)
-            ->whereIn('id', $ids)
-            ->where('is_active', true)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id);
+    public function canViewCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        return $this->cabinetAccess->canViewCabinet($user, $cabinet);
+    }
 
-        $filtered = $ids->intersect($allowed)->values();
+    public function roleForCabinet(User $user, DocumentCabinet $cabinet): ?string
+    {
+        return $this->cabinetAccess->roleForCabinet($user, $cabinet);
+    }
 
-        if ($filtered->isEmpty()) {
-            abort(422, 'Select at least one active team member.');
-        }
+    public function canContributeToCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        return $this->cabinetAccess->canContributeToCabinet($user, $cabinet);
+    }
 
-        return $filtered->all();
+    public function canManageCabinet(User $user, DocumentCabinet $cabinet): bool
+    {
+        return $this->cabinetAccess->canManageCabinet($user, $cabinet);
+    }
+
+    public function assertCanViewCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        $this->cabinetAccess->assertCanViewCabinet($user, $cabinet);
+    }
+
+    public function assertCanContributeToCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        $this->cabinetAccess->assertCanContributeToCabinet($user, $cabinet);
+    }
+
+    public function assertCanManageCabinet(User $user, DocumentCabinet $cabinet): void
+    {
+        $this->cabinetAccess->assertCanManageCabinet($user, $cabinet);
+    }
+
+    /** @return array<string, mixed> */
+    public function cabinetPermissionFlags(User $user, DocumentCabinet $cabinet): array
+    {
+        return $this->cabinetAccess->permissionFlags($user, $cabinet);
+    }
+
+    /** @param  list<int>  $memberUserIds
+     * @param  array<int, string>  $memberRoles
+     */
+    public function syncCabinetMembers(DocumentCabinet $cabinet, int $businessId, array $memberUserIds, array $memberRoles = []): void
+    {
+        $this->cabinetAccess->syncMembers($cabinet, $businessId, $memberUserIds, $memberRoles);
     }
 }
