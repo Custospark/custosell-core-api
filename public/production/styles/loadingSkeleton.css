@@ -1,0 +1,54 @@
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes skeleton-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(59, 130, 246, 0.3); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-skeleton-pulse {
+  animation: skeleton-pulse 2s ease-in-out infinite;
+}
+
+.animate-skeleton-glow {
+  animation: skeleton-glow 2s ease-in-out infinite;
+}
+
+/* Custosell brand loader — spinning dotted arcs */
+@keyframes custosell-loader-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes custosell-loader-spin-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes custosell-loader-fade {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.animate-custosell-loader-spin {
+  animation: custosell-loader-spin 3s linear infinite;
+}
+
+.animate-custosell-loader-spin-reverse {
+  animation: custosell-loader-spin-reverse 4s linear infinite;
+}
+
+.animate-custosell-loader-fade {
+  animation: custosell-loader-fade 2s ease-in-out infinite;
+}

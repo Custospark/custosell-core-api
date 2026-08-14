@@ -1,0 +1,1 @@
+import{m as e,o as t}from"./chunk-QUQL4437-o_Xmm3xg.js";var n=e();function r(){return(0,n.jsx)(`div`,{className:`min-h-0 flex-1 pb-16 sm:pb-20`,children:(0,n.jsx)(t,{})})}export{r as default};
