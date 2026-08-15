@@ -78,7 +78,8 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral, 'Referral record must be created during subscribe');
-        $expected = round($this->essential->onboarding_fee_usd * 10 / 100, 2);
+        // No onboarding fee on seeded plans - discount base is the monthly price.
+        $expected = round((float) $this->essential->price_monthly_usd * 10 / 100, 2);
         $this->assertEquals($expected, (float) $referral->discount_applied);
         $this->assertEquals(
             $this->essential->price_monthly_usd,
@@ -123,7 +124,9 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
         $this->assertNotNull($referral);
-        $this->assertEquals($this->essential->onboarding_fee_usd, (float) $referral->discount_applied);
+        // No onboarding fee on seeded plans - a FREE_MONTH discount equals the
+        // monthly price (the discount base when there is no onboarding fee).
+        $this->assertEquals((float) $this->essential->price_monthly_usd, (float) $referral->discount_applied);
         $this->assertEquals(
             $this->essential->price_monthly_usd,
             (float) $subscription->price_monthly_usd,
@@ -148,7 +151,8 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->assertEquals(ReferralStatus::PENDING, $referral->status);
         $this->assertEquals(0, (float) $referral->reward_amount, 'Reward must be 0 before activation');
 
-        $expectedDiscount = round($this->essential->onboarding_fee_usd * 20 / 100, 2);
+        // No onboarding fee on seeded plans - discount base is the monthly price.
+        $expectedDiscount = round((float) $this->essential->price_monthly_usd * 20 / 100, 2);
         $this->assertEquals($expectedDiscount, (float) $referral->discount_applied);
         $this->assertEquals($this->essential->price_monthly_usd, (float) $subscription->price_monthly_usd);
     }
@@ -166,13 +170,14 @@ class ReferralSubscriptionIntegrationTest extends TestCase
 
         $referral = Referral::where('subscription_id', $subscription->id)->first();
 
-        $expectedDiscount = round($this->essential->onboarding_fee_usd * 50 / 100, 2);
+        // No onboarding fee - discount base is the monthly price.
+        $expectedDiscount = round((float) $this->essential->price_monthly_usd * 50 / 100, 2);
         $this->assertEquals($expectedDiscount, (float) $referral->discount_applied);
 
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $paidBase = (float) $this->essential->onboarding_fee_usd - (float) $referral->discount_applied;
+        $paidBase = round((float) $this->essential->price_monthly_usd - (float) $referral->discount_applied, 2);
         $expectedReward = round($paidBase * 15 / 100, 2);
 
         $this->assertEquals($expectedReward, (float) $referral->reward_amount,
@@ -218,7 +223,8 @@ class ReferralSubscriptionIntegrationTest extends TestCase
         $this->subscriptionService->activateSubscription($subscription);
         $referral->refresh();
 
-        $paidBase = (float) $this->essential->onboarding_fee_usd - (float) $referral->discount_applied;
+        // paidBase = monthly price (no onboarding fee on seeded plans) − $5 flat.
+        $paidBase = round((float) $this->essential->price_monthly_usd - (float) $referral->discount_applied, 2);
         $expectedCommission = round($paidBase * 10 / 100, 2);
 
         $this->assertEquals($expectedCommission, (float) $referral->commission_earned,

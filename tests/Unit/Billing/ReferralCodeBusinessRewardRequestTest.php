@@ -6,7 +6,6 @@ use App\Enums\Billing\DiscountType;
 use App\Enums\Billing\ReferralCodeOwnerType;
 use App\Enums\Billing\RewardType;
 use App\Http\Requests\ReferralCodeRequest;
-use App\Models\Plan;
 use App\Models\ReferralCode;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
@@ -95,9 +94,7 @@ class ReferralCodeBusinessRewardRequestTest extends TestCase
 
     public function test_business_flat_reward_capped_below_half_cheapest_plan_fee(): void
     {
-        $minOnboarding = (float) Plan::where('is_active', true)
-            ->where('onboarding_fee_usd', '>', 0)
-            ->min('onboarding_fee_usd');
+        $minOnboarding = \App\Http\Requests\ReferralCodeRequest::cheapestPlanFee();
 
         $this->assertFails([
             'owner_type' => ReferralCodeOwnerType::BUSINESS->value,

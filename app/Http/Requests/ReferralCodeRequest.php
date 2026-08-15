@@ -10,6 +10,28 @@ use Illuminate\Validation\Rule;
 
 class ReferralCodeRequest extends BaseFormRequest
 {
+    /**
+     * The cheapest plan fee used for the Company > Referee guard. Prefers the
+     * lowest set onboarding fee; when plans carry no onboarding fee (e.g. the
+     * standard seed data), falls back to the lowest monthly price so the cap
+     * stays price-agnostic and never relies on a hardcoded amount.
+     */
+    public static function cheapestPlanFee(): float
+    {
+        $onboarding = (float) Plan::query()
+            ->where('is_active', true)
+            ->where('onboarding_fee_usd', '>', 0)
+            ->min('onboarding_fee_usd');
+
+        if ($onboarding > 0) {
+            return $onboarding;
+        }
+
+        return (float) Plan::query()
+            ->where('is_active', true)
+            ->min('price_monthly_usd');
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -92,11 +114,7 @@ class ReferralCodeRequest extends BaseFormRequest
                     if ($type === DiscountType::PERCENTAGE->value && $value > 30) {
                         $validator->errors()->add('discount_value', 'Campaign percentage discount is capped at 30% so the company keeps the largest share.');
                     } elseif ($type === DiscountType::FLAT_AMOUNT->value) {
-                        $minOnboarding = (float) Plan::query()
-                            ->where('is_active', true)
-                            ->where('onboarding_fee_usd', '>', 0)
-                            ->min('onboarding_fee_usd');
-                        $minOnboarding = $minOnboarding > 0 ? $minOnboarding : 40.0;
+                        $minOnboarding = self::cheapestPlanFee();
                         if ($value >= $minOnboarding / 2) {
                             $validator->errors()->add('discount_value', 'Campaign flat discount must be below half the cheapest plan fee so the company keeps the largest share.');
                         }
@@ -123,11 +141,7 @@ class ReferralCodeRequest extends BaseFormRequest
                     } elseif ($rewardType === RewardType::PERCENTAGE->value && $rewardValue >= 50) {
                         $validator->errors()->add('reward_value', 'Business percentage reward must be below 50 so the company keeps the largest share.');
                     } elseif ($rewardType === RewardType::FLAT_AMOUNT->value) {
-                        $minOnboarding = (float) Plan::query()
-                            ->where('is_active', true)
-                            ->where('onboarding_fee_usd', '>', 0)
-                            ->min('onboarding_fee_usd');
-                        $minOnboarding = $minOnboarding > 0 ? $minOnboarding : 40.0;
+                        $minOnboarding = self::cheapestPlanFee();
                         if ($rewardValue >= $minOnboarding / 2) {
                             $validator->errors()->add('reward_value', 'Business flat reward must be below half the cheapest plan fee so the company keeps the largest share.');
                         }

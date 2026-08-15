@@ -65,9 +65,10 @@ class TopUpRenewalTest extends AbstractBillingLifecycleTestCase
             'topup_months' => 6,
         ]);
 
-        // Essential monthly = $20 → 6 months = $120 (server-authoritative, client sent $1).
+        // Essential monthly (seeded price) × 6 months - server-authoritative, client sent $1.
+        $expected = round(6 * (float) $this->essential->price_monthly_usd, 2);
         $payment = $this->paymentService->getById($result['payment_id']);
-        $this->assertSame(120.0, (float) $payment->amount);
+        $this->assertSame($expected, (float) $payment->amount);
         $this->assertSame(6, (int) ($payment->metadata['topup_months'] ?? 0));
         $this->assertSame('topup', $payment->payment_type->value);
     }
@@ -99,9 +100,13 @@ class TopUpRenewalTest extends AbstractBillingLifecycleTestCase
             'topup_months' => 6,
         ]);
 
-        // Essential yearly = $200 → yearly/12 = 16.6667/mo → 6 months = $100.
+        // Essential yearly (seeded price) → yearly/12 per month → × 6 months.
+        // Guard against a zero yearly price (no division-by-zero in the expectation).
+        $yearlyUsd = (float) ($this->essential->price_yearly_usd ?? 0);
+        $monthlyRate = $yearlyUsd > 0 ? round($yearlyUsd / 12, 4) : 0;
+        $expected = round(6 * $monthlyRate, 2);
         $payment = $this->paymentService->getById($result['payment_id']);
-        $this->assertSame(100.0, (float) $payment->amount);
+        $this->assertSame($expected, (float) $payment->amount);
     }
 
     public function test_topup_rejected_without_months(): void

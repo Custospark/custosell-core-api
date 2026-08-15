@@ -24,6 +24,7 @@ use Tests\TestCase;
 class ReferralLifecycleTest extends TestCase
 {
     use RefreshDatabase;
+    use ReferralPricingExpectations;
 
     protected ReferralService $referralService;
 
@@ -33,6 +34,8 @@ class ReferralLifecycleTest extends TestCase
 
     protected Subscription $subscription;
 
+    protected Plan $plan;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,13 +44,14 @@ class ReferralLifecycleTest extends TestCase
         $user = User::factory()->create(['is_active' => true]);
         $this->business = Business::factory()->create(['owner_id' => $user->id]);
 
-        $plan = Plan::where('slug', 'essential')->first();
+        $this->plan = Plan::where('slug', 'essential')->first();
+        $plan = $this->plan;
 
         $this->subscription = Subscription::create([
             'business_id' => $this->business->id,
             'plan_id' => $plan->id,
             'status' => 'trial',
-            'price_monthly_usd' => 25,
+            'price_monthly_usd' => $plan->price_monthly_usd,
             'billing_cycle' => 'monthly',
             'starts_at' => now(),
             'trial_ends_at' => now()->addDays(14),
@@ -415,10 +419,17 @@ class ReferralLifecycleTest extends TestCase
             $this->business->id
         );
         $this->referralService->markActive($referral->id);
+        $referral->refresh();
+
+        // 30% commission of the amount actually paid (base − 10% discount).
+        $discount = $this->referralDiscountApplied($salesRepCode, $this->plan, $this->subscription);
+        $paidBase = $this->referralPaidBase($this->plan, $this->subscription, $discount);
+        $expectedEarned = round($paidBase * 0.30, 2);
 
         // A paid payout should count as commission paid...
+        $paidPayout = round($expectedEarned / 2, 2);
         $salesRep->payouts()->create([
-            'amount' => 9.65,
+            'amount' => $paidPayout,
             'currency' => 'USD',
             'status' => 'paid',
             'paid_at' => now(),
@@ -434,10 +445,10 @@ class ReferralLifecycleTest extends TestCase
         $earnings = $this->referralService->getEarningsByUser($owner->id);
 
         $this->assertTrue($earnings['is_sales_rep']);
-        $this->assertEquals(9.65, $earnings['commission_paid'], 'scheduled payout must not count as paid');
-        $this->assertGreaterThan(9.65, $earnings['commission_earned'], 'commission earned covers total earned');
+        $this->assertEquals($paidPayout, $earnings['commission_paid'], 'scheduled payout must not count as paid');
+        $this->assertGreaterThan($paidPayout, $earnings['commission_earned'], 'commission earned covers total earned');
         $this->assertEquals(
-            round($earnings['commission_earned'] - 9.65, 2),
+            round($earnings['commission_earned'] - $paidPayout, 2),
             $earnings['commission_pending'],
             'pending = earned - paid only'
         );

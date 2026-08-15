@@ -111,11 +111,12 @@ class ReferralPreSubscriptionTest extends AbstractBillingLifecycleTestCase
         $bound = \App\Models\Referral::where('referred_business_id', $this->aceHardware->id)->first();
         $this->assertSame($subscription->id, $bound->subscription_id, 'first initiate binds the referral');
         $this->assertEquals(ReferralStatus::PENDING, $bound->status, 'still pending until payment confirms');
-        $this->assertSame(1.0, (float) $bound->discount_applied);
+        $this->assertSame(round((float) $personal->price_monthly_usd * 0.10, 2), (float) $bound->discount_applied);
 
-        // Personal monthly $10 − 10% ($1) = $9 = authoritative charge.
+        // Personal monthly (seeded price) − 10% = authoritative charge.
+        $expectedCharge = round((float) $personal->price_monthly_usd * 0.90, 2);
         $payment = $this->paymentService->getById($result['payment_id']);
-        $this->assertSame(9.0, (float) $payment->amount);
+        $this->assertSame($expectedCharge, (float) $payment->amount);
         $this->assertEquals(PaymentType::SUBSCRIPTION, $payment->payment_type);
     }
 
@@ -146,9 +147,10 @@ class ReferralPreSubscriptionTest extends AbstractBillingLifecycleTestCase
             'billing_cycle' => 'yearly',
         ]);
 
-        // Personal yearly $100 − 10% ($10) = $90.
+        // Personal yearly (seeded price) − 10% = authoritative charge.
+        $expectedCharge = round((float) $personal->price_yearly_usd * 0.90, 2);
         $payment = $this->paymentService->getById($result['payment_id']);
-        $this->assertSame(90.0, (float) $payment->amount);
+        $this->assertSame($expectedCharge, (float) $payment->amount);
     }
 
     public function test_flat_discount_clamped_to_charge_on_first_payment(): void
