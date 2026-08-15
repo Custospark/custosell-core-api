@@ -85,9 +85,21 @@
         <td class="col-money">{{ $formatter->formatMoney($monthlyRate, 'USD') }}</td>
       </tr>
     @endif
-    @if(($originalAmountUsd ?? 0) > $amountPaid)
+    @if(($referralDiscountUsd ?? 0) > 0)
       <tr>
-        <td class="text-left">Deductions applied (credit / discount)</td>
+        <td class="text-left">Referral discount</td>
+        <td class="col-money" style="color:#059669;">-{{ $formatter->formatMoney($referralDiscountUsd, $currency) }}</td>
+      </tr>
+    @endif
+    @if(($billingCreditUsd ?? 0) > 0)
+      <tr>
+        <td class="text-left">Billing credit applied</td>
+        <td class="col-money" style="color:#059669;">-{{ $formatter->formatMoney($billingCreditUsd, $currency) }}</td>
+      </tr>
+    @endif
+    @if(($originalAmountUsd ?? 0) > $amountPaid && (($referralDiscountUsd ?? 0) + ($billingCreditUsd ?? 0)) < (float) $originalAmountUsd - $amountPaid)
+      <tr>
+        <td class="text-left">Deductions applied</td>
         <td class="col-money" style="color:#059669;">-{{ $formatter->formatMoney(max(0, (float) $originalAmountUsd - $amountPaid), $currency) }}</td>
       </tr>
     @endif

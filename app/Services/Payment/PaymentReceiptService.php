@@ -71,6 +71,10 @@ class PaymentReceiptService
             'topUpMonths' => $topUpMonths,
             'originalAmountUsd' => (float) ($metadata['original_amount'] ?? $payment->amount),
             'amountPaid' => (float) $payment->amount,
+            // Discount/credit at the time of payment (captured at initiate) so a
+            // regenerated receipt shows exactly what shaped the charge.
+            'referralDiscountUsd' => (float) ($metadata['referral_discount_applied'] ?? 0),
+            'billingCreditUsd' => (float) ($metadata['credit_used'] ?? 0),
         ];
     }
 

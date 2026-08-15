@@ -105,6 +105,49 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         $this->assertStringNotContainsString('$ 24.99', $html);
     }
 
+    public function test_receipt_shows_referral_discount_and_credit_lines_from_payment_time(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->webFoundation);
+        $subscription = $subscription->fresh();
+
+        // Payment charged $14.99 after a $5 referral discount and a $0.50 credit
+        // on a $20.49 original charge - all captured in metadata at initiate.
+        $payment = $this->paymentService->createPending([
+            'business_id' => $this->webFoundation->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $this->tim->id,
+            'amount' => 14.99,
+            'currency' => 'USD',
+            'method' => 'gateway',
+            'payment_type' => 'subscription',
+            'gateway_name' => 'pesapal',
+            'gateway_transaction_id' => 'TXN-DISCOUNT',
+            'transaction_reference' => 'CUSTO-DISCOUNT',
+            'metadata' => [
+                'billing_cycle' => 'monthly',
+                'original_amount' => 20.49,
+                'plan_price_monthly_usd' => 20.49,
+                'referral_discount_applied' => 5.0,
+                'credit_used' => 0.5,
+            ],
+        ]);
+        $payment = $this->paymentService->complete($payment, '{"status":"successful"}');
+
+        $data = $this->receiptService()->buildData($payment->fresh());
+        $html = view(PaymentReceiptService::RECEIPT_VIEW, $data)->render();
+
+        // Both the referral discount and billing credit are itemized from the
+        // payment-time metadata - never recomputed against current plan prices.
+        $this->assertEquals(5.0, (float) $data['referralDiscountUsd']);
+        $this->assertEquals(0.5, (float) $data['billingCreditUsd']);
+        $this->assertStringContainsString('Referral discount', $html);
+        $this->assertStringContainsString('-$ 5.00', $html);
+        $this->assertStringContainsString('Billing credit applied', $html);
+        $this->assertStringContainsString('-$ 0.50', $html);
+        $this->assertStringContainsString('$ 14.99', $html);
+        $this->assertStringContainsString('TOTAL PAID', $html);
+    }
+
     public function test_receipt_plan_rate_always_denominated_in_usd(): void
     {
         $subscription = $this->subscribeAndActivateEssential($this->bellLabs);
