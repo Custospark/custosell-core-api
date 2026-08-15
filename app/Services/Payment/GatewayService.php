@@ -208,6 +208,10 @@ class GatewayService
                         $data['metadata'] ?? [],
                         [
                             'credit_full_payment' => true,
+                            'plan_price_monthly_usd' => (float) ($plan?->price_monthly_usd ?? 0),
+                            'plan_price_yearly_usd' => (float) ($plan?->price_yearly_usd ?? 0),
+                            'plan_onboarding_fee_usd' => (float) ($plan?->onboarding_fee_usd ?? 0),
+                            'billing_cycle' => $data['billing_cycle'] ?? $subscription->billing_cycle ?? 'monthly',
                             'original_amount' => $originalAmount,
                             'referral_discount_applied' => $referralDiscount,
                             'credit_application_ids' => array_map(fn ($a) => $a->id, array_filter($creditApplications)),
@@ -270,17 +274,20 @@ class GatewayService
             'payment_type' => $data['payment_type'] ?? 'subscription',
             'gateway_name' => $gatewayName,
             'paid_at' => null,
-            'metadata' => array_merge(
-                $data['metadata'] ?? [],
-                [
-                    'billing_cycle' => $data['billing_cycle'] ?? $subscription->billing_cycle ?? 'monthly',
-                    'original_amount' => $originalAmount,
-                    'referral_discount_applied' => $referralDiscount,
-                    'credit_used' => $creditResult['credit_used'] ?? 0,
-                    'credit_application_ids' => array_map(fn ($a) => $a->id, $creditApplications),
-                    'topup_months' => $data['topup_months'] ?? null,
-                ]
-            ),
+                    'metadata' => array_merge(
+                        $data['metadata'] ?? [],
+                        [
+                            'plan_price_monthly_usd' => (float) ($plan?->price_monthly_usd ?? 0),
+                            'plan_price_yearly_usd' => (float) ($plan?->price_yearly_usd ?? 0),
+                            'plan_onboarding_fee_usd' => (float) ($plan?->onboarding_fee_usd ?? 0),
+                            'billing_cycle' => $data['billing_cycle'] ?? $subscription->billing_cycle ?? 'monthly',
+                            'original_amount' => $originalAmount,
+                            'referral_discount_applied' => $referralDiscount,
+                            'credit_used' => $creditResult['credit_used'] ?? 0,
+                            'credit_application_ids' => array_map(fn ($a) => $a->id, $creditApplications),
+                            'topup_months' => $data['topup_months'] ?? null,
+                        ]
+                    ),
             'idempotency_key' => $idempotencyKey,
         ]);
 

@@ -64,6 +64,47 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
         $this->assertStringStartsWith('%PDF', $pdf);
     }
 
+    public function test_receipt_uses_historical_plan_price_not_current_plan_price(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->enigmaTech);
+        $subscription = $subscription->fresh();
+
+        // The payment was made when Essential cost $19.99/mo.
+        $payment = $this->paymentService->createPending([
+            'business_id' => $this->enigmaTech->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $this->alan->id,
+            'amount' => 19.99,
+            'currency' => 'USD',
+            'method' => 'gateway',
+            'payment_type' => 'subscription',
+            'gateway_name' => 'pesapal',
+            'gateway_transaction_id' => 'TXN-HIST-PRICE',
+            'transaction_reference' => 'CUSTO-HIST-PRICE',
+            'metadata' => [
+                'billing_cycle' => 'monthly',
+                'original_amount' => 19.99,
+                'plan_price_monthly_usd' => 19.99,
+                'plan_price_yearly_usd' => 199.9,
+                'credit_used' => 0,
+            ],
+        ]);
+        $payment = $this->paymentService->complete($payment, '{"status":"successful"}');
+
+        // Later the plan price changes (as if the seeder/config was updated).
+        $this->essential->update(['price_monthly_usd' => 24.99, 'price_yearly_usd' => 249.9]);
+
+        $data = $this->receiptService()->buildData($payment->fresh());
+        $html = view(PaymentReceiptService::RECEIPT_VIEW, $data)->render();
+
+        // Receipt must show the price AT THE TIME OF PAYMENT ($19.99), not the
+        // plan's current price ($24.99) - so a user regenerating an old receipt
+        // sees what they actually paid.
+        $this->assertEquals(19.99, (float) $data['monthlyRate']);
+        $this->assertStringContainsString('$ 19.99', $html);
+        $this->assertStringNotContainsString('$ 24.99', $html);
+    }
+
     public function test_receipt_plan_rate_always_denominated_in_usd(): void
     {
         $subscription = $this->subscribeAndActivateEssential($this->bellLabs);

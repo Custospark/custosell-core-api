@@ -31,14 +31,24 @@ class PaymentReceiptService
 
         $currency = strtoupper($payment->currency ?? 'USD');
         $billingCycle = $subscription?->billing_cycle ?? 'monthly';
-        $monthlyRate = 0.0;
-        if ($plan) {
-            $monthlyRate = $billingCycle === 'yearly'
-                ? (float) ($plan->price_yearly_usd ?? 0) / 12
-                : (float) ($plan->price_monthly_usd ?? 0);
-        }
 
         $metadata = $payment->metadata ?? [];
+
+        // Use the price AT THE TIME OF PAYMENT (captured at initiate) so a
+        // historical receipt shows what the user actually paid then, not the
+        // plan's current (possibly changed) price. Falls back to the current
+        // plan price only for payments made before this metadata existed.
+        $planMonthlyUsd = (float) ($metadata['plan_price_monthly_usd']
+            ?? $plan?->price_monthly_usd
+            ?? 0);
+        $planYearlyUsd = (float) ($metadata['plan_price_yearly_usd']
+            ?? $plan?->price_yearly_usd
+            ?? 0);
+
+        $monthlyRate = $billingCycle === 'yearly'
+            ? ($planYearlyUsd > 0 ? round($planYearlyUsd / 12, 4) : 0)
+            : $planMonthlyUsd;
+
         $topUpMonths = isset($metadata['topup_months']) ? (int) $metadata['topup_months'] : null;
 
         return [
@@ -56,6 +66,8 @@ class PaymentReceiptService
             'currency' => $currency,
             'billingCycle' => $billingCycle,
             'monthlyRate' => $monthlyRate,
+            'planMonthlyUsd' => $planMonthlyUsd,
+            'planYearlyUsd' => $planYearlyUsd,
             'topUpMonths' => $topUpMonths,
             'originalAmountUsd' => (float) ($metadata['original_amount'] ?? $payment->amount),
             'amountPaid' => (float) $payment->amount,
