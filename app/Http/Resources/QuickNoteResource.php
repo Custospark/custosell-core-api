@@ -19,6 +19,11 @@ class QuickNoteResource extends JsonResource
             'color' => $this->color,
             'tag' => $this->tag,
             'is_shared' => (bool) $this->is_shared,
+            'is_pinned' => (bool) $this->is_pinned,
+            'author' => $this->whenLoaded('user', fn () => $this->user ? [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+            ] : null),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

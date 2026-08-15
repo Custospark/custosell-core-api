@@ -11,12 +11,15 @@ class QuickNoteRequest extends BaseFormRequest
 
     public function rules(): array
     {
+        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+
         return [
-            'title' => ['required', 'string', 'max:255'],
+            'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'body' => ['nullable', 'string'],
             'color' => ['nullable', 'string', 'max:20'],
             'tag' => ['nullable', 'string', 'max:60'],
             'is_shared' => ['nullable', 'boolean'],
+            'is_pinned' => ['nullable', 'boolean'],
             'client_uuid' => ['nullable', 'string', 'uuid'],
         ];
     }
@@ -25,6 +28,7 @@ class QuickNoteRequest extends BaseFormRequest
     {
         return array_merge(parent::messages(), [
             'title.required' => 'Please enter a note title.',
+            'title.string' => 'The note title must be text.',
             'title.max' => 'The note title must not exceed 255 characters.',
             'tag.max' => 'The note tag must not exceed 60 characters.',
             'color.max' => 'The note color must not exceed 20 characters.',

@@ -20,12 +20,14 @@ class QuickNote extends Model
         'color',
         'tag',
         'is_shared',
+        'is_pinned',
     ];
 
     protected function casts(): array
     {
         return [
             'is_shared' => 'boolean',
+            'is_pinned' => 'boolean',
         ];
     }
 

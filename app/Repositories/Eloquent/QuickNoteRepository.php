@@ -16,6 +16,8 @@ class QuickNoteRepository implements QuickNoteRepositoryInterface
                 $query->where('user_id', $userId)
                     ->orWhere('is_shared', true);
             })
+            ->with('user:id,name')
+            ->orderByDesc('is_pinned')
             ->orderByDesc('updated_at')
             ->get();
     }

@@ -272,4 +272,65 @@ class QuickNoteTest extends TestCase
         $this->assertCount(1, $notes);
         $this->assertNotNull($notes->first()['deleted_at']);
     }
+
+    public function test_note_can_be_pinned_and_unpinned(): void
+    {
+        $note = QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'Pin me',
+            'is_shared' => false,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->patchJson("/api/v1/quick-notes/{$note->id}", ['is_pinned' => true])
+            ->assertStatus(200)
+            ->assertJsonPath('data.is_pinned', true);
+
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->patchJson("/api/v1/quick-notes/{$note->id}", ['is_pinned' => false])
+            ->assertStatus(200)
+            ->assertJsonPath('data.is_pinned', false);
+    }
+
+    public function test_pinned_notes_sort_first_in_list(): void
+    {
+        QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'Old pinned',
+            'is_shared' => false,
+            'is_pinned' => true,
+        ]);
+        QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'Newer not pinned',
+            'is_shared' => false,
+            'is_pinned' => false,
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->getJson('/api/v1/quick-notes');
+
+        $titles = collect($response->json('data'))->pluck('title')->all();
+        $this->assertSame(['Old pinned', 'Newer not pinned'], $titles);
+    }
+
+    public function test_shared_note_exposes_author(): void
+    {
+        QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'From the boss',
+            'is_shared' => true,
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->getJson('/api/v1/quick-notes');
+
+        $note = collect($response->json('data'))->firstWhere('title', 'From the boss');
+        $this->assertNotNull($note);
+        $this->assertSame($this->owner->name, $note['author']['name']);
+    }
 }

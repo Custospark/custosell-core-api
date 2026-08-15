@@ -49,6 +49,7 @@ class QuickNoteService implements QuickNoteServiceInterface
         $data['business_id'] = $businessId;
         $data['user_id'] = $userId;
         $data['is_shared'] = isset($data['is_shared']) && $data['is_shared'] === true;
+        $data['is_pinned'] = isset($data['is_pinned']) && $data['is_pinned'] === true;
 
         return $this->quickNoteRepository->create($data);
     }
@@ -63,6 +64,10 @@ class QuickNoteService implements QuickNoteServiceInterface
 
         if (array_key_exists('is_shared', $data)) {
             $data['is_shared'] = $data['is_shared'] === true;
+        }
+
+        if (array_key_exists('is_pinned', $data)) {
+            $data['is_pinned'] = $data['is_pinned'] === true;
         }
 
         return $this->quickNoteRepository->update($note, $data);
