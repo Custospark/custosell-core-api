@@ -374,4 +374,33 @@ class QuickNoteTest extends TestCase
         $this->staff->refresh();
         $this->assertNull($this->staff->notesBackground());
     }
+
+    public function test_tag_can_be_renamed_across_own_notes(): void
+    {
+        QuickNote::create(['business_id' => $this->business->id, 'user_id' => $this->owner->id, 'title' => 'A', 'tag' => 'ops']);
+        QuickNote::create(['business_id' => $this->business->id, 'user_id' => $this->owner->id, 'title' => 'B', 'tag' => 'ops']);
+        QuickNote::create(['business_id' => $this->business->id, 'user_id' => $this->staff->id, 'title' => 'C', 'tag' => 'ops']);
+
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->postJson('/api/v1/quick-notes/tags/rename', ['old_tag' => 'ops', 'new_tag' => 'operations'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.updated', 2);
+
+        $this->assertSame(0, QuickNote::where('user_id', $this->owner->id)->where('tag', 'ops')->count());
+        $this->assertSame(2, QuickNote::where('user_id', $this->owner->id)->where('tag', 'operations')->count());
+        // Staff's note is untouched.
+        $this->assertSame(1, QuickNote::where('user_id', $this->staff->id)->where('tag', 'ops')->count());
+    }
+
+    public function test_tag_can_be_removed_from_own_notes(): void
+    {
+        QuickNote::create(['business_id' => $this->business->id, 'user_id' => $this->owner->id, 'title' => 'A', 'tag' => 'todo']);
+
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->postJson('/api/v1/quick-notes/tags/remove', ['tag' => 'todo'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.updated', 1);
+
+        $this->assertSame(0, QuickNote::where('user_id', $this->owner->id)->where('tag', 'todo')->count());
+    }
 }

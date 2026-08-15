@@ -90,6 +90,18 @@ class QuickNoteService implements QuickNoteServiceInterface
         }
     }
 
+    /** Rename a tag across the user's own notes. */
+    public function renameTag(int $businessId, int $userId, string $oldTag, string $newTag): int
+    {
+        return $this->quickNoteRepository->renameTag($businessId, $userId, $oldTag, $newTag);
+    }
+
+    /** Remove a tag from the user's own notes. */
+    public function removeTag(int $businessId, int $userId, string $tag): int
+    {
+        return $this->quickNoteRepository->removeTag($businessId, $userId, $tag);
+    }
+
     protected function nextSortOrder(int $businessId, int $userId): int
     {
         return QuickNote::query()

@@ -110,4 +110,40 @@ class QuickNoteController extends Controller
 
         return response()->json(['data' => ['preferences' => $user->preferences]]);
     }
+
+    /** Rename a tag across the user's own notes. */
+    public function renameTag(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->quickNoteService->canUseFeature($user), 403, 'Quick notes are not available on this account.');
+
+        $data = $request->validate([
+            'old_tag' => ['required', 'string', 'max:60'],
+            'new_tag' => ['required', 'string', 'max:60'],
+        ]);
+
+        $updated = $this->quickNoteService->renameTag(
+            $user->business_id,
+            $user->id,
+            $data['old_tag'],
+            $data['new_tag'],
+        );
+
+        return response()->json(['data' => ['updated' => $updated]]);
+    }
+
+    /** Remove a tag from the user's own notes. */
+    public function removeTag(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->quickNoteService->canUseFeature($user), 403, 'Quick notes are not available on this account.');
+
+        $data = $request->validate([
+            'tag' => ['required', 'string', 'max:60'],
+        ]);
+
+        $updated = $this->quickNoteService->removeTag($user->business_id, $user->id, $data['tag']);
+
+        return response()->json(['data' => ['updated' => $updated]]);
+    }
 }

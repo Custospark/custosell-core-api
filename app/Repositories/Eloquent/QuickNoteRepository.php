@@ -52,6 +52,26 @@ class QuickNoteRepository implements QuickNoteRepositoryInterface
         return $note->fresh();
     }
 
+    /** Rename a tag across the user's own notes in this business. */
+    public function renameTag(int $businessId, int $userId, string $oldTag, string $newTag): int
+    {
+        return QuickNote::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $userId)
+            ->where('tag', $oldTag)
+            ->update(['tag' => $newTag]);
+    }
+
+    /** Remove a tag from the user's own notes in this business. */
+    public function removeTag(int $businessId, int $userId, string $tag): int
+    {
+        return QuickNote::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $userId)
+            ->where('tag', $tag)
+            ->update(['tag' => null]);
+    }
+
     public function delete(QuickNote $note): bool
     {
         return $note->delete();

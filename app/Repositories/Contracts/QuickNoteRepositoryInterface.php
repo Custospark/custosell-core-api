@@ -20,5 +20,11 @@ interface QuickNoteRepositoryInterface
 
     public function update(QuickNote $note, array $data): QuickNote;
 
+    /** Rename a tag across the user's own notes in this business. */
+    public function renameTag(int $businessId, int $userId, string $oldTag, string $newTag): int;
+
+    /** Remove a tag from the user's own notes in this business. */
+    public function removeTag(int $businessId, int $userId, string $tag): int;
+
     public function delete(QuickNote $note): bool;
 }

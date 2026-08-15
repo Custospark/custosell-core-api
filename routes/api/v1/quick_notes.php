@@ -8,6 +8,8 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active'])->g
     Route::post('/quick-notes', [QuickNoteController::class, 'store']);
     Route::post('/quick-notes/reorder', [QuickNoteController::class, 'reorder']);
     Route::post('/quick-notes/background', [QuickNoteController::class, 'saveBackground']);
+    Route::post('/quick-notes/tags/rename', [QuickNoteController::class, 'renameTag']);
+    Route::post('/quick-notes/tags/remove', [QuickNoteController::class, 'removeTag']);
     Route::get('/quick-notes/{note_id}', [QuickNoteController::class, 'show'])->whereNumber('note_id');
     Route::put('/quick-notes/{note_id}', [QuickNoteController::class, 'update'])->whereNumber('note_id');
     Route::patch('/quick-notes/{note_id}', [QuickNoteController::class, 'update'])->whereNumber('note_id');

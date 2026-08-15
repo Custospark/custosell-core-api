@@ -25,4 +25,10 @@ interface QuickNoteServiceInterface
 
     /** Persist a full custom ordering of the user's notes (drag-and-drop reorder). */
     public function reorder(int $businessId, int $userId, array $orderedIds): void;
+
+    /** Rename a tag across the user's own notes. */
+    public function renameTag(int $businessId, int $userId, string $oldTag, string $newTag): int;
+
+    /** Remove a tag from the user's own notes. */
+    public function removeTag(int $businessId, int $userId, string $tag): int;
 }
