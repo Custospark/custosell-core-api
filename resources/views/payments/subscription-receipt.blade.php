@@ -133,7 +133,13 @@
   </tbody>
 </table>
 
-<p style="margin-top:10px; font-size:9px; color:#047857; text-align:center; font-weight:bold;">
-  PAID IN FULL - Thank you for your business.
-</p>
+@if($payment->isCompleted())
+  <p style="margin-top:10px; font-size:9px; color:#047857; text-align:center; font-weight:bold;">
+    PAID IN FULL - Thank you for your business.
+  </p>
+@else
+  <p style="margin-top:10px; font-size:9px; color:#b45309; text-align:center; font-weight:bold;">
+    PENDING CONFIRMATION - This payment has not been confirmed as paid yet.
+  </p>
+@endif
 @endsection

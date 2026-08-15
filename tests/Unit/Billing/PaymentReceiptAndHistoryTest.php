@@ -338,4 +338,52 @@ class PaymentReceiptAndHistoryTest extends AbstractBillingLifecycleTestCase
 
         Mail::assertNothingSent();
     }
+
+    public function test_receipt_for_pending_payment_does_not_say_paid_in_full(): void
+    {
+        $subscription = $this->subscribeAndActivateEssential($this->bellLabs);
+        $subscription = $subscription->fresh();
+
+        // A payment that has NOT been confirmed - stays pending.
+        $payment = $this->paymentService->createPending([
+            'business_id' => $this->bellLabs->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $this->dennis->id,
+            'amount' => 19.99,
+            'currency' => 'USD',
+            'method' => 'gateway',
+            'payment_type' => 'subscription',
+            'gateway_name' => 'pesapal',
+            'gateway_transaction_id' => 'TXN-PENDING',
+            'transaction_reference' => 'CUSTO-PENDING',
+            'metadata' => [
+                'billing_cycle' => 'monthly',
+                'original_amount' => 19.99,
+                'plan_price_monthly_usd' => 19.99,
+                'plan_price_yearly_usd' => 199.9,
+                'credit_used' => 0,
+            ],
+        ]);
+
+        $this->assertTrue($payment->isPending());
+
+        $data = $this->receiptService()->buildData($payment);
+        $html = view(PaymentReceiptService::RECEIPT_VIEW, $data)->render();
+
+        $this->assertStringNotContainsString('PAID IN FULL', $html);
+        $this->assertStringContainsString('PENDING CONFIRMATION', $html);
+        $this->assertStringContainsString('not been confirmed as paid', $html);
+    }
+
+    public function test_receipt_for_completed_payment_says_paid_in_full(): void
+    {
+        $payment = $this->makeCompletedTopUpPayment();
+        $this->assertTrue($payment->isCompleted());
+
+        $data = $this->receiptService()->buildData($payment);
+        $html = view(PaymentReceiptService::RECEIPT_VIEW, $data)->render();
+
+        $this->assertStringContainsString('PAID IN FULL', $html);
+        $this->assertStringNotContainsString('PENDING CONFIRMATION', $html);
+    }
 }
