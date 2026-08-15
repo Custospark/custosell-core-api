@@ -19,6 +19,7 @@ use App\Events\ExpenseCreatedForAccounting;
 use App\Models\FixedAsset;
 use App\Models\ProjectCostAllocation;
 use App\Services\Contracts\ProjectServiceInterface;
+use App\Services\Contracts\ShiftServiceInterface;
 
 class ExpenseService implements ExpenseServiceInterface
 {
@@ -27,6 +28,7 @@ class ExpenseService implements ExpenseServiceInterface
         protected ExpenseCategoryRepositoryInterface $expenseCategoryRepository,
         protected IncomeSourceRepositoryInterface $incomeSourceRepository,
         protected ProjectServiceInterface $projectService,
+        protected ShiftServiceInterface $shiftService,
     ) {}
 
     public function getAll(int $businessId, array $filters = []): LengthAwarePaginator
@@ -46,6 +48,16 @@ class ExpenseService implements ExpenseServiceInterface
         $this->assertBudgetAvailable($businessId, $data['budget_id'] ?? null);
         $this->assertFixedAssetBelongsToBusiness($businessId, $data['fixed_asset_id'] ?? null);
         $this->assertLocationBelongsToBusiness($businessId, $data['location_id'] ?? null);
+
+        // If no shift was supplied (e.g. recorded from the expense list page), link
+        // the expense to the recording user's active shift so it reflects on their
+        // shift report no matter where it was recorded.
+        if (empty($data['shift_id']) && !empty($data['recorded_by'])) {
+            $activeShift = $this->shiftService->getActiveByUser($businessId, (int) $data['recorded_by']);
+            if ($activeShift) {
+                $data['shift_id'] = $activeShift->id;
+            }
+        }
 
         $expense = $this->expenseRepository->create($data);
 

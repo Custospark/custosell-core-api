@@ -200,6 +200,51 @@ class ExpenseTest extends TestCase
         $this->assertEquals(['Delivery fuel'], collect($list->json('data'))->pluck('description')->all());
     }
 
+    public function test_expense_without_shift_is_linked_to_recording_users_active_shift(): void
+    {
+        // The recording staff member has an open (active) shift.
+        $shift = Shift::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->staff->id,
+            'clock_in' => now(),
+            'status' => 'active',
+        ]);
+
+        // No shift_id supplied (e.g. recorded from the expense list page) - the
+        // backend must attach the user's active shift so it reflects on the shift.
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->postJson('/api/v1/expenses', [
+                'amount' => 18000,
+                'description' => 'Cleaning supplies',
+                'expense_date' => now()->toDateTimeString(),
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.shift_id', $shift->id)
+            ->assertJsonPath('data.amount', '18000.00');
+
+        $list = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->getJson("/api/v1/expenses/by-shift/{$shift->id}");
+
+        $list->assertStatus(200);
+        $this->assertEquals(['Cleaning supplies'], collect($list->json('data'))->pluck('description')->all());
+    }
+
+    public function test_expense_without_shift_and_no_active_shift_has_null_shift(): void
+    {
+        // No open shift for this user - the expense should still save, shift_id null.
+        $response = $this->withHeader('Authorization', "Bearer $this->staffToken")
+            ->postJson('/api/v1/expenses', [
+                'amount' => 5000,
+                'description' => 'Petty cash',
+                'expense_date' => now()->toDateTimeString(),
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.shift_id', null)
+            ->assertJsonPath('data.amount', '5000.00');
+    }
+
     public function test_create_expense_rejects_other_business_shift(): void
     {
         $otherBusiness = Business::factory()->create([
