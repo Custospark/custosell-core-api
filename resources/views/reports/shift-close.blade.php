@@ -50,11 +50,17 @@
       <tr><td class="text-left text-muted" style="padding-left:14px;">Card / other</td><td class="col-money">{{ $formatter->formatTableNumber($report['card_other']) }}</td></tr>
       <tr class="total-row"><td class="text-left">Expected cash in drawer</td><td class="col-money amount-emphasis">{{ $formatter->formatTableNumber($report['expected_cash']) }}</td></tr>
       @if($report['counted_cash'] !== null)
+        @php
+          $variance = (float) $report['variance'];
+          if (abs($variance) < 0.005) { $varianceLabel = 'Balanced'; $varianceClass = 'text-green'; }
+          elseif ($variance > 0) { $varianceLabel = 'Over by'; $varianceClass = 'text-amber'; }
+          else { $varianceLabel = 'Short by'; $varianceClass = 'text-red'; }
+        @endphp
         <tr><td class="text-left">Counted cash</td><td class="col-money">{{ $formatter->formatTableNumber($report['counted_cash']) }}</td></tr>
-        <tr class="{{ $report['variance'] === 0 ? 'total-row' : '' }}">
-          <td class="text-left {{ $report['variance'] > 0 ? 'text-red' : '' }}">Variance (over/short)</td>
-          <td class="col-money {{ $report['variance'] === 0 ? 'amount-emphasis' : ($report['variance'] > 0 ? 'text-red' : '') }}">
-            {{ $formatter->formatTableNumber($report['variance']) }}
+        <tr class="total-row">
+          <td class="text-left {{ $varianceClass }}">Variance ({{ $varianceLabel }})</td>
+          <td class="col-money {{ $varianceClass }}">
+            {{ abs($variance) < 0.005 ? '0.00' : ($variance > 0 ? '+' : '-') . $formatter->formatTableNumber(abs($variance)) }}
           </td>
         </tr>
       @endif
@@ -74,9 +80,15 @@
   </div>
 
   @if($report['counted_cash'] !== null)
+    @php
+      $variance = (float) $report['variance'];
+      $subtitle = abs($variance) < 0.005
+        ? 'Balanced'
+        : (($variance > 0 ? 'Over by ' : 'Short by ') . $formatter->formatMoney(abs($variance), $ccy));
+    @endphp
     <p class="ranking-subtitle" style="text-align:center;">
       Counted {{ $formatter->formatMoney($report['counted_cash'], $ccy) }}
-      · Variance {{ $report['variance'] === 0 ? 'Balanced' : ($report['variance'] > 0 ? '+' : '') . $formatter->formatMoney($report['variance'], $ccy) }}
+      · Variance {{ $subtitle }}
     </p>
   @endif
 

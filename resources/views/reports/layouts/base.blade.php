@@ -161,6 +161,8 @@
     table.data th.col-center { text-align: center !important; }
     .amount-emphasis { font-weight: bold; }
     .text-red { color: #dc2626; font-weight: bold; }
+    .text-green { color: #16a34a; font-weight: bold; }
+    .text-amber { color: #d97706; font-weight: bold; }
     .text-muted { color: #6b7280; font-size: 8.5px; }
     .total-row td {
       font-weight: bold;
