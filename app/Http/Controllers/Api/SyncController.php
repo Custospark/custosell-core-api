@@ -51,6 +51,9 @@ class SyncController extends Controller
             'sale_items' => ['sometimes', 'array'],
             'stock_movements' => ['sometimes', 'array'],
             'staff_transfers' => ['sometimes', 'array'],
+            'quick_notes' => ['sometimes', 'array'],
+            'quick_notes.*.client_uuid' => ['required', 'string', 'uuid'],
+            'quick_notes.*.title' => ['required', 'string'],
         ]);
 
         $result = $this->syncService->push($businessId, $payload);

@@ -39,6 +39,7 @@ use App\Providers\StaffTransferServiceProvider;
 use App\Providers\SyncServiceProvider;
 use App\Providers\UserServiceProvider;
 use App\Providers\WebPushServiceProvider;
+use App\Providers\QuickNoteServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -80,4 +81,5 @@ return [
     EfrisServiceProvider::class,
     StorefrontServiceProvider::class,
     WebPushServiceProvider::class,
+    QuickNoteServiceProvider::class,
 ];

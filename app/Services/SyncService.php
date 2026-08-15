@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Location;
 use App\Models\LocationProduct;
 use App\Models\Product;
+use App\Models\QuickNote;
 use App\Models\Role;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -48,15 +49,49 @@ class SyncService implements SyncServiceInterface
             'users' => User::where('business_id', $businessId)
                 ->when($since, fn ($q) => $q->where('updated_at', '>', $since))
                 ->get(),
+            'quick_notes' => QuickNote::withTrashed()
+                ->where('business_id', $businessId)
+                ->when($since, fn ($q) => $q->where('updated_at', '>', $since))
+                ->get(),
             'synced_at' => now()->toDateTimeString(),
         ];
     }
 
     public function push(int $businessId, array $payload): array
     {
-        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0, 'locations' => 0, 'location_products' => 0, 'staff_transfers' => 0];
+        $imported = ['categories' => 0, 'products' => 0, 'customers' => 0, 'expenses' => 0, 'invoices' => 0, 'sales' => 0, 'sale_items' => 0, 'stock_movements' => 0, 'locations' => 0, 'location_products' => 0, 'staff_transfers' => 0, 'quick_notes' => 0];
 
         DB::transaction(function () use ($businessId, $payload, &$imported) {
+            if (isset($payload['quick_notes'])) {
+                foreach ($payload['quick_notes'] as $note) {
+                    if (empty($note['client_uuid'])) {
+                        continue;
+                    }
+
+                    $note['business_id'] = $businessId;
+
+                    if (empty($note['user_id']) && auth()->id()) {
+                        $note['user_id'] = auth()->id();
+                    }
+
+                    if (! empty($note['deleted_at'])) {
+                        QuickNote::withTrashed()
+                            ->where('business_id', $businessId)
+                            ->where('client_uuid', $note['client_uuid'])
+                            ->forceDelete();
+                        $imported['quick_notes']++;
+
+                        continue;
+                    }
+
+                    QuickNote::updateOrCreate(
+                        ['client_uuid' => $note['client_uuid'], 'business_id' => $businessId],
+                        $note,
+                    );
+                    $imported['quick_notes']++;
+                }
+            }
+
             foreach (['categories', 'products', 'customers', 'expenses'] as $type) {
                 if (!isset($payload[$type])) {
                     continue;
