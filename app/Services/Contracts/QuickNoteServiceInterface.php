@@ -22,4 +22,7 @@ interface QuickNoteServiceInterface
     public function update(int $businessId, int $userId, int $noteId, array $data): QuickNote;
 
     public function delete(int $businessId, int $userId, int $noteId): bool;
+
+    /** Persist a full custom ordering of the user's notes (drag-and-drop reorder). */
+    public function reorder(int $businessId, int $userId, array $orderedIds): void;
 }

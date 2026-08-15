@@ -18,6 +18,7 @@ class QuickNoteRepository implements QuickNoteRepositoryInterface
             })
             ->with('user:id,name')
             ->orderByDesc('is_pinned')
+            ->orderBy('sort_order')
             ->orderByDesc('updated_at')
             ->get();
     }

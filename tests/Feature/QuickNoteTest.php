@@ -333,4 +333,27 @@ class QuickNoteTest extends TestCase
         $this->assertNotNull($note);
         $this->assertSame($this->owner->name, $note['author']['name']);
     }
+
+    public function test_reorder_persists_sort_order(): void
+    {
+        $a = QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'A',
+            'sort_order' => 0,
+        ]);
+        $b = QuickNote::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'title' => 'B',
+            'sort_order' => 1,
+        ]);
+
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->postJson('/api/v1/quick-notes/reorder', ['order' => [$b->id, $a->id]])
+            ->assertStatus(200);
+
+        $this->assertSame(0, QuickNote::find($b->id)->sort_order);
+        $this->assertSame(1, QuickNote::find($a->id)->sort_order);
+    }
 }

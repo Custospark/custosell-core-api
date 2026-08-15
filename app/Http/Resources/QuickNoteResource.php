@@ -20,6 +20,7 @@ class QuickNoteResource extends JsonResource
             'tag' => $this->tag,
             'is_shared' => (bool) $this->is_shared,
             'is_pinned' => (bool) $this->is_pinned,
+            'sort_order' => (int) ($this->sort_order ?? 0),
             'author' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,

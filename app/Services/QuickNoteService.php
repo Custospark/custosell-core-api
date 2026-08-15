@@ -50,6 +50,7 @@ class QuickNoteService implements QuickNoteServiceInterface
         $data['user_id'] = $userId;
         $data['is_shared'] = isset($data['is_shared']) && $data['is_shared'] === true;
         $data['is_pinned'] = isset($data['is_pinned']) && $data['is_pinned'] === true;
+        $data['sort_order'] = (int) ($data['sort_order'] ?? $this->nextSortOrder($businessId, $userId));
 
         return $this->quickNoteRepository->create($data);
     }
@@ -70,7 +71,31 @@ class QuickNoteService implements QuickNoteServiceInterface
             $data['is_pinned'] = $data['is_pinned'] === true;
         }
 
+        if (array_key_exists('sort_order', $data)) {
+            $data['sort_order'] = (int) $data['sort_order'];
+        }
+
         return $this->quickNoteRepository->update($note, $data);
+    }
+
+    /** Persist a full custom ordering of the user's notes (drag-and-drop reorder). */
+    public function reorder(int $businessId, int $userId, array $orderedIds): void
+    {
+        foreach (array_values($orderedIds) as $index => $noteId) {
+            $note = $this->quickNoteRepository->ownedByUser($businessId, $userId, (int) $noteId);
+
+            if ($note) {
+                $this->quickNoteRepository->update($note, ['sort_order' => $index]);
+            }
+        }
+    }
+
+    protected function nextSortOrder(int $businessId, int $userId): int
+    {
+        return QuickNote::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $userId)
+            ->max('sort_order') + 1;
     }
 
     public function delete(int $businessId, int $userId, int $noteId): bool

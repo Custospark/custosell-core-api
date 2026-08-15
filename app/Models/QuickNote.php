@@ -21,6 +21,7 @@ class QuickNote extends Model
         'tag',
         'is_shared',
         'is_pinned',
+        'sort_order',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class QuickNote extends Model
         return [
             'is_shared' => 'boolean',
             'is_pinned' => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 

@@ -20,6 +20,7 @@ class QuickNoteRequest extends BaseFormRequest
             'tag' => ['nullable', 'string', 'max:60'],
             'is_shared' => ['nullable', 'boolean'],
             'is_pinned' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
             'client_uuid' => ['nullable', 'string', 'uuid'],
         ];
     }

@@ -78,4 +78,19 @@ class QuickNoteController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->quickNoteService->canUseFeature($user), 403, 'Quick notes are not available on this account.');
+
+        $data = $request->validate([
+            'order' => ['required', 'array'],
+            'order.*' => ['integer'],
+        ]);
+
+        $this->quickNoteService->reorder($user->business_id, $user->id, $data['order']);
+
+        return response()->json(['ok' => true]);
+    }
 }
