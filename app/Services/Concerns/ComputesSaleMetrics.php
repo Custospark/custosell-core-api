@@ -54,6 +54,30 @@ trait ComputesSaleMetrics
         return max(0, $this->saleGross($sale) - $this->saleRefunds($sale));
     }
 
+    /**
+     * Cash/mobile/card actually collected on a sale - the amount that landed in
+     * the drawer/account, NOT the full net price.
+     *
+     * Mirrors the frontend (collectionsForSale): a fully-paid sale collects its
+     * net; a partial or unpaid sale collects only what was actually paid
+     * (amount_paid), capped at the net.
+     */
+    public function saleCollected(Sale $sale): float
+    {
+        $net = $this->saleNetAfterRefunds($sale);
+        if ($net <= 0) {
+            return 0.0;
+        }
+
+        if ($sale->payment_status === 'paid') {
+            return $net;
+        }
+
+        $paid = (float) ($sale->amount_paid ?? 0);
+
+        return max(0, min($paid, $net));
+    }
+
     /** @deprecated Use saleNetAfterRefunds - kept for internal call sites */
     public function saleNet(Sale $sale): float
     {
@@ -240,10 +264,11 @@ trait ComputesSaleMetrics
                 ];
             }
             $row = $this->saleRow($sale);
+            $collected = $this->saleCollected($sale);
             $groups[$method]['count']++;
             $groups[$method]['gross'] += $row['gross'];
             $groups[$method]['refunds'] += $row['refunds'];
-            $groups[$method]['net'] += $row['net_after_refunds'];
+            $groups[$method]['net'] += $collected;
         }
 
         $result = array_values($groups);

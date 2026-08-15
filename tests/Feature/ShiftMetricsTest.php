@@ -76,8 +76,12 @@ class ShiftMetricsTest extends TestCase
         ]);
     }
 
-    private function createSale(Shift $shift, string $method, float $total, float $refunded = 0): Sale
+    private function createSale(Shift $shift, string $method, float $total, float $refunded = 0, float $amountPaid = 0): Sale
     {
+        // Default to fully paid: amount_paid = total (so a refunded sale nets to
+        // total − refunded). Partial tests override amount_paid + status.
+        $paid = $amountPaid > 0 ? $amountPaid : $total;
+
         $sale = Sale::create([
             'business_id' => $this->business->id,
             'user_id' => $this->user->id,
@@ -87,8 +91,9 @@ class ShiftMetricsTest extends TestCase
             'tax_total' => 0,
             'discount_amount' => 0,
             'total_amount' => $total,
+            'amount_paid' => $paid,
             'payment_method' => $method,
-            'payment_status' => $refunded > 0 ? 'partially_refunded' : 'paid',
+            'payment_status' => $refunded > 0 ? 'partially_refunded' : ($amountPaid > 0 && $amountPaid < $total ? 'partially_paid' : 'paid'),
             'sale_date' => now(),
         ]);
 
@@ -213,6 +218,55 @@ class ShiftMetricsTest extends TestCase
         $this->assertEquals(0, (float) $row['variance']);
     }
 
+    public function test_partial_payment_sale_only_counts_amount_actually_paid(): void
+    {
+        $shift = $this->createShiftWithOpeningBalance(0);
+        // Cash sale worth 100k but only 40k was actually paid (partial).
+        $this->createSale($shift, 'cash', 100_000, 0, 40_000);
+
+        $shift->update(['counted_cash' => 40_000, 'status' => 'completed', 'clock_out' => now()]);
+
+        $rows = app(\App\Services\ReportMetricsService::class)->shiftReconciliation(
+            $this->business->id,
+            now()->toDateString(),
+            now()->toDateString(),
+        );
+
+        $row = $rows[0];
+
+        $this->assertEquals(100_000, (float) $row['gross_sales']);
+        $this->assertEquals(0, (float) $row['refunds']);
+        // Only the actually-paid amount lands in cash - not the full 100k.
+        $this->assertEquals(40_000, (float) $row['cash']);
+        $this->assertEquals(40_000, (float) $row['cash_collected']);
+        $this->assertEquals(40_000, (float) $row['cash_handover']);
+        $this->assertEquals(0, (float) $row['variance']);
+    }
+
+    public function test_partial_payment_with_refund_nets_both(): void
+    {
+        $shift = $this->createShiftWithOpeningBalance(0);
+        // Cash sale worth 100k, 20k refunded, only 50k actually paid.
+        $this->createSale($shift, 'cash', 100_000, 20_000, 50_000);
+
+        $shift->update(['counted_cash' => 50_000, 'status' => 'completed', 'clock_out' => now()]);
+
+        $rows = app(\App\Services\ReportMetricsService::class)->shiftReconciliation(
+            $this->business->id,
+            now()->toDateString(),
+            now()->toDateString(),
+        );
+
+        $row = $rows[0];
+
+        $this->assertEquals(100_000, (float) $row['gross_sales']);
+        $this->assertEquals(20_000, (float) $row['refunds']);
+        $this->assertEquals(80_000, (float) $row['net_after_refunds']);
+        // Not fully paid → only the paid amount counts in cash (capped at net).
+        $this->assertEquals(50_000, (float) $row['cash']);
+        $this->assertEquals(50_000, (float) $row['cash_collected']);
+    }
+
     public function test_dashboard_day_metrics_uses_same_net_sales_formula(): void
     {
         // Dashboard is date-scoped (no shift): same arithmetic, no drawer metrics.
@@ -239,8 +293,28 @@ class ShiftMetricsTest extends TestCase
         $this->assertEquals(4, $metrics['transactions']);
     }
 
-    private function createSaleForDay(string $method, float $total, float $refunded = 0): Sale
+    public function test_dashboard_payment_breakdown_counts_partial_payments_as_collected(): void
     {
+        $this->createSaleForDay('cash', 100_000, 0);
+        $this->createSaleForDay('cash', 100_000, 0, 40_000); // partial: only 40k collected
+
+        $breakdown = app(\App\Services\ReportMetricsService::class)->paymentBreakdown(
+            $this->business->id,
+            now()->toDateString(),
+            now()->toDateString(),
+        );
+
+        $cash = collect($breakdown)->firstWhere('method', 'cash');
+
+        $this->assertEquals(200_000, (float) $cash['gross']);
+        $this->assertEquals(0, (float) $cash['refunds']);
+        $this->assertEquals(140_000, (float) $cash['net'], 'cash net = 100k (full) + 40k (partial actually paid)');
+    }
+
+    private function createSaleForDay(string $method, float $total, float $refunded = 0, float $amountPaid = 0): Sale
+    {
+        $paid = $amountPaid > 0 ? $amountPaid : $total;
+
         $sale = Sale::create([
             'business_id' => $this->business->id,
             'user_id' => $this->user->id,
@@ -249,8 +323,9 @@ class ShiftMetricsTest extends TestCase
             'tax_total' => 0,
             'discount_amount' => 0,
             'total_amount' => $total,
+            'amount_paid' => $paid,
             'payment_method' => $method,
-            'payment_status' => $refunded > 0 ? 'partially_refunded' : 'paid',
+            'payment_status' => $refunded > 0 ? 'partially_refunded' : ($amountPaid > 0 && $amountPaid < $total ? 'partially_paid' : 'paid'),
             'sale_date' => now(),
         ]);
 

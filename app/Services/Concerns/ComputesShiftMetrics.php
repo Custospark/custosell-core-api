@@ -40,12 +40,12 @@ trait ComputesShiftMetrics
             $mobile = 0.0;
             $cardOther = 0.0;
             foreach ($sales as $sale) {
-                $net = $this->saleNetAfterRefunds($sale);
+                $collected = $this->saleCollected($sale);
                 $method = $this->normalizePaymentMethod($sale->payment_method);
                 match ($method) {
-                    'cash' => $cash += $net,
-                    'mobile_money' => $mobile += $net,
-                    default => $cardOther += $net,
+                    'cash' => $cash += $collected,
+                    'mobile_money' => $mobile += $collected,
+                    default => $cardOther += $collected,
                 };
             }
 

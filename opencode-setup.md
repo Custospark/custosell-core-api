@@ -113,3 +113,12 @@ AddDefaultCharset UTF-8
 <IfModule mod_headers.c>
   Header set Connection keep-alive
 </IfModule>
+
+Full Name
+OPIYO OSCAR
+Track / Role
+Web Development
+Status
+Pending
+Certificate Code
+PPI-2026-AADC91

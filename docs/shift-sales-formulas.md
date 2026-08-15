@@ -13,14 +13,24 @@
 | `gross_sales` | Σ `sale.total_amount` | All payment types combined |
 | `refunds` | Σ `sale_items.refunded_amount` | Line-item refunds are authoritative (header `refunds` is stale after offline refunds) |
 | `shift_expenses` | Σ `expense.amount` where `shift_id = X` | Expenses are paid from the cash drawer |
-| `cash_receipts` | Σ `total_amount` of **cash** sales, **per-sale net after its own refunds** | Each cash sale contributes `total_amount − its refunded_amount` |
-| `mobile_receipts` | Σ `total_amount` of **mobile_money** sales, per-sale net of refunds | |
-| `card_receipts` | Σ `total_amount` of **card/other** sales, per-sale net of refunds | |
+| `cash_receipts` | Σ collected on **cash** sales | Each cash sale contributes what was actually collected (see Partial payments below) |
+| `mobile_receipts` | Σ collected on **mobile_money** sales | |
+| `card_receipts` | Σ collected on **card/other** sales | |
 | `net_after_refunds` | `gross_sales − refunds` | Per receipt / sales headline |
 | `net_sales` | `gross_sales − refunds − shift_expenses` | Canonical, used on dashboard + shift report |
 | `cash_collected` | `cash_receipts − expenses` | Net cash actually taken in (refunds already netted per sale) |
 | `cash_at_handover` | `opening_balance + cash_collected` | **The expected cash in the drawer at close** |
 | `variance` | `counted_cash − cash_at_handover` | Positive = over, negative = short |
+
+> **Partial payments.** A sale that is not fully paid only contributes what was
+> actually collected, capped at its net: `collected = min(amount_paid, net)` when
+> `payment_status !== 'paid'`, else `net`. This keeps cash in the drawer honest -
+> a UGX 100k sale with only 40k paid counts 40k in `cash`, not 100k. The backend
+> `saleCollected()` and the frontend `collectionsForSale()` implement the same rule.
+>
+> **Partial example:** cash sale worth 100k, only 40k paid → `cash_receipts`
+> contributes 40k. If the same sale also had 20k refunded, net is 80k but only
+> 50k was paid → contributes 50k (min of paid and net).
 
 > Naming rule: **"Net Sales"** means `gross − refunds − expenses` across ALL payment
 > types (cash + mobile + card). It is **not** "cash collected". The My Shift page
