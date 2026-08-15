@@ -323,5 +323,9 @@ class BillingPaymentLifecycleTest extends AbstractBillingLifecycleTestCase
         $this->assertSame($this->noTrial->id, $subscription->plan_id);
         // Subscription/payment status carried forward - still past_due, not cancelled.
         $this->assertSame(SubscriptionStatus::PAST_DUE, $subscription->status);
+        // Price fields synced to the target (lower) plan so stored prices match.
+        $this->assertEquals((float) $this->noTrial->price_monthly_usd, (float) $subscription->price_monthly_usd);
+        $this->assertEquals((float) $this->noTrial->price_yearly_usd, (float) $subscription->price_yearly_usd);
+        $this->assertEquals((float) $this->noTrial->onboarding_fee_usd, (float) $subscription->onboarding_fee_usd);
     }
 }

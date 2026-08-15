@@ -195,6 +195,9 @@ class SubscriptionScheduledChangeService implements SubscriptionScheduledChangeS
                     } else {
                         $this->subscriptionRepo->update($subscription, [
                             'plan_id' => $change->to_plan_id,
+                            'price_monthly_usd' => $change->toPlan?->price_monthly_usd ?? $subscription->price_monthly_usd,
+                            'price_yearly_usd' => $change->toPlan?->price_yearly_usd ?? $subscription->price_yearly_usd,
+                            'onboarding_fee_usd' => $change->toPlan?->onboarding_fee_usd ?? $subscription->onboarding_fee_usd,
                         ]);
                     }
 
