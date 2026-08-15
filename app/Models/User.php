@@ -49,6 +49,7 @@ class User extends Authenticatable
         'bank_account_name',
         'bank_account_number',
         'bank_branch',
+        'preferences',
     ];
 
     protected $hidden = [
@@ -67,6 +68,7 @@ class User extends Authenticatable
             'status_changed_at' => 'datetime',
             'account_type' => 'string',
             'modules' => 'array',
+            'preferences' => 'array',
             'tour_step' => 'integer',
             'tour_completed_at' => 'datetime',
             'tour_skipped_at' => 'datetime',
@@ -77,6 +79,25 @@ class User extends Authenticatable
     public function payouts(): MorphMany
     {
         return $this->morphMany(Payout::class, 'payable');
+    }
+
+    /**
+     * Per-user notes page background preference, e.g. { type: 'gallery', value: 'https://...' }.
+     *
+     * @return array{type?: string, value?: string|null}|null
+     */
+    public function notesBackground(): ?array
+    {
+        $prefs = is_array($this->preferences) ? $this->preferences : [];
+
+        return $prefs['quick_notes_background'] ?? null;
+    }
+
+    public function setNotesBackground(string $type, ?string $value): void
+    {
+        $prefs = is_array($this->preferences) ? $this->preferences : [];
+        $prefs['quick_notes_background'] = ['type' => $type, 'value' => $value];
+        $this->preferences = $prefs;
     }
 
     public function business(): BelongsTo

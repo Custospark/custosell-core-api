@@ -93,4 +93,21 @@ class QuickNoteController extends Controller
 
         return response()->json(['ok' => true]);
     }
+
+    /** Save the user's notes-page background preference (gallery image or solid color). */
+    public function saveBackground(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->quickNoteService->canUseFeature($user), 403, 'Quick notes are not available on this account.');
+
+        $data = $request->validate([
+            'type' => ['required', 'string', 'in:gallery,color'],
+            'value' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $user->setNotesBackground($data['type'], $data['value'] ?? null);
+        $user->save();
+
+        return response()->json(['data' => ['preferences' => $user->preferences]]);
+    }
 }

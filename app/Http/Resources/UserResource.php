@@ -124,6 +124,7 @@ class UserResource extends JsonResource
             'modules' => $this->resolveModules(),
             'account_type' => $this->account_type ?? 'business',
             'onboarding' => app(OnboardingService::class)->payloadFor($this->resource),
+            'preferences' => is_array($this->preferences) ? $this->preferences : [],
             'is_platform_admin' => app(PlatformAdminService::class)->isPlatformAdmin($this->resource),
             'project_member_ids' => $this->when(
                 $request->user()?->id === $this->id,

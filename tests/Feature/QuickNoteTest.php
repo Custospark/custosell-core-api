@@ -356,4 +356,22 @@ class QuickNoteTest extends TestCase
         $this->assertSame(0, QuickNote::find($b->id)->sort_order);
         $this->assertSame(1, QuickNote::find($a->id)->sort_order);
     }
+
+    public function test_background_preference_is_per_user(): void
+    {
+        $this->withHeader('Authorization', "Bearer $this->ownerToken")
+            ->postJson('/api/v1/quick-notes/background', [
+                'type' => 'gallery',
+                'value' => 'https://example.com/bg.jpg',
+            ])
+            ->assertStatus(200);
+
+        $this->owner->refresh();
+        $this->assertSame('gallery', $this->owner->notesBackground()['type']);
+        $this->assertSame('https://example.com/bg.jpg', $this->owner->notesBackground()['value']);
+
+        // Staff member's preference is independent (defaults to null).
+        $this->staff->refresh();
+        $this->assertNull($this->staff->notesBackground());
+    }
 }
