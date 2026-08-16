@@ -16,3 +16,6 @@ Schedule::command('subscriptions:expire-trials')->dailyAt('02:00');
 Schedule::command('subscriptions:renew')->dailyAt('02:15');
 Schedule::command('subscriptions:suspend-past-due')->dailyAt('02:30');
 Schedule::command('subscriptions:cancel-at-period-end')->dailyAt('02:45');
+
+// Recognize earned deferred subscription revenue into software revenue.
+Schedule::command('accounting:recognize-revenue')->dailyAt('03:30');
