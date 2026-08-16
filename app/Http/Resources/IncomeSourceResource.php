@@ -13,6 +13,7 @@ class IncomeSourceResource extends JsonResource
             'id' => $this->id,
             'business_id' => $this->business_id,
             'user_id' => $this->user_id,
+            'budget_id' => $this->budget_id,
             'user' => new UserResource($this->whenLoaded('user')),
             'amount' => $this->amount,
             'source_name' => $this->source_name,
