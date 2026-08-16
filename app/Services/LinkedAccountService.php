@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\LinkedAccount;
 use App\Models\User;
+use App\Services\Billing\SubscriptionStateMachineService;
+use App\Services\Contracts\AccountVerificationServiceInterface;
 use App\Services\Contracts\UserServiceInterface;
 use App\Services\Platform\PlatformAdminService;
 use App\Http\Resources\UserResource;
@@ -15,6 +17,10 @@ use Illuminate\Validation\ValidationException;
  * Linked accounts let a user switch between several of their own accounts
  * without logging out. The account used to link the others becomes the
  * primary/default; the rest are secondary.
+ *
+ * Security: linking and unlinking both require a one-time security code sent
+ * to the account being linked/unlinked. The code confirms that the account's
+ * owner approves the action - credentials alone are not enough.
  *
  * Switching returns the same auth payload as /auth/me so the frontend auth
  * slice can hydrate exactly like a normal login - with the target account's
@@ -28,15 +34,17 @@ class LinkedAccountService
     public function __construct(
         protected UserServiceInterface $userService,
         protected PlatformAdminService $platformAdminService,
+        protected AccountVerificationServiceInterface $verificationService,
+        protected SubscriptionStateMachineService $subscriptionStateMachine,
     ) {}
 
     /**
-     * Authenticate the account to link against real credentials and create the
-     * link. The first link a user creates becomes the primary account.
+     * Validate credentials of the account to link and issue a security code to
+     * that account's email. The link is created only after confirmLink().
      *
-     * @return array{relation: string, linked_account: array<string, mixed>}
+     * @return array{message: string, target_user_id: int}
      */
-    public function link(int $ownerUserId, string $email, string $password): array
+    public function initiateLink(int $ownerUserId, string $email, string $password, ?string $ip, ?string $userAgent): array
     {
         $target = $this->userService->login($email, $password);
         if (!$target) {
@@ -59,45 +67,90 @@ class LinkedAccountService
             ]);
         }
 
+        if ($this->alreadyLinked($ownerUserId, $target->id)) {
+            throw ValidationException::withMessages([
+                'email' => 'This account is already linked.',
+            ]);
+        }
+
+        $this->verificationService->issue(
+            $target,
+            AccountVerificationServiceInterface::PURPOSE_LINK_ACCOUNT,
+            $ip,
+            $userAgent,
+            ['target_user_id' => $target->id],
+        );
+
+        return [
+            'message' => 'A security code has been sent to the account you are linking.',
+            'target_user_id' => $target->id,
+        ];
+    }
+
+    /**
+     * Verify the security code sent to the account being linked and create the
+     * link. The logged-in (owner) account is the default; every newly linked
+     * account starts as secondary.
+     *
+     * @return array{relation: string, linked_account: array<string, mixed>}
+     */
+    public function confirmLink(int $ownerUserId, int $targetUserId, string $code): array
+    {
+        $target = User::find($targetUserId);
+        if (!$target) {
+            throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
+        }
+
+        $context = $this->verificationService->verify(
+            $target,
+            AccountVerificationServiceInterface::PURPOSE_LINK_ACCOUNT,
+            $code,
+        );
+
+        if (!$context || (int) ($context['target_user_id'] ?? 0) !== $targetUserId) {
+            throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
+        }
+
         $existing = LinkedAccount::query()
             ->where('owner_user_id', $ownerUserId)
-            ->where('linked_user_id', $target->id)
+            ->where('linked_user_id', $targetUserId)
             ->first();
 
         if ($existing) {
             return ['relation' => $existing->relation, 'linked_account' => $this->summarize($target, $existing)];
         }
 
-        $hasAny = LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->exists();
+        // Ensure the logged-in account is registered as the default before
+        // adding a new secondary link.
+        $this->ensureSelfPrimary($ownerUserId);
 
-        $relation = $hasAny ? self::RELATION_SECONDARY : self::RELATION_PRIMARY;
-
-        $link = DB::transaction(function () use ($ownerUserId, $target, $relation) {
+        $link = DB::transaction(function () use ($ownerUserId, $targetUserId) {
             return LinkedAccount::create([
                 'owner_user_id' => $ownerUserId,
-                'linked_user_id' => $target->id,
-                'relation' => $relation,
+                'linked_user_id' => $targetUserId,
+                'relation' => self::RELATION_SECONDARY,
             ]);
         });
 
         Log::info('[LinkedAccounts] account linked', [
             'owner_user_id' => $ownerUserId,
-            'linked_user_id' => $target->id,
-            'relation' => $relation,
+            'linked_user_id' => $targetUserId,
+            'relation' => self::RELATION_SECONDARY,
         ]);
 
-        return ['relation' => $relation, 'linked_account' => $this->summarize($target, $link)];
+        return ['relation' => self::RELATION_SECONDARY, 'linked_account' => $this->summarize($target, $link)];
     }
 
     /**
-     * List every account the owner can switch to, ordered with the primary first.
+     * List every account the owner can switch to. The logged-in account is the
+     * default (primary); linked accounts follow, ordered primary first.
      *
      * @return array<string, mixed>
      */
     public function listFor(int $ownerUserId): array
     {
+        $this->ensureSelfPrimary($ownerUserId);
+
         $links = LinkedAccount::query()
             ->where('owner_user_id', $ownerUserId)
             ->with(['linkedUser.business.subscription.plan'])
@@ -116,18 +169,75 @@ class LinkedAccountService
     /**
      * Switch to a linked account - returns the full auth payload for that
      * account (same shape as /auth/me) so the client can hydrate its session.
+     *
+     * Switching applies the same account-status constraints as logging in:
+     * the target must be active, its business must not be suspended/restricted
+     * (unless it is a platform admin), and the subscription is reconciled so
+     * the returned access reflects the true current status. No password or
+     * email is required - the owner already proved who they are.
      */
     public function switchTo(int $ownerUserId, int $linkedUserId): array
     {
-        $link = $this->linkOrFail($ownerUserId, $linkedUserId);
+        if ($ownerUserId === $linkedUserId) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'You are already signed in to this account.',
+            ]);
+        }
+
+        $this->linkOrFail($ownerUserId, $linkedUserId);
 
         $user = User::query()
             ->with(['role', 'roles', 'business.subscription.plan', 'business.subscription.referral.referralCode', 'location', 'locations'])
             ->findOrFail($linkedUserId);
 
+        if (! ($user->is_active ?? true)) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'This account has been deactivated and cannot be used.',
+            ]);
+        }
+
+        // Mirror authResponse: reconcile subscription so access reflects the
+        // true status, then block suspended/restricted businesses.
+        $this->reconcileSubscription($user);
+
+        $isPlatformAdmin = $this->platformAdminService->isPlatformAdmin($user);
+        if (! $isPlatformAdmin && $user->business_id) {
+            $business = $user->business ?? \App\Models\Business::query()->select('id', 'status')->find($user->business_id);
+            $blocked = config('platform.blocked_business_statuses', ['restricted', 'suspended']);
+            if ($business && in_array($business->status, $blocked, true)) {
+                $message = $business->status === 'suspended'
+                    ? 'This account is suspended.'
+                    : 'This account is restricted.';
+                throw ValidationException::withMessages(['linked_account' => $message]);
+            }
+        }
+
         return [
             'user' => (new UserResource($user))->resolve(),
         ];
+    }
+
+    /**
+     * Mirror AuthController::reconcileSubscription - process due subscription
+     * transitions and reload the business so the payload is current.
+     */
+    protected function reconcileSubscription(User $user): void
+    {
+        if (!$user->business_id) {
+            return;
+        }
+
+        $subscription = $user->business?->subscription;
+        if (!$subscription) {
+            return;
+        }
+
+        $this->subscriptionStateMachine->processDueTransitions($subscription);
+
+        $user->setRelation('business', $user->business->fresh()->load([
+            'subscription.plan',
+            'subscription.referral.referralCode',
+        ]));
     }
 
     /**
@@ -148,10 +258,10 @@ class LinkedAccountService
     }
 
     /**
-     * Unlink a secondary account. The primary cannot be removed until another
-     * account is promoted to primary first.
+     * Issue a security code to the account being unlinked; the unlink only
+     * happens after confirmUnlink() verifies it.
      */
-    public function unlink(int $ownerUserId, int $linkedUserId): void
+    public function initiateUnlink(int $ownerUserId, int $linkedUserId, ?string $ip, ?string $userAgent): array
     {
         $link = $this->linkOrFail($ownerUserId, $linkedUserId);
 
@@ -159,6 +269,43 @@ class LinkedAccountService
             throw ValidationException::withMessages([
                 'linked_account' => 'Set another account as your default before removing this one.',
             ]);
+        }
+
+        $this->verificationService->issue(
+            $link->linkedUser,
+            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
+            $ip,
+            $userAgent,
+            ['linked_user_id' => $linkedUserId],
+        );
+
+        return [
+            'message' => 'A security code has been sent to the account you are unlinking.',
+            'linked_user_id' => $linkedUserId,
+        ];
+    }
+
+    /**
+     * Verify the code sent to the account being unlinked, then remove the link.
+     */
+    public function confirmUnlink(int $ownerUserId, int $linkedUserId, string $code): void
+    {
+        $link = $this->linkOrFail($ownerUserId, $linkedUserId);
+
+        if ($link->relation === self::RELATION_PRIMARY) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'Set another account as your default before removing this one.',
+            ]);
+        }
+
+        $context = $this->verificationService->verify(
+            $link->linkedUser,
+            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
+            $code,
+        );
+
+        if (!$context || (int) ($context['linked_user_id'] ?? 0) !== $linkedUserId) {
+            throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
         }
 
         $link->delete();
@@ -186,6 +333,36 @@ class LinkedAccountService
         }
 
         return $link;
+    }
+
+    protected function alreadyLinked(int $ownerUserId, int $linkedUserId): bool
+    {
+        return LinkedAccount::query()
+            ->where('owner_user_id', $ownerUserId)
+            ->where('linked_user_id', $linkedUserId)
+            ->exists();
+    }
+
+    /**
+     * Ensure the logged-in account is registered as the default. Represented as
+     * a self-link (owner_user_id == linked_user_id, relation=primary) so it
+     * appears first in the switch list with the Primary badge.
+     */
+    protected function ensureSelfPrimary(int $ownerUserId): void
+    {
+        $hasPrimary = LinkedAccount::query()
+            ->where('owner_user_id', $ownerUserId)
+            ->where('relation', self::RELATION_PRIMARY)
+            ->exists();
+
+        if ($hasPrimary) {
+            return;
+        }
+
+        LinkedAccount::firstOrCreate(
+            ['owner_user_id' => $ownerUserId, 'linked_user_id' => $ownerUserId],
+            ['relation' => self::RELATION_PRIMARY],
+        );
     }
 
     /**

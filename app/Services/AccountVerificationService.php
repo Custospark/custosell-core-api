@@ -36,12 +36,20 @@ class AccountVerificationService implements AccountVerificationServiceInterface
             self::PURPOSE_PASSWORD_CHANGE => 'Confirm your Custosell password change',
             self::PURPOSE_PROFILE_CHANGE => 'Confirm your Custosell profile change',
             self::PURPOSE_DELETE_ACCOUNT => 'Confirm your Custosell account deletion',
+            self::PURPOSE_LINK_ACCOUNT => 'Confirm linking your Custosell account',
+            self::PURPOSE_UNLINK_ACCOUNT => 'Confirm unlinking your Custosell account',
             default => 'Verify your Custosell email',
+        };
+
+        $mailBody = match ($purpose) {
+            self::PURPOSE_LINK_ACCOUNT => "Your security code is <strong>{$code}</strong>.\n\nA user wants to link this account so they can switch to it. Enter this code to confirm. It expires in {$ttl} minutes. If you didn't request this, you can safely ignore this email.",
+            self::PURPOSE_UNLINK_ACCOUNT => "Your security code is <strong>{$code}</strong>.\n\nA user wants to unlink this account. Enter this code to confirm. It expires in {$ttl} minutes. If you didn't request this, you can safely ignore this email.",
+            default => "Your security code is <strong>{$code}</strong>.\n\nIt expires in {$ttl} minutes. If you didn't request this, you can safely ignore this email.",
         };
 
         Mail::to($user->email)->send(new StandardEmail(
             title: $title,
-            mailBody: "Your security code is <strong>{$code}</strong>.\n\nIt expires in {$ttl} minutes. If you didn't request this, you can safely ignore this email.",
+            mailBody: $mailBody,
             ctaLabel: 'Sign in to Custosell',
             ctaUrl: config('app.frontend_url', config('app.url')),
             tip: $ip && $userAgent

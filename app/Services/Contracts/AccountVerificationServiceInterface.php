@@ -11,6 +11,8 @@ interface AccountVerificationServiceInterface
     public const PURPOSE_PASSWORD_CHANGE = 'password_change';
     public const PURPOSE_PROFILE_CHANGE = 'profile_change';
     public const PURPOSE_DELETE_ACCOUNT = 'delete_account';
+    public const PURPOSE_LINK_ACCOUNT = 'link_account';
+    public const PURPOSE_UNLINK_ACCOUNT = 'unlink_account';
 
     public function issue(User $user, string $purpose, ?string $ip = null, ?string $userAgent = null, array $context = []): void;
 
