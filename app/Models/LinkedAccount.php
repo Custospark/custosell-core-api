@@ -8,25 +8,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LinkedAccount extends Model
 {
     protected $fillable = [
-        'owner_user_id',
-        'linked_user_id',
-        'relation',
+        'cluster_id',
+        'user_id',
+        'is_primary',
     ];
 
     protected function casts(): array
     {
         return [
-            'relation' => 'string',
+            'is_primary' => 'boolean',
         ];
     }
 
-    public function ownerUser(): BelongsTo
+    public function cluster(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_user_id');
+        return $this->belongsTo(LinkedAccountCluster::class, 'cluster_id');
     }
 
-    public function linkedUser(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'linked_user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

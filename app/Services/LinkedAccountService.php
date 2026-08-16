@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LinkedAccount;
+use App\Models\LinkedAccountCluster;
 use App\Models\User;
 use App\Services\Billing\SubscriptionStateMachineService;
 use App\Services\Contracts\AccountVerificationServiceInterface;
@@ -15,16 +16,18 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Linked accounts let a user switch between several of their own accounts
- * without logging out. The account used to link the others becomes the
- * primary/default; the rest are secondary.
+ * without logging out - Google-style: link many accounts (2, 3, 4+), and every
+ * member of the cluster can switch to every other member.
+ *
+ * Model: a cluster is one linked set. Linking a new account adds it to the
+ * whole cluster, so no matter which account is active, the switcher shows all
+ * of them. Each account keeps its own logged-in self as primary by default.
  *
  * Security: linking and unlinking both require a one-time security code sent
- * to the account being linked/unlinked. The code confirms that the account's
- * owner approves the action - credentials alone are not enough.
- *
- * Switching returns the same auth payload as /auth/me so the frontend auth
- * slice can hydrate exactly like a normal login - with the target account's
- * role, modules, locations, subscription and data scope intact.
+ * to the account being linked/unlinked - the code confirms the account's
+ * owner approves the action. Switching mints a fresh token for the target
+ * account (switch = login without password), so each account has its own
+ * session and switching never loses the originating account.
  */
 class LinkedAccountService
 {
@@ -67,7 +70,7 @@ class LinkedAccountService
             ]);
         }
 
-        if ($this->alreadyLinked($ownerUserId, $target->id)) {
+        if ($this->inSameCluster($ownerUserId, $target->id)) {
             throw ValidationException::withMessages([
                 'email' => 'This account is already linked.',
             ]);
@@ -88,9 +91,9 @@ class LinkedAccountService
     }
 
     /**
-     * Verify the security code sent to the account being linked and create the
-     * link. The logged-in (owner) account is the default; every newly linked
-     * account starts as secondary.
+     * Verify the security code sent to the account being linked and add that
+     * account to the cluster. The first link creates a cluster; later links
+     * join the existing cluster so every member can switch to every other.
      *
      * @return array{relation: string, linked_account: array<string, mixed>}
      */
@@ -111,70 +114,95 @@ class LinkedAccountService
             throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
         }
 
-        $existing = LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->where('linked_user_id', $targetUserId)
-            ->first();
-
-        if ($existing) {
-            return ['relation' => $existing->relation, 'linked_account' => $this->summarize($target, $existing)];
-        }
-
-        // Ensure the logged-in account is registered as the default before
-        // adding a new secondary link.
-        $this->ensureSelfPrimary($ownerUserId);
-
         $link = DB::transaction(function () use ($ownerUserId, $targetUserId) {
+            // Owner's cluster: create one on the first link (owner = primary).
+            $clusterId = $this->clusterIdFor($ownerUserId);
+            if (!$clusterId) {
+                $cluster = LinkedAccountCluster::create();
+                $clusterId = $cluster->id;
+                LinkedAccount::create([
+                    'cluster_id' => $clusterId,
+                    'user_id' => $ownerUserId,
+                    'is_primary' => true,
+                ]);
+            }
+
+            // If the target already belongs to another cluster, merge that
+            // cluster into the owner's so every account stays in exactly one.
+            $targetClusterId = $this->clusterIdFor($targetUserId);
+            if ($targetClusterId && $targetClusterId !== $clusterId) {
+                LinkedAccount::query()
+                    ->where('cluster_id', $targetClusterId)
+                    ->update(['cluster_id' => $clusterId]);
+                LinkedAccountCluster::query()->whereKey($targetClusterId)->delete();
+            }
+
+            // Ensure the owner is a member (primary).
+            if (!$this->membershipFor($clusterId, $ownerUserId)) {
+                LinkedAccount::create([
+                    'cluster_id' => $clusterId,
+                    'user_id' => $ownerUserId,
+                    'is_primary' => true,
+                ]);
+            }
+
             return LinkedAccount::create([
-                'owner_user_id' => $ownerUserId,
-                'linked_user_id' => $targetUserId,
-                'relation' => self::RELATION_SECONDARY,
+                'cluster_id' => $clusterId,
+                'user_id' => $targetUserId,
+                'is_primary' => false,
             ]);
         });
 
-        Log::info('[LinkedAccounts] account linked', [
-            'owner_user_id' => $ownerUserId,
-            'linked_user_id' => $targetUserId,
-            'relation' => self::RELATION_SECONDARY,
+        Log::info('[LinkedAccounts] account linked to cluster', [
+            'cluster_id' => $link->cluster_id,
+            'user_id' => $targetUserId,
         ]);
 
-        return ['relation' => self::RELATION_SECONDARY, 'linked_account' => $this->summarize($target, $link)];
+        return [
+            'relation' => self::RELATION_SECONDARY,
+            'linked_account' => $this->summarize($target, $link),
+        ];
     }
 
     /**
-     * List every account the owner can switch to. The logged-in account is the
-     * default (primary); linked accounts follow, ordered primary first.
+     * List every account in the owner's cluster, ordered primary first. Every
+     * member appears no matter which account is active - so switching between
+     * any of them never loses the others.
      *
      * @return array<string, mixed>
      */
     public function listFor(int $ownerUserId): array
     {
-        $this->ensureSelfPrimary($ownerUserId);
+        $clusterId = $this->clusterIdFor($ownerUserId);
+        if (!$clusterId) {
+            return ['primary' => null, 'accounts' => []];
+        }
 
-        $links = LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->with(['linkedUser.business.subscription.plan'])
-            ->orderByRaw("CASE WHEN relation = 'primary' THEN 0 ELSE 1 END")
+        $members = LinkedAccount::query()
+            ->where('cluster_id', $clusterId)
+            ->with(['user.business.subscription.plan'])
+            ->orderByRaw('is_primary DESC')
             ->orderBy('created_at')
             ->get();
 
-        $accounts = $links->map(fn (LinkedAccount $link) => $this->summarize($link->linkedUser, $link));
+        $accounts = $members
+            ->map(fn (LinkedAccount $link) => $this->summarize($link->user, $link))
+            ->values()
+            ->all();
 
         return [
-            'primary' => $accounts->firstWhere('relation', self::RELATION_PRIMARY),
-            'accounts' => $accounts->values()->all(),
+            'primary' => $accounts[0] ?? null,
+            'accounts' => $accounts,
         ];
     }
 
     /**
      * Switch to a linked account - returns the full auth payload for that
-     * account (same shape as /auth/me) so the client can hydrate its session.
+     * account (same shape as /auth/me) plus a fresh bearer token minted for
+     * the target account, exactly like a normal login (but without requiring
+     * email/password - the owner already proved who they are).
      *
-     * Switching applies the same account-status constraints as logging in:
-     * the target must be active, its business must not be suspended/restricted
-     * (unless it is a platform admin), and the subscription is reconciled so
-     * the returned access reflects the true current status. No password or
-     * email is required - the owner already proved who they are.
+     * @return array{user: array<string, mixed>, token: string}
      */
     public function switchTo(int $ownerUserId, int $linkedUserId): array
     {
@@ -184,7 +212,11 @@ class LinkedAccountService
             ]);
         }
 
-        $this->linkOrFail($ownerUserId, $linkedUserId);
+        if (!$this->inSameCluster($ownerUserId, $linkedUserId)) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'This account is not linked.',
+            ]);
+        }
 
         $user = User::query()
             ->with(['role', 'roles', 'business.subscription.plan', 'business.subscription.referral.referralCode', 'location', 'locations'])
@@ -212,15 +244,111 @@ class LinkedAccountService
             }
         }
 
+        // Mint a fresh token for the target account (like login). The
+        // originating account's token stays valid so they can switch back.
+        $token = $user->createToken('auth-token')->plainTextToken;
+
         return [
             'user' => (new UserResource($user))->resolve(),
+            'token' => $token,
         ];
     }
 
     /**
-     * Mirror AuthController::reconcileSubscription - process due subscription
-     * transitions and reload the business so the payload is current.
+     * Promote a linked account to primary within the cluster; the previous
+     * primary demotes.
      */
+    public function setPrimary(int $ownerUserId, int $linkedUserId): void
+    {
+        $clusterId = $this->clusterIdFor($ownerUserId);
+        if (!$clusterId || !$this->membershipFor($ownerUserId, $linkedUserId)) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'This account is not linked.',
+            ]);
+        }
+
+        DB::transaction(function () use ($clusterId, $linkedUserId) {
+            LinkedAccount::query()
+                ->where('cluster_id', $clusterId)
+                ->update(['is_primary' => false]);
+
+            LinkedAccount::query()
+                ->where('cluster_id', $clusterId)
+                ->where('user_id', $linkedUserId)
+                ->update(['is_primary' => true]);
+        });
+    }
+
+    /**
+     * Issue a security code to the account being unlinked; the unlink only
+     * happens after confirmUnlink() verifies it.
+     */
+    public function initiateUnlink(int $ownerUserId, int $linkedUserId, ?string $ip, ?string $userAgent): array
+    {
+        $link = $this->membershipOrFail($ownerUserId, $linkedUserId);
+
+        if ($link->is_primary) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'Set another account as your default before removing this one.',
+            ]);
+        }
+
+        $this->verificationService->issue(
+            $link->user,
+            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
+            $ip,
+            $userAgent,
+            ['linked_user_id' => $linkedUserId],
+        );
+
+        return [
+            'message' => 'A security code has been sent to the account you are unlinking.',
+            'linked_user_id' => $linkedUserId,
+        ];
+    }
+
+    /**
+     * Verify the code sent to the account being unlinked, then remove it from
+     * the cluster. The account is removed for everyone - it no longer appears
+     * in any member's switcher.
+     */
+    public function confirmUnlink(int $ownerUserId, int $linkedUserId, string $code): void
+    {
+        $link = $this->membershipOrFail($ownerUserId, $linkedUserId);
+
+        if ($link->is_primary) {
+            throw ValidationException::withMessages([
+                'linked_account' => 'Set another account as your default before removing this one.',
+            ]);
+        }
+
+        $context = $this->verificationService->verify(
+            $link->user,
+            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
+            $code,
+        );
+
+        if (!$context || (int) ($context['linked_user_id'] ?? 0) !== $linkedUserId) {
+            throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
+        }
+
+        $clusterId = $link->cluster_id;
+
+        $link->delete();
+
+        // If the cluster is now empty, drop it entirely.
+        $remaining = LinkedAccount::query()->where('cluster_id', $clusterId)->count();
+        if ($remaining === 0) {
+            LinkedAccountCluster::query()->whereKey($clusterId)->delete();
+        }
+
+        Log::info('[LinkedAccounts] account unlinked from cluster', [
+            'cluster_id' => $clusterId,
+            'user_id' => $linkedUserId,
+        ]);
+    }
+
+    /** Mirror AuthController::reconcileSubscription. */
     protected function reconcileSubscription(User $user): void
     {
         if (!$user->business_id) {
@@ -240,91 +368,28 @@ class LinkedAccountService
         ]));
     }
 
-    /**
-     * Promote a linked account to primary; the previous primary demotes.
-     */
-    public function setPrimary(int $ownerUserId, int $linkedUserId): void
+    protected function clusterIdFor(int $userId): ?int
     {
-        DB::transaction(function () use ($ownerUserId, $linkedUserId) {
-            $target = $this->linkOrFail($ownerUserId, $linkedUserId);
-
-            LinkedAccount::query()
-                ->where('owner_user_id', $ownerUserId)
-                ->where('relation', self::RELATION_PRIMARY)
-                ->update(['relation' => self::RELATION_SECONDARY]);
-
-            $target->update(['relation' => self::RELATION_PRIMARY]);
-        });
-    }
-
-    /**
-     * Issue a security code to the account being unlinked; the unlink only
-     * happens after confirmUnlink() verifies it.
-     */
-    public function initiateUnlink(int $ownerUserId, int $linkedUserId, ?string $ip, ?string $userAgent): array
-    {
-        $link = $this->linkOrFail($ownerUserId, $linkedUserId);
-
-        if ($link->relation === self::RELATION_PRIMARY) {
-            throw ValidationException::withMessages([
-                'linked_account' => 'Set another account as your default before removing this one.',
-            ]);
-        }
-
-        $this->verificationService->issue(
-            $link->linkedUser,
-            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
-            $ip,
-            $userAgent,
-            ['linked_user_id' => $linkedUserId],
-        );
-
-        return [
-            'message' => 'A security code has been sent to the account you are unlinking.',
-            'linked_user_id' => $linkedUserId,
-        ];
-    }
-
-    /**
-     * Verify the code sent to the account being unlinked, then remove the link.
-     */
-    public function confirmUnlink(int $ownerUserId, int $linkedUserId, string $code): void
-    {
-        $link = $this->linkOrFail($ownerUserId, $linkedUserId);
-
-        if ($link->relation === self::RELATION_PRIMARY) {
-            throw ValidationException::withMessages([
-                'linked_account' => 'Set another account as your default before removing this one.',
-            ]);
-        }
-
-        $context = $this->verificationService->verify(
-            $link->linkedUser,
-            AccountVerificationServiceInterface::PURPOSE_UNLINK_ACCOUNT,
-            $code,
-        );
-
-        if (!$context || (int) ($context['linked_user_id'] ?? 0) !== $linkedUserId) {
-            throw ValidationException::withMessages(['code' => 'That security code is invalid or has expired.']);
-        }
-
-        $link->delete();
-
-        Log::info('[LinkedAccounts] account unlinked', [
-            'owner_user_id' => $ownerUserId,
-            'linked_user_id' => $linkedUserId,
-        ]);
-    }
-
-    /**
-     * Resolve the link row for an owner -> linked pair, enforcing ownership.
-     */
-    protected function linkOrFail(int $ownerUserId, int $linkedUserId): LinkedAccount
-    {
-        $link = LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->where('linked_user_id', $linkedUserId)
+        $membership = LinkedAccount::query()
+            ->where('user_id', $userId)
+            ->orderByDesc('is_primary')
             ->first();
+
+        return $membership?->cluster_id;
+    }
+
+    protected function membershipFor(int $clusterIdOrOwnerUserId, int $userId): ?LinkedAccount
+    {
+        return LinkedAccount::query()
+            ->where('user_id', $userId)
+            ->where('cluster_id', $clusterIdOrOwnerUserId)
+            ->first();
+    }
+
+    protected function membershipOrFail(int $ownerUserId, int $linkedUserId): LinkedAccount
+    {
+        $clusterId = $this->clusterIdFor($ownerUserId);
+        $link = $clusterId ? $this->membershipFor($clusterId, $linkedUserId) : null;
 
         if (!$link) {
             throw ValidationException::withMessages([
@@ -335,41 +400,20 @@ class LinkedAccountService
         return $link;
     }
 
-    protected function alreadyLinked(int $ownerUserId, int $linkedUserId): bool
+    protected function inSameCluster(int $aUserId, int $bUserId): bool
     {
-        return LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->where('linked_user_id', $linkedUserId)
-            ->exists();
-    }
-
-    /**
-     * Ensure the logged-in account is registered as the default. Represented as
-     * a self-link (owner_user_id == linked_user_id, relation=primary) so it
-     * appears first in the switch list with the Primary badge.
-     */
-    protected function ensureSelfPrimary(int $ownerUserId): void
-    {
-        $hasPrimary = LinkedAccount::query()
-            ->where('owner_user_id', $ownerUserId)
-            ->where('relation', self::RELATION_PRIMARY)
-            ->exists();
-
-        if ($hasPrimary) {
-            return;
+        $aCluster = $this->clusterIdFor($aUserId);
+        if (!$aCluster) {
+            return false;
         }
 
-        LinkedAccount::firstOrCreate(
-            ['owner_user_id' => $ownerUserId, 'linked_user_id' => $ownerUserId],
-            ['relation' => self::RELATION_PRIMARY],
-        );
+        return LinkedAccount::query()
+            ->where('cluster_id', $aCluster)
+            ->where('user_id', $bUserId)
+            ->exists();
     }
 
-    /**
-     * Small summary of a linked account used in the switcher list.
-     *
-     * @return array<string, mixed>
-     */
+    /** Small summary of a linked account used in the switcher list. */
     protected function summarize(User $user, LinkedAccount $link): array
     {
         $business = $user->business;
@@ -381,7 +425,7 @@ class LinkedAccountService
             'email' => $user->email,
             'avatar' => $user->avatar,
             'account_type' => $user->account_type ?? 'business',
-            'relation' => $link->relation,
+            'relation' => $link->is_primary ? self::RELATION_PRIMARY : self::RELATION_SECONDARY,
             'is_business_owner' => $user->business?->owner_id === $user->id,
             'role' => $user->relationLoaded('role') && $user->role
                 ? ['id' => $user->role->id, 'name' => $user->role->name, 'slug' => $user->role->slug]
