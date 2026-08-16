@@ -66,7 +66,9 @@ class ReportPeriodResolver
     public function resolveFromDateRange(int $businessId, string $dateFrom, string $dateTo): ReportPeriodContext
     {
         if ($dateFrom > $dateTo) {
-            throw new \InvalidArgumentException('date_from must be on or before date_to.');
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'date_from' => 'The start date must be on or before the end date.',
+            ]);
         }
 
         $periods = AccountingPeriod::query()
@@ -87,7 +89,9 @@ class ReportPeriodResolver
         }
 
         if ($periods->isEmpty()) {
-            throw new \RuntimeException('No accounting periods found for the requested date range.');
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'date_from' => "No accounting data exists for {$dateFrom} to {$dateTo}. Pick a range within your business's active accounting periods.",
+            ]);
         }
 
         return $this->buildContext($periods);

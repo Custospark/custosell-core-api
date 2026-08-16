@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReportPeriodRequest;
 use App\Services\RatioService;
 use App\Services\ReportPeriodResolver;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,7 @@ class RatioController extends Controller
         protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);

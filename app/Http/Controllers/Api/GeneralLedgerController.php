@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReportPeriodRequest;
 use App\Models\AccountingPeriod;
 use App\Services\AccountingPeriodService;
 use App\Services\FinancialStatementService;
 use App\Services\LedgerService;
 use App\Services\ReportPeriodResolver;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class GeneralLedgerController extends Controller
 {
@@ -20,7 +20,7 @@ class GeneralLedgerController extends Controller
         protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
@@ -35,7 +35,7 @@ class GeneralLedgerController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    public function trialBalance(Request $request): JsonResponse
+    public function trialBalance(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
@@ -69,7 +69,7 @@ class GeneralLedgerController extends Controller
         ]);
     }
 
-    public function profitLoss(Request $request): JsonResponse
+    public function profitLoss(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
@@ -79,7 +79,7 @@ class GeneralLedgerController extends Controller
         ]);
     }
 
-    public function balanceSheet(Request $request): JsonResponse
+    public function balanceSheet(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
@@ -89,7 +89,7 @@ class GeneralLedgerController extends Controller
         ]);
     }
 
-    public function cashFlow(Request $request): JsonResponse
+    public function cashFlow(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);
@@ -99,7 +99,7 @@ class GeneralLedgerController extends Controller
         ]);
     }
 
-    public function equity(Request $request): JsonResponse
+    public function equity(ReportPeriodRequest $request): JsonResponse
     {
         $businessId = $request->user()->business_id;
         $ctx = $this->reportPeriodResolver->resolve($businessId, $request);

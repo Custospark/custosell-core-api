@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReportPeriodRequest;
 use App\Models\AccountingPeriod;
 use App\Models\Business;
 use App\Services\FinancialStatementService;
@@ -11,7 +12,6 @@ use App\Services\RatioService;
 use App\Services\ReportExportService;
 use App\Services\ReportPeriodResolver;
 use App\Support\ReportPeriodContext;
-use Illuminate\Http\Request;
 
 class AccountingExportController extends Controller
 {
@@ -23,18 +23,9 @@ class AccountingExportController extends Controller
         protected ReportPeriodResolver $reportPeriodResolver,
     ) {}
 
-    public function export(Request $request, string $type)
+    public function export(ReportPeriodRequest $request, string $type)
     {
-        $rules = ['format' => 'nullable|in:pdf,xlsx,csv'];
-
-        if ($request->filled('date_from') || $request->filled('date_to')) {
-            $rules['date_from'] = 'required|date';
-            $rules['date_to'] = 'required|date|after_or_equal:date_from';
-        } elseif ($request->filled('period_id')) {
-            $rules['period_id'] = 'required|string';
-        }
-
-        $request->validate($rules);
+        $request->validate(['format' => 'nullable|in:pdf,xlsx,csv']);
 
         $business = Business::findOrFail((int) $request->user()->business_id);
         $ctx = $this->reportPeriodResolver->resolve($business->id, $request);
