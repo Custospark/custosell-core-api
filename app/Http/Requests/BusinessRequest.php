@@ -14,7 +14,10 @@ class BusinessRequest extends BaseFormRequest
         $businessId = $this->route('id') ?? $this->route('business');
         return [
             'owner_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
+            // name is required only when it is part of the payload (e.g. the
+            // Profile tab). Per-section edits (location/payments/receipts)
+            // send a partial payload, so name must not be mandatory for them.
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:businesses,slug,' . $businessId],
             'email' => ['nullable', 'string', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],

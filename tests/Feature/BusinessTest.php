@@ -206,6 +206,20 @@ class BusinessTest extends TestCase
             ->assertJsonPath('data.currency', 'USD');
     }
 
+    public function test_partial_update_without_name_is_allowed(): void
+    {
+        // Per-section editing sends only the section's fields (e.g. payment
+        // details). name must not be mandatory for those partial updates.
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->putJson("/api/v1/businesses/{$this->business->id}", [
+                'receipt_footer' => 'Thank you for your business!',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.receipt_footer', 'Thank you for your business!')
+            ->assertJsonPath('data.name', $this->business->name);
+    }
+
     public function test_business_registration_seeds_chart_of_accounts(): void
     {
         $response = $this->postJson('/api/v1/businesses/register', [
