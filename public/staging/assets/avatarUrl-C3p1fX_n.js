@@ -1,0 +1,1 @@
+function e(){return`https://staging-api.custosell.com/api/v1`}var t=()=>e().replace(/\/api\/v1\/?$/,``);function n(e){if(!e?.trim())return;let n=e.trim();return n.startsWith(`http://`)||n.startsWith(`https://`)||n.startsWith(`data:`)||n.startsWith(`blob:`)?n:`${t()}${n.startsWith(`/`)?``:`/`}${n}`}export{e as n,n as t};
