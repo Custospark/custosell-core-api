@@ -6,6 +6,7 @@ use App\Models\BillingCredit;
 use App\Models\Payout;
 use App\Models\SalesRep;
 use App\Models\User;
+use App\Events\PayoutCompletedForAccounting;
 use App\Services\Contracts\ReferralServiceInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -172,6 +173,13 @@ class PayoutService
                 'scheduled_at' => $scheduledAt,
                 'paid_at' => $payout->paid_at?->toDateTimeString(),
             ]);
+
+            if ($isImmediate) {
+                // The paid payout is the source of truth for money paid out.
+                // Dispatch the company-books automation (idempotent per payout)
+                // so the Custospark ledger always matches what was actually paid.
+                event(new PayoutCompletedForAccounting($payout));
+            }
 
             if ($isImmediate && $payable->next_payout_at && $payable->payout_frequency) {
                 $payable->next_payout_at = $this->advanceDate($payable->next_payout_at, $payable->payout_frequency);

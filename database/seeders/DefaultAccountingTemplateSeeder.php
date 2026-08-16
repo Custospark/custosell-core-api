@@ -102,6 +102,7 @@ class DefaultAccountingTemplateSeeder extends Seeder
             ['code' => '6300', 'name' => 'Depreciation Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
             ['code' => '6400', 'name' => 'Interest Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
             ['code' => '6500', 'name' => 'Tax Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
+            ['code' => '6901', 'name' => 'Referral & Commission Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
             ['code' => '6600', 'name' => 'Amortization Expense', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
             ['code' => '6700', 'name' => 'Research & Development', 'parent_code' => '6000', 'type_id' => 5, 'normal_balance' => 'debit'],
         ];

@@ -37,5 +37,23 @@ return [
     'notification_channels' => ['email', 'in_app', 'both'],
 
     'default_notification_channel' => env('PLATFORM_DEFAULT_NOTIFICATION_CHANNEL', 'both'),
+
+    // Custospark's own accounting ledger (the company books), where Custosell
+    // subscription revenue and payouts are booked. The owner email of the
+    // business used as the company ledger defaults to the company owner
+    // (oscar@custospark.com).
+    'company_accounting' => [
+        'owner_email' => strtolower(trim((string) env('COMPANY_ACCOUNT_EMAIL', 'oscar@custospark.com'))),
+        'account_codes' => [
+            'bank' => env('COMPANY_ACCOUNT_CODE_BANK', '1102'),
+            'deferred_revenue' => env('COMPANY_ACCOUNT_CODE_DEFERRED_REVENUE', '2106'),
+            'software_revenue' => env('COMPANY_ACCOUNT_CODE_SOFTWARE_REVENUE', '4500'),
+            'referral_commission_expense' => env('COMPANY_ACCOUNT_CODE_REFERRAL_COMMISSION', '6901'),
+        ],
+        'reference_types' => [
+            'subscription_payment' => 'platform_subscription_payment',
+            'payout' => 'platform_payout',
+        ],
+    ],
 ];
 

@@ -6,6 +6,7 @@ use App\Models\BillingPayment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\ModuleAccessService;
+use App\Events\SubscriptionPaymentCompletedForAccounting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -303,6 +304,11 @@ trait HandlesPaymentApproval
             $this->handlePaymentType($payment);
 
             $this->sendReceiptIfDue($payment);
+
+            // The completed payment is the source of truth for money received.
+            // Dispatch the company-books automation from here (idempotent per
+            // payment) so the Custospark ledger always matches what was paid.
+            event(new SubscriptionPaymentCompletedForAccounting($payment));
 
             Log::info('[PaymentAudit] payment confirmed', [
                 'payment_id' => $payment->id,

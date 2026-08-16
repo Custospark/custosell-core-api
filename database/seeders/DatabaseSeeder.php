@@ -39,6 +39,9 @@ class DatabaseSeeder extends Seeder
 
         if (in_array(app()->environment(), ['production', 'local'], true)) {
             $seeders[] = PromoteOwnerBusinessSeeder::class;
+            // Ensure Custospark's own ledger accounts exist in the company books
+            // (runs after PromoteOwnerBusinessSeeder creates the company business).
+            $seeders[] = CompanyAccountingAccountsSeeder::class;
         }
 
         $this->call($seeders);
