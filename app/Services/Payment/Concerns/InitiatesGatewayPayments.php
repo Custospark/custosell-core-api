@@ -103,6 +103,18 @@ trait InitiatesGatewayPayments
                     $payment->refresh();
                     $this->handlePaymentType($payment);
                     $this->sendReceiptIfDue($payment);
+
+                    // The completed payment is the source of truth for money
+                    // received - journal directly on the dev bypass path too
+                    // (same as HandlesPaymentApproval::autoApprove).
+                    try {
+                        $this->companyAccounting->accountForSubscriptionPayment($payment);
+                    } catch (\Throwable $e) {
+                        Log::error("Company books: failed to journal subscription payment {$payment->id}: {$e->getMessage()}", [
+                            'payment_id' => $payment->id,
+                            'exception' => $e,
+                        ]);
+                    }
                 });
                 Log::info('[GatewayService] Payment auto-approved (bypass)', [
                     'payment_id' => $payment->id,

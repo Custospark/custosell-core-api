@@ -11,6 +11,7 @@ use App\Repositories\Contracts\SubscriptionScheduledChangeRepositoryInterface;
 use App\Services\Contracts\PaymentServiceInterface;
 use App\Services\Contracts\SubscriptionServiceInterface;
 use App\Services\CreditService;
+use App\Services\CompanyAccountingService;
 use App\Services\Currency\Contracts\CurrencyExchangeServiceInterface;
 use App\Services\Contracts\ReferralServiceInterface;
 use App\Services\Payment\Gateways\Exceptions\GatewayException;
@@ -33,6 +34,7 @@ class GatewayService
         private readonly ReferralServiceInterface $referralService,
         private readonly PaymentValidator $paymentValidator,
         private readonly PaymentReceiptService $receiptService,
+        private readonly CompanyAccountingService $companyAccounting,
     ) {}
 
     public function initiatePayment(Subscription $subscription, string $gatewayName, array $data): array

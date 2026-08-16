@@ -6,7 +6,6 @@ use App\Models\BillingPayment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\ModuleAccessService;
-use App\Events\SubscriptionPaymentCompletedForAccounting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -306,9 +305,17 @@ trait HandlesPaymentApproval
             $this->sendReceiptIfDue($payment);
 
             // The completed payment is the source of truth for money received.
-            // Dispatch the company-books automation from here (idempotent per
-            // payment) so the Custospark ledger always matches what was paid.
-            event(new SubscriptionPaymentCompletedForAccounting($payment));
+            // Journal it directly (idempotent per payment) so the Custospark
+            // ledger always matches what was paid. A journaling failure is
+            // logged, never allowed to block the payment completing.
+            try {
+                $this->companyAccounting->accountForSubscriptionPayment($payment);
+            } catch (\Throwable $e) {
+                Log::error("Company books: failed to journal subscription payment {$payment->id}: {$e->getMessage()}", [
+                    'payment_id' => $payment->id,
+                    'exception' => $e,
+                ]);
+            }
 
             Log::info('[PaymentAudit] payment confirmed', [
                 'payment_id' => $payment->id,
