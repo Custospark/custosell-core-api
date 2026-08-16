@@ -2,14 +2,19 @@
 
 use App\Http\Controllers\Api\AccountingPeriodController;
 use App\Http\Controllers\Api\ChartOfAccountController;
+use App\Http\Controllers\Api\ChartOfAccountImportExportController;
 use App\Http\Controllers\Api\FixedAssetController;
 use App\Http\Controllers\Api\GeneralLedgerController;
 use App\Http\Controllers\Api\InventoryLedgerController;
 use App\Http\Controllers\Api\JournalEntryController;
+use App\Http\Controllers\Api\JournalEntryImportExportController;
 use App\Http\Controllers\Api\RatioController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'module:accounting'])->group(function () {
+    Route::get('/chart-of-accounts/import-template', [ChartOfAccountImportExportController::class, 'downloadTemplate']);
+    Route::post('/chart-of-accounts/import', [ChartOfAccountImportExportController::class, 'import']);
+    Route::get('/chart-of-accounts/export', [ChartOfAccountImportExportController::class, 'export']);
     Route::get('/chart-of-accounts', [ChartOfAccountController::class, 'index']);
     Route::get('/chart-of-accounts/tree', [ChartOfAccountController::class, 'tree']);
     Route::get('/chart-of-accounts/{id}', [ChartOfAccountController::class, 'show'])->whereNumber('id');
@@ -24,6 +29,9 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'mo
     Route::post('/accounting-periods/{id}/reopen', [AccountingPeriodController::class, 'reopen'])->whereNumber('id');
 
     Route::get('/journal-entries', [JournalEntryController::class, 'index']);
+    Route::get('/journal-entries/import-template', [JournalEntryImportExportController::class, 'downloadTemplate']);
+    Route::post('/journal-entries/import', [JournalEntryImportExportController::class, 'import']);
+    Route::get('/journal-entries/export', [JournalEntryImportExportController::class, 'export']);
     Route::get('/journal-entries/{id}', [JournalEntryController::class, 'show'])->whereNumber('id');
     Route::get('/journal-entries/{id}/lines', [JournalEntryController::class, 'lines'])->whereNumber('id');
     Route::post('/journal-entries', [JournalEntryController::class, 'store']);
