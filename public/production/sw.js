@@ -3,12 +3,12 @@
  *
  * | Request type   | Online                         | Offline              |
  * |----------------|--------------------------------|----------------------|
- * | Image/JS/CSS   | CacheStorage (cache-first)     | CacheStorage         |
+ * | Image/JS/CSS   | Network-first (cache fallback) | CacheStorage         |
  * | API GET        | Network → save CacheStorage    | Stale CacheStorage   |
  * | API mutations  | Network (pass-through)         | App queues IndexedDB |
  */
 
-const CACHE_VERSION = 'v5.1.0-1786706901170';
+const CACHE_VERSION = 'v5.3.0-be32779';
 const STATIC_CACHE = `custosell-static-${CACHE_VERSION}`;
 const API_CACHE = `custosell-api-${CACHE_VERSION}`;
 const API_PATH = /\/api\/v1(\/|$)/;
@@ -136,11 +136,17 @@ function toApiCacheRequest(request) {
   });
 }
 
-/** Cache-first: JS, CSS, images - online and offline. */
-async function cacheFirst(request, cacheName) {
+/**
+ * Network-first with cache fallback for static assets.
+ *
+ * Previously cache-first - a stale service worker would keep serving OLD chunk
+ * files (e.g. user-plus-ed_YL5Ph.js) even when a new build was deployed,
+ * causing "does not provide an export named 't'". Network-first means online
+ * users ALWAYS get the current build's chunks; the cache is only an offline
+ * fallback. Hashed assets are immutable, so this stays fast via HTTP cache.
+ */
+async function networkFirstStatic(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) return cached;
 
   try {
     const response = await fetch(request);
@@ -149,7 +155,8 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch (error) {
-    if (cached) return cached;
+    const stale = await cache.match(request);
+    if (stale) return stale;
     throw error;
   }
 }
@@ -217,6 +224,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isStaticAsset(url, request)) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    event.respondWith(networkFirstStatic(request, STATIC_CACHE));
   }
 });
