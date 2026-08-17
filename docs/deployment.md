@@ -143,16 +143,26 @@ web docroot.
 cd Frontend
 npm run deploy:web:staging     # OR deploy:web:production
 ```
-This script:
+This script (`Frontend/scripts/deploy-to-backend.mjs`):
 1. typechecks (`tsc -b`) and builds with `--mode staging` (or production),
    using a **relative** asset base (`./`).
 2. copies `dist/web` → `Backend/public/<target>`.
-3. copies `deploy/htaccess.staging` into the build folder as `.htaccess`.
+3. copies `Frontend/deploy/htaccess.staging` into the build folder as
+   `.htaccess` (auto-shipped with every build — never manually re-added).
 4. commits **only** `public/<target>` in the backend repo and pushes.
+
+**Version tag:** the build is labeled with the frontend `package.json`
+`version` field (e.g. `v5.2.0`) and committed to the backend repo as
+`deploy(web): <target> build v<version> under public/<target>`. The deploy
+commit on the backend repo IS the release record — bump `package.json`
+`version` before deploying a new release, and record that commit hash in the
+deploy report so it is restorable/auditable.
 
 > The frontend `dist/` is gitignored; only the backend repo carries builds.
 > If the backend push fails (large build → HTTP 408), increase the git buffer:
 > `git config http.postBuffer 524288000` then `git push origin HEAD`.
+> The script never `git add -A` — it stages only the build path, so unrelated
+> backend/frontend source changes can never be swept into a deploy commit.
 
 ### 5.2 Server: pull + copy into the web docroot
 ```bash
@@ -170,6 +180,9 @@ cp -rT /home/u214605677/domains/<staging-api|api>.custosell.com/public/<target> 
 ```
 > `cp -rT SRC DST` copies the **contents** of `SRC` (including dotfiles) into
 > `DST`. `cp -rT .../* ...` would drop `.htaccess`.
+> Verify the server working tree mirrors `origin/main` (`git status --short`
+> clean + asset count) BEFORE wiping the docroot — a half-applied pull is the
+> historical cause of missing-JS / `text/html` MIME incidents.
 
 ### 5.3 Frontend post-deploy verification (critical — this is what caught the
 last incident)
