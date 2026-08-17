@@ -165,6 +165,13 @@ deploy report so it is restorable/auditable.
 > backend/frontend source changes can never be swept into a deploy commit.
 
 ### 5.2 Server: pull + copy into the web docroot
+
+> ⚠️ **The flow below is for STAGING, which deploys into its own subfolder
+> (`public_html/staging`). PRODUCTION deploys into the `public_html` ROOT,
+> which is SHARED with the backend `api`/`staging-api` symlinks, the `staging/`
+> folder, and backups — the wipe there is SURGICAL (§5.4). Never run
+> `rm -rf <target>` for production.**
+
 ```bash
 # On the server, backend app dir:
 cd /home/u214605677/domains/<staging-api|api>.custosell.com
@@ -213,23 +220,98 @@ it's deployed. The folder is inconsistent; fix the checkout/copy and re-verify.*
 
 ---
 
+### 5.4 Production web deploy is SURGICAL — the docroot root is SHARED (P0)
+
+> **CRITICAL — read before ANY production web deploy.** The production web
+> target is the `public_html` **root itself** (`/home/u214605677/domains/
+> custosell.com/public_html`), NOT a subfolder like staging. That root is a
+> SHARED directory: it also contains the backend symlinks, the staging build,
+> and backup folders. The §5.2 blanket `rm -rf <target>` must **NEVER** be
+> applied here.
+
+Inventory of the live production docroot (verified 2026-08-17):
+
+| Entry | Type | Deploy action |
+|---|---|---|
+| `assets/`, `icons/`, `screenshots/`, `styles/` | dirs — current prod build | **replace** (surgical) |
+| `index.html`, `sw.js`, `.htaccess`, `manifest.webmanifest`, `favicon.svg`, `icons.svg`, `robots.txt`, `sitemap.xml`, `custosell-logo.png`, `custosell-logo-old.jpg` | files — current prod build | **replace** (surgical) |
+| `api` | **symlink → `api.custosell.com/public`** | **NEVER touch** |
+| `staging-api` | **symlink → `staging-api.custosell.com/public`** | **NEVER touch** |
+| `staging/` | dir — staging web build | **NEVER touch** |
+| `staging-backup-*` | dirs — rollback backups | **NEVER touch** |
+| `temp_copy/` | dir — legacy | **NEVER touch** |
+
+**Surgical production replace (do exactly this):**
+```bash
+cd /home/u214605677/domains/custosell.com/public_html
+
+# 1) BACKUP — copy ONLY the prod build files (never the symlinks/staging/backups):
+TS=$(date +%Y%m%d-%H%M%S); BK="production-backup-$TS"; mkdir -p "$BK"
+cp -rT assets "$BK/assets"; cp -rT icons "$BK/icons"
+cp -rT screenshots "$BK/screenshots"; cp -rT styles "$BK/styles"
+for f in .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \
+         robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg; do
+  cp -T "$f" "$BK/$f"; done
+# VERIFY backup matches live (file counts + spot-check) BEFORE removing anything.
+
+# 2) REMOVE — explicit paths ONLY (no wildcards, no rm -rf *, no dot-dot):
+rm -rf assets icons screenshots styles
+rm -f  .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \
+       robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg
+
+# 3) COPY the new build CONTENTS into the root (cp -rT carries .htaccess):
+cp -rT /home/u214605677/domains/api.custosell.com/public/production .
+
+# 4) VERIFY the shared entries survived the deploy:
+ls -ld api staging-api staging/ staging-backup-* temp_copy/   # all must exist
+```
+> The new build's top-level names match the "replace" rows above 1:1, so the
+> surgical step is a clean contents swap. After step 4, run §5.3 verification
+> against `https://custosell.com/` (root), plus confirm the `api`/`staging-api`
+> symlinks still resolve and `staging/` still returns 200.
+>
+> **Rollback for production web:** `rm -rf` the same 4 dirs + 10 files again,
+> then `cp -rT "production-backup-<timestamp>" .` (restores ONLY the prod build;
+> symlinks/staging/backups were never touched).
+
+---
+
 ## 6. Backup & rollback (mandatory before ANY wipe)
 
 ### 6.1 Pre-deploy backup (every time)
 ```bash
+# STAGING (own subfolder):
 cd /home/u214605677/domains/custosell.com/public_html
-cp -rT <target> <target>-backup-$(date +%Y%m%d-%H%M%S)
+cp -rT staging staging-backup-$(date +%Y%m%d-%H%M%S)
 # Verify the backup exists and is non-empty (count files) before wiping.
+
+# PRODUCTION (docroot ROOT is shared — back up ONLY the prod build files):
+cd /home/u214605677/domains/custosell.com/public_html
+BK="production-backup-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$BK"
+cp -rT assets "$BK/assets"; cp -rT icons "$BK/icons"
+cp -rT screenshots "$BK/screenshots"; cp -rT styles "$BK/styles"
+for f in .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \
+         robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg; do
+  cp -T "$f" "$BK/$f"; done
+# Verify: ls "$BK" | wc -l == 14 (4 dirs + 10 files) and asset count matches live.
 ```
 > For database-affecting deploys, also take a DB backup through the host's
 > tooling (or `mysqldump` with host-approved credentials) **before** migrating.
 
 ### 6.2 Rollback
 ```bash
-# Frontend rollback (point the docroot back at the backup):
+# Frontend rollback — STAGING (point the subfolder back at the backup):
 cd /home/u214605677/domains/custosell.com/public_html
-rm -rf <target> && cp -rT <target>-backup-<timestamp> <target>
+rm -rf staging && cp -rT staging-backup-<timestamp> staging
 # then re-run §5.3 verification.
+
+# Frontend rollback — PRODUCTION (docroot root; restore ONLY the build files):
+cd /home/u214605677/domains/custosell.com/public_html
+rm -rf assets icons screenshots styles
+rm -f  .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \
+       robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg
+cp -rT production-backup-<timestamp> .
+# symlinks/staging/backups were never touched; then re-run §5.3 on the root.
 
 # Backend code rollback (mirror the previous known-good commit):
 cd /home/u214605677/domains/<staging-api|api>.custosell.com
@@ -380,6 +462,8 @@ APPROVAL
 - [ ] `git fetch origin && git reset --hard origin/main` (server mirror)
 - [ ] `migrate --force` only when migrations changed
 - [ ] `cp -rT` for the frontend copy (never `*`)
+- [ ] PRODUCTION web: surgical replace only (§5.4) — explicit paths, no wildcards
+- [ ] PRODUCTION web: verify `api`/`staging-api` symlinks + `staging/` still present after copy
 - [ ] No secret printed in any output
 
 ### Post-deploy
@@ -402,3 +486,10 @@ APPROVAL
   `origin/main` (`git status --short` clean + asset count) before copying.
 - `git push` of large builds can 408 — raise `http.postBuffer`.
 - Server `.env` is gitignored and preserved across `git reset --hard`.
+- **Production web docroot root is SHARED** — it contains the `api` and
+  `staging-api` symlinks, the `staging/` build, `staging-backup-*` and
+  `production-backup-*` backups, and `temp_copy/`. A blanket `rm -rf *` or
+  `rm -rf .` there destroys the live site, staging, and the backend API links
+  in one command. Only the surgical replace (§5.4) is allowed.
+- Never commit or push the `production-backup-*` / `staging-backup-*` folders
+  on the server — they are rollback artifacts, not part of any repo.
