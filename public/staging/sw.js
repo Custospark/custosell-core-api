@@ -8,7 +8,7 @@
  * | API mutations  | Network (pass-through)         | App queues IndexedDB |
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v5.3.0-f20a5a1';
 const STATIC_CACHE = `custosell-static-${CACHE_VERSION}`;
 const API_CACHE = `custosell-api-${CACHE_VERSION}`;
 const API_PATH = /\/api\/v1(\/|$)/;
