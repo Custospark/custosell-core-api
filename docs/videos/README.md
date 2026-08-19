@@ -44,7 +44,7 @@ file lists the hooks + endpoints behind that module's videos.
 | 7 | Customers | [07-customers.md](./07-customers.md) | 7 | 2 |
 | 8 | Expenses, Budgets & Income | [08-expenses-budgets-income.md](./08-expenses-budgets-income.md) | 10 | 2 |
 | 9 | Accounting | [09-accounting.md](./09-accounting.md) | 13 | 3 |
-| 10 | Documents Vault | [10-documents.md](./10-documents.md) | 2 | 3 |
+| 10 | Documents Vault | [10-documents.md](./10-documents.md) | 10 | 3 |
 | 11 | Pipeline / CRM | [11-pipeline-crm.md](./11-pipeline-crm.md) | 3 | 3 |
 | 12 | Estimates, Templates & Projects | [12-estimates-projects.md](./12-estimates-projects.md) | 4 | 2 |
 | 13 | Forecasting | [13-forecasting.md](./13-forecasting.md) | 2 | 3 |
@@ -56,7 +56,7 @@ file lists the hooks + endpoints behind that module's videos.
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 3 | 4 |
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 3 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **190** | |
+| **Total** | | | **198** | |
 
 ---
 
