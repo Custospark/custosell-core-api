@@ -56,7 +56,8 @@ file lists the hooks + endpoints behind that module's videos.
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 4 | 4 |
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 6 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **266** | |
+| 22 | Guide | [22-guide.md](./22-guide.md) | 5 | 4 |
+| **Total** | | | **271** | |
 
 ---
 
