@@ -1,18 +1,18 @@
-# Custosell — Video Content Map
+# Custosell - Video Content Map
 
 **Purpose:** Derive every short, focused tutorial video from the product's actual
-user actions. The source of truth is the code itself — frontend query/mutation
+user actions. The source of truth is the code itself - frontend query/mutation
 hooks (`Frontend/src/renderer/...`) and backend routes
-(`Backend/routes/api/v1/*.php`) — because **queries and routes are the user's
+(`Backend/routes/api/v1/*.php`) - because **queries and routes are the user's
 verbs**: every hook and every endpoint is something a user can do, which means
 it is a teachable moment. Frontend route paths map each verb to the screen the
 video must show.
 
-**Audience:** shop owners / managers running a till on Custosell — busy, not
+**Audience:** shop owners / managers running a till on Custosell - busy, not
 technical, mostly on phones. One job per video, one promise per video.
 
-**Format:** 45–90s focused how-tos (workhorse) + ≤30s hook clips (sliced from
-them) + 3–6min evergreen deep dives. Record vertical 9:16, captions always,
+**Format:** 45-90s focused how-tos (workhorse) + ≤30s hook clips (sliced from
+them) + 3-6min evergreen deep dives. Record vertical 9:16, captions always,
 demo data throughout.
 
 ---
@@ -21,13 +21,13 @@ demo data throughout.
 
 Each module has:
 
-- **Screens** — the frontend routes (`app/routes/index.tsx` +
+- **Screens** - the frontend routes (`app/routes/index.tsx` +
   `shared.paths.ts`) a user navigates to; these are the *filming locations*.
-- **User actions** — the FE query/mutation hooks; these are the *verbs* (the
+- **User actions** - the FE query/mutation hooks; these are the *verbs* (the
   "you can do X" statements).
-- **API endpoints** — the BE routes backing those verbs (useful for accuracy
+- **API endpoints** - the BE routes backing those verbs (useful for accuracy
   when scripting and for the help-center text).
-- **Video concepts** — the derived 45–90s tutorial titles, prioritized.
+- **Video concepts** - the derived 45-90s tutorial titles, prioritized.
 
 Legend: `[M]` module-gated screen · `[L]` lazy-loaded screen · `[P]` priority
 (1 = film first, 2 = wave two, 3 = deep-dive/evergreen).
@@ -61,14 +61,14 @@ configuration, then expert/evergreen content.
 `/linked-accounts` (+ confirm/switch/set-primary/unlink)
 
 **Video concepts:**
-- `[P1]` **"Create your shop in 5 minutes"** — register → business → onboarding
+- `[P1]` **"Create your shop in 5 minutes"** - register → business → onboarding
   → first sale ready.
-- `[P1]` **"Run two shops with one login"** — linked accounts: link, switch,
-  set primary (you just shipped the avatar fix — great moment to film).
-- `[P2]` **"Lock your account"** — 2FA toggle + security activity log.
-- `[P2]` **"Lost your password?"** — forgot/reset flow (calms the #1 support
+- `[P1]` **"Run two shops with one login"** - linked accounts: link, switch,
+  set primary (you just shipped the avatar fix - great moment to film).
+- `[P2]` **"Lock your account"** - 2FA toggle + security activity log.
+- `[P2]` **"Lost your password?"** - forgot/reset flow (calms the #1 support
   question).
-- `[P3]` **"Change your email safely"** — profile change with verification code.
+- `[P3]` **"Change your email safely"** - profile change with verification code.
 
 ---
 
@@ -86,11 +86,11 @@ configuration, then expert/evergreen content.
 `/reports/vat-summary`
 
 **Video concepts:**
-- `[P1]` **"Know your numbers at a glance"** — dashboard KPIs: sales,
+- `[P1]` **"Know your numbers at a glance"** - dashboard KPIs: sales,
   expenses, net, per branch.
-- `[P2]` **"Your top products (and dead ones)"** — product-performance report.
-- `[P2]` **"Compare your branches"** — branch performance.
-- `[P3]` **"Month-end in one screen"** — VAT summary + business summary report.
+- `[P2]` **"Your top products (and dead ones)"** - product-performance report.
+- `[P2]` **"Compare your branches"** - branch performance.
+- `[P3]` **"Month-end in one screen"** - VAT summary + business summary report.
 
 ---
 
@@ -113,15 +113,15 @@ configuration, then expert/evergreen content.
 `/email` `/pdf`
 
 **Video concepts:**
-- `[P1]` **"Sell your first item"** — the whole POS loop in 60s.
-- `[P1]` **"Cash drawer at end of shift"** — shift close + reconciliation
+- `[P1]` **"Sell your first item"** - the whole POS loop in 60s.
+- `[P1]` **"Cash drawer at end of shift"** - shift close + reconciliation
   (see Shift section).
-- `[P1]` **"It works with no internet"** — sell offline, auto-syncs (your
+- `[P1]` **"It works with no internet"** - sell offline, auto-syncs (your
   moat; competitors cannot film this).
-- `[P2]` **"Hold an order for a customer"** — draft/hold orders.
-- `[P2]` **"Refund a sale cleanly"** — refund flow + ledger impact.
-- `[P2]` **"Email a receipt in one tap"** — receipts + PDFs.
-- `[P3]` **"Invoice your B2B customers"** — invoices: create, send, record
+- `[P2]` **"Hold an order for a customer"** - draft/hold orders.
+- `[P2]` **"Refund a sale cleanly"** - refund flow + ledger impact.
+- `[P2]` **"Email a receipt in one tap"** - receipts + PDFs.
+- `[P3]` **"Invoice your B2B customers"** - invoices: create, send, record
   payment.
 
 ---
@@ -140,14 +140,14 @@ configuration, then expert/evergreen content.
 `/reports/shift-reconciliation` · `/expenses/by-shift/{shiftId}`
 
 **Video concepts:**
-- `[P1]` **"Start your day on the till"** — clock in with opening balance.
-- `[P1]` **"Close the shift, balance the drawer"** — end-shift action with
+- `[P1]` **"Start your day on the till"** - clock in with opening balance.
+- `[P1]` **"Close the shift, balance the drawer"** - end-shift action with
   reconciliation report (sales vs payments vs expenses).
-- `[P2]` **"Fix a wrong opening balance"** — adjust float mid-shift.
+- `[P2]` **"Fix a wrong opening balance"** - adjust float mid-shift.
 
 ---
 
-## 5. Inventory — Products & Categories
+## 5. Inventory - Products & Categories
 
 **Screens:** `/inventory` → `/inventory/overview` `[M]` ·
 `/inventory/products` `[M]` · `/inventory/categories` `[M]` ·
@@ -169,12 +169,12 @@ configuration, then expert/evergreen content.
 `/inventory/overview`
 
 **Video concepts:**
-- `[P1]` **"Add your first product"** — product + category + price + image.
-- `[P1]` **"Know when to restock"** — low-stock alerts.
-- `[P2]` **"Stock transfer between branches"** — move stock across locations.
-- `[P2]` **"Import your whole catalog from Excel"** — CSV import/export.
-- `[P2]` **"Correct a stock count"** — stock adjustments (in/out).
-- `[P3]` **"Track every unit"** — stock movement ledger per product.
+- `[P1]` **"Add your first product"** - product + category + price + image.
+- `[P1]` **"Know when to restock"** - low-stock alerts.
+- `[P2]` **"Stock transfer between branches"** - move stock across locations.
+- `[P2]` **"Import your whole catalog from Excel"** - CSV import/export.
+- `[P2]` **"Correct a stock count"** - stock adjustments (in/out).
+- `[P3]` **"Track every unit"** - stock movement ledger per product.
 
 ---
 
@@ -195,12 +195,12 @@ configuration, then expert/evergreen content.
 `/incoming`
 
 **Video concepts:**
-- `[P2]` **"Buy from the marketplace"** — browse suppliers, create + submit a
+- `[P2]` **"Buy from the marketplace"** - browse suppliers, create + submit a
   PO, receive stock.
-- `[P2]` **"Sell to other shops"** — list on the marketplace, handle incoming
+- `[P2]` **"Sell to other shops"** - list on the marketplace, handle incoming
   orders, fulfill.
-- `[P3]` **"The PO lifecycle"** — draft → submit → approve → receive (deep
-  dive, 3–6 min).
+- `[P3]` **"The PO lifecycle"** - draft → submit → approve → receive (deep
+  dive, 3-6 min).
 
 ---
 
@@ -216,9 +216,9 @@ configuration, then expert/evergreen content.
 `/customers/overview` · `/customers/{id}/purchases`
 
 **Video concepts:**
-- `[P2]` **"Know your best customers"** — customer list + purchase history.
-- `[P2]` **"Attach a sale to a customer"** — resolve-by-phone at the till.
-- `[P3]` **"Customer dashboard"** — overview counts and trends.
+- `[P2]` **"Know your best customers"** - customer list + purchase history.
+- `[P2]` **"Attach a sale to a customer"** - resolve-by-phone at the till.
+- `[P3]` **"Customer dashboard"** - overview counts and trends.
 
 ---
 
@@ -240,12 +240,12 @@ CRUD · `useBudgetsIndex` / `useCreateBudget` / `useUpdateBudget` /
 `/download` · `/income-sources` CRUD + `/summary` · `/money/summary|alerts`
 
 **Video concepts:**
-- `[P1]` **"Record a business expense"** — expense + category + receipt photo.
-- `[P2]` **"See where your money goes"** — expense summary by category/period.
-- `[P2]` **"Budget a project and track it"** — budgets + budget lines +
+- `[P1]` **"Record a business expense"** - expense + category + receipt photo.
+- `[P2]` **"See where your money goes"** - expense summary by category/period.
+- `[P2]` **"Budget a project and track it"** - budgets + budget lines +
   affordability check.
-- `[P3]` **"Track money in"** — income sources + overview.
-- `[P3]` **"Receipts, filed"** — expense attachments (receipt images).
+- `[P3]` **"Track money in"** - income sources + overview.
+- `[P3]` **"Receipts, filed"** - expense attachments (receipt images).
 
 ---
 
@@ -274,12 +274,12 @@ profit-loss, balance-sheet, cash-flow, equity) · `/fixed-assets` CRUD +
 `/accounting/export/{type}`
 
 **Video concepts:**
-- `[P2]` **"Your accounting is automatic"** — selling posts to the GL
+- `[P2]` **"Your accounting is automatic"** - selling posts to the GL
   automatically; revenue recognition runs on schedule (differentiator).
-- `[P2]` **"Read your profit & loss"** — income statement, plain-English tour.
-- `[P3]` **"Close the month"** — accounting periods: open, close, reopen.
-- `[P3]` **"Depreciate your assets"** — fixed assets + depreciation run.
-- `[P3]` **"Balance the books"** — trial balance + GL reconciliation
+- `[P2]` **"Read your profit & loss"** - income statement, plain-English tour.
+- `[P3]` **"Close the month"** - accounting periods: open, close, reopen.
+- `[P3]` **"Depreciate your assets"** - fixed assets + depreciation run.
+- `[P3]` **"Balance the books"** - trial balance + GL reconciliation
   (evergreen deep dive).
 
 ---
@@ -299,9 +299,9 @@ profit-loss, balance-sheet, cash-flow, equity) · `/fixed-assets` CRUD +
 `/export|email` · `/documents` CRUD + `/upload|link|content|view|download`
 
 **Video concepts:**
-- `[P2]` **"Your paperwork, in one cabinet"** — cabinets, folders, uploads.
-- `[P3]` **"Share a file with a client"** — email a file/folder from the vault.
-- `[P3]` **"Vault security"** — access control + activity log.
+- `[P2]` **"Your paperwork, in one cabinet"** - cabinets, folders, uploads.
+- `[P3]` **"Share a file with a client"** - email a file/folder from the vault.
+- `[P3]` **"Vault security"** - access control + activity log.
 
 ---
 
@@ -328,12 +328,12 @@ progress|automations|booking-settings|meta-fields` ·
 `/pipeline/wall-of-fame` · `/public/book/{token}` (+ slots/check)
 
 **Video concepts:**
-- `[P2]` **"Track your deals on a board"** — kanban: stages, drag, convert to
+- `[P2]` **"Track your deals on a board"** - kanban: stages, drag, convert to
   customer/sale.
-- `[P2]` **"Never lose a lead"** — add a lead with source + label, follow up.
-- `[P3]` **"Let clients book you"** — public booking link + meetings.
-- `[P3]` **"Keep the team in the loop"** — board chat, announcements, polls.
-- `[P3]` **"Win-rate insights"** — pipeline insights + targets/progress
+- `[P2]` **"Never lose a lead"** - add a lead with source + label, follow up.
+- `[P3]` **"Let clients book you"** - public booking link + meetings.
+- `[P3]` **"Keep the team in the loop"** - board chat, announcements, polls.
+- `[P3]` **"Win-rate insights"** - pipeline insights + targets/progress
   (deep dive).
 
 ---
@@ -361,9 +361,9 @@ duplicate|versions|revision|convert-to-invoice|convert-to-project` +
 kanban|members|budget-summary|profitability` + `/tasks|timesheets|allocations`
 
 **Video concepts:**
-- `[P2]` **"Quote a job in minutes"** — estimate → send → client approves.
-- `[P2]` **"Turn a quote into an invoice"** — convert estimate to invoice.
-- `[P3]` **"Run a project end-to-end"** — project board, tasks, timesheets,
+- `[P2]` **"Quote a job in minutes"** - estimate → send → client approves.
+- `[P2]` **"Turn a quote into an invoice"** - convert estimate to invoice.
+- `[P3]` **"Run a project end-to-end"** - project board, tasks, timesheets,
   profitability (deep dive).
 
 ---
@@ -383,9 +383,9 @@ kpis` · `/forecasting/budgets` CRUD + `/lines|justify|approve|roll` ·
 `/forecasting/snapshots` · `/forecasting/scenarios` CRUD + `/run`
 
 **Video concepts:**
-- `[P3]` **"See your cash 90 days ahead"** — cash forecast + KPIs.
-- `[P3]` **"Budget vs reality"** — budget-vs-actual + snapshots.
-- `[P3]` **"Model a what-if scenario"** — run scenarios (evergreen).
+- `[P3]` **"See your cash 90 days ahead"** - cash forecast + KPIs.
+- `[P3]` **"Budget vs reality"** - budget-vs-actual + snapshots.
+- `[P3]` **"Model a what-if scenario"** - run scenarios (evergreen).
 
 ---
 
@@ -408,11 +408,11 @@ cart slice (addProduct/updateQty/removeLine/setBagContact/clearBag)
 `/storefront/wishlist|favorites`
 
 **Video concepts:**
-- `[P2]` **"Open your online shop"** — storefront profile, slug, listing
+- `[P2]` **"Open your online shop"** - storefront profile, slug, listing
   products (B2C differentiator).
-- `[P3]` **"Shop on Custosell"** — discover, cart, checkout, order tracking
+- `[P3]` **"Shop on Custosell"** - discover, cart, checkout, order tracking
   (buyer POV).
-- `[P3]` **"Let customers rate you"** — ratings + favorites/wishlist.
+- `[P3]` **"Let customers rate you"** - ratings + favorites/wishlist.
 
 ---
 
@@ -445,11 +445,11 @@ pay-runs` (+ calculate/approve/post/settle/remit-statutory/void) ·
 `/hr/audit-logs`
 
 **Video concepts:**
-- `[P2]` **"Add your staff and roles"** — employee + account + department.
-- `[P2]` **"Clock in, clock out"** — attendance register linked to POS shifts.
-- `[P3]` **"Run payroll in one click"** — pay run: calculate → approve →
+- `[P2]` **"Add your staff and roles"** - employee + account + department.
+- `[P2]` **"Clock in, clock out"** - attendance register linked to POS shifts.
+- `[P3]` **"Run payroll in one click"** - pay run: calculate → approve →
   post → settle, with PAYE/NSSF schedules.
-- `[P3]` **"Track company assets"** — assign/transfer/return laptops, etc.
+- `[P3]` **"Track company assets"** - assign/transfer/return laptops, etc.
 
 ---
 
@@ -470,10 +470,10 @@ CRUD + `/initiate|confirm|receipt|receipt/email` + `/history` +
 `/gateway/{gw}/webhook|callback` + `/pesapal/ipn`
 
 **Video concepts:**
-- `[P2]` **"Choose the right plan"** — plans/pricing + subscribe.
-- `[P3]` **"Upgrade without surprises"** — proration quote + scheduled
+- `[P2]` **"Choose the right plan"** - plans/pricing + subscribe.
+- `[P3]` **"Upgrade without surprises"** - proration quote + scheduled
   changes + cycle switch.
-- `[P3]` **"Find any receipt"** — billing history, receipt PDF + email.
+- `[P3]` **"Find any receipt"** - billing history, receipt PDF + email.
 
 ---
 
@@ -498,11 +498,11 @@ confirm` · `/staff-transfers` · `/roles` CRUD · `/locations` CRUD + `/active`
 `/plans/active`
 
 **Video concepts:**
-- `[P2]` **"Brand your shop"** — business profile, logo, social links.
-- `[P2]` **"Give staff the right access"** — roles + staff + module access.
-- `[P2]` **"Multiple branches, one system"** — locations + set default.
-- `[P3]` **"Tax compliance"** — VAT summary + EFRIS status + settings.
-- `[P3]` **"Export your data"** — data export (trust signal for signups).
+- `[P2]` **"Brand your shop"** - business profile, logo, social links.
+- `[P2]` **"Give staff the right access"** - roles + staff + module access.
+- `[P2]` **"Multiple branches, one system"** - locations + set default.
+- `[P3]` **"Tax compliance"** - VAT summary + EFRIS status + settings.
+- `[P3]` **"Export your data"** - data export (trust signal for signups).
 
 ---
 
@@ -518,7 +518,7 @@ confirm` · `/staff-transfers` · `/roles` CRUD · `/locations` CRUD + `/active`
 `/tags/rename|remove`
 
 **Video concepts:**
-- `[P3]` **"Notes that stick"** — quick notes board, drag-reorder, tags.
+- `[P3]` **"Notes that stick"** - quick notes board, drag-reorder, tags.
 
 ---
 
@@ -535,7 +535,7 @@ confirm` · `/staff-transfers` · `/roles` CRUD · `/locations` CRUD + `/active`
 subscribe|unsubscribe`
 
 **Video concepts:**
-- `[P3]` **"Get notified when it matters"** — enable web push, manage
+- `[P3]` **"Get notified when it matters"** - enable web push, manage
   notifications.
 
 ---
@@ -555,30 +555,30 @@ subscribe|unsubscribe`
 `/currencies/convert`
 
 **Video concepts:**
-- `[P2]` **"Earn by inviting shops"** — referral code, credits, payouts
-  (growth loop — film for the acquisition funnel, not just existing users).
+- `[P2]` **"Earn by inviting shops"** - referral code, credits, payouts
+  (growth loop - film for the acquisition funnel, not just existing users).
 
 ---
 
 ## 21. Offline-First / Sync (the moat)
 
-**Screens:** everywhere (implicit) — best filmed inside Sales and Inventory
+**Screens:** everywhere (implicit) - best filmed inside Sales and Inventory
 
 **User actions (FE hooks):** implicit in the offline engine
-(`app/store/offline/*`) — sells, stock moves, expenses queue locally and sync.
+(`app/store/offline/*`) - sells, stock moves, expenses queue locally and sync.
 
 **API endpoints (BE):** `/sync/push` · `/sync/pull` · `/sync/full`
 
 **Video concepts:**
-- `[P1]` **"Works with no internet"** — record sales offline, everything syncs
+- `[P1]` **"Works with no internet"** - record sales offline, everything syncs
   when you're back online (flagship marketing video; film once, reuse in every
   funnel).
-- `[P3]` **"How sync really works"** — honest deep dive (push/pull/full) for
+- `[P3]` **"How sync really works"** - honest deep dive (push/pull/full) for
   tech-savvy prospects.
 
 ---
 
-## 22. Platform Admin (internal — not for public tutorials)
+## 22. Platform Admin (internal - not for public tutorials)
 
 **Screens:** `/platform/*` (PlatformAdminRoute): overview, plans,
 subscriptions, businesses, users, roles, sent-messages, sales-reps, payouts,
@@ -594,13 +594,13 @@ videos).
 
 | Wave | Playlist | Episodes | Why first |
 |---|---|---|---|
-| **1 — Sell & cash** | Setup, First sale, Shift close, Offline | 4 | Money loop + differentiator |
-| **2 — Run daily** | Products, Customers, Expenses, Marketplace/POs, Invoices, Estimates | 6 | Daily workflows, fastest time-to-value |
-| **3 — Manage** | Dashboard/Reports, Accounting, Documents, HR, Forecasting, Storefront | 8 | Depth + feature adoption |
-| **4 — Grow** | Referrals, Billing, Settings, Tax, Notifications, Quick Notes | 6 | Growth + retention/trust |
+| **1 - Sell & cash** | Setup, First sale, Shift close, Offline | 4 | Money loop + differentiator |
+| **2 - Run daily** | Products, Customers, Expenses, Marketplace/POs, Invoices, Estimates | 6 | Daily workflows, fastest time-to-value |
+| **3 - Manage** | Dashboard/Reports, Accounting, Documents, HR, Forecasting, Storefront | 8 | Depth + feature adoption |
+| **4 - Grow** | Referrals, Billing, Settings, Tax, Notifications, Quick Notes | 6 | Growth + retention/trust |
 
 **Batching rule:** record all episodes of one playlist in a single sitting
-(same demo data, same cursor/zoom, same intro) — then slice each into a ≤30s
+(same demo data, same cursor/zoom, same intro) - then slice each into a ≤30s
 hook clip for Reels/Shorts/TikTok.
 
 ---
@@ -610,7 +610,7 @@ hook clip for Reels/Shorts/TikTok.
 - Vertical 9:16, browser zoom ~120% so UI stays legible cropped.
 - Captions on every video (most watch muted).
 - Demo data: a realistic UGX business (products like "Blue Band 500g", real
-  customer names, an actual supplier) — never empty screens.
+  customer names, an actual supplier) - never empty screens.
 - One job per video, one promise: "By the end of this, you can ___."
 - Cursor highlighted; no stray tabs/notifications during takes.
 - End every video with a CTA: comment / subscribe / try free (link with
