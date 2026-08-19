@@ -54,9 +54,9 @@ file lists the hooks + endpoints behind that module's videos.
 | 17 | Settings | [17-settings.md](./17-settings.md) | 11 | 4 |
 | 18 | Quick Notes | [18-quick-notes.md](./18-quick-notes.md) | 5 | 4 |
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 4 | 4 |
-| 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 3 | 4 |
+| 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 6 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **263** | |
+| **Total** | | | **266** | |
 
 ---
 
