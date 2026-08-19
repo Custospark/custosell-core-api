@@ -1,9 +1,10 @@
 # 12 - Estimates, Templates & Projects
 
-**Videos in this pack: 11**
+**Videos in this pack: 22**
 
 Quote before you sell. Estimates with margins, reusable templates, and
-project job costing.
+project job costing - plus kanban boards for running the job, from personal
+sprints to client project boards.
 
 ## Video: Create an estimate with cost and margin
 - Format: 45-90s how-to
@@ -249,6 +250,289 @@ project job costing.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+## Video: Create a personal board for your own tasks
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Your own sprint board - private by default."
+- Description: Make a personal kanban board in the Projects & Estimates
+  workspace for your own tasks - private to you unless you share it - with
+  cards instead of leads. Name it, pick visibility and background, then open
+  tasks and drag them through columns.
+- What it's about: ProjectBoardsPage "New personal board" -> CreateBoardModal
+  (workspace=estimates) - name, description, board template, background, and
+  visibility that defaults to private; personal boards use task terminology in
+  the shared BoardKanbanPage.
+- Script beats:
+  - Beat 1 (Hook): "Your to-do list, as a kanban board."
+  - Beat 2 (Problem): "Personal tasks hide between apps and sticky notes."
+  - Beat 3 (Action): /estimates/boards -> New personal board -> name it ->
+    keep visibility private -> Continue -> skip column alerts -> Open board ->
+    add cards.
+  - Beat 4 (Aha): "Personal boards start private and use tasks, not leads."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: /estimates/boards -> New personal board -> create -> open.
+- On-screen text / captions:
+  - "Private task board, one click"
+- Demo data needed: A business with the estimates workspace.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: The project board is born when an estimate becomes a project
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "Approve the estimate - the board appears."
+- Description: Converting an approved estimate into a project also creates its
+  kanban board automatically - named after the project, with To Do, In
+  Progress, Review, and Done columns. The board carries the same budget as the
+  estimate.
+- What it's about: EstimateService::convertToProject +
+  PipelineBoardService::getOrCreateProjectBoard - project seeded with budget
+  revenue/cost from the estimate, board created with project_id, workspace
+  estimates, and the four project stages.
+- Script beats:
+  - Beat 1 (Hook): "Accept the quote, get the job board."
+  - Beat 2 (Problem): "Spinning up a project and its board separately."
+  - Beat 3 (Action): /estimates/{id} -> Convert -> Convert to project ->
+    confirm -> open /estimates/boards -> the project board is listed.
+  - Beat 4 (Aha): "To Do, In Progress, Review, Done - ready before you are."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: estimate -> convert to project -> project board.
+- On-screen text / captions:
+  - "Estimate -> Project -> Board"
+- Demo data needed: An approved estimate.
+- CTA: Try free
+- Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
+
+## Video: Open the board from inside a project
+- Format: 30-45s how-to
+- Priority: P3
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "The project's board, one tab away."
+- Description: Inside a project you get a Board tab showing the project board's
+  name, stage count, and total cards - open it to jump straight to the full
+  kanban workspace.
+- What it's about: ProjectDetailPage board tab -> ProjectBoardTab - stage and
+  card counts from useProjectBoard, and the Open board action navigating to
+  ROUTES.ESTIMATES.BOARD.
+- Script beats:
+  - Beat 1 (Hook): "Board summary right in the project."
+  - Beat 2 (Problem): "Leaving the project page to check its board."
+  - Beat 3 (Action): /estimates/projects/{id} -> Board tab -> see stages +
+    cards -> Open board -> full kanban.
+  - Beat 4 (Aha): "Stage count and card totals without opening the board."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: /estimates/projects/{id} -> Board tab -> Open board.
+- On-screen text / captions:
+  - "Stages. Cards. Open."
+- Demo data needed: A project with a board and a few cards.
+- CTA: Try free
+- Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
+
+## Video: Give clients a board-only view
+- Format: 45-90s how-to
+- Priority: P3
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "They see the board - not the costing."
+- Description: Staff and clients invited to a project board get a board-only
+  workspace: they land straight on the board, can view and work cards, but
+  never see costs, timesheets, or allocations. Owners keep full project
+  control.
+- What it's about: isLimitedEstimatesUser + module access - limited users are
+  redirected to /estimates/boards, getEstimatesModuleDefaultRoute, the Viewer
+  role (view board and tasks), and costing tabs gated by canViewProjectCosting.
+- Script beats:
+  - Beat 1 (Hook): "Run the job without sharing the money."
+  - Beat 2 (Problem): "Clients seeing costs they shouldn't."
+  - Beat 3 (Action): invite a collaborator as Viewer -> they sign in -> land
+    on the board -> open tasks -> no costs tab.
+  - Beat 4 (Aha): "Limited users live on the board, full users get
+    everything."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: invite collaborator -> board-only workspace.
+- On-screen text / captions:
+  - "Board view, no costing"
+- Demo data needed: A project, a board, and a staff account without full
+  Estimates access.
+- CTA: Try free
+- Related videos: [17-settings.md](./17-settings.md)
+
+## Video: Add a task card to a project board
+- Format: 45-90s how-to
+- Priority: P1
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "A job broken into cards is a job getting done."
+- Description: Add a task card to any column on a project or personal board -
+  give it a title and assign team members - then it sits in the column ready to
+  be worked and dragged forward.
+- What it's about: CreateLeadModal in the estimates workspace - the header Add
+  task button and each column's + button open the New task modal with
+  defaultCardType=card (title + assignees, no contact/value fields).
+- Script beats:
+  - Beat 1 (Hook): "One big job, split into cards."
+  - Beat 2 (Problem): "The whole job lives in someone's head."
+  - Beat 3 (Action): /estimates/boards/{id} -> Add task -> title -> assign a
+    teammate -> Add card -> it appears in the first column.
+  - Beat 4 (Aha): "Task cards use tasks, not leads - same engine, right words."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: /estimates/boards/{id} -> Add task -> fill -> Add card.
+- On-screen text / captions:
+  - "Task in. Column filled."
+- Demo data needed: A project board with columns.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Work a task card - details, checklist, and comments
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Every task card is a mini project."
+- Description: Open a task card to edit its title, description, start and due
+  dates, labels, checklist, links, custom fields, and attachments - assign
+  people, add comments, and see its full history in one place.
+- What it's about: LeadDetailModal + CardDetailExtras in task context - title,
+  background color, rich-text description, Dates (start/due), CardLabels,
+  checklists, links, meta fields, attachments, assignees, comments, history,
+  reminders, Move card, and Archive.
+- Script beats:
+  - Beat 1 (Hook): "Open a card. Everything about the task is inside."
+  - Beat 2 (Problem): "Task details scattered across chats and docs."
+  - Beat 3 (Action): click a card -> edit title and description -> set due
+    date -> add checklist items -> upload a file -> comment.
+  - Beat 4 (Aha): "History tracks every change without you logging it."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: card -> details -> checklist -> attachments -> comments.
+- On-screen text / captions:
+  - "Title. Dates. Checklist. Done."
+- Demo data needed: A task card on a project board.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Move, duplicate, pin, and complete task cards
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Drag it. Duplicate it. Mark it done."
+- Description: Run your board - drag task cards between columns, tick a card
+  complete, pin it to the top, duplicate it, or move it to another board.
+  Reorder columns too, so the board flows the way the job does.
+- What it's about: LeadCard quick actions + KanbanColumn - drag-and-drop cards
+  and columns, toggle complete, pin, history, comments, duplicate, and move
+  card, plus each column's Add and column-options menu.
+- Script beats:
+  - Beat 1 (Hook): "Cards fly, the job follows."
+  - Beat 2 (Problem): "Status updates happen in meetings, not in real time."
+  - Beat 3 (Action): drag a card to In Progress -> tick it done -> pin the
+    urgent one -> duplicate a template card -> drag columns to reorder.
+  - Beat 4 (Aha): "Done is a tick, not a status update."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> drag card -> complete -> pin -> duplicate -> reorder.
+- On-screen text / captions:
+  - "Drag. Tick. Pin. Done."
+- Demo data needed: A project board with several cards.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: See project tasks on a calendar
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Task due dates, on one calendar you can scan."
+- Description: Switch a project board to the calendar view to see task cards by
+  due, start, or close date - with overdue tasks flagged, month/week/day modes,
+  and a side panel for the day you pick.
+- What it's about: BoardCalendarView in the estimates workspace - date-field
+  selector (due/start/close/all), scope (this board or all boards), month/week/
+  day modes, overdue open tasks, and CalendarDayDetailPanel.
+- Script beats:
+  - Beat 1 (Hook): "What's due this week? One glance."
+  - Beat 2 (Problem): "Dates buried inside task cards."
+  - Beat 3 (Action): /estimates/boards/{id} -> Calendar -> pick Due dates ->
+    see the month -> open a busy day -> review overdue tasks.
+  - Beat 4 (Aha): "Overdue open tasks glow red on the grid."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: /estimates/boards/{id} -> Calendar -> date field -> day panel.
+- On-screen text / captions:
+  - "Due. Overdue. Done."
+- Demo data needed: Project task cards with due dates.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Shape your project board - add, edit, and reorder columns
+- Format: 30-45s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Columns that match how the job actually runs."
+- Description: Add columns to a project board, rename and recolor them, drag
+  them into the right order, and delete the ones you don't need - so the board
+  mirrors your real workflow.
+- What it's about: AddStageModal, EditStageModal, DeleteStageModal, column
+  drag-to-reorder, and the column options menu in the estimates workspace.
+- Script beats:
+  - Beat 1 (Hook): "Your board, your stages."
+  - Beat 2 (Problem): "A default workflow that doesn't match the job."
+  - Beat 3 (Action): /estimates/boards/{id} -> Add column -> name and color it
+    -> drag columns into order -> edit or delete a column.
+  - Beat 4 (Aha): "Column count shows on each stage instantly."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> Add column -> reorder -> edit -> delete.
+- On-screen text / captions:
+  - "Add. Reorder. Delete."
+- Demo data needed: A project board being set up.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Search tasks and import from a spreadsheet
+- Format: 45-90s how-to
+- Priority: P3
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Find any task. Or import a whole list."
+- Description: Search tasks on a board with plain text or smart tokens
+  (@label, !high, #today, @me) to narrow instantly, or import a whole task
+  list from a spreadsheet using the import template.
+- What it's about: BoardKanbanPageHeader search with tokenizeQuery tokens
+  (@label / !priority / #due / @me), and BoardCardImportModal in the
+  estimates workspace (task language, spreadsheet template).
+- Script beats:
+  - Beat 1 (Hook): "Type @me and see exactly your tasks."
+  - Beat 2 (Problem): "Scrolling a busy board to find one card."
+  - Beat 3 (Action): board -> search "@me" or "!high #today" -> click Import ->
+    download template -> fill -> upload -> review.
+  - Beat 4 (Aha): "Tokens filter labels, priority, due dates, and owner."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> search tokens -> import -> template -> upload.
+- On-screen text / captions:
+  - "@me. !high. #today. Found."
+- Demo data needed: A board with labeled, prioritized, dated task cards.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: The board tabs - switch, resources, progress, fame, discussion
+- Format: 30-45s how-to
+- Priority: P3
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Everything the board needs, one tab bar."
+- Description: Along the bottom of every board sit the workspace tabs - switch
+  between boards, open shared resources, watch progress targets, celebrate on
+  the wall of fame, and chat in the board discussion - each with live counts.
+- What it's about: BoardSwitcherIcons - Switch boards, Resources (files/links),
+  Progress (targets and delivery), Fame (posts), Discussions (threads with
+  unread badges), and New board.
+- Script beats:
+  - Beat 1 (Hook): "Your board is a workspace, not just columns."
+  - Beat 2 (Problem): "Files, goals, and chat live in different apps."
+  - Beat 3 (Action): board -> Resources -> add a file -> Progress -> view
+    targets -> Fame -> post a win -> Discussions -> reply.
+  - Beat 4 (Aha): "Unread badges and counts ride along in the tab bar."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> tab bar -> resources/progress/fame/discussion.
+- On-screen text / captions:
+  - "Files. Goals. Wins. Chat."
+- Demo data needed: A project board with resources, a target, and a post.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
 ## Video: Build the project team with roles
 - Format: 45-90s how-to
 - Priority: P3
@@ -282,7 +566,8 @@ line items, versions, notes) · `/estimates/templates` [M] (template cards) ·
 `/estimates/insights` [M] (win rate, margin, trends) ·
 `/estimates/projects` [M] (project list with budget vs actual) ·
 `/estimates/projects/{id}` [M] (overview/tasks/timesheets/board/documents/
-allocations) · `/estimates/boards` [M] (estimates-workspace kanban boards)
+allocations) · `/estimates/boards` [M] (estimates-workspace kanban boards -
+"My boards" personal + "Project boards", New personal board drawer)
 
 **User actions (FE hooks):** `useEstimates` · `useEstimate` ·
 `useCreateEstimate` · `useUpdateEstimate` · `useDeleteEstimate` ·
@@ -297,7 +582,26 @@ allocations) · `/estimates/boards` [M] (estimates-workspace kanban boards)
 `useCreateCostAllocation`/`useDeleteCostAllocation` · `useProjectBudgetSummary`
 · `useProjectProfitability` · `useProjectBoard` · `useProjectBoardKanban` ·
 `useProjectMembers`/`useAddProjectMember`/`useUpdateProjectMember`/
-`useRemoveProjectMember` · `viewEstimatePdf`/`downloadEstimatePdf`
+`useRemoveProjectMember` · `viewEstimatePdf`/`downloadEstimatePdf` ·
+`usePipelineBoards` (estimatesWorkspace: true) · `useCreatePipelineBoard`
+(personal boards, workspace=estimates, private by default) ·
+`usePipelineKanban` · `filterBoardsForWorkspace`/`boardBelongsToEstimatesWorkspace`/
+`boardUsesTaskTerminology` (task/card language for project + estimates boards) ·
+`useProjectBoard`/`useProjectBoardKanban` (project board via project id) ·
+`isLimitedEstimatesUser`/`getEstimatesModuleDefaultRoute` (board-only users
+land on `/estimates/boards`)
+- Shared board engine actions (task language in estimates workspace):
+  `useCreatePipelineLead` (defaultCardType=card -> New task modal) ·
+  `useUpdatePipelineLead` · `useMovePipelineLead` · `useDeletePipelineLead`
+  (archive card) · `useCreatePipelineStage`/`useUpdatePipelineStage`/
+  `useDeletePipelineStage`/`useReorderPipelineStages` (columns) ·
+  `useCreatePipelineChecklist` + items · `usePipelineCalendar`/
+  `useAllBoardsCalendar` (due/start/close/all, scope board vs all) ·
+  `useBoardResources`(+ CRUD) · `useBoardProgressSummary`/`useBoardTargets`/
+  `useCreateBoardTarget` · `useWallFamePosts`(+ CRUD) ·
+  `useBoardConversationSummary`/`usePostBoardMessage` · lead/card search
+  tokens (@label, !priority, #due, @me) via `tokenizeQuery` +
+  `usePipelineLeadSearch`
 
 **API endpoints (BE):** `/estimates` CRUD + `/analytics` + `/{id}/send` +
 `/{id}/approve` + `/{id}/reject` + `/{id}/email` + `/{id}/pdf` +
@@ -306,8 +610,15 @@ allocations) · `/estimates/boards` [M] (estimates-workspace kanban boards)
 CRUD · `/projects` CRUD + `/my-projects` + `/{id}/board` + `/{id}/board/kanban`
 + `/{id}/members` CRUD + `/{id}/budget-summary` + `/{id}/profitability` +
 `/{id}/tasks` + `/project-tasks/{id}` + `/{id}/timesheets` +
-`/timesheet-entries/{id}` + `/{id}/allocations` + `/project-allocations/{id}`
+`/timesheet-entries/{id}` + `/{id}/allocations` + `/project-allocations/{id}` ·
+shared board endpoints (`/pipeline/boards` CRUD with `workspace`, kanban,
+calendar, stages, leads/cards CRUD + move/archive/checklists/attachments,
+resources, progress/targets, wall-of-fame, conversation) - project boards are
+born via `PipelineBoardService::getOrCreateProjectBoard` (To Do / In Progress /
+Review / Done stages, seeded labels + guiding cards) when an estimate converts;
+card import via `/import-template` + `/import`
 
 **Route middleware (BE):** estimates group uses `auth:sanctum` ·
 `business.active` · `subscription.active` · `estimates.workspace`
-(EstimatesAccessMiddleware - full vs limited users, costing gated)
+(EstimatesAccessMiddleware - full vs limited users, costing gated);
+limited users get board-only access (no costing/team management)
