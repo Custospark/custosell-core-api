@@ -2,32 +2,38 @@
 
 **Videos in this pack: 4**
 
-The differentiator. Custosell keeps working when the internet doesn't. This is
-the moat - film it well.
+The differentiator. Custosell keeps working when the internet doesn't. Sales,
+changes, and even registration are saved on the device and synced when you're
+back online. This is the moat - film it well.
 
 ## Video: Sell even when the internet is down
 - Format: 45-90s how-to
 - Priority: P1
 - Platforms: Reels / Shorts / TikTok / YouTube
 - Tagline: "Internet down? You're still selling."
-- Description: Custosell POS works offline. Ring up sales, take payments, and
-  keep your day moving even when Wi-Fi or mobile data drops. Sales sync
-  automatically when you're back online.
-- What it's about: The offline-first selling flow - the core promise.
+- Description: Custosell POS works offline. Ring up sales and take payments
+  even when Wi-Fi or mobile data drops. The amber offline banner reassures you
+  that your work is saved on the device, then everything syncs automatically
+  when you're back online.
+- What it's about: The offline-first selling flow - the core promise. When the
+  network drops you see an amber banner, but checkout keeps working, and the
+  sale syncs itself once you reconnect.
 - Script beats:
   - Beat 1 (Hook): "Watch what happens when the internet dies mid-sale."
   - Beat 2 (Problem): "Shops stop selling when the network does. Yours won't."
-  - Beat 3 (Action): Start a sale -> toggle offline (simulate) -> complete
-    checkout -> reconnect -> show the sale appear in history + dashboard.
+  - Beat 3 (Action): Start a sale -> go offline in DevTools -> complete
+    checkout -> reconnect -> watch the sync banner drain -> the sale appears in
+    sales history and the dashboard KPI updates.
   - Beat 4 (Aha): "It synced itself - no clicks, no data entry."
   - Beat 5 (CTA): "This is why shops switch. Try free at custosell.com."
-- Screen flow: /sales/new -> cart -> offline banner -> checkout -> reconnect ->
-  /sales/history -> dashboard KPI updated.
+- Screen flow: Sales -> cart -> offline banner appears -> checkout -> reconnect
+  -> sync progress banner -> Sales history + dashboard updated.
 - On-screen text / captions:
   - "Offline. Still selling."
-  - "Synced when you're back"
-- Demo data needed: A seeded business; demonstrate the offline banner
-  (use browser DevTools Network tab to go offline).
+  - "Your sales are saved on this device."
+  - "Everything synced"
+- Demo data needed: A seeded business with products; go offline via browser
+  DevTools Network tab.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (first sale),
   [04-shifts.md](./04-shifts.md)
@@ -37,69 +43,89 @@ the moat - film it well.
 - Priority: P2
 - Platforms: YouTube
 - Tagline: "Everything you can do offline - and what happens when you reconnect."
-- Description: A deep look at Custosell's offline queue. Which actions work
-  without internet, how conflicts are handled, and what syncs when you
-  reconnect. Perfect for owners deciding to switch.
-- What it's about: The full offline capability map and sync behavior.
+- Description: A deep look at Custosell's offline engine. Which actions work
+  without internet, how the ordered sync pipeline handles dependencies, and
+  what happens when you reconnect. Perfect for owners deciding to switch.
+- What it's about: The full offline capability map and sync behavior - sales,
+  payments, products, customers, expenses, shifts, orders, refunds, stock
+  adjustments, and account registration, all queued and synced in order.
 - Script beats:
   - Beat 1 (Hook): "Let's break the internet and watch Custosell not care."
   - Beat 2 (Problem): "Most POS systems are bricks without Wi-Fi."
-  - Beat 3 (Action): Go offline -> sell -> record payment -> add a product ->
-    take a customer -> reconnect -> show the sync queue drain.
-  - Beat 4 (Aha): "Sales, payments, stock, customers - all queued and synced."
+  - Beat 3 (Action): Go offline -> sell -> record a payment -> add a product ->
+    add a customer -> record an expense -> reconnect -> watch the sync banner
+    run through its phases and drain the queue.
+  - Beat 4 (Aha): "Sales, stock, customers, expenses - all queued and synced in
+    the right order."
   - Beat 5 (CTA): "Ready to stop fearing outages? Try free."
-- Screen flow: Multi-module tour while offline, then reconnect and show sync
-  activity/log.
+- Screen flow: Multi-module tour while offline, then reconnect and show the
+  sync banner progress through Account, Foundation, Sales, Transactions,
+  Closures, and Stock phases.
 - On-screen text / captions:
   - "Queued while offline"
   - "Synced on reconnect"
-- Demo data needed: Products, customers, a running shift.
+  - "Closed shifts only after their sales sync"
+- Demo data needed: Products, customers, a running shift, and an expense
+  category set up.
 - CTA: Try free + subscribe
 - Related videos: [21-offline-sync.md](./21-offline-sync.md) (short version),
   [05-inventory-products.md](./05-inventory-products.md)
 
-## Video: Check your sync health
+## Video: Watch your sync - progress and failures
 - Format: 30-45s how-to
 - Priority: P3
 - Platforms: Reels / Shorts / TikTok
-- Tagline: "Wondering if your data made it? Check sync status."
-- Description: See the sync status of your Custosell app - what's pending,
-  what's failed, and what's up to date - so you always know your data is safe.
-- What it's about: The sync status/log screen.
+- Tagline: "Wondering if your data made it? Watch the sync banner."
+- Description: Custosell shows you sync progress in real time - a percentage
+  chip in the top bar and a banner with a progress bar, phase label, and
+  estimate. If anything fails, the banner tells you exactly how many items
+  failed and links you to review them.
+- What it's about: The real-time sync UI - the header chip and progress banner
+  with percentage, phase, and per-item count; success, pause, and failure
+  states with a review link.
 - Script beats:
   - Beat 1 (Hook): "Your data is safe. Here's how you know."
   - Beat 2 (Problem): "You can't trust what you can't see."
-  - Beat 3 (Action): Open sync status -> show pending/failed/up-to-date -> tap
-    retry on any failure.
-  - Beat 4 (Aha): "One screen shows every byte's status."
+  - Beat 3 (Action): Reconnect after offline work -> top-bar chip shows % ->
+    banner shows "Uploading sales..." with a progress bar -> banner flips to
+    "Everything synced" -> or "2 items failed to sync" with a Review link.
+  - Beat 4 (Aha): "Every item is counted, and failures link straight to review."
   - Beat 5 (CTA): "Try it free."
-- Screen flow: Settings -> Sync status -> list -> retry.
+- Screen flow: Reconnect -> Sync header chip -> Sync progress banner -> success
+  strip / failure strip with Review link to Sales history.
 - On-screen text / captions:
-  - "Pending: 0. All synced."
-- Demo data needed: A business with a couple of offline-created sales.
+  - "Syncing 23 of 25 - 92%"
+  - "Everything synced"
+  - "N items failed to sync"
+- Demo data needed: A business with offline-created sales ready to sync.
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
-## Video: No-internet setup (first-time offline install)
+## Video: Register and sign in without internet
 - Format: 45-90s how-to
-- Priority: P3
-- Platforms: Reels / Shorts / TikTok
-- Tagline: "Set up Custosell once, and it works offline from day one."
-- Description: Install and set up Custosell, and understand how the app caches
-  itself so the shop keeps working with or without internet.
-- What it's about: First-run offline readiness - install, cache, and offline
-  boot.
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "Set up Custosell offline. Sign in online later."
+- Description: You can create your Custosell account without internet - the
+  registration is saved on the device and synced to the server when you
+  connect. An amber banner shows your account is pending sync, and offline
+  sign-in keeps working after that.
+- What it's about: Offline registration and login - the local account, the
+  pending-sync banner, and how offline login works on the same device.
 - Script beats:
-  - Beat 1 (Hook): "Set it up on Wi-Fi. Use it anywhere."
-  - Beat 2 (Problem): "Shops in low-coverage areas need tools that adapt."
-  - Beat 3 (Action): Install/sign in on Wi-Fi -> go offline -> open the app
-    from the home screen -> it still loads.
-  - Beat 4 (Aha): "The app itself is cached - it boots offline."
+  - Beat 1 (Hook): "Register your shop in a dead zone. It works."
+  - Beat 2 (Problem): "Most apps force you online before you can even start."
+  - Beat 3 (Action): Go offline -> register the business -> amber banner "your
+    account is pending sync" -> reconnect -> account syncs -> sign in offline
+    later on the same device.
+  - Beat 4 (Aha): "The app itself works without the server - even for signup."
   - Beat 5 (CTA): "Try free at custosell.com."
-- Screen flow: Install -> sign in -> add to home screen -> offline boot.
+- Screen flow: Offline -> Register -> AuthPendingBanner -> reconnect ->
+  registration syncs -> offline sign-in on the same device.
 - On-screen text / captions:
-  - "Installs on Wi-Fi. Works anywhere."
-- Demo data needed: Fresh install flow.
+  - "Register offline. Sync when online."
+  - "Your account is pending sync"
+- Demo data needed: A fresh device state with no account.
 - CTA: Try free + subscribe
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
 
@@ -107,12 +133,32 @@ the moat - film it well.
 
 ## Technical reference (source of truth)
 
-**Screens:** `/sales/new` (offline banner), Settings -> Sync status, sync
-activity log
+**Screens:** OfflineBanner (amber, dismissible, "you can keep working") ·
+AuthPendingBanner (amber, "your account is pending sync") · SyncProgressBanner
+(progress bar, phase label, per-item count, ETA, pause/failure/success states)
+· SyncHeaderChip in the navbar (spinner + percent) · pending-payment notices in
+Payment history
 
-**User actions (FE hooks):** `useSyncQueue` · `useSyncStatus` ·
-`useRetrySync` · `useOfflineSalesBatch` (queue drain on reconnect) ·
-`useCreateSale` (offline path writes to local queue first)
+**Sync engine (FE):** `syncCoordinator.runSyncCoordinator()` drains the queue in
+ordered tiers (Account, Foundation, Transactions, Closures, Stock), looping
+until empty or offline · `syncEngine.runSyncPipeline()` orders mutations by
+dependency (shift opens -> categories -> roles -> staff -> orders -> sales ->
+sale payments -> refunds -> shift closes -> other updates -> stock adjustments)
+· `mutationQueue` persists queued mutations to IndexedDB + durable localStorage
+backup, with retry counters, stale-syncing recovery (5 min), and per-business
+scoping · offline sales upload in batches of 25 (`SALES_BATCH_SIZE`) with
+retry/backoff, then fall back to per-sale sync; duplicate and ambiguous
+failures are reconciled · offline-created entities get negative local IDs that
+are remapped to server IDs (`entityIdMapper`) · reads use
+`readWithOfflineStrategy()` (server first, client cache/IndexedDB fallback on
+network error, 404, or pre-auth 401) · offline auth: `completeOfflineRegistration`
+(local account + queued `/businesses/register` with maxRetries 10, pendingAuthSync
+flag) and `completeOfflineLogin` (local session token; offline login after
+registering on-device or one online login)
 
-**API endpoints (BE):** `/sales/batch` (bulk sync) · `/sync/status` ·
-`/sync/activity` · `/sync/retry`
+**API endpoints (BE):** `sync.php` (auth:sanctum + business.active):
+`POST /sync/push` (categories, products, customers, expenses, invoices, sales,
+sale_items, stock_movements, staff_transfers, quick_notes) · `GET /sync/pull?since=`
+· `GET /sync/full` · `sales.php` (auth:sanctum + business.active +
+subscription.active): `POST /sales/batch` (bulk sales sync) · `POST /sales` per
+sale fallback
