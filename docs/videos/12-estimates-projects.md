@@ -1,5 +1,7 @@
 # 12 - Estimates, Templates & Projects
 
+**Videos in this pack: 4**
+
 Quote before you sell. Estimates, reusable templates, and project tracking.
 
 ## Video: Quote a customer in minutes

@@ -1,5 +1,7 @@
 # 13 - Forecasting
 
+**Videos in this pack: 2**
+
 See the future. Forecast sales and profit from your real data.
 
 ## Video: Forecast next month's sales

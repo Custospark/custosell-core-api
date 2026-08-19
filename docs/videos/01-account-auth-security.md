@@ -1,5 +1,7 @@
 # 01 - Account, Auth & Security
 
+**Videos in this pack: 7**
+
 Signing up (business, personal, or shopping), protecting the account, and
 running multiple shops with one login.
 

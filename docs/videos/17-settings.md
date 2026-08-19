@@ -1,5 +1,7 @@
 # 17 - Settings
 
+**Videos in this pack: 4**
+
 Business settings, preferences, and making Custosell yours.
 
 ## Video: Set up your business profile

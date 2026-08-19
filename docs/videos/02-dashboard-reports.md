@@ -1,5 +1,7 @@
 # 02 - Dashboard & Reports
 
+**Videos in this pack: 5**
+
 Know your numbers at a glance - daily, monthly, and per branch.
 
 ## Video: Know your numbers at a glance

@@ -1,5 +1,7 @@
 # 20 - Referrals, Credits & Sales Reps
 
+**Videos in this pack: 3**
+
 Grow by referral. Rewards, credits, and sales-rep tracking.
 
 ## Video: Refer a business and earn credit

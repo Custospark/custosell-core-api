@@ -1,5 +1,7 @@
 # 10 - Documents Vault
 
+**Videos in this pack: 2**
+
 Every PDF and receipt, stored and findable. Tax season handled.
 
 ## Video: Store documents automatically

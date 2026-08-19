@@ -1,5 +1,7 @@
 # 21 - Offline-First / Sync
 
+**Videos in this pack: 4**
+
 The differentiator. Custosell keeps working when the internet doesn't. This is
 the moat - film it well.
 

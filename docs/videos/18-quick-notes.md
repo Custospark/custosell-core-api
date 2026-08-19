@@ -1,5 +1,7 @@
 # 18 - Quick Notes
 
+**Videos in this pack: 2**
+
 Jot it down. Small notes that stay with your business.
 
 ## Video: Save a quick note

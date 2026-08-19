@@ -1,5 +1,7 @@
 # 11 - Pipeline / CRM
 
+**Videos in this pack: 3**
+
 Turn leads into customers. Sales pipeline, quotes, and follow-ups.
 
 ## Video: Track a lead from hello to customer

@@ -1,5 +1,7 @@
 # 06 - Marketplace & Purchase Orders
 
+**Videos in this pack: 3**
+
 Buy smarter. Restock through the marketplace and track purchase orders.
 
 ## Video: Restock from the marketplace

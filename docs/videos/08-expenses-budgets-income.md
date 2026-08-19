@@ -1,5 +1,7 @@
 # 08 - Expenses, Budgets & Income
 
+**Videos in this pack: 4**
+
 Know where money goes. Expenses, budgets, and other income.
 
 ## Video: Log an expense in seconds

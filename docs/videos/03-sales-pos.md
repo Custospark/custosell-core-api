@@ -1,5 +1,7 @@
 # 03 - Sales & POS
 
+**Videos in this pack: 5**
+
 The money loop. Everything a shop owner does at the till, from first sale to
 refund to invoice.
 
@@ -7,7 +9,7 @@ refund to invoice.
 - Format: 45-90s how-to
 - Priority: P1
 - Platforms: Reels / Shorts / TikTok / YouTube
-- Tagline: "Ring up your first sale in under a minute."
+- Tagline: "Make your first sale in under a minute on Custosell."
 - Description: Learn how to make your first sale on Custosell POS. Add items to
   the cart, take payment, and print or email the receipt. Perfect for new shop
   owners getting started. Try Custosell free - link below.

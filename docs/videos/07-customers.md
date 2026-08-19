@@ -1,5 +1,7 @@
 # 07 - Customers
 
+**Videos in this pack: 4**
+
 Know who buys from you. Profiles, credit, and customer history.
 
 ## Video: Add a customer to a sale

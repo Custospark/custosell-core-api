@@ -1,5 +1,7 @@
 # 14 - Storefront / B2C
 
+**Videos in this pack: 3**
+
 Sell beyond the till. Your online storefront.
 
 ## Video: Publish your online storefront

@@ -1,5 +1,7 @@
 # 19 - Notifications & Web Push
 
+**Videos in this pack: 3**
+
 The app tells you what matters - low stock, payments, follow-ups.
 
 ## Video: Get notified when stock runs low

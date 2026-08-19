@@ -1,5 +1,7 @@
 # 16 - Subscriptions & Billing
 
+**Videos in this pack: 3**
+
 Plans, billing, and what you pay for.
 
 ## Video: Choose the right plan

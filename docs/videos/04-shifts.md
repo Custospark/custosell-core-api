@@ -1,5 +1,7 @@
 # 04 - Shifts
 
+**Videos in this pack: 4**
+
 Start, close, and balance the working day. Cash drawer accountability.
 
 ## Video: Open your shift

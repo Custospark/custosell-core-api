@@ -1,5 +1,7 @@
 # 09 - Accounting
 
+**Videos in this pack: 4**
+
 The books. Chart of accounts, journals, and financial reports that stay in
 sync with everything you do.
 

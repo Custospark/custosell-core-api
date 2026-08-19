@@ -1,5 +1,7 @@
 # 05 - Inventory - Products & Categories
 
+**Videos in this pack: 5**
+
 Keep stock honest. Products, categories, stock levels, and reordering.
 
 ## Video: Add your first product
