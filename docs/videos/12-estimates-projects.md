@@ -1,6 +1,6 @@
 # 12 - Estimates, Templates & Projects
 
-**Videos in this pack: 22**
+**Videos in this pack: 26**
 
 Quote before you sell. Estimates with margins, reusable templates, and
 project job costing - plus kanban boards for running the job, from personal
@@ -533,6 +533,111 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+## Video: Manage board members and their roles
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Who sees the board - and who can change it."
+- Description: Invite staff or any Custosell user to a project or personal
+  board as Viewer, Contributor, or Manager - notify them by email, change
+  roles later, and keep the owner locked in. Board access is separate from
+  project team access.
+- What it's about: BoardMembersView in the estimates workspace - member
+  roster with Owner badge, BoardMemberPicker (search staff or invite by
+  email lookup, role picker, email notification), plan member limits, and
+  team/private/shared visibility rules.
+- Script beats:
+  - Beat 1 (Hook): "Some move cards. Some just watch."
+  - Beat 2 (Problem): "Everyone editing every board is chaos."
+  - Beat 3 (Action): /estimates/boards/{id} -> Members -> search staff ->
+    pick Viewer/Contributor/Manager -> Invite -> notify by email.
+  - Beat 4 (Aha): "Board members control the board; project team controls
+    the project."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> Members -> invite -> role -> notify.
+- On-screen text / captions:
+  - "Viewer. Contributor. Manager."
+- Demo data needed: A project board and a few staff accounts.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Set project targets - KPIs, goals, and objectives
+- Format: 3-6min deep dive
+- Priority: P2
+- Platforms: YouTube
+- Tagline: "Give the job a number the team can hit."
+- Description: Define what success looks like on a project board - KPIs,
+  goals, or objectives with key results - pick a metric and a target value,
+  assign an owner, and preview how it decomposes across the planning period.
+- What it's about: BoardTargetFormModal in project context - target type
+  (KPI/Goal/Objective/Key result), metric options (tasks created, completed,
+  open, moved, overdue, comments, checklist items done, value), ownership,
+  and the decomposition preview.
+- Script beats:
+  - Beat 1 (Hook): "A target with a plan the team can see."
+  - Beat 2 (Problem): "Success means different things to everyone."
+  - Beat 3 (Action): /estimates/boards/{id} -> Progress -> Add project target
+    -> pick KPI or Goal -> metric + target value -> assign owner -> preview
+    the decomposition -> save.
+  - Beat 4 (Aha): "It breaks the target into daily and weekly slices."
+  - Beat 5 (CTA): "Try it free at custosell.com."
+- Screen flow: board -> Progress -> Add project target -> metric -> decompose.
+- On-screen text / captions:
+  - "KPI. Goal. Key result. Planned."
+- Demo data needed: A project board with recent task activity.
+- CTA: Try free + subscribe
+- Related videos: [13-forecasting.md](./13-forecasting.md)
+
+## Video: Track project delivery and team performance
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Throughput, completions, and who's delivering - live."
+- Description: Open the project progress view to see tasks created, completed,
+  cancelled, open, completion rate, and completed value - switch between team
+  delivery and your own progress, pick any period, and export the numbers.
+- What it's about: BoardProgressView in project context - headline metrics,
+  Team delivery vs My progress tabs, period selector (today to custom),
+  column metrics, funnel by stage, targets list, and Export.
+- Script beats:
+  - Beat 1 (Hook): "Is the job moving? The numbers say yes or no."
+  - Beat 2 (Problem): "Progress judged by feeling, not by facts."
+  - Beat 3 (Action): /estimates/boards/{id} -> Progress -> read tasks created
+    and completed -> switch to My progress -> change to This month -> Export.
+  - Beat 4 (Aha): "Completion rate and completed value are tracked for you."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> Progress -> team/my -> period -> export.
+- On-screen text / captions:
+  - "Created. Completed. Delivered."
+- Demo data needed: A project board with a week of task activity.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+## Video: Assign task cards to your team
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok
+- Tagline: "Every task card has an owner."
+- Description: Assign staff to a task card when you create it or later - the
+  card shows the assignment chain from creator to assignee, @me filters to
+  your cards, and My progress shows your personal delivery.
+- What it's about: CreateLeadModal Assignment section + LeadDetailModal
+  assignees via MultiAssigneeSelect - LeadAssignmentChain on the card, the
+  @me search token, and per-person progress.
+- Script beats:
+  - Beat 1 (Hook): "Nobody guesses who owns the task."
+  - Beat 2 (Problem): "Unassigned tasks are everyone's and no one's."
+  - Beat 3 (Action): board -> Add task -> assign a teammate -> open a card ->
+    change assignees -> search @me to see your cards.
+  - Beat 4 (Aha): "The card shows who created it and who owns it now."
+  - Beat 5 (CTA): "Try it free."
+- Screen flow: board -> task -> assign -> @me -> my progress.
+- On-screen text / captions:
+  - "Assigned. Owned. Tracked."
+- Demo data needed: A project board with several staff members.
+- CTA: Try free
+- Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
 ## Video: Build the project team with roles
 - Format: 45-90s how-to
 - Priority: P3
@@ -598,10 +703,15 @@ land on `/estimates/boards`)
   `useCreatePipelineChecklist` + items · `usePipelineCalendar`/
   `useAllBoardsCalendar` (due/start/close/all, scope board vs all) ·
   `useBoardResources`(+ CRUD) · `useBoardProgressSummary`/`useBoardTargets`/
-  `useCreateBoardTarget` · `useWallFamePosts`(+ CRUD) ·
-  `useBoardConversationSummary`/`usePostBoardMessage` · lead/card search
-  tokens (@label, !priority, #due, @me) via `tokenizeQuery` +
-  `usePipelineLeadSearch`
+  `useCreateBoardTarget`/`useUpdateBoardTarget`/`useDecomposeTargetPreview`/
+  `useMyBoardProgressDisplay`/`useExportBoardProgress` (targets: KPI/Goal/
+  Objective/Key result; periods today->custom; Team delivery vs My progress) ·
+  `useWallFamePosts`(+ CRUD) · `useBoardConversationSummary`/
+  `usePostBoardMessage` · lead/card search tokens (@label, !priority, #due,
+  @me) via `tokenizeQuery` + `usePipelineLeadSearch` ·
+  `useBoardTeamMembers`/`useBoardMemberPicker` roles (viewer/contributor/
+  manager, email invite lookup, notify, plan member limits) ·
+  `MultiAssigneeSelect`/`LeadAssignmentChain` (assignees on task cards, @me)
 
 **API endpoints (BE):** `/estimates` CRUD + `/analytics` + `/{id}/send` +
 `/{id}/approve` + `/{id}/reject` + `/{id}/email` + `/{id}/pdf` +
@@ -612,8 +722,10 @@ CRUD · `/projects` CRUD + `/my-projects` + `/{id}/board` + `/{id}/board/kanban`
 `/{id}/tasks` + `/project-tasks/{id}` + `/{id}/timesheets` +
 `/timesheet-entries/{id}` + `/{id}/allocations` + `/project-allocations/{id}` ·
 shared board endpoints (`/pipeline/boards` CRUD with `workspace`, kanban,
-calendar, stages, leads/cards CRUD + move/archive/checklists/attachments,
-resources, progress/targets, wall-of-fame, conversation) - project boards are
+calendar, stages, leads/cards CRUD + move/archive/checklists/attachments/
+assignees, resources, progress/summary + progress/my + progress/config +
+progress/export + targets + decompose-preview, wall-of-fame, conversation,
+team-members + members) - project boards are
 born via `PipelineBoardService::getOrCreateProjectBoard` (To Do / In Progress /
 Review / Done stages, seeded labels + guiding cards) when an estimate converts;
 card import via `/import-template` + `/import`
