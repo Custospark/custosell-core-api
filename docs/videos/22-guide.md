@@ -1,10 +1,3 @@
-# 22 - Guide
-
-**Videos in this pack: 5**
-
-Self-serve help built into Custosell. Tutorials, FAQs, feedback that works
-offline, and direct contact with the team.
-
 ## Video: Learn with the Tutorials library
 - Format: 45-90s how-to
 - Priority: P2
@@ -29,6 +22,17 @@ offline, and direct contact with the team.
 - Demo data needed: Published tutorials across at least two categories.
 - CTA: Try free + subscribe
 - Related videos: [22-guide.md](./22-guide.md)
+
+- Published title: Short videos from the Custosell team - search, filter, watch.
+- Short-form variant: Short videos from the Custosell team - search, filter
+- Published description: Open the Custosell Guide and browse short video tutorials from the team. Search by keyword and filter by category - Getting started, Sales, Inventory, or General - then watch the one you need. Try free + subscribe #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Tutorials - search & filter" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Find answers in the FAQs
 - Format: 45-90s how-to
@@ -55,6 +59,17 @@ offline, and direct contact with the team.
 - Demo data needed: Published FAQs in each of the four categories.
 - CTA: Try free
 - Related videos: [22-guide.md](./22-guide.md)
+
+- Published title: Billing, offline, security - answered by the team.
+- Short-form variant: Billing, offline, security
+- Published description: Browse the Custosell FAQ library grouped by topic - Getting Started & Plans, Personal Accounts, Business Accounts, and Technical & Data. Search questions and answers, then expand the one you need. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "FAQs - browse by topic or search" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Send feedback that works offline
 - Format: 45-90s how-to
@@ -86,6 +101,17 @@ offline, and direct contact with the team.
 - Related videos: [21-offline-sync.md](./21-offline-sync.md) ·
   [22-guide.md](./22-guide.md)
 
+- Published title: Tell us what to build - even without internet.
+- Short-form variant: Tell us what to build
+- Published description: Send general feedback or a feature request straight from Custosell. It is offline-first: if there is no internet, your message is saved on the device and queued to send automatically when you reconnect. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Send a message" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track your feedback submissions
 - Format: 30-45s how-to
 - Priority: P3
@@ -110,6 +136,17 @@ offline, and direct contact with the team.
   reply, and one pending sync.
 - CTA: Try free
 - Related videos: [22-guide.md](./22-guide.md)
+
+- Published title: What happened to my feedback? Check its status.
+- Short-form variant: What happened to my feedback? Check its status.
+- Published description: See every message you have sent to the Custosell team, its status - Submitted, Acknowledged, In progress, Resolved, or Closed - and any reply from the team. Pending or failed syncs are shown too. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Submitted · Acknowledged · In progress · Resolved · Closed" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Contact & help when you're blocked
 - Format: 30-45s how-to
@@ -174,3 +211,14 @@ markers.
 (create/edit/publish, thumbnail upload + preview) with
 `platform.guide.manage`, manage FAQs, and triage feedback (status updates,
 staff replies, bulk actions) with `platform.guide.feedback.manage`.
+
+- Published title: A human, one tap away.
+- Short-form variant: A human
+- Published description: Reach the Custosell team when you need a person - support email and phone lines with one-tap copy, plus business hours. Works offline too: the details stay copyable so you can contact the team after you reconnect. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Support email" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

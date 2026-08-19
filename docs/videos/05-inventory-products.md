@@ -1,9 +1,3 @@
-# 05 - Inventory - Products & Categories
-
-**Videos in this pack: 25**
-
-Keep stock honest. Products, categories, stock levels, and reordering.
-
 ## Video: Add your first product
 - Format: 45-90s how-to
 - Priority: P1
@@ -27,6 +21,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: An existing category and a default branch.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: Add a product once - sell it forever.
+- Short-form variant: Add a product once
+- Published description: Learn how to add a product to Custosell inventory - name, price, cost, stock, and category. Everything you need to start selling in minutes. Try free + subscribe #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Add. Price. Save. Sell." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Add a service item
 - Format: 45-90s how-to
@@ -52,6 +57,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Sell services with no stock to count.
+- Short-form variant: Sell services with no stock to count.
+- Published description: Services in Custosell sell any quantity from the till without stock gates and post to service revenue. Add one in seconds. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Services sell. Stock doesn't move." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Organize products into categories
 - Format: 45-90s how-to
 - Priority: P2
@@ -75,6 +91,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: Several uncategorized products.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: A tidy catalog is a faster till.
+- Short-form variant: A tidy catalog is a faster till.
+- Published description: Create and manage categories in Custosell - group products, rename, and keep the POS fast to use. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Group it. Find it. Sell it." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Create a category from the product form
 - Format: 30-45s how-to
@@ -100,6 +127,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: No category yet? Make one without leaving the form.
+- Short-form variant: No category yet? Make one without leaving the form.
+- Published description: Add a category on the fly while creating a product - it gets created and auto-selected so you never break flow. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Create it. Selected. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Edit a product
 - Format: 45-90s how-to
 - Priority: P1
@@ -122,6 +160,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A product with a price that has changed.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Prices change. Keep your catalog current.
+- Short-form variant: Prices change. Keep your catalog current.
+- Published description: Update any product detail in Custosell - price, category, description, tax - and see the change reflect across the business. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Edit once. Sell right." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Set pricing and tax on a product
 - Format: 45-90s how-to
@@ -147,6 +196,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Price it right. Tax it right.
+- Short-form variant: Price it right. Tax it right.
+- Published description: Set unit, wholesale, and cost prices plus tax class and tax percentage on a product so sales and reports stay accurate. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Retail. Wholesale. Cost. Tax." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Add a sale discount for your public shop
 - Format: 30-45s how-to
 - Priority: P3
@@ -170,6 +230,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A product on the public shop.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: Put a product on sale without touching the till price.
+- Short-form variant: Put a product on sale without touching the till price.
+- Published description: Set a sale discount percentage on a product with a live "Was X to Now Y" preview. The POS till keeps using the regular price. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Was. Now. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Identify products with SKU and barcode
 - Format: 30-45s how-to
@@ -195,6 +266,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Find any product in a second.
+- Short-form variant: Find any product
+- Published description: Add a SKU and barcode to products so you can search and scan them fast at the till and in the catalog. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "SKU. Barcode. Found." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Set initial stock and low-stock alerts
 - Format: 45-90s how-to
 - Priority: P2
@@ -218,6 +300,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A branch and a target stock level.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Start with real stock numbers.
+- Short-form variant: Start with real stock numbers.
+- Published description: Enter opening stock for a branch and a low-stock threshold so Custosell flags items that need reordering before you run out. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Open right. Reorder on time." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Mark a product recurring or subscription
 - Format: 30-45s how-to
@@ -243,6 +336,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: Track subscriptions as real products.
+- Short-form variant: Track subscriptions as real products.
+- Published description: Flag a product as recurring and pick a billing interval so subscription revenue is visible in forecasting KPIs. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Recurring. Tracked. Forecast." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Deactivate a product (stop selling)
 - Format: 30-45s how-to
 - Priority: P2
@@ -266,6 +370,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Stop selling a product without deleting its history.
+- Short-form variant: Stop selling a product without deleting its history.
+- Published description: Deactivate a discontinued product on Custosell - it leaves your POS but keeps its sales history and reports intact. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Gone from the till. Kept in the books." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Delete a product
 - Format: 30-45s how-to
 - Priority: P3
@@ -288,6 +403,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A product created only for testing.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Remove a product for good - with a safety check.
+- Short-form variant: Remove a product for good
+- Published description: Permanently delete a product (or several) with an explicit confirmation so mistakes don't happen. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Confirm. Delete. Clean." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Search and filter your catalog
 - Format: 45-90s how-to
@@ -314,6 +440,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Find any product in seconds.
+- Short-form variant: Find any product
+- Published description: Search your catalog by name, SKU, or barcode and filter by branch, public shop listing, or supply listing. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Search. Filter. Found." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Bulk select, list, and delete products
 - Format: 45-90s how-to
 - Priority: P2
@@ -337,6 +474,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A dozen products ready to be listed or removed.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Manage dozens of products at once.
+- Short-form variant: Manage dozens of products at once.
+- Published description: Select many products and list or unlist them on the public shop or supply marketplace, or delete them in one action. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Select. Batch. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Adjust stock up (add units)
 - Format: 45-90s how-to
@@ -362,6 +510,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Stock in? Add it with a reason.
+- Short-form variant: Stock in? Add it with a reason.
+- Published description: Add stock to a product from the Adjust Stock flow - choose a reason (purchase, return, correction, initial) and a branch. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Add. Reason. Traceable." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Adjust stock down (remove units)
 - Format: 45-90s how-to
 - Priority: P2
@@ -386,6 +545,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Stock wrong? Correct it safely.
+- Short-form variant: Stock wrong? Correct it safely.
+- Published description: Remove stock for damage, loss, write-off, or supplier returns - Custosell blocks going below zero and logs the reason. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Remove. Reason. Logged." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track stock levels at a glance
 - Format: 30-45s how-to
 - Priority: P2
@@ -408,6 +578,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: Products at various stock levels including low and out.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Out of stock before you run out of stock.
+- Short-form variant: Out of stock before you run out of stock.
+- Published description: Read your stock level indicator on Custosell - see what's low, what's out, and what needs restocking at a glance. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Low. Out. Order now." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: View a product's stock history
 - Format: 30-45s how-to
@@ -432,6 +613,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Every move a product made, in one timeline.
+- Short-form variant: Every move a product made
+- Published description: Open the stock history for any product and see every purchase, sale, adjustment, return, and initial entry with the running balance. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "History. Balance. Proof." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Audit your Stock Ledger
 - Format: 45-90s how-to
 - Priority: P2
@@ -454,6 +646,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: Several stock movements across products and types.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Every stock movement, one clean ledger.
+- Short-form variant: Every stock movement
+- Published description: Browse the full stock ledger - filter by product and type, see before/after balances, and clean up records in bulk if needed. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filter. Inspect. Reconstruct." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Transfer stock between branches
 - Format: 45-90s how-to
@@ -479,6 +682,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Move stock where it sells.
+- Short-form variant: Move stock where it sells.
+- Published description: Transfer stock from one branch to another for one product or a whole selection, with available-quantity checks built in. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "From. To. Moved." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Import products from Excel
 - Format: 3-6min deep dive
 - Priority: P2
@@ -503,6 +717,18 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - CTA: Try free + subscribe
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Skip the typing. Upload your whole catalog.
+- Short-form variant: Skip the typing. Upload your whole catalog.
+- Published description: Import products from an .xlsx, .xls, or .csv file - download the template, map products to a branch, upload, and review per-row errors. Try free + subscribe #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Template. Upload. Imported." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Export your product catalog
 - Format: 30-45s how-to
 - Priority: P3
@@ -525,6 +751,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A populated catalog.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Take your catalog anywhere.
+- Short-form variant: Take your catalog anywhere.
+- Published description: Download your full product list as CSV or Excel for backups, spreadsheets, or sharing with a supplier. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "CSV. Excel. Downloaded." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Upload a product image for the public shop
 - Format: 30-45s how-to
@@ -549,6 +786,17 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 - Demo data needed: A product image file.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: Give your shop products a face.
+- Short-form variant: Give your shop products a face.
+- Published description: Upload a product photo so your public shop looks real and trustworthy to customers. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Upload. Preview. Listed." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read your Inventory Overview dashboard
 - Format: 3-6min deep dive
@@ -575,6 +823,18 @@ Keep stock honest. Products, categories, stock levels, and reordering.
   multi-branch data.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
+
+- Published title: Know the money sitting in your stock.
+- Short-form variant: Know the money sitting
+- Published description: The inventory overview shows stock value at cost, projected profit, units on hand, and alerts - plus trends, category and branch breakdowns, and margin rankings. Try free + subscribe #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Value. Profit. Alerts." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
 
 ## Video: Add and edit products offline
 - Format: 45-90s how-to
@@ -624,3 +884,14 @@ Keep stock honest. Products, categories, stock levels, and reordering.
 `/products/{id}/image` · `/categories` CRUD · `/stock-movements` CRUD +
 `/stock-movements/bulk-delete` + `/stock-movements/transfer` ·
 `/inventory/overview`
+
+- Published title: Keep building your catalog without internet.
+- Short-form variant: Keep building your catalog without internet.
+- Published description: Create, edit, and adjust products even when offline - Custosell queues the changes and syncs them when you're back online. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Offline. Queued. Synced." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

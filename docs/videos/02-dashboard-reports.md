@@ -1,10 +1,3 @@
-# 02 - Dashboard & Reports
-
-**Videos in this pack: 20**
-
-Know your numbers at a glance - today's KPIs, trends, alerts, and every
-downloadable business report.
-
 ## Video: Know your numbers at a glance
 - Format: 45-90s how-to
 - Priority: P1
@@ -27,6 +20,17 @@ downloadable business report.
 - Demo data needed: A business with sales today.
 - CTA: Try free + subscribe
 - Related videos: [04-shifts.md](./04-shifts.md) (day close)
+
+- Published title: Know your numbers at a glance.
+- Short-form variant: Know your numbers at a glance.
+- Published description: Read your Custosell dashboard - net sales today, transactions, products sold, expenses, and total customers - all on one screen when you open the app. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Today at a glance" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Understand net sales (gross - refunds - expenses)
 - Format: 45-90s how-to
@@ -51,6 +55,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (refunds),
   [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Net sales = gross - refunds - expenses. Here's the math.
+- Short-form variant: Net sales = gross - refunds - expenses. Here's the
+- Published description: See exactly how Custosell computes Net Sales Today on your dashboard - gross sales minus refunds minus expenses - so the number always makes sense. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Gross - refunds - expenses = net" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read your 7-day sales trend
 - Format: 45-90s how-to
@@ -77,6 +92,17 @@ downloadable business report.
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
   (net sales), [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Is the week going up or down? The trend chart tells you.
+- Short-form variant: Is the week going up or down? The trend chart tells
+- Published description: Read the 7-Day Net Sales Trend chart on your Custosell dashboard - daily net sales across the whole business, the average line, and how refunds plus expenses eat into gross. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Daily net after refunds" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Act on low stock alerts
 - Format: 45-90s how-to
 - Priority: P1
@@ -99,6 +125,17 @@ downloadable business report.
 - CTA: Try free + subscribe
 - Related videos: [05-inventory-products.md](./05-inventory-products.md),
   [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Low stock? The dashboard tells you before customers notice.
+- Short-form variant: Low stock? The dashboard tells you before customers
+- Published description: Spot low-stock alerts right on your Custosell dashboard - items at or below their threshold - and restock before you run out. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Low: X / threshold Y" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track today's sales as they happen
 - Format: 45-90s how-to
@@ -123,6 +160,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Watch today's sales roll in, live.
+- Short-form variant: Watch today's sales roll in
+- Published description: Use the Recent Activity panel on your Custosell dashboard to see today's sales as they happen - receipt number, payment method, and amount, with refunds flagged. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Live today's receipts" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read today's expenses by category
 - Format: 45-90s how-to
 - Priority: P2
@@ -144,6 +192,17 @@ downloadable business report.
 - Demo data needed: A few expenses in different categories today.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Where did today's money go? The pie chart knows.
+- Short-form variant: Where did today's money go? The pie chart knows.
+- Published description: Read the Today's Expenses by Category pie chart on your Custosell dashboard - a quick visual of what's eating today's profit. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Today's leaks, visible" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read your VAT position today
 - Format: 45-90s how-to
@@ -171,6 +230,17 @@ downloadable business report.
 - Related videos: [17-settings.md](./17-settings.md) (VAT registration),
   [02-dashboard-reports.md](./02-dashboard-reports.md) (VAT summary report)
 
+- Published title: Output VAT, input VAT, and what's payable - today.
+- Short-form variant: Output VAT, input VAT, and what's payable
+- Published description: Read the VAT-today section on your Custosell dashboard - net output VAT, input VAT you can claim, and estimated VAT payable, updated as you sell. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "VAT tracked separately from cash" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Compare your branches
 - Format: 45-90s how-to
 - Priority: P2
@@ -194,6 +264,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md),
   [02-dashboard-reports.md](./02-dashboard-reports.md) (branch report)
+
+- Published title: Which branch is winning this week?
+- Short-form variant: Which branch is winning this week?
+- Published description: Compare sales performance across your branches on Custosell - today, this week, this month, or this year - and see where to focus. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Branch vs branch" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Download your first business report
 - Format: 45-90s how-to
@@ -221,6 +302,17 @@ downloadable business report.
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
   (each report), [10-documents.md](./10-documents.md)
 
+- Published title: PDF, Excel, or CSV - download any report in seconds.
+- Short-form variant: PDF, Excel, or CSV
+- Published description: Use the Download Business Reports panel on your Custosell dashboard to generate and download any report - business summary, daily sales, product performance, and more - in PDF, Excel, or CSV. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Pick. Set. Download." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Choose the right report period
 - Format: 30-45s how-to
 - Priority: P2
@@ -242,6 +334,17 @@ downloadable business report.
 - Demo data needed: Sales across multiple periods.
 - CTA: Try free
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
+
+- Published title: Today, week, month, year - or any custom range.
+- Short-form variant: Today, week, month, year
+- Published description: Set the exact date range for any Custosell report - preset periods or a custom from/to - so you always report the right window. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Any window, your way" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Filter a report by sales person or shift
 - Format: 45-90s how-to
@@ -265,6 +368,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md), [15-hr.md](./15-hr.md)
 
+- Published title: One report, one cashier - or one shift.
+- Short-form variant: One report, one cashier
+- Published description: Narrow any Custosell report to a specific sales person or a specific shift - great for payroll, disputes, and accountability. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filter by person or shift" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Business Summary report - are you making money?
 - Format: 45-90s how-to
 - Priority: P2
@@ -287,6 +401,17 @@ downloadable business report.
 - Demo data needed: Sales + expenses in the period.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Am I making money? One report answers it.
+- Short-form variant: Am I making money? One report answers it.
+- Published description: Generate the Business Summary report on Custosell - a P&L snapshot for any period - and see your bottom line clearly. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "P&L snapshot, on demand" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Daily Sales report - what sold and what was refunded
 - Format: 45-90s how-to
@@ -312,6 +437,17 @@ downloadable business report.
 - Related videos: [03-sales-pos.md](./03-sales-pos.md),
   [04-shifts.md](./04-shifts.md)
 
+- Published title: Every transaction, with line items and refunds.
+- Short-form variant: Every transaction
+- Published description: Pull the Daily Sales report on Custosell - full transactions with line items and refunds for any day - and reconcile the till with confidence. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Transactions + line items + refunds" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Your top products (and dead ones)
 - Format: 45-90s how-to
 - Priority: P2
@@ -336,6 +472,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Your top products and the ones killing you.
+- Short-form variant: Your top products and the ones killing you.
+- Published description: Use the Product Performance report on Custosell to see top sellers by revenue and quantity, slow movers, and products with no sales - then stock smarter. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Sell more of what sells" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Shift Reconciliation report - is your drawer balanced?
 - Format: 45-90s how-to
 - Priority: P2
@@ -358,6 +505,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md)
 
+- Published title: Cash handover and shift totals - balanced, on record.
+- Short-form variant: Cash handover and shift totals
+- Published description: Generate the Shift Reconciliation report on Custosell - cash handover and shift totals - and prove the drawer balances for any shift. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Drawer balanced, proven" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Expenses report - where is money leaking?
 - Format: 45-90s how-to
 - Priority: P3
@@ -379,6 +537,17 @@ downloadable business report.
 - Demo data needed: Expenses across several categories.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Your expenses, by category, with P&L context.
+- Short-form variant: Your expenses
+- Published description: Pull the Expenses report on Custosell - expense breakdown by category with P&L context - and see where money is leaking. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Every category, one file" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: VAT Summary report - what's due this period
 - Format: 45-90s how-to
@@ -403,6 +572,17 @@ downloadable business report.
 - Related videos: [17-settings.md](./17-settings.md) (VAT registration),
   [09-accounting.md](./09-accounting.md)
 
+- Published title: Output VAT, input VAT, and estimated VAT payable.
+- Short-form variant: Output VAT
+- Published description: Generate the VAT Summary report on Custosell - output VAT, input VAT, and estimated VAT payable for your jurisdiction - ready for filing. Try free + subscribe #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "VAT, ready to file" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Inventory report - what must you reorder?
 - Format: 45-90s how-to
 - Priority: P3
@@ -426,6 +606,17 @@ downloadable business report.
 - Related videos: [05-inventory-products.md](./05-inventory-products.md),
   [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Stock levels, values, and low-stock alerts - one file.
+- Short-form variant: Stock levels, values, and low-stock alerts
+- Published description: Export the Inventory report on Custosell - stock levels, values, and low-stock alerts as of today - and plan your next order. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Snapshot as of today" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Payment Breakdown report - how are customers paying?
 - Format: 45-90s how-to
 - Priority: P2
@@ -448,6 +639,17 @@ downloadable business report.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md),
   [17-settings.md](./17-settings.md) (payment methods)
+
+- Published title: Cash, Mobile Money, card - see the mix.
+- Short-form variant: Cash, Mobile Money, card
+- Published description: Pull the Payment Breakdown report on Custosell - collections by payment method, net after refunds - and understand how customers pay. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Cash vs Mobile Money vs card" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Full branch breakdown report
 - Format: 45-90s how-to
@@ -500,3 +702,14 @@ section)
 · `/reports/shift-reconciliation` · `/reports/shift-close` ·
 `/reports/expenses` · `/reports/vat-summary` · `/reports/inventory` ·
 `/reports/payment-breakdown` · `/reports/branch-performance`
+
+- Published title: Every branch gross, expenses, net, transactions, share.
+- Short-form variant: Every branch: gross, expenses, net, transactions
+- Published description: Open the full Branch Performance report on Custosell - per branch gross, expenses, net sales, transactions, and market share - for any period, right on screen. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Branch: gross, net, share" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

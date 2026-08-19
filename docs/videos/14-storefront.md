@@ -1,10 +1,3 @@
-# 14 - Storefront / B2C
-
-**Videos in this pack: 12**
-
-Sell beyond the till. Publish a public shop and let buyers discover, order, and
-track online - all from your real catalog.
-
 ## Video: Publish your public shop
 - Format: 45-90s how-to
 - Priority: P1
@@ -29,6 +22,17 @@ track online - all from your real catalog.
 - Demo data needed: A business with a name, logo, and contact details.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
+
+- Published title: Your shop, online, in minutes.
+- Short-form variant: Your shop
+- Published description: Enable your public shop in Settings, claim a @username, save, and you're live at your own link. Disable it any time - the link then shows as closed. Try free + subscribe #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Live at @yourbusiness" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: List products on your public shop
 - Format: 45-90s how-to
@@ -55,6 +59,17 @@ track online - all from your real catalog.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Pick the products your online customers can buy.
+- Short-form variant: Pick the products your online customers can buy.
+- Published description: Choose which products appear on your public shop with the List on my public shop toggle - per product or in bulk - and add product images so they look good online. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Listed for storefront" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Share your shop with a link and QR code
 - Format: 45-90s how-to
 - Priority: P2
@@ -78,6 +93,17 @@ track online - all from your real catalog.
 - Demo data needed: A published public shop with a @username.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: One link, one QR, your whole shop.
+- Short-form variant: One link
+- Published description: Copy your public shop link, share it on WhatsApp, or download a ready QR code to print - customers open your shop instantly on any phone. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Scan. Shop. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Discover businesses and products
 - Format: 45-90s how-to
@@ -104,6 +130,17 @@ track online - all from your real catalog.
 - CTA: Try free + subscribe
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Browse every public shop, or every product.
+- Short-form variant: Browse every public shop
+- Published description: Open the discover page and switch between Businesses and Products & Services - search, filter by category, city, currency, price, and rating, and keep scrolling for more. Try free + subscribe #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Shops, or products. Your pick." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Browse a shop and add to cart
 - Format: 45-90s how-to
 - Priority: P1
@@ -128,6 +165,17 @@ track online - all from your real catalog.
 - Demo data needed: A published shop with priced, in-stock products.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: A shop page that sells while you sleep.
+- Short-form variant: A shop page that sells while you sleep.
+- Published description: Open a shop to see its description, location, phone, rating, and products with live stock badges and sale prices - then add items to your cart. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "In stock. On sale. In your cart." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Check out with multi-cart bags
 - Format: 45-90s how-to
@@ -154,6 +202,17 @@ track online - all from your real catalog.
 - CTA: Try free + subscribe
 - Related videos: [14-storefront.md](./14-storefront.md)
 
+- Published title: Shop from many shops, one cart at a time.
+- Short-form variant: Shop from many shops
+- Published description: Your cart holds one bag per shop - add products from several businesses, switch bags, set delivery contact, and place each order with the right shop. Try free + subscribe #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "N businesses, one bag each" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track your online orders live
 - Format: 45-90s how-to
 - Priority: P2
@@ -178,6 +237,17 @@ track online - all from your real catalog.
 - Demo data needed: A few orders in different statuses.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: Order status that updates while you watch.
+- Short-form variant: Order status that updates while you watch.
+- Published description: See all your online orders with Open / Completed / Invoiced / Cancelled tabs, a live open-orders badge, and a chime when an order changes status. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Open -> Completed. Chime included." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Get a receipt or invoice for an online order
 - Format: 45-90s how-to
@@ -204,6 +274,17 @@ track online - all from your real catalog.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Your online order, documented.
+- Short-form variant: Your online order
+- Published description: Open any online order and pull up its receipt or invoice - when a shop closes your order into a sale or invoice, the documents are one tap away. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Receipt or invoice, on demand" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Save products to your wishlist
 - Format: 45-90s how-to
 - Priority: P2
@@ -227,6 +308,17 @@ track online - all from your real catalog.
 - Demo data needed: A signed-in buyer account and a few products.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
+
+- Published title: Heart it now, buy it later.
+- Short-form variant: Heart it now
+- Published description: Tap the heart on any product to save it to your wishlist - it stays there across shops until you order, and ordered products clear themselves out. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved for later" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Favorite the shops you love
 - Format: 45-90s how-to
@@ -252,6 +344,17 @@ track online - all from your real catalog.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
 
+- Published title: Star the shops you'll come back to.
+- Short-form variant: Star the shops you'll come back to.
+- Published description: Star any business to keep it in your favorites list - then jump straight back to those shops instead of hunting for them again. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Starred for next time" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Rate shops and products
 - Format: 45-90s how-to
 - Priority: P3
@@ -275,6 +378,17 @@ track online - all from your real catalog.
 - Demo data needed: A signed-in buyer account and a shop with products.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
+
+- Published title: One to five stars. Real feedback.
+- Short-form variant: One to five stars. Real feedback.
+- Published description: Rate a shop or a product right from its page - your rating saves instantly and updates the average, helping other buyers pick well. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Rate it. Help the next buyer." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Add social links to your public shop
 - Format: 45-90s how-to
@@ -366,3 +480,14 @@ Wishlist is for products (heart); favorites are for businesses (star); both
 server-backed and sign-in gated. Orders poll every 30s with a status-change
 chime. No theme/branding customization exists - shop look comes from the
 Business record (name, logo, description, contact, currency, social links).
+
+- Published title: Facebook, WhatsApp, TikTok - on your shop page.
+- Short-form variant: Facebook, WhatsApp, TikTok
+- Published description: Add your social links in settings and they appear on your public shop with brand icons - so customers can follow, message, and find you. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Follow. Message. Buy." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

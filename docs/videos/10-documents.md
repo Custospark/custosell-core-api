@@ -1,9 +1,3 @@
-# 10 - Documents Vault
-
-**Videos in this pack: 10**
-
-Every PDF, receipt, and file, stored and findable. Tax season handled.
-
 ## Video: Organize your files in cabinets
 - Format: 45-90s how-to
 - Priority: P1
@@ -27,6 +21,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - Demo data needed: A business with existing receipts and contracts.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: One home for every paper your business owns.
+- Short-form variant: One home for every paper your business owns.
+- Published description: Create named cabinets in the Custosell documents vault - like Receipts, Contracts, or Tax - and see every file you own as color-coded cards. Stop losing paper. Try free + subscribe #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "A cabinet for every paper trail" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Upload files and add links
 - Format: 45-90s how-to
@@ -53,6 +58,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - CTA: Try free + subscribe
 - Related videos: [10-documents.md](./10-documents.md)
 
+- Published title: Drop a file or save a link - it's filed forever.
+- Short-form variant: Drop a file or save a link
+- Published description: Upload receipts, invoices, and PDFs into a cabinet - or add a web link - with tags and access chosen at upload time. A live progress bar shows each file landing. Try free + subscribe #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Uploaded and filed" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Organize with folders and import a local folder
 - Format: 45-90s how-to
 - Priority: P2
@@ -76,6 +92,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - Demo data needed: A local folder with a few subfolders and files.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: Bring your whole folder in - structure included.
+- Short-form variant: Bring your whole folder in
+- Published description: Build nested folders inside a cabinet and import a whole local folder so its tree of files is recreated in the vault - no reorganizing by hand. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Imported with structure" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Manage access - who sees what
 - Format: 45-90s how-to
@@ -102,6 +129,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Some files are for everyone. Some are just for you.
+- Short-form variant: Some files are for everyone. Some are just for you.
+- Published description: Control access on a cabinet, folder, or file - same as the folder, everyone on the team, specific people, or only you - and give each person Viewer, Contributor, or Manager powers. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Find any document by search and tags
 - Format: 30-45s how-to
 - Priority: P2
@@ -124,6 +162,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - Demo data needed: Documents tagged across a few categories.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: That invoice from March? Found it.
+- Short-form variant: That invoice from March? Found it.
+- Published description: Search files inside a cabinet by name, or filter by a tag, and click any tag chip on a document to instantly see all matching files. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Search. Filter. Found." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Preview and edit files inline
 - Format: 45-90s how-to
@@ -148,6 +197,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
 
+- Published title: PDFs, images, audio, and text - preview without leaving.
+- Short-form variant: PDFs, images, audio, and text - preview without
+- Published description: Preview PDFs, images, audio, video, and text right in the vault - and edit plain-text and CSV files inline without downloading anything. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Preview. Edit. Save." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Email documents and download folders
 - Format: 45-90s how-to
 - Priority: P2
@@ -170,6 +230,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - Demo data needed: A folder with a few documents.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
+
+- Published title: Send a file or share a whole folder - from the vault.
+- Short-form variant: Send a file or share a whole folder
+- Published description: Email a document or folder straight from the vault for your accountant or partner, or download any folder as a zip file with one click. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Shared in one click" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Link documents to customers and projects
 - Format: 45-90s how-to
@@ -194,6 +265,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
 
+- Published title: Every file tied to who it belongs to.
+- Short-form variant: Every file tied to who it belongs to.
+- Published description: Attach a document to a customer or project when you upload it - so invoices, contracts, and specs live with the record they belong to. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filed with its owner" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Customize the vault canvas
 - Format: 30-45s how-to
 - Priority: P3
@@ -216,6 +298,17 @@ Every PDF, receipt, and file, stored and findable. Tax season handled.
 - Demo data needed: A populated vault.
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
+
+- Published title: Make the vault feel like yours.
+- Short-form variant: Make the vault feel like yours.
+- Published description: Set a business-wide vault canvas - accent color plus a gradient, solid, or photo background - and give each cabinet its own canvas look. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your vault, your look" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Know who did what in the vault
 - Format: 45-90s how-to
@@ -272,3 +365,14 @@ POST + `/documents/folders/{id}` GET/PATCH/DELETE + `/{id}/contents` +
 **Vault client helpers (FE):** `uploadDocumentWithProgress` ·
 `downloadFileWithProgress` · `downloadFolderExportWithProgress` ·
 `importFolderTree` (recreates a local folder tree in the vault)
+
+- Published title: Every upload, move, and email - on record.
+- Short-form variant: Every upload, move, and email
+- Published description: Open the vault activity feed to see who uploaded, moved, renamed, emailed, or deleted what - a full audit trail for your documents. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filed. Moved. Emailed. Logged." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

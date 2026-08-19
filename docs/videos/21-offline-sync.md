@@ -1,11 +1,3 @@
-# 21 - Offline-First / Sync
-
-**Videos in this pack: 4**
-
-The differentiator. Custosell keeps working when the internet doesn't. Sales,
-changes, and even registration are saved on the device and synced when you're
-back online. This is the moat - film it well.
-
 ## Video: Sell even when the internet is down
 - Format: 45-90s how-to
 - Priority: P1
@@ -37,6 +29,17 @@ back online. This is the moat - film it well.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (first sale),
   [04-shifts.md](./04-shifts.md)
+
+- Published title: Internet down? You're still selling.
+- Short-form variant: Internet down? You're still selling.
+- Published description: Custosell POS works offline. Ring up sales and take payments even when Wi-Fi or mobile data drops. The amber offline banner reassures you that your work is saved on the device, then everything syncs automatically when you're back online. Try free + subscribe #custosell #offline #sync #nointernet #Custosell #SmallBusiness
+- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Offline. Still selling." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: What syncs automatically
 - Format: 3-6min deep dive
@@ -71,6 +74,18 @@ back online. This is the moat - film it well.
 - Related videos: [21-offline-sync.md](./21-offline-sync.md) (short version),
   [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Everything you can do offline - and what happens when you reconnect.
+- Short-form variant: Everything you can do offline - and what happens when
+- Published description: A deep look at Custosell's offline engine. Which actions work without internet, how the ordered sync pipeline handles dependencies, and what happens when you reconnect. Perfect for owners deciding to switch. Try free + subscribe #custosell #offline #sync #nointernet #Custosell #SmallBusiness
+- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Queued while offline" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Watch your sync - progress and failures
 - Format: 30-45s how-to
 - Priority: P3
@@ -100,6 +115,17 @@ back online. This is the moat - film it well.
 - Demo data needed: A business with offline-created sales ready to sync.
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
+
+- Published title: Wondering if your data made it? Watch the sync banner.
+- Short-form variant: Wondering if your data made it? Watch the sync banner.
+- Published description: Custosell shows you sync progress in real time - a percentage chip in the top bar and a banner with a progress bar, phase label, and estimate. If anything fails, the banner tells you exactly how many items failed and links you to review them. Try free #custosell #offline #sync #nointernet #Custosell #SmallBusiness
+- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Syncing 23 of 25 - 92%" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Register and sign in without internet
 - Format: 45-90s how-to
@@ -162,3 +188,14 @@ sale_items, stock_movements, staff_transfers, quick_notes) · `GET /sync/pull?si
 · `GET /sync/full` · `sales.php` (auth:sanctum + business.active +
 subscription.active): `POST /sales/batch` (bulk sales sync) · `POST /sales` per
 sale fallback
+
+- Published title: Set up Custosell offline. Sign in online later.
+- Short-form variant: Set up Custosell offline. Sign
+- Published description: You can create your Custosell account without internet - the registration is saved on the device and synced to the server when you connect. An amber banner shows your account is pending sync, and offline sign-in keeps working after that. Try free + subscribe #custosell #offline #sync #nointernet #Custosell #SmallBusiness
+- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Register offline. Sync when online." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

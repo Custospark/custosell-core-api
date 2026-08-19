@@ -1,10 +1,3 @@
-# 09 - Accounting
-
-**Videos in this pack: 13**
-
-The books. Chart of accounts, journal entries, and financial reports that stay
-in sync with everything you do.
-
 ## Video: Your books stay in sync automatically
 - Format: 45-90s how-to
 - Priority: P1
@@ -31,6 +24,17 @@ in sync with everything you do.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Sell once. Your books update themselves.
+- Short-form variant: Sell once. Your books update themselves.
+- Published description: See how every sale, refund, expense, invoice, and payment on Custosell writes itself into proper double-entry accounting - no accountant required at the till. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Sell -> Journal. Automatically." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Understand the chart of accounts
 - Format: 3-6min deep dive
 - Priority: P2
@@ -55,6 +59,18 @@ in sync with everything you do.
 - Demo data needed: A full chart of accounts.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
+
+- Published title: Chart of accounts, explained for shop owners.
+- Short-form variant: Chart of accounts
+- Published description: A plain-English tour of the chart of accounts on Custosell - assets, liabilities, equity, revenue, expenses - in flat view or as a parent- child tree, and how each account feeds your reports. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Assets. Revenue. Expenses. It's that simple." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
 
 ## Video: Record a manual journal entry
 - Format: 45-90s how-to
@@ -82,6 +98,17 @@ in sync with everything you do.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: When the system can't do it, you can.
+- Short-form variant: When the system can't do it
+- Published description: Record your own balanced journal entry - pick accounts, mark each line Debit or Credit, and watch the live balanced indicator turn green. Attach a supporting document and save as a draft. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Balanced = green light" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Post and reverse journal entries
 - Format: 45-90s how-to
 - Priority: P2
@@ -107,6 +134,17 @@ in sync with everything you do.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Draft, post, reverse - the audit trail stays clean.
+- Short-form variant: Draft, post, reverse
+- Published description: Keep draft entries editable, lock them forever by posting, and fix mistakes with a reversing entry instead of editing history. Every change stays traceable. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Locked, not edited" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read the trial balance
 - Format: 45-90s how-to
 - Priority: P2
@@ -130,6 +168,17 @@ in sync with everything you do.
 - Demo data needed: A period with posted entries.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Debits and credits - always equal?
+- Short-form variant: Debits and credits
+- Published description: Open the trial balance for any accounting period, see every account's debit and credit balances, and confirm the books balance at a glance - or spot the difference. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Balanced or not, in one glance" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read the income statement
 - Format: 45-90s how-to
@@ -155,6 +204,17 @@ in sync with everything you do.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
 
+- Published title: Hand your accountant a clean P&L - anytime.
+- Short-form variant: Hand your accountant a clean P&L
+- Published description: Generate a correct profit & loss statement for any accounting period - revenue, COGS, gross profit, operating income, and net income, all built from real double-entry data. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Clean P&L, on demand" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read the balance sheet
 - Format: 45-90s how-to
 - Priority: P2
@@ -178,6 +238,17 @@ in sync with everything you do.
 - Demo data needed: Posted entries across asset, liability, and equity accounts.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Assets = Liabilities + Equity. Verified.
+- Short-form variant: Assets = Liabilities + Equity. Verified.
+- Published description: Open the balance sheet for any period and see assets, liabilities, and equity sections - with the accounting equation checked for you and a green tick when it holds. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "A = L + E, verified" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: View and export all five financial statements
 - Format: 45-90s how-to
@@ -203,6 +274,17 @@ in sync with everything you do.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Trial balance, P&L, balance sheet, cash flow, equity - one screen.
+- Short-form variant: Trial balance, P&L, balance sheet, cash flow, equity
+- Published description: The financial statements dashboard shows all five key reports for the same date range at once, each with its headline number - then export any one to PDF. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Five reports, one screen" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Measure financial health with ratios
 - Format: 45-90s how-to
 - Priority: P2
@@ -227,6 +309,17 @@ in sync with everything you do.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Is the business healthy? The ratios know.
+- Short-form variant: Is the business healthy? The ratios know.
+- Published description: Open the ratios dashboard for liquidity, profitability, solvency, and efficiency - click any ratio for a 12-month trend, and read the color-coded recommendations with actions. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Healthy. Warning. Act." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Close the accounting period
 - Format: 45-90s how-to
 - Priority: P2
@@ -250,6 +343,17 @@ in sync with everything you do.
 - Demo data needed: An open accounting period with activity.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Lock the month. Protect your books.
+- Short-form variant: Lock the month. Protect your books.
+- Published description: Close an accounting period to lock every entry in it against further changes - the clean way to protect finished months - and reopen only when a correction is truly necessary. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Month locked" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track fixed assets and depreciation
 - Format: 45-90s how-to
@@ -277,6 +381,17 @@ in sync with everything you do.
 - CTA: Try free + subscribe
 - Related videos: [15-hr.md](./15-hr.md)
 
+- Published title: Your assets lose value. Track it correctly.
+- Short-form variant: Your assets lose value. Track it correctly.
+- Published description: Register fixed assets - laptops, phones, vehicles - with cost, salvage value, and useful life, then run depreciation to post the correct journal entries for a period and view each asset's full schedule. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Depreciation, on autopilot" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Reconcile inventory with your ledger
 - Format: 45-90s how-to
 - Priority: P2
@@ -301,6 +416,17 @@ in sync with everything you do.
 - Demo data needed: Tracked products with stock and cost.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Stock on the shelf vs stock in your books - aligned.
+- Short-form variant: Stock on the shelf vs stock in your books
+- Published description: See stock book value against the general ledger inventory account, find what's misaligned, and post the opening inventory adjustment to bring the books in line. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Stock = Books" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Import and export accounts and entries
 - Format: 45-90s how-to
@@ -365,3 +491,14 @@ inventory reconciliation)
 `SaleRefundedForAccounting` · `ExpenseCreatedForAccounting` ·
 `InvoiceSentForAccounting` · `InvoicePaidForAccounting` ·
 `PaymentRecordedForAccounting` · `PayoutCompletedForAccounting`
+
+- Published title: Move your books in and out - cleanly.
+- Short-form variant: Move your books in and out
+- Published description: Download a template, import your chart of accounts or journal entries from Excel/CSV, and export current data - with per-row validation so you always know what landed. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Import. Validate. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

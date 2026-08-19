@@ -1,10 +1,3 @@
-# 16 - Subscriptions & Billing
-
-**Videos in this pack: 8**
-
-Plans, payments, and what you pay for. Subscribe, upgrade with proration,
-schedule downgrades, renew, and keep every receipt.
-
 ## Video: Choose a plan and subscribe
 - Format: 45-90s how-to
 - Priority: P1
@@ -29,6 +22,17 @@ schedule downgrades, renew, and keep every receipt.
 - Demo data needed: A new business without a plan.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
+
+- Published title: Pick what fits. Not more.
+- Short-form variant: Pick what fits. Not more.
+- Published description: Compare Custosell plans side by side - features and limits - pick a monthly or yearly billing cycle, pay the setup fee, and subscribe with your phone via PesaPal. Try free + subscribe #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Compare. Pick. Pay." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Upgrade your plan with proration
 - Format: 45-90s how-to
@@ -55,6 +59,17 @@ schedule downgrades, renew, and keep every receipt.
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
 
+- Published title: Upgrade now, pay only the difference.
+- Short-form variant: Upgrade now
+- Published description: Move to a higher plan instantly - Custosell shows a proration quote with any credit from your remaining period, and access unlocks right away. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Proration: credit minus charge" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Schedule a downgrade
 - Format: 45-90s how-to
 - Priority: P2
@@ -80,6 +95,17 @@ schedule downgrades, renew, and keep every receipt.
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
 
+- Published title: Downgrade at period end - no surprises.
+- Short-form variant: Downgrade at period end
+- Published description: Move to a lower plan at the end of your billing period instead of losing time you already paid for - and cancel the scheduled change if you change your mind. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "End-of-period. Fully reversible." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Switch between monthly and yearly billing
 - Format: 45-90s how-to
 - Priority: P2
@@ -103,6 +129,17 @@ schedule downgrades, renew, and keep every receipt.
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
 
+- Published title: Yearly billing saves. Switch when you're ready.
+- Short-form variant: Yearly billing saves. Switch when you're ready.
+- Published description: Toggle between monthly and yearly billing on the plans page - yearly shows the Save label - and apply the change to your subscription. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Monthly or yearly. Your call." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Renew your subscription early
 - Format: 45-90s how-to
 - Priority: P3
@@ -125,6 +162,17 @@ schedule downgrades, renew, and keep every receipt.
 - Demo data needed: An active plan.
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
+
+- Published title: Top up months now, skip the rush later.
+- Short-form variant: Top up months now
+- Published description: Renew before your billing date - pick how many months to top up and pay early, so access never lapses. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Early renew = no gap" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read your billing history
 - Format: 45-90s how-to
@@ -150,6 +198,17 @@ schedule downgrades, renew, and keep every receipt.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
 
+- Published title: Every charge and change, in one timeline.
+- Short-form variant: Every charge and change
+- Published description: Open the billing history to see every payment, plan change, and credit applied - newest first - with status badges and references. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Payments. Changes. Credits." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Download or email a receipt
 - Format: 30-45s how-to
 - Priority: P3
@@ -172,6 +231,17 @@ schedule downgrades, renew, and keep every receipt.
 - Demo data needed: At least one completed payment.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: Receipt PDF, one tap away.
+- Short-form variant: Receipt PDF
+- Published description: Download any payment's receipt as a PDF or send it to your email - useful for records, refunds, and your accountant. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Download. Email. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Sync a pending payment
 - Format: 45-90s how-to
@@ -259,3 +329,14 @@ payment_action. History item types = payment | change | credit with statuses
 applied/pending/cancelled/failed/refunded/completed/successful. Payment
 currency: UGX/KES/TZS via PesaPal, otherwise USD. Billing history lives on the
 profile (auth store) and refreshes after confirmed payments.
+
+- Published title: Paid but still pending? Sync it.
+- Short-form variant: Paid but still pending? Sync it.
+- Published description: When a payment shows pending, tap Sync payment to re-check with the provider and confirm the real status - so your subscription updates immediately. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Pending -> Applied" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

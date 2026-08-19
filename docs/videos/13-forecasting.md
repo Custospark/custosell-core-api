@@ -1,10 +1,3 @@
-# 13 - Forecasting
-
-**Videos in this pack: 8**
-
-See how long your cash lasts. Runway, burn, zero-based budgets, what-if
-scenarios, and growth KPIs from your real data.
-
 ## Video: Read your cash runway and burn
 - Format: 45-90s how-to
 - Priority: P1
@@ -28,6 +21,17 @@ scenarios, and growth KPIs from your real data.
 - Demo data needed: An open accounting period, sales history, and payroll.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
+
+- Published title: How many months can you pay everyone?
+- Short-form variant: How many months can you pay everyone?
+- Published description: Open the forecasting overview to see cash available, unpaid payroll, monthly burn, and cash runway - with a month-by-month cash ladder that shows exactly when you could go short. Try free + subscribe #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Runway: months of cash, visible" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Compare budget vs actual spend
 - Format: 45-90s how-to
@@ -54,6 +58,17 @@ scenarios, and growth KPIs from your real data.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
 
+- Published title: Every category, planned vs spent.
+- Short-form variant: Every category
+- Published description: See each expense category's budget against what you actually spent, with variance percentages and an over/under/on-track status so you catch overspend early. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Planned vs spent, per category" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Build a zero-based year budget
 - Format: 45-90s how-to
 - Priority: P1
@@ -78,6 +93,17 @@ scenarios, and growth KPIs from your real data.
 - CTA: Try free
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: Every shilling starts at zero and earns its place.
+- Short-form variant: Every shilling starts at zero and earns its place.
+- Published description: Create an annual budget for a year, then add zero-based lines - each one starts as a draft and every amount can be edited inline. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "From zero, line by line" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Justify and approve budget lines
 - Format: 45-90s how-to
 - Priority: P2
@@ -101,6 +127,17 @@ scenarios, and growth KPIs from your real data.
 - CTA: Try free
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: Fund it only if you can argue for it.
+- Short-form variant: Fund it only if you can argue for it.
+- Published description: Move each budget line from draft to justified to approved - a line can't be approved until it carries a written business justification. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Draft -> Justified -> Approved" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Roll a forecast snapshot
 - Format: 45-90s how-to
 - Priority: P3
@@ -123,6 +160,17 @@ scenarios, and growth KPIs from your real data.
 - Demo data needed: A budget with lines and some recorded expenses.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Freeze the forecast so you can compare later.
+- Short-form variant: Freeze the forecast so you can compare later.
+- Published description: Roll a budget to capture a forecast snapshot - budget lines plus year-to-date expense actuals - so you have a dated record of your plan. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Plan frozen in time" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Run what-if scenarios
 - Format: 45-90s how-to
@@ -148,6 +196,17 @@ scenarios, and growth KPIs from your real data.
 - CTA: Try free + subscribe
 - Related videos: [15-hr.md](./15-hr.md)
 
+- Published title: What if you hire? What if sales grow?
+- Short-form variant: What if you hire? What if sales grow?
+- Published description: Model a hire, extra monthly opex, or a revenue uplift against your baseline cash ladder, and compare scenario vs baseline month by month. Try free + subscribe #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Baseline vs what-if" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read forecast KPIs - pulse, CAC, LTV, churn
 - Format: 45-90s how-to
 - Priority: P2
@@ -170,6 +229,17 @@ scenarios, and growth KPIs from your real data.
 - Demo data needed: Sales, customers, and acquisition spend data.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
+
+- Published title: Growth numbers that tell you if you're healthy.
+- Short-form variant: Growth numbers that tell you if you're healthy.
+- Published description: See your trailing 30-day sales pulse, customer acquisition cost, customer lifetime value, and 90-day churn - with monthly burn and runway. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "CAC in. LTV out. Churn visible." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Unlock SaaS MRR proxies
 - Format: 45-90s how-to
@@ -239,3 +309,14 @@ sales, runway coverage, month cash ladder rows with can_cover) ·
 `ForecastKpis` (retail: pulse/CAC/LTV/churn; saas: MRR/ARR/subscribers) ·
 `ForecastScenario` + `ForecastScenarioRun` (baseline + scenario forecast +
 delta)
+
+- Published title: Sell recurring? See MRR and ARR proxies.
+- Short-form variant: Sell recurring? See MRR and ARR proxies.
+- Published description: Mark products or services as recurring and the KPIs page shows MRR, ARR, active subscribers, and average recurring price as simple proxies from your own catalog. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "MRR from your catalog" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

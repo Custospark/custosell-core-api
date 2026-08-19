@@ -1,9 +1,3 @@
-# 18 - Quick Notes
-
-**Videos in this pack: 5**
-
-Jot it down. Sticky notes that stay with your business - even offline.
-
 ## Video: Save a quick note
 - Format: 30-45s how-to
 - Priority: P3
@@ -27,6 +21,17 @@ Jot it down. Sticky notes that stay with your business - even offline.
 - CTA: Try free
 - Related videos: [18-quick-notes.md](./18-quick-notes.md)
 
+- Published title: A note in 3 seconds - and it's never lost.
+- Short-form variant: A note in 3 seconds
+- Published description: Use quick notes on Custosell to capture reminders, customer preferences, and ideas right where your business lives - with a title, body, color, and tag, all saved instantly even when you're offline. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Jot. Saved." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Find any note in seconds
 - Format: 30-45s how-to
 - Priority: P3
@@ -48,6 +53,17 @@ Jot it down. Sticky notes that stay with your business - even offline.
 - Demo data needed: Several notes with varied content and tags.
 - CTA: Try free
 - Related videos: [18-quick-notes.md](./18-quick-notes.md)
+
+- Published title: That note about the supplier? Found in seconds.
+- Short-form variant: That note about the supplier? Found
+- Published description: Search your quick notes by title or body and filter them by tag on Custosell - so every detail you write down is easy to find again. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Find anything" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Keep important notes on top
 - Format: 30-45s how-to
@@ -71,6 +87,17 @@ Jot it down. Sticky notes that stay with your business - even offline.
 - CTA: Try free
 - Related videos: [18-quick-notes.md](./18-quick-notes.md)
 
+- Published title: Pin it, drag it, never lose it.
+- Short-form variant: Pin it
+- Published description: Pin the quick notes that matter on Custosell so they always sit at the top of your board, and drag notes into the order you want. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Pin it up" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Share notes with your team
 - Format: 45-60s how-to
 - Priority: P3
@@ -93,6 +120,17 @@ Jot it down. Sticky notes that stay with your business - even offline.
 - Demo data needed: A business account with staff.
 - CTA: Try free
 - Related videos: [18-quick-notes.md](./18-quick-notes.md)
+
+- Published title: One note, your whole team sees it.
+- Short-form variant: One note
+- Published description: Share quick notes with everyone in your organization on Custosell - handovers, daily reminders, and team ideas show up for the whole team with the author's name attached. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "One note, whole team" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Make the notes board yours
 - Format: 30-45s how-to
@@ -144,3 +182,14 @@ board; tag rename/remove are the only tag endpoints. Offline-first: creates,
 updates, and deletes complete locally and sync later (dedupe by `client_uuid`,
 pending-sync badges on notes); `is_shared` notes show a Shared badge plus the
 author's name and are visible to the whole organization.
+
+- Published title: Your notes, your style.
+- Short-form variant: Your notes
+- Published description: Change the look of your quick notes board on Custosell - pick a background, use full-screen mode to hide navigation, and color-code notes the way you like. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your space" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

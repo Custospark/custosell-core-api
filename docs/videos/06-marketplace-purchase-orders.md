@@ -1,9 +1,3 @@
-# 06 - Marketplace & Purchase Orders
-
-**Videos in this pack: 19**
-
-Buy smarter. Restock through the marketplace and track purchase orders.
-
 ## Video: Restock from the marketplace
 - Format: 45-90s how-to
 - Priority: P1
@@ -27,6 +21,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: A marketplace with suppliers and listed products.
 - CTA: Try free + subscribe
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
+
+- Published title: Restock in minutes from the marketplace.
+- Short-form variant: Restock
+- Published description: Browse the Custosell marketplace, find suppliers, and build a purchase order in a few taps. Buying smarter starts here. Try free + subscribe #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Browse. Add. Order." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Save suppliers to My suppliers
 - Format: 30-45s how-to
@@ -52,6 +57,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Keep your regular suppliers one tap away.
+- Short-form variant: Keep your regular suppliers one tap away.
+- Published description: Bookmark suppliers you reorder from so the next restock starts faster - and remove them when you stop buying. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Save. Find. Order again." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Browse a supplier's catalog
 - Format: 45-90s how-to
 - Priority: P2
@@ -75,6 +91,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: A supplier with a large listed catalog.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: See exactly what a supplier stocks.
+- Short-form variant: See exactly what a supplier stocks.
+- Published description: Open any supplier's catalog, search and filter their products, and check supply price, unit, and minimum order quantity. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Price. Min order. Stock." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Build a purchase order cart
 - Format: 45-90s how-to
@@ -100,6 +127,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Shop a supplier like a pro.
+- Short-form variant: Shop a supplier like a pro.
+- Published description: Add products to your purchase order cart, adjust quantities, leave notes for the seller, and watch the order total update live. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Lines. Qty. Total." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Create a purchase order
 - Format: 45-90s how-to
 - Priority: P1
@@ -124,6 +162,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Order stock without losing track.
+- Short-form variant: Order stock without losing track.
+- Published description: Save your marketplace cart as a draft purchase order or submit it straight to the supplier - then track it until it arrives. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Ordered. Tracked. Received." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Edit a draft purchase order
 - Format: 45-90s how-to
 - Priority: P2
@@ -146,6 +195,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: A draft purchase order.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Change your mind before the seller sees it.
+- Short-form variant: Change your mind before the seller sees it.
+- Published description: A draft order is yours until you submit it - adjust quantities, rewrite notes, and fix the total before it goes out. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Draft. Edit. Submit right." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Submit a purchase order
 - Format: 30-45s how-to
@@ -171,6 +231,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Send the order. Stop chasing.
+- Short-form variant: Send the order. Stop chasing.
+- Published description: Submit a purchase order to your supplier and move it into the 'submitted' stage, where the seller reviews and responds. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Submitted. Waiting on the seller." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Cancel a purchase order
 - Format: 30-45s how-to
 - Priority: P2
@@ -194,6 +265,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
+- Published title: Change of plans? Cancel cleanly.
+- Short-form variant: Change of plans? Cancel cleanly.
+- Published description: Cancel a submitted order you no longer need - the seller sees the cancellation and the order is closed out. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Cancel. Confirm. Clean." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track your purchase orders
 - Format: 45-90s how-to
 - Priority: P1
@@ -216,6 +298,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: Several purchase orders in different states.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Every order, one status away.
+- Short-form variant: Every order
+- Published description: See all your purchase orders in one list with status tabs, search by PO number or seller, and an open-orders count from the marketplace. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Status. Search. Tracked." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Understand the purchase order journey
 - Format: 3-6min deep dive
@@ -241,6 +334,18 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free + subscribe
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: From draft to received, step by step.
+- Short-form variant: From draft to received
+- Published description: Follow one purchase order through its full lifecycle - created, submitted, accepted, fulfilled, received - and see what each side can do. Try free + subscribe #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Draft. Submitted. Accepted. Fulfilled. Received." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Accept an incoming order (seller)
 - Format: 45-90s how-to
 - Priority: P1
@@ -265,6 +370,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Accept an order and an invoice is born.
+- Short-form variant: Accept an order and an invoice is born.
+- Published description: Review a buyer's submitted purchase order on the incoming orders page and accept it - Custosell creates the buyer invoice automatically. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Accept. Invoice. Ready." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Reject an incoming order with a reason
 - Format: 45-90s how-to
 - Priority: P2
@@ -287,6 +403,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: An order you cannot fulfill.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Say no with a reason the buyer can read.
+- Short-form variant: Say no with a reason the buyer can read.
+- Published description: Reject a purchase order you can't fulfill and give the buyer a clear reason so they know what happened and can reorder. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Reject. Explain. Move on." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Fulfill an order (deduct your stock)
 - Format: 45-90s how-to
@@ -312,6 +439,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Ship it. Stock already knows.
+- Short-form variant: Ship it. Stock already knows.
+- Published description: When the goods leave your shelf, mark the order fulfilled - Custosell deducts the items from your stock. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Fulfilled. Stock out." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Receive stock into inventory (buyer)
 - Format: 45-90s how-to
 - Priority: P1
@@ -335,6 +473,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: A fulfilled P.O. awaiting delivery.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Stock arrived? Receive it and it's yours.
+- Short-form variant: Stock arrived? Receive it and it's yours.
+- Published description: Confirm receipt of a fulfilled order - map each line to a product you already stock or create a new product, and stock increases. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Received. Stocked. Costed." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Open the supplier invoice and receipts
 - Format: 30-45s how-to
@@ -360,6 +509,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: The invoice is one click from the order.
+- Short-form variant: The invoice is one click from the order.
+- Published description: Open the linked supplier invoice for any accepted order and view its payment receipts - no hunting through other menus. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Order. Invoice. Receipts." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Review incoming orders as a seller
 - Format: 45-90s how-to
 - Priority: P2
@@ -382,6 +542,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: Multiple incoming orders from different buyers.
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
+
+- Published title: Your wholesale pipeline, in one list.
+- Short-form variant: Your wholesale pipeline
+- Published description: See every order buyers placed with you - filter by status, spot buyers, and check invoice and payment progress at a glance. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Buyers. Orders. Payments." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: List your products for supply
 - Format: 45-90s how-to
@@ -407,6 +578,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Turn your stock into other shops' restock.
+- Short-form variant: Turn your stock into other shops' restock.
+- Published description: List a product on the B2B supply marketplace with a supply price and minimum order quantity so other businesses can order from you. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "List it. Price it. Sell wholesale." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: List products on your public shop
 - Format: 45-90s how-to
 - Priority: P2
@@ -430,6 +612,17 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 - Demo data needed: A product with an image and a shop-enabled business.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: Put your catalog in front of customers.
+- Short-form variant: Put your catalog
+- Published description: List a product on your public shop for guests to browse and buy, with an image to make the listing shine. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Image. List. Sell." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Marketplace and orders offline
 - Format: 45-90s how-to
@@ -479,3 +672,14 @@ Buy smarter. Restock through the marketplace and track purchase orders.
 (GET/PUT/DELETE) + `/purchase-orders/{id}/submit|cancel|accept|reject|
 fulfill|receive` · `/purchase-orders/incoming` ·
 `/products/{id}/supply-listing` · `/products/{id}/storefront-listing`
+
+- Published title: Know exactly what needs a connection.
+- Short-form variant: Know exactly what needs a connection.
+- Published description: Marketplace browsing, ordering, and order management need the internet - see how Custosell tells you clearly and keeps your local work safe. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Offline. Connect to order." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

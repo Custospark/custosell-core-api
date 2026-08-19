@@ -1,9 +1,3 @@
-# 17 - Settings
-
-**Videos in this pack: 11**
-
-Business settings, team management, tax compliance, and keeping your data yours.
-
 ## Video: Set up your business profile
 - Format: 45-90s how-to
 - Priority: P2
@@ -26,6 +20,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - Demo data needed: A logo image.
 - CTA: Try free + subscribe
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
+
+- Published title: Your shop's identity - name, logo, contacts, done.
+- Short-form variant: Your shop's identity
+- Published description: Complete your business profile on Custosell - business name, website, business email and phone, description, and logo - so your app header and customer-facing pages carry your brand. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your brand, everywhere" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Set your location, currency and tax details
 - Format: 45-90s how-to
@@ -51,6 +56,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Country, currency, VAT rate - set once, correct everywhere.
+- Short-form variant: Country, currency, VAT rate - set once, correct
+- Published description: Configure where your business operates - country, city, address - plus your currency, tax jurisdiction, TIN, VAT registration, default VAT rate, and whether prices include tax. Every price and report then uses them. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Tax right, everywhere" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Add your bank and mobile money details
 - Format: 45-90s how-to
 - Priority: P2
@@ -74,6 +90,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Show customers exactly where to pay.
+- Short-form variant: Show customers exactly where to pay.
+- Published description: Add your bank account and mobile money details once - they print on every invoice and order so customers know exactly where and how to pay. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Pay your way" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Personalize your receipts
 - Format: 30-45s how-to
 - Priority: P3
@@ -96,6 +123,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: A thank-you that prints on every receipt.
+- Short-form variant: A thank-you that prints on every receipt.
+- Published description: Add a receipt footer message on Custosell so every customer receipt carries your branding, phone number, or a simple thank you. Try free #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Branded receipts" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Add social links to your storefront
 - Format: 30-45s how-to
 - Priority: P3
@@ -117,6 +155,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - Demo data needed: A storefront-enabled business.
 - CTA: Try free
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: Link your socials, grow your reach.
+- Short-form variant: Link your socials
+- Published description: Add your social media links on Custosell so customers browsing your online storefront can follow you on the platforms you actually use. Try free #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Follow the shop" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Prepare VAT returns from your sales
 - Format: 60-90s how-to
@@ -141,6 +190,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Your VAT workbook, ready in one click.
+- Short-form variant: Your VAT workbook
+- Published description: Use the Tax & VAT page to see net output VAT, claimable input VAT, and estimated VAT payable for any period, review claimable purchase VAT line by line, and download the workbook as PDF or CSV for filing. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "VAT, filed faster" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Export your data anytime
 - Format: 30-45s how-to
 - Priority: P3
@@ -163,6 +223,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - Demo data needed: Business data present.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: Your data is yours - take it anytime.
+- Short-form variant: Your data is yours
+- Published description: Export your full Custosell data - products, customers, sales, invoices, expenses, accounting, pipeline, documents and more - as JSON, CSV, or Excel, whenever you need a backup or to hand records to an accountant. Try free #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "No lock-in" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Invite and manage your staff
 - Format: 60-90s how-to
@@ -187,6 +258,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Your team, logged in and working in minutes.
+- Short-form variant: Your team
+- Published description: Add staff on Custosell - name, email, phone, role, branch, and modules - then edit them, move them between branches, and keep an eye on branch staffing with one team list. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Team ready" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Set roles for your team
 - Format: 45-60s how-to
 - Priority: P2
@@ -210,6 +292,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Give everyone a job title that makes sense.
+- Short-form variant: Give everyone a job title that makes sense.
+- Published description: Create custom roles on Custosell to organize staff by job title - cashier, salesperson, manager - while module access stays controlled per staff member. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Clear roles" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Manage branches
 - Format: 45-60s how-to
 - Priority: P2
@@ -231,6 +324,17 @@ Business settings, team management, tax compliance, and keeping your data yours.
 - Demo data needed: A business profile.
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
+
+- Published title: One Custosell, every branch you run.
+- Short-form variant: One Custosell
+- Published description: Add branches on Custosell, pick a default, and keep inventory, expenses, and staff organized per branch across the whole app. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Branch by branch" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Turn your workspaces on and off
 - Format: 45-60s how-to
@@ -301,3 +405,14 @@ Delete-account confirm logs the user out and redirects to login.
 locally and sync when back online (pending-sync badges); export and delete flows
 are owner-only; personal accounts keep only Profile + Location tabs and skip the
 Danger Zone.
+
+- Published title: Your app, your workspaces.
+- Short-form variant: Your app
+- Published description: Pick which workspaces the business owner sees on Custosell - hide the modules you don't use and go deeper on Estimates or HR with full access toggles, all from one screen. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your workspaces" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

@@ -1,10 +1,3 @@
-# 01 - Account, Auth & Security
-
-**Videos in this pack: 16**
-
-Signing up (business, personal, or shopping), protecting the account, managing
-linked accounts, and monitoring your security.
-
 ## Video: Create your shop in 5 minutes
 - Format: 45-90s how-to
 - Priority: P1
@@ -28,6 +21,17 @@ linked accounts, and monitoring your security.
 - Demo data needed: A fresh email address for signup.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (first sale)
+
+- Published title: Create your shop in 5 minutes.
+- Short-form variant: Create your shop
+- Published description: Get your shop live on Custosell - register, set up your business, and complete onboarding in about five minutes. Start selling today. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Live in 5 minutes" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Create a personal account
 - Format: 45-90s how-to
@@ -58,6 +62,17 @@ linked accounts, and monitoring your security.
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md),
   [18-quick-notes.md](./18-quick-notes.md)
 
+- Published title: No shop? No problem - get a personal account.
+- Short-form variant: No shop? No problem
+- Published description: Create a personal Custosell account in minutes - for tracking expenses, budgets, and income without a business. Pick the modules you want, use them on your own terms. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "For personal use" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Create a shopping account (storefront buyer)
 - Format: 45-90s how-to
 - Priority: P2
@@ -87,6 +102,17 @@ linked accounts, and monitoring your security.
   with products.
 - CTA: Try free + subscribe
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+- Published title: Buy from the storefront in minutes - no shop needed.
+- Short-form variant: Buy from the storefront in minutes
+- Published description: Create a free shopping account on Custosell to browse and buy from storefronts and the marketplace. A Discover-only account that keeps you shopping without a business setup. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Online shopping" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Tour your tools hub
 - Format: 45-90s how-to
@@ -125,6 +151,17 @@ linked accounts, and monitoring your security.
 - CTA: Try free + subscribe
 - Related videos: [02-common-start.md](./02-common-start.md)
 
+- Published title: Every tool Custosell gives you, one card away.
+- Short-form variant: Every tool Custosell gives you
+- Published description: After you sign in, Your Tools is the launchpad - a card grid of every module you can access, starting with the six most used and a Show more row for the rest. Each card jumps straight into that module, with personalised descriptions for personal or business accounts, plus plan status and locked-tool warnings when access lapses. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your Tools" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Link another account (run two shops with one login)
 - Format: 45-90s how-to
 - Priority: P1
@@ -155,6 +192,17 @@ linked accounts, and monitoring your security.
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md),
   [01-account-auth-security.md](./01-account-auth-security.md) (switch)
 
+- Published title: Run two shops with one login.
+- Short-form variant: Run two shops with one login.
+- Published description: Link multiple shops to one Custosell account so you can switch between them without logging out. Linking is confirmed with a security code sent to the account being linked - so it stays safe. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "One login. Many shops." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Switch between your accounts
 - Format: 45-90s how-to
 - Priority: P1
@@ -179,6 +227,17 @@ linked accounts, and monitoring your security.
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (link), [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Switch shops in one tap - no logging out.
+- Short-form variant: Switch shops in one tap
+- Published description: Jump between your linked shops on Custosell without signing out and signing back in. Switching keeps each shop's data separate. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Switch in a tap" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Set your default account
 - Format: 30-45s how-to
 - Priority: P2
@@ -202,6 +261,17 @@ linked accounts, and monitoring your security.
 - CTA: Try free
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (link), [20-referrals-credits.md](./20-referrals-credits.md)
+
+- Published title: Pick which shop you land in by default.
+- Short-form variant: Pick which shop you land
+- Published description: Choose the default account on Custosell - the one you land in at sign-in and which acts as your primary for billing and referrals. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Set. Primary. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Unlink an account
 - Format: 45-90s how-to
@@ -230,6 +300,17 @@ linked accounts, and monitoring your security.
   (link), [01-account-auth-security.md](./01-account-auth-security.md)
   (set default)
 
+- Published title: Remove an account from your login - safely.
+- Short-form variant: Remove an account from your login
+- Published description: Unlink an account on Custosell when you no longer want it under your login. Unlinking is confirmed with a security code and does not delete the account itself. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Unlinked. Not deleted." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Change your password
 - Format: 45-90s how-to
 - Priority: P1
@@ -256,6 +337,17 @@ linked accounts, and monitoring your security.
   (lost password), [01-account-auth-security.md](./01-account-auth-security.md)
   (activity)
 
+- Published title: Change your password in two steps - safely.
+- Short-form variant: Change your password in two steps
+- Published description: Change your Custosell password with a security code sent to your email. Your password only changes once you confirm with the code. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Code confirms every change" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Lost your password?
 - Format: 45-90s how-to
 - Priority: P2
@@ -278,6 +370,17 @@ linked accounts, and monitoring your security.
 - CTA: Try free
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (change password)
+
+- Published title: Locked out? Back in within a minute.
+- Short-form variant: Locked out? Back
+- Published description: The forgotten-password flow on Custosell - reset it safely and keep access to your shop. The number one support question, answered. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Reset in 60 seconds" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Verify your email address
 - Format: 30-45s how-to
@@ -305,6 +408,17 @@ linked accounts, and monitoring your security.
   (2FA), [01-account-auth-security.md](./01-account-auth-security.md)
   (change email)
 
+- Published title: Verify your email to secure your account.
+- Short-form variant: Verify your email to secure your account.
+- Published description: Confirm your email address on Custosell - send the code, enter the 6-digit code, and get the Verified badge. Required for full access and account security. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Verified" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Turn on two-factor authentication (2FA)
 - Format: 45-90s how-to
 - Priority: P1
@@ -330,6 +444,17 @@ linked accounts, and monitoring your security.
   (verify email), [01-account-auth-security.md](./01-account-auth-security.md)
   (activity)
 
+- Published title: Lock your account. Sleep easy.
+- Short-form variant: Lock your account. Sleep easy.
+- Published description: Turn on two-factor authentication on Custosell. From now on, every sign-in needs your password plus a code sent to your email. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "2FA: on" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Turn off two-factor authentication (2FA)
 - Format: 30-45s how-to
 - Priority: P3
@@ -352,6 +477,17 @@ linked accounts, and monitoring your security.
 - CTA: Try free
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (2FA on)
+
+- Published title: Got a new phone? Turn 2FA off - and back on.
+- Short-form variant: Got a new phone? Turn 2FA off
+- Published description: Disable two-factor authentication on Custosell when you no longer need the extra step - and how to switch it back on later. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "2FA: off (you control it)" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Change your email safely
 - Format: 45-90s how-to
@@ -376,6 +512,17 @@ linked accounts, and monitoring your security.
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (verify email)
 
+- Published title: New email, same account, same data.
+- Short-form variant: New email
+- Published description: Change the email on your Custosell account with a security code - safe, confirmed, and nothing else changes. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Verified change" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Update your profile photo and details
 - Format: 45-90s how-to
 - Priority: P2
@@ -398,6 +545,17 @@ linked accounts, and monitoring your security.
 - CTA: Try free
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
   (switch), [15-hr.md](./15-hr.md) (team recognition)
+
+- Published title: Your face on the till - update your profile.
+- Short-form variant: Your face on the till
+- Published description: Update your profile photo, name, and phone on Custosell. Your photo follows you across linked accounts, so your team recognises you. Try free #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Photo follows you" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Monitor your login and security activity
 - Format: 45-90s how-to
@@ -469,3 +627,14 @@ vs business voice), locked-tool cards derived from subscription
 and gating via `hasSubscriptionAccess` + `STATUS_CONFIG` (trial / active /
 past_due / cancelled / suspended / expired + grace period), card targets are
 `MODULE_DEFAULT_ROUTES` / each group's first sub-route.
+
+- Published title: See every sign-in, every change - in one feed.
+- Short-form variant: See every sign-in, every change
+- Published description: Review your account activity on Custosell - sign-ins, sign-outs, email verification, 2FA events, password changes, and profile updates, each with the device and IP address. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Every event, tracked" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

@@ -1,9 +1,3 @@
-# 19 - Notifications & Web Push
-
-**Videos in this pack: 4**
-
-Updates from the Custosell team, pipeline activity, and alerts that reach you.
-
 ## Video: Read your notifications inbox
 - Format: 30-45s how-to
 - Priority: P2
@@ -27,6 +21,17 @@ Updates from the Custosell team, pipeline activity, and alerts that reach you.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
 
+- Published title: Team updates and pipeline news, all in one inbox.
+- Short-form variant: Team updates and pipeline news
+- Published description: Open your notifications on Custosell to see updates from the Custosell team and activity from your pipeline - boards, comments, reminders - with unread messages flagged and marked read as you open them. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
+- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "One inbox" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Keep your inbox clean
 - Format: 30-45s how-to
 - Priority: P3
@@ -48,6 +53,17 @@ Updates from the Custosell team, pipeline activity, and alerts that reach you.
 - Demo data needed: Multiple notifications, some read.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
+
+- Published title: Mark read, delete, done.
+- Short-form variant: Mark read
+- Published description: Manage your notifications on Custosell - mark all as read, delete one message, or clear your whole inbox in a couple of taps. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
+- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Tidy inbox" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Get desktop notifications
 - Format: 45-60s how-to
@@ -71,6 +87,17 @@ Updates from the Custosell team, pipeline activity, and alerts that reach you.
 - Demo data needed: A browser where notifications are supported.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
+
+- Published title: Alerts even when the app is closed.
+- Short-form variant: Alerts even when the app is closed.
+- Published description: Turn on desktop notifications on Custosell so new orders, sales, and account updates arrive as system alerts - even when you're not looking at the app. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
+- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Alerts on" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Hear when new orders arrive
 - Format: 30-45s how-to
@@ -130,3 +157,14 @@ message auto-marks it read; unread bubbles show on the bell. Web Push is
 browser-only (hidden in Electron) and delivers new orders, sales, and account
 updates as system notifications even while the app is closed. The order sound
 and big-order threshold are device-local preferences for business accounts.
+
+- Published title: A chime when the order comes in.
+- Short-form variant: A chime when the order comes in.
+- Published description: Set the order sound on Custosell so your device chimes when a new open order arrives - and set a big-order threshold so large orders get an urgent chime and a highlighted alert. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
+- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Chime on order" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

@@ -1,10 +1,3 @@
-# 20 - Referrals, Credits & Sales Reps
-
-**Videos in this pack: 6**
-
-Grow by referral. Generate a code, apply one at signup, track rewards and
-payouts, and understand sales-rep commissions.
-
 ## Video: Refer a business and earn rewards
 - Format: 45-90s how-to
 - Priority: P1
@@ -36,6 +29,17 @@ payouts, and understand sales-rep commissions.
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md) ·
   [20-referrals-credits.md](./20-referrals-credits.md)
 
+- Published title: Got a referral code? Start earning rewards in minutes.
+- Short-form variant: Got a referral code? Start earning rewards
+- Published description: Generate your Custosell referral code, then share it as a link or QR code. When a new business signs up with your code and subscribes, you earn a reward on their plan. One code, unlimited referrals. Try free + subscribe #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Refer. Earn. Grow." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Apply a referral code at signup
 - Format: 30-45s how-to
 - Priority: P2
@@ -61,6 +65,17 @@ payouts, and understand sales-rep commissions.
 - Demo data needed: A valid active referral code to enter.
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
+
+- Published title: Got a friend on Custosell? Use their code and save.
+- Short-form variant: Got a friend on Custosell? Use their code and save.
+- Published description: Enter a referral code right after creating your account to get a discount on your subscription. The code is validated live, applied to your plan, then you continue straight to onboarding. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Have a referral code?" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track your referral earnings
 - Format: 45-90s how-to
@@ -90,6 +105,17 @@ payouts, and understand sales-rep commissions.
 - CTA: Try free + subscribe
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
 
+- Published title: See exactly what your referrals have earned you.
+- Short-form variant: See exactly what your referrals have earned you.
+- Published description: Open your Referral Dashboard to see total referrals, amount earned, amount paid, and your current balance. Review every referred business with its status and reward, then check your payout history. Try free + subscribe #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Referrals. Earned. Paid. Balance." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Add payout details for referral rewards
 - Format: 30-45s how-to
 - Priority: P3
@@ -116,6 +142,17 @@ payouts, and understand sales-rep commissions.
   state), then with both mobile money and bank details.
 - CTA: Try free
 - Related videos: [20-referrals-credits.md](./20-referrals-credits.md)
+
+- Published title: Where do referral rewards get paid? You decide.
+- Short-form variant: Where do referral rewards get paid? You decide.
+- Published description: Add where your referral rewards should be paid - mobile money or bank transfer to any bank worldwide. The Payment Information section on your Referral Dashboard keeps those details ready for every payout. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Mobile money or bank transfer - worldwide." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Sales rep commissions on referrals
 - Format: 45-90s how-to
@@ -145,6 +182,17 @@ payouts, and understand sales-rep commissions.
   type set, plus commission amounts in earnings.
 - CTA: Try free
 - Related videos: [20-referrals-credits.md](./20-referrals-credits.md)
+
+- Published title: A sales rep's referrals pay commissions - tracked right here.
+- Short-form variant: A sales rep's referrals pay commissions - tracked
+- Published description: Businesses enrolled as sales reps see a Sales Rep badge with their commission rate on the Referral Dashboard. Their referral rewards and commissions are combined into one earnings view, and payouts appear in the same history. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Sales Rep · {rate}%" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Referral program policy
 - Format: 45-90s explainer
@@ -212,3 +260,14 @@ subscription.active): apiResource `sales-reps` · `GET /sales-reps/import-templa
 (add/edit with commission rate + type + referee discount + active toggle,
 remove blocked while unpaid commission remains, CSV import from template, record
 payouts now or scheduled with method/notes/attachments).
+
+- Published title: How Custosell referrals work - the simple version.
+- Short-form variant: How Custosell referrals work
+- Published description: Understand the Custosell referral program in plain language: how rewards are calculated, whether there are limits, when payouts happen, and what is not allowed. One referral code per referred business, rewards based on the plan actually paid. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Rewards on what's actually paid." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

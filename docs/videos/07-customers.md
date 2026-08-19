@@ -1,9 +1,3 @@
-# 07 - Customers
-
-**Videos in this pack: 7**
-
-Know who buys from you. Profiles, history, and repeat-customer insight.
-
 ## Video: Add a customer
 - Format: 45-90s how-to
 - Priority: P1
@@ -28,6 +22,17 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Add a customer in 10 seconds - name, phone, done.
+- Short-form variant: Add a customer in 10 seconds
+- Published description: Create a customer profile on Custosell with their name, phone, and email. Every future sale can attach to them automatically. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Name + phone + email = profile" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Search and manage your customer list
 - Format: 45-90s how-to
 - Priority: P1
@@ -51,6 +56,17 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
 
+- Published title: Find any customer by name or phone - instantly.
+- Short-form variant: Find any customer by name or phone
+- Published description: Search your customer list by name or phone, edit profiles, delete customers you no longer need, and spot purchases at a glance. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Search. Edit. Delete." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: View a customer's purchase history
 - Format: 45-90s how-to
 - Priority: P1
@@ -72,6 +88,17 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - Demo data needed: A customer with multiple sales, some refunded.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: Every receipt that customer ever had, in one list.
+- Short-form variant: Every receipt that customer ever had
+- Published description: Open a customer's purchase history to see each sale's date, receipt number, item count, total, payment method, and payment status. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Every receipt, one tap away" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Read your Customers Overview dashboard
 - Format: 3-6min deep dive
@@ -97,6 +124,18 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: See who buys, who's drifting, and who's gone.
+- Short-form variant: See who buys
+- Published description: The customer overview dashboard segments your base into Active, At risk, Lapsed, and Never purchased, and shows repeat rate, revenue, purchase frequency, and top spenders. Try free + subscribe #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Active. At risk. Lapsed. Never." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Attach a customer at checkout
 - Format: 45-90s how-to
 - Priority: P1
@@ -120,6 +159,17 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: Pick the buyer before you hit Complete - no slowing down.
+- Short-form variant: Pick the buyer before you hit Complete - no slowing
+- Published description: At the payment screen, attach a sale to an existing customer or leave it as a walk-in. Search picks from your saved list instantly. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Walk-in or known - both fine" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Create a customer mid-sale
 - Format: 45-90s how-to
 - Priority: P2
@@ -142,6 +192,17 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 - Demo data needed: A sale in progress with no matching customer.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: New buyer? Add them without leaving the sale.
+- Short-form variant: New buyer? Add them without leaving the sale.
+- Published description: When a walk-in turns into a regular, add their contact right in the checkout picker - or type their number to create them on the spot. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Added on the spot" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Work with customers offline
 - Format: 45-90s how-to
@@ -188,3 +249,14 @@ Know who buys from you. Profiles, history, and repeat-customer insight.
 **Overview segments (BE `CustomerService`):** Active (<30 days) · At risk
 (30-90 days) · Lapsed (>90 days) · Never purchased. Frequency buckets: 1 · 2-3 ·
 4-6 · 7+ purchases.
+
+- Published title: Add customers even when the internet is gone.
+- Short-form variant: Add customers even when the internet is gone.
+- Published description: Create and edit customers while offline - Custosell saves them instantly with a Pending sync badge and syncs automatically when you're back. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

@@ -1,11 +1,3 @@
-# 12 - Estimates, Templates & Projects
-
-**Videos in this pack: 26**
-
-Quote before you sell. Estimates with margins, reusable templates, and
-project job costing - plus kanban boards for running the job, from personal
-sprints to client project boards.
-
 ## Video: Create an estimate with cost and margin
 - Format: 45-90s how-to
 - Priority: P1
@@ -32,6 +24,17 @@ sprints to client project boards.
 - CTA: Try free + subscribe
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Quote with a margin you can see.
+- Short-form variant: Quote with a margin you can see.
+- Published description: Build a professional estimate on Custosell - title, customer, valid-until date, tax rate, and line items with cost, markup, and a live gross-profit margin summary. Starts as a draft. Try free + subscribe #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Cost in. Price out. Margin seen." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Send and email estimates
 - Format: 45-90s how-to
 - Priority: P1
@@ -55,6 +58,17 @@ sprints to client project boards.
 - Demo data needed: A draft estimate.
 - CTA: Try free + subscribe
 - Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
+
+- Published title: Mark it sent - or really email it.
+- Short-form variant: Mark it sent
+- Published description: Mark an estimate as sent to track the deal, or email the actual proposal to the customer, and always have a professional PDF ready to preview or download. Try free + subscribe #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Sent. Emailed. PDF ready." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Approve an estimate - or decline it
 - Format: 45-90s how-to
@@ -81,6 +95,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
 
+- Published title: The customer said yes? Make it official.
+- Short-form variant: The customer said yes? Make it official.
+- Published description: Approve an estimate to record the accepted deal - optionally creating the invoice and project in the same step - or decline it with a reason for the record. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Approved. And converted." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Convert an estimate into an invoice or project
 - Format: 45-90s how-to
 - Priority: P2
@@ -103,6 +128,17 @@ sprints to client project boards.
 - Demo data needed: An approved estimate.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: Accepted estimate -> invoice or project, no re-typing.
+- Short-form variant: Accepted estimate -> invoice or project
+- Published description: Convert an approved estimate into a draft invoice from its billable items, or into a project seeded with the same budget and margin. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Estimate -> Invoice / Project" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Reuse estimate templates to quote faster
 - Format: 30-45s how-to
@@ -128,6 +164,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
 
+- Published title: Quote the same package often? Make a template.
+- Short-form variant: Quote the same package often? Make a template.
+- Published description: Save default line items, tax rate, and terms as a reusable estimate template - pick the customer and you're most of the way done. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Template. Apply. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read estimate insights
 - Format: 45-90s how-to
 - Priority: P2
@@ -152,6 +199,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Win rate, margins, and pipeline value - in one place.
+- Short-form variant: Win rate, margins, and pipeline value
+- Published description: See how your estimates are performing - win rate, average margin, pipeline value, approved value, and gross profit - with a monthly trend and a breakdown by status. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Won. Lost. Margin." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Create an estimate from a pipeline lead
 - Format: 45-90s how-to
 - Priority: P2
@@ -175,6 +233,17 @@ sprints to client project boards.
 - Demo data needed: A pipeline lead with a customer and value.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: From hot lead to priced proposal in one click.
+- Short-form variant: From hot lead to priced proposal
+- Published description: Turn a pipeline lead straight into an estimate - the lead's title, customer, notes, and estimated value come across, and the two stay linked. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Lead -> Estimate" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track a project's budget vs actuals
 - Format: 45-90s how-to
@@ -201,6 +270,17 @@ sprints to client project boards.
 - CTA: Try free + subscribe
 - Related videos: [09-accounting.md](./09-accounting.md)
 
+- Published title: Know if the job is on budget - before it's too late.
+- Short-form variant: Know if the job is on budget
+- Published description: Open a project to see budget revenue and cost against what's actually spent, with margin alerts that flag cost overruns and negative margins early. Try free + subscribe #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Budget vs actual, live" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Log tasks, timesheets, and cost allocations
 - Format: 45-90s how-to
 - Priority: P2
@@ -224,6 +304,17 @@ sprints to client project boards.
 - Demo data needed: A project with a team and budget.
 - CTA: Try free
 - Related videos: [15-hr.md](./15-hr.md)
+
+- Published title: Every hour and every cost lands on the job.
+- Short-form variant: Every hour and every cost lands on the job.
+- Published description: Break a project into tasks with estimated and actual hours, log staff timesheets against it, and record cost allocations by type - labor, material, overhead - so job costs stay true. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Task. Hour. Cost. Recorded." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Run the job on a project board
 - Format: 45-90s how-to
@@ -249,6 +340,17 @@ sprints to client project boards.
 - Demo data needed: A project with a board.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Your project as a kanban board - progress visible.
+- Short-form variant: Your project as a kanban board
+- Published description: Open a project's board to see and move its work through stages - the same kanban engine as the pipeline - with cards that reflect task progress. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Board = project progress" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Create a personal board for your own tasks
 - Format: 45-90s how-to
@@ -278,6 +380,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Your own sprint board - private by default.
+- Short-form variant: Your own sprint board
+- Published description: Make a personal kanban board in the Projects & Estimates workspace for your own tasks - private to you unless you share it - with cards instead of leads. Name it, pick visibility and background, then open tasks and drag them through columns. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Private task board, one click" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: The project board is born when an estimate becomes a project
 - Format: 45-90s how-to
 - Priority: P2
@@ -305,6 +418,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
 
+- Published title: Approve the estimate - the board appears.
+- Short-form variant: Approve the estimate
+- Published description: Converting an approved estimate into a project also creates its kanban board automatically - named after the project, with To Do, In Progress, Review, and Done columns. The board carries the same budget as the estimate. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Estimate -> Project -> Board" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Open the board from inside a project
 - Format: 30-45s how-to
 - Priority: P3
@@ -329,6 +453,17 @@ sprints to client project boards.
 - Demo data needed: A project with a board and a few cards.
 - CTA: Try free
 - Related videos: [12-estimates-projects.md](./12-estimates-projects.md)
+
+- Published title: The project's board, one tab away.
+- Short-form variant: The project's board
+- Published description: Inside a project you get a Board tab showing the project board's name, stage count, and total cards - open it to jump straight to the full kanban workspace. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Stages. Cards. Open." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Give clients a board-only view
 - Format: 45-90s how-to
@@ -358,6 +493,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: They see the board - not the costing.
+- Short-form variant: They see the board
+- Published description: Staff and clients invited to a project board get a board-only workspace: they land straight on the board, can view and work cards, but never see costs, timesheets, or allocations. Owners keep full project control. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Board view, no costing" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Add a task card to a project board
 - Format: 45-90s how-to
 - Priority: P1
@@ -382,6 +528,17 @@ sprints to client project boards.
 - Demo data needed: A project board with columns.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: A job broken into cards is a job getting done.
+- Short-form variant: A job broken into cards is a job getting done.
+- Published description: Add a task card to any column on a project or personal board - give it a title and assign team members - then it sits in the column ready to be worked and dragged forward. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Task in. Column filled." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Work a task card - details, checklist, and comments
 - Format: 45-90s how-to
@@ -409,6 +566,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Every task card is a mini project.
+- Short-form variant: Every task card is a mini project.
+- Published description: Open a task card to edit its title, description, start and due dates, labels, checklist, links, custom fields, and attachments - assign people, add comments, and see its full history in one place. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Title. Dates. Checklist. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Move, duplicate, pin, and complete task cards
 - Format: 45-90s how-to
 - Priority: P2
@@ -433,6 +601,17 @@ sprints to client project boards.
 - Demo data needed: A project board with several cards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Drag it. Duplicate it. Mark it done.
+- Short-form variant: Drag it. Duplicate it. Mark it done.
+- Published description: Run your board - drag task cards between columns, tick a card complete, pin it to the top, duplicate it, or move it to another board. Reorder columns too, so the board flows the way the job does. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Drag. Tick. Pin. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: See project tasks on a calendar
 - Format: 45-90s how-to
@@ -459,6 +638,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Task due dates, on one calendar you can scan.
+- Short-form variant: Task due dates
+- Published description: Switch a project board to the calendar view to see task cards by due, start, or close date - with overdue tasks flagged, month/week/day modes, and a side panel for the day you pick. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Due. Overdue. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Shape your project board - add, edit, and reorder columns
 - Format: 30-45s how-to
 - Priority: P2
@@ -482,6 +672,17 @@ sprints to client project boards.
 - Demo data needed: A project board being set up.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Columns that match how the job actually runs.
+- Short-form variant: Columns that match how the job actually runs.
+- Published description: Add columns to a project board, rename and recolor them, drag them into the right order, and delete the ones you don't need - so the board mirrors your real workflow. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Add. Reorder. Delete." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Search tasks and import from a spreadsheet
 - Format: 45-90s how-to
@@ -508,6 +709,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Find any task. Or import a whole list.
+- Short-form variant: Find any task. Or import a whole list.
+- Published description: Search tasks on a board with plain text or smart tokens (@label, !high, #today, @me) to narrow instantly, or import a whole task list from a spreadsheet using the import template. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "@me. !high. #today. Found." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: The board tabs - switch, resources, progress, fame, discussion
 - Format: 30-45s how-to
 - Priority: P3
@@ -532,6 +744,17 @@ sprints to client project boards.
 - Demo data needed: A project board with resources, a target, and a post.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Everything the board needs, one tab bar.
+- Short-form variant: Everything the board needs
+- Published description: Along the bottom of every board sit the workspace tabs - switch between boards, open shared resources, watch progress targets, celebrate on the wall of fame, and chat in the board discussion - each with live counts. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Files. Goals. Wins. Chat." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Manage board members and their roles
 - Format: 45-90s how-to
@@ -561,6 +784,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Who sees the board - and who can change it.
+- Short-form variant: Who sees the board
+- Published description: Invite staff or any Custosell user to a project or personal board as Viewer, Contributor, or Manager - notify them by email, change roles later, and keep the owner locked in. Board access is separate from project team access. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Set project targets - KPIs, goals, and objectives
 - Format: 3-6min deep dive
 - Priority: P2
@@ -588,6 +822,18 @@ sprints to client project boards.
 - CTA: Try free + subscribe
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: Give the job a number the team can hit.
+- Short-form variant: Give the job a number the team can hit.
+- Published description: Define what success looks like on a project board - KPIs, goals, or objectives with key results - pick a metric and a target value, assign an owner, and preview how it decomposes across the planning period. Try free + subscribe #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "KPI. Goal. Key result. Planned." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Track project delivery and team performance
 - Format: 45-90s how-to
 - Priority: P2
@@ -613,6 +859,17 @@ sprints to client project boards.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Throughput, completions, and who's delivering - live.
+- Short-form variant: Throughput, completions, and who's delivering
+- Published description: Open the project progress view to see tasks created, completed, cancelled, open, completion rate, and completed value - switch between team delivery and your own progress, pick any period, and export the numbers. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Created. Completed. Delivered." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Assign task cards to your team
 - Format: 45-90s how-to
 - Priority: P2
@@ -637,6 +894,17 @@ sprints to client project boards.
 - Demo data needed: A project board with several staff members.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Every task card has an owner.
+- Short-form variant: Every task card has an owner.
+- Published description: Assign staff to a task card when you create it or later - the card shows the assignment chain from creator to assignee, @me filters to your cards, and My progress shows your personal delivery. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Assigned. Owned. Tracked." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Build the project team with roles
 - Format: 45-90s how-to
@@ -734,3 +1002,14 @@ card import via `/import-template` + `/import`
 `business.active` · `subscription.active` · `estimates.workspace`
 (EstimatesAccessMiddleware - full vs limited users, costing gated);
 limited users get board-only access (no costing/team management)
+
+- Published title: Right people, right access, one project.
+- Short-form variant: Right people
+- Published description: Invite staff to a project as Viewer, Contributor, or Manager, control who edits and who manages the team, and keep the owner locked in. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

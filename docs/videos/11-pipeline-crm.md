@@ -1,10 +1,3 @@
-# 11 - Pipeline / CRM
-
-**Videos in this pack: 18**
-
-Turn leads into customers. A full kanban board - stages, reminders,
-automations, bookings, goals, and collaboration.
-
 ## Video: Set up your sales pipeline board
 - Format: 45-90s how-to
 - Priority: P1
@@ -30,6 +23,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free + subscribe
 - Related videos: [07-customers.md](./07-customers.md)
 
+- Published title: Your pipeline is already there - shape it.
+- Short-form variant: Your pipeline is already there
+- Published description: Every new Custosell business gets a default sales board with the classic stages - New, Contacted, Qualified, Proposal, Negotiation, Closed won, Closed lost. Rename, recolor, reorder, and add stages to match how you sell. Try free + subscribe #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "New. Contacted. Qualified. Proposal. Closed." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track a lead from hello to customer
 - Format: 45-90s how-to
 - Priority: P1
@@ -54,6 +58,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free + subscribe
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Every opportunity has a place and a next step.
+- Short-form variant: Every opportunity has a place and a next step.
+- Published description: Add a lead to your board with contact details, expected value, due date, priority, and labels - then drag it through the stages as the deal moves. Win it or lose it from the stage itself. Try free + subscribe #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Add. Nurture. Close." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Work your assigned leads from My Work
 - Format: 45-90s how-to
 - Priority: P2
@@ -76,6 +91,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: Leads assigned to the logged-in user.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Your deals, your tasks - in one list.
+- Short-form variant: Your deals, your tasks
+- Published description: See every open lead assigned to you in one place, then open its full detail straight from the list. No hunting through boards. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "My work, one list" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Find leads with the All Leads list
 - Format: 45-90s how-to
@@ -100,6 +126,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Filter every lead across every board.
+- Short-form variant: Filter every lead across every board.
+- Published description: Search and filter all leads and cards by status, board, assignee, source, and card type - with live totals for open leads, value, and wins. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filter. Find. Act." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: See your pipeline on a calendar
 - Format: 45-90s how-to
 - Priority: P2
@@ -122,6 +159,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: Leads with due or expected close dates.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Leads with dates, on a month you can scan.
+- Short-form variant: Leads with dates
+- Published description: Switch any board to the calendar view to see leads by due, start, or expected close date - colored by priority, with a day panel for details. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Due dates, at a glance" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Follow up without forgetting - reminders
 - Format: 45-90s how-to
@@ -146,6 +194,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
 
+- Published title: The fortune is in the follow-up.
+- Short-form variant: The fortune is
+- Published description: Set a reminder on any lead - when and how (in-app, email, or both) - and Custosell nags you so no deal goes cold. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Remind me. And I close." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Convert a lead into a customer
 - Format: 45-90s how-to
 - Priority: P2
@@ -168,6 +227,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A lead in a won stage.
 - CTA: Try free
 - Related videos: [07-customers.md](./07-customers.md)
+
+- Published title: They said yes - lock them in as a customer.
+- Short-form variant: They said yes
+- Published description: Convert a won lead into a customer record in one click, keeping the connection back to the deal. No re-typing contact details. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Won -> Converted" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Manage board members and roles
 - Format: 45-90s how-to
@@ -192,6 +262,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Everyone knows their role on the board.
+- Short-form variant: Everyone knows their role on the board.
+- Published description: Invite team members to a board as Viewer, Contributor, or Manager, and control who can edit cards, run automations, or manage settings. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Customize your board
 - Format: 30-45s how-to
 - Priority: P3
@@ -214,6 +295,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A populated board.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Make your board feel like your business.
+- Short-form variant: Make your board feel like your business.
+- Published description: Give a board its own cover color and background - gallery or your own upload - so each pipeline is instantly recognizable. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your board, your look" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Collaborate with board conversations
 - Format: 45-90s how-to
@@ -239,6 +331,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Talk about the board, where the board lives.
+- Short-form variant: Talk about the board
+- Published description: Chat on the board conversation - reply in threads, react, pin important messages, and @mention teammates - with unread badges so nothing is missed. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Board chat, in context" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Announce and poll your team
 - Format: 45-90s how-to
 - Priority: P2
@@ -261,6 +364,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A board with a few members.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Tell the team. Or ask them.
+- Short-form variant: Tell the team. Or ask them.
+- Published description: Post an announcement to the board everyone sees on open, or run a poll with options and deadlines - perfect for quick team decisions. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Announce. Ask. Decide." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Automate board notifications
 - Format: 45-90s how-to
@@ -285,6 +399,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A board with automation rules.
 - CTA: Try free
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
+
+- Published title: The board tells the team, automatically.
+- Short-form variant: The board tells the team
+- Published description: Set automation rules - when a card enters a stage or is won or lost - and Custosell posts the update to the board conversation for you. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Won -> auto-announced" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track goals with progress and targets
 - Format: 3-6min deep dive
@@ -312,6 +437,18 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free + subscribe
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: Set a goal. Decompose it. Track it daily.
+- Short-form variant: Set a goal. Decompose it. Track it daily.
+- Published description: Open the progress view to see team and personal delivery for any period, then set board targets - KPIs, goals, or objectives - with key results and a decomposition preview down to the day. Try free + subscribe #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Target. Key results. Daily plan." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Read pipeline insights
 - Format: 45-90s how-to
 - Priority: P2
@@ -334,6 +471,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A pipeline with won and lost history.
 - CTA: Try free
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
+
+- Published title: Win rate, pipeline value, and where deals come from.
+- Short-form variant: Win rate
+- Published description: See open leads, pipeline value, won and lost deals, converted customers, and win rate - with open leads broken down by stage and source. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Win rate. Value. Sources." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Import leads from a spreadsheet
 - Format: 45-90s how-to
@@ -358,6 +506,17 @@ automations, bookings, goals, and collaboration.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Paste your leads once - never retype them.
+- Short-form variant: Paste your leads once
+- Published description: Download the import template, fill in your leads, and upload them straight into a board - perfect for moving leads out of a spreadsheet. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Import once, track forever" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Share files with board resources
 - Format: 45-90s how-to
 - Priority: P3
@@ -380,6 +539,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A few files or links to share.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: One home for every file your board needs.
+- Short-form variant: One home for every file your board needs.
+- Published description: Add resources to a board - files or links - with visibility (board, team, members, or just you) and see who's using them. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Files with the deal" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Accept bookings on a public page
 - Format: 45-90s how-to
@@ -404,6 +574,17 @@ automations, bookings, goals, and collaboration.
 - Demo data needed: A board with booking enabled.
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
+
+- Published title: Clients book your time without calling.
+- Short-form variant: Clients book your time without calling.
+- Published description: Turn on a public booking page for a board - pick available days and hours - and share the link. Bookings become pending leads you approve, complete, or reject. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Booked. Pending. Approved." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Celebrate wins on the wall of fame
 - Format: 45-90s how-to
@@ -486,3 +667,14 @@ clear-booking|schedule-meeting` + `/pipeline/meetings/{id}` ·
 **Route middleware (BE):** `auth:sanctum` · `business.active` ·
 `subscription.active` · `pipeline.access` (EnsurePipelineModuleAccess) - public
 booking routes unauthenticated
+
+- Published title: Closed it? Put it on the wall.
+- Short-form variant: Closed it? Put it on the wall.
+- Published description: Post quotes, shoutouts, performers, and milestones to the board's wall of fame - a fun, motivating feed your team sees when they open the board. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Posted. Pinned. Celebrated." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

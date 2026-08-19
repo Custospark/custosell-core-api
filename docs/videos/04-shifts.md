@@ -1,10 +1,3 @@
-# 04 - Shifts
-
-**Videos in this pack: 10**
-
-Start, close, and balance the working day. Cash drawer accountability, live
-shift tracking, and the close-of-shift report.
-
 ## Video: Open your shift
 - Format: 45-90s how-to
 - Priority: P1
@@ -28,6 +21,17 @@ shift tracking, and the close-of-shift report.
   user.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (first sale)
+
+- Published title: Open your shift in seconds - and know exactly how you start.
+- Short-form variant: Open your shift in seconds - and know exactly how you
+- Published description: Learn how to open a shift on Custosell POS. Every sale you make is now tied to this shift, so who sold what is always traceable. Try free + subscribe #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Open in one tap" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Set your opening balance (cash float)
 - Format: 45-90s how-to
@@ -53,6 +57,17 @@ shift tracking, and the close-of-shift report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md) (balance your shift)
 
+- Published title: Start with a float? Record it - your drawer stays honest.
+- Short-form variant: Start with a float? Record it - your drawer stays
+- Published description: Set the cash float you put in the drawer when your shift starts on Custosell. It becomes part of the expected cash at handover, or remove it if you started with nothing. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Float recorded" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Record a shift expense (from the drawer)
 - Format: 45-90s how-to
 - Priority: P2
@@ -76,6 +91,17 @@ shift tracking, and the close-of-shift report.
 - Demo data needed: An open shift with sales, plus an expense category.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Transport, delivery, petty cash - log it against the shift.
+- Short-form variant: Transport, delivery, petty cash - log it against the
+- Published description: Record an expense paid from the cash drawer on Custosell while a shift is open. It reduces the cash at handover and shows up in the shift summary and expense reports. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Drawer expense logged" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Balance your shift mid-day
 - Format: 45-90s how-to
@@ -103,6 +129,17 @@ shift tracking, and the close-of-shift report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md) (opening balance)
 
+- Published title: Count the drawer any time - know where the shift stands.
+- Short-form variant: Count the drawer any time - know where the shift
+- Published description: Reconcile the cash drawer mid-shift on Custosell - set the starting cash and count what's in the drawer now. See expected cash and variance before you even close. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Expected vs counted, live" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Close your shift and balance the drawer
 - Format: 45-90s how-to
 - Priority: P1
@@ -129,6 +166,17 @@ shift tracking, and the close-of-shift report.
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md),
   [04-shifts.md](./04-shifts.md) (shift report)
 
+- Published title: Close the day and balance the drawer - in one minute.
+- Short-form variant: Close the day and balance the drawer
+- Published description: Close your shift on Custosell with a full drawer reconciliation. Count the cash, compare it to the expected amount, and end the shift - a mismatch is recorded, not blocked. Try free + subscribe #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Count. Compare. Close." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read your shift close report
 - Format: 45-90s how-to
 - Priority: P2
@@ -153,6 +201,17 @@ shift tracking, and the close-of-shift report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md) (close your shift),
   [02-dashboard-reports.md](./02-dashboard-reports.md) (shift report)
+
+- Published title: Your whole shift, on one printable report.
+- Short-form variant: Your whole shift
+- Published description: Open the shift close report on Custosell - gross, expenses, refunds, VAT, net sales, cash by method, and expected drawer - then print it or download it as a PDF. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "One page, whole shift" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Track your shift live
 - Format: 45-90s how-to
@@ -180,6 +239,17 @@ shift tracking, and the close-of-shift report.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md) (open your shift)
 
+- Published title: Watch your shift grow - receipts, cash, and net, live.
+- Short-form variant: Watch your shift grow
+- Published description: Monitor the active shift on Custosell - stat cards for transactions, cash, mobile money, and card, a running net-sales progress chart, and every receipt of the shift. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Cash / Mobile / Card, live" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Review your shift history
 - Format: 45-90s how-to
 - Priority: P3
@@ -203,6 +273,17 @@ shift tracking, and the close-of-shift report.
 - CTA: Try free
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Your past shifts, compared - where were you strongest?
+- Short-form variant: Your past shifts, compared
+- Published description: Look back at your completed shifts on Custosell - a trend chart of net sales per shift and a history table - to spot your best days and busiest periods. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Shift by shift, net sales" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Hand over the shift (staff changeover)
 - Format: 45-90s how-to
 - Priority: P3
@@ -225,6 +306,17 @@ shift tracking, and the close-of-shift report.
 - Demo data needed: Two staff users on a business.
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
+
+- Published title: Handing over the till? Keep it accountable.
+- Short-form variant: Handing over the till? Keep it accountable.
+- Published description: Switch staff mid-day on Custosell - one staff ends their shift with a drawer count, the next opens theirs, and every sale stays traceable to the right person. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Every sale has an owner" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Run your shift offline
 - Format: 45-90s how-to
@@ -276,3 +368,14 @@ total_mobile_money, total_card, counted_cash) · `useUpdateShiftOpeningBalance`
 `/shifts/{id}/payments` (shift payments) · `/sales/by-shift/{id}` (shift
 sales) · `/expenses?shift_id={id}` (shift expenses) · `/sales/daily` (day
 rollup per shift)
+
+- Published title: Clock in, sell, and close - even with no internet.
+- Short-form variant: Clock in, sell, and close
+- Published description: Open, run, and close a shift with no internet on Custosell. Shift changes save locally and sync when you reconnect - the drawer stays accountable the whole time. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Shift runs offline" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover

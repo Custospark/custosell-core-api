@@ -1,9 +1,3 @@
-# 08 - Expenses, Budgets & Income
-
-**Videos in this pack: 10**
-
-Know where money goes. Expenses, budgets, and other income.
-
 ## Video: Record an expense in seconds
 - Format: 45-90s how-to
 - Priority: P1
@@ -28,6 +22,17 @@ Know where money goes. Expenses, budgets, and other income.
 - CTA: Try free
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: Log an expense before you forget it.
+- Short-form variant: Log an expense before you forget it.
+- Published description: Record a business or personal expense on Custosell in seconds - amount, category, branch, description, and date. Your profit numbers stay honest. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "10-second expense" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Filter and manage your expense list
 - Format: 45-90s how-to
 - Priority: P1
@@ -50,6 +55,17 @@ Know where money goes. Expenses, budgets, and other income.
 - Demo data needed: A few expenses across categories, branches, and months.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Find any expense by category, branch, or date.
+- Short-form variant: Find any expense by category
+- Published description: Filter your expense list by category, branch, and date range, edit or delete entries, and spot recurring bills and pending-sync items at a glance. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filter. Find. Fix." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Manage expense categories with budgets
 - Format: 45-90s how-to
@@ -75,6 +91,17 @@ Know where money goes. Expenses, budgets, and other income.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
 
+- Published title: Neat categories - and a budget per category.
+- Short-form variant: Neat categories
+- Published description: Add, rename, and delete expense categories, and set a budget amount with a weekly, monthly, quarterly, or yearly period so reporting tells a clear story. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Categorize. Budget. Understand." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Attach receipts and references to expenses
 - Format: 45-90s how-to
 - Priority: P2
@@ -97,6 +124,17 @@ Know where money goes. Expenses, budgets, and other income.
 - Demo data needed: A supplier invoice or receipt image.
 - CTA: Try free
 - Related videos: [10-documents.md](./10-documents.md)
+
+- Published title: Receipts stay attached - no more lost paper.
+- Short-form variant: Receipts stay attached
+- Published description: Attach a photo of the receipt or a link to it, plus a reference number, on any expense so every shilling is provable at audit time. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Receipt attached" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Set up a personal budget with a shopping list
 - Format: 45-90s how-to
@@ -122,6 +160,17 @@ Know where money goes. Expenses, budgets, and other income.
 - CTA: Try free
 - Related videos: [13-forecasting.md](./13-forecasting.md)
 
+- Published title: A budget that warns you before you overspend.
+- Short-form variant: A budget that warns you before you overspend.
+- Published description: Create a named budget on Custosell - like Groceries or June holiday - set the target, and add a shopping list that auto-totals and auto-saves. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Budget. List. Track." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Track a budget and convert plan items to expenses
 - Format: 45-90s how-to
 - Priority: P2
@@ -145,6 +194,17 @@ Know where money goes. Expenses, budgets, and other income.
 - Demo data needed: A budget with plan lines and linked income.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
+
+- Published title: Watch your plan become reality - item by item.
+- Short-form variant: Watch your plan become reality
+- Published description: Open a budget to see planned vs spent vs income, pace, and affordability - then convert a shopping-list item straight into an expense when you buy it. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Planned. Spent. Converted." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Record non-sales income
 - Format: 45-90s how-to
@@ -170,6 +230,17 @@ Know where money goes. Expenses, budgets, and other income.
 - CTA: Try free
 - Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md)
 
+- Published title: Not every shilling comes from the till - record it anyway.
+- Short-form variant: Not every shilling comes from the till - record it
+- Published description: Log income from any source - salary, freelance, rent - with a date, optional recurring schedule, and attachments. Your real profit picture becomes complete. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "All income. All tracked." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ## Video: Read your Income & Expenses overview
 - Format: 3-6min deep dive
 - Priority: P1
@@ -194,6 +265,18 @@ Know where money goes. Expenses, budgets, and other income.
 - CTA: Try free + subscribe
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
 
+- Published title: See where money comes from and where it goes.
+- Short-form variant: See where money comes from and where it goes.
+- Published description: The money overview shows total income, expenses, net balance, and transaction counts, with donuts for income by source and expenses by category, daily and monthly trends, and recent transactions. Try free + subscribe #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Income. Expenses. Net." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+  - Intro / outro: 2s animated logo intro + end screen with subscribe
+
 ## Video: Export your expenses to CSV or Excel
 - Format: 30-45s how-to
 - Priority: P3
@@ -217,6 +300,17 @@ Know where money goes. Expenses, budgets, and other income.
 - Demo data needed: A filtered set of expenses.
 - CTA: Try free
 - Related videos: [09-accounting.md](./09-accounting.md)
+
+- Published title: Your expense ledger, ready for your accountant.
+- Short-form variant: Your expense ledger
+- Published description: Export your expenses to CSV or Excel with date, category, description, amount, reference, and receipt columns - filtered exactly how you need them. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "CSV or Excel - your call" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
 
 ## Video: Work with expenses offline
 - Format: 45-90s how-to
@@ -275,3 +369,14 @@ DELETE) · `/expenses/overview` · `/expenses/summary` · `/expenses/budgets` ·
 `/income-source-attachments/{id}`) · `/budgets` CRUD (+ `/budgets/{id}/lines`,
 `/lines/{line}/purchase`, `/affordability`, `/download`) · `/money/summary` ·
 `/money/alerts`
+
+- Published title: Record expenses even when the internet is gone.
+- Short-form variant: Record expenses even when the internet is gone.
+- Published description: Create and edit expenses offline - Custosell saves them instantly with a Pending sync badge (and pending receipt) and syncs automatically when you're back online. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
