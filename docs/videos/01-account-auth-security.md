@@ -1,6 +1,7 @@
 # 01 - Account, Auth & Security
 
-Signing up, protecting the account, and running multiple shops with one login.
+Signing up (business, personal, or shopping), protecting the account, and
+running multiple shops with one login.
 
 ## Video: Create your shop in 5 minutes
 - Format: 45-90s how-to
@@ -25,6 +26,65 @@ Signing up, protecting the account, and running multiple shops with one login.
 - Demo data needed: A fresh email address for signup.
 - CTA: Try free + subscribe
 - Related videos: [03-sales-pos.md](./03-sales-pos.md) (first sale)
+
+## Video: Create a personal account
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "No shop? No problem - get a personal account."
+- Description: Create a personal Custosell account in minutes - for tracking
+  expenses, budgets, and income without a business. Pick the modules you want,
+  use them on your own terms.
+- What it's about: The personal (non-business) signup -> module selection flow.
+- Script beats:
+  - Beat 1 (Hook): "You don't need a shop to run your money on Custosell."
+  - Beat 2 (Problem): "Most tools force you into a 'business' even when you
+    just want personal tracking."
+  - Beat 3 (Action): /register -> choose For personal use -> fill the simple
+    form -> verify email -> land on Your Tools -> add a module (expenses,
+    budgets, income, quick notes).
+  - Beat 4 (Aha): "Personal accounts buy modules à la carte - only what you
+    use, nothing you don't."
+  - Beat 5 (CTA): "Create yours at custosell.com."
+- Screen flow: /register -> Account type -> personal -> simple form ->
+  verification -> /your-tools -> add module.
+- On-screen text / captions:
+  - "For personal use"
+  - "Pick only what you need"
+- Demo data needed: A fresh email address for signup.
+- CTA: Try free + subscribe
+- Related videos: [08-expenses-budgets-income.md](./08-expenses-budgets-income.md),
+  [18-quick-notes.md](./18-quick-notes.md)
+
+## Video: Create a shopping account (storefront buyer)
+- Format: 45-90s how-to
+- Priority: P2
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "Buy from the storefront in minutes - no shop needed."
+- Description: Create a free shopping account on Custosell to browse and buy
+  from storefronts and the marketplace. A Discover-only account that keeps you
+  shopping without a business setup.
+- What it's about: The shopping (storefront buyer) signup -> Discover browse
+  flow.
+- Script beats:
+  - Beat 1 (Hook): "Want to buy? You can be shopping in under a minute."
+  - Beat 2 (Problem): "Shops that sell online shouldn't force buyers into a
+    full business setup."
+  - Beat 3 (Action): /register -> choose Online shopping -> fill the simple
+    form -> verify email -> land on Discover -> open a storefront -> add to
+    bag.
+  - Beat 4 (Aha): "Free to shop, no dashboard, no subscription - just
+    Discover."
+  - Beat 5 (CTA): "Start shopping at custosell.com."
+- Screen flow: /register -> Account type -> shopping -> simple form ->
+  verification -> Discover -> storefront -> bag.
+- On-screen text / captions:
+  - "Online shopping"
+  - "Free. Fast. No setup."
+- Demo data needed: A fresh email address for signup + a published storefront
+  with products.
+- CTA: Try free + subscribe
+- Related videos: [14-storefront.md](./14-storefront.md)
 
 ## Video: Run two shops with one login
 - Format: 45-90s how-to
@@ -123,17 +183,22 @@ Signing up, protecting the account, and running multiple shops with one login.
 
 ## Technical reference (source of truth)
 
-**Screens:** `/register`, `/login`, `/forgot-password`, `/verify-email`,
-`/onboarding/*`, Account manager -> Linked accounts, Settings -> Security /
-Profile
+**Screens:** `/register` (Account type selector: business / personal /
+shopping), `/login`, `/forgot-password`, `/verify-email`, `/onboarding/*`,
+`/your-tools` (personal modules), `/discover` (storefront buyer landing),
+Account manager -> Linked accounts, Settings -> Security / Profile
 
-**User actions (FE hooks):** `useRegister` · `useLogin` · `useLogout` ·
-`useRequestPasswordReset` · `useResetPassword` · `useVerifyEmail` ·
-`useUpdateProfile` · `useChangeEmail` · `useEnable2FA` / `useDisable2FA` ·
-`useSecurityActivityLog` · `useLinkedAccounts` · `useLinkAccount` ·
-`useUnlinkAccount` · `useSetPrimaryAccount` · `useSwitchAccount`
+**User actions (FE hooks):** `useRegister` (personal / shopping via
+`account_type`) · `useRegisterBusiness` (business + onboarding) · `useLogin` ·
+`useLogout` · `useRequestPasswordReset` · `useResetPassword` ·
+`useVerifyEmail` · `useUpdateProfile` · `useChangeEmail` · `useEnable2FA` /
+`useDisable2FA` · `useSecurityActivityLog` · `useLinkedAccounts` ·
+`useLinkAccount` · `useUnlinkAccount` · `useSetPrimaryAccount` ·
+`useSwitchAccount`
 
-**API endpoints (BE):** `/auth/register` · `/auth/login` · `/auth/logout` ·
-`/password/email` · `/password/reset` · `/email/verify` · `/profile` ·
-`/profile/email` · `/security/2fa` · `/security/activity` · `/linked-accounts`
-CRUD + `/linked-accounts/{id}/primary` + `/linked-accounts/{id}/switch`
+**API endpoints (BE):** `/auth/register` (one endpoint; `account_type` selects
+business / personal / storefront-buyer) · `/businesses/register` (business
+workspace setup) · `/auth/login` · `/auth/logout` · `/password/email` ·
+`/password/reset` · `/email/verify` · `/profile` · `/profile/email` ·
+`/security/2fa` · `/security/activity` · `/linked-accounts` CRUD +
+`/linked-accounts/{id}/primary` + `/linked-accounts/{id}/switch`
