@@ -8,6 +8,7 @@ Technical documentation for the Custosell backend (Laravel + PHP).
 |--------------|------------|
 | Deploy to the server (staging/production) | [deployment.md](./deployment.md) |
 | Shift/dashboard sales + cash drawer formulas (canonical) | [shift-sales-formulas.md](./shift-sales-formulas.md) |
+| Tutorial video content map (from queries/routes) | [video-content-map.md](./video-content-map.md) |
 
 ## Architecture decisions (ADR)
 
