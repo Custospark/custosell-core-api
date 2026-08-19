@@ -35,7 +35,7 @@ file lists the hooks + endpoints behind that module's videos.
 
 | # | Module | File | Videos | Wave |
 |---|--------|------|--------|------|
-| 1 | Account, Auth & Security | [01-account-auth-security.md](./01-account-auth-security.md) | 15 | 4 |
+| 1 | Account, Auth & Security | [01-account-auth-security.md](./01-account-auth-security.md) | 16 | 4 |
 | 2 | Dashboard & Reports | [02-dashboard-reports.md](./02-dashboard-reports.md) | 20 | 3 |
 | 3 | Sales & POS | [03-sales-pos.md](./03-sales-pos.md) | 34 | 1 |
 | 4 | Shifts | [04-shifts.md](./04-shifts.md) | 10 | 1 |
@@ -57,7 +57,7 @@ file lists the hooks + endpoints behind that module's videos.
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 6 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
 | 22 | Guide | [22-guide.md](./22-guide.md) | 5 | 4 |
-| **Total** | | | **286** | |
+| **Total** | | | **287** | |
 
 ---
 

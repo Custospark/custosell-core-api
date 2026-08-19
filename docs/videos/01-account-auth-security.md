@@ -1,6 +1,6 @@
 # 01 - Account, Auth & Security
 
-**Videos in this pack: 15**
+**Videos in this pack: 16**
 
 Signing up (business, personal, or shopping), protecting the account, managing
 linked accounts, and monitoring your security.
@@ -87,6 +87,43 @@ linked accounts, and monitoring your security.
   with products.
 - CTA: Try free + subscribe
 - Related videos: [14-storefront.md](./14-storefront.md)
+
+## Video: Tour your tools hub
+- Format: 45-90s how-to
+- Priority: P1
+- Platforms: Reels / Shorts / TikTok / YouTube
+- Tagline: "Every tool Custosell gives you, one card away."
+- Description: After you sign in, Your Tools is the launchpad - a card grid of
+  every module you can access, starting with the six most used and a Show
+  more row for the rest. Each card jumps straight into that module, with
+  personalised descriptions for personal or business accounts, plus plan
+  status and locked-tool warnings when access lapses.
+- What it's about: The Your Tools hub (`/your-tools`) - module cards derived
+  from the user's accessible nav groups (Online Shopping, Dashboard, Sales,
+  Inventory, Customers, Sales Funnel, Projects & Estimates, Income &
+  Expenses, Accounting, Documents, Forecasting, HR & Payroll, Custosell
+  Guide, Account, Settings), per-account-type descriptions, Show more grid,
+  Locked tools section, subscription status line, and the Upgrade plan /
+  Go Unlimited calls to action.
+- Script beats:
+  - Beat 1 (Hook): "Your whole business, one grid away."
+  - Beat 2 (Problem): "New users open the app and don't know where to
+    start."
+  - Beat 3 (Action): sign in -> land on Your Tools -> read the card grid ->
+    pick a tool -> it opens that module -> Show more reveals the rest ->
+    spot the plan status line.
+  - Beat 4 (Aha): "Cards only appear if you can actually use them, and
+    descriptions match your account type."
+  - Beat 5 (CTA): "Sign in free at custosell.com."
+- Screen flow: /login -> /your-tools -> tool card -> module -> back -> Show
+  more -> plan banner.
+- On-screen text / captions:
+  - "Your Tools"
+  - "Show more"
+- Demo data needed: A verified account with an active subscription and a few
+  modules enabled.
+- CTA: Try free + subscribe
+- Related videos: [02-common-start.md](./02-common-start.md)
 
 ## Video: Link another account (run two shops with one login)
 - Format: 45-90s how-to
@@ -422,3 +459,13 @@ photo - code confirmed) · `/auth/two-factor` (toggle) · `/auth/activity`
 `/linked-accounts/confirm` · `/linked-accounts/{id}/switch` ·
 `/linked-accounts/{id}/set-primary` · `/linked-accounts/{id}/unlink` +
 `/linked-accounts/{id}/unlink/confirm`
+
+**Your Tools hub (FE):** `PersonalModulesPage` (`/your-tools`) - tool card
+grid via `resolveAccessibleNavGroups` + `usePlanAccessibleModules` (cards only
+for accessible groups, ordered by `TOOL_ORDER`, first six visible then Show
+more), descriptions from `toolDescriptions.ts` (`TOOL_DESCRIPTIONS` personal
+vs business voice), locked-tool cards derived from subscription
+`plan_features` + `getAccessibleModules` (business slugs only), status line
+and gating via `hasSubscriptionAccess` + `STATUS_CONFIG` (trial / active /
+past_due / cancelled / suspended / expired + grace period), card targets are
+`MODULE_DEFAULT_ROUTES` / each group's first sub-route.
