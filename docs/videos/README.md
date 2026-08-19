@@ -52,11 +52,11 @@ file lists the hooks + endpoints behind that module's videos.
 | 15 | HR | [15-hr.md](./15-hr.md) | 16 | 3 |
 | 16 | Subscriptions & Billing | [16-subscriptions-billing.md](./16-subscriptions-billing.md) | 8 | 4 |
 | 17 | Settings | [17-settings.md](./17-settings.md) | 11 | 4 |
-| 18 | Quick Notes | [18-quick-notes.md](./18-quick-notes.md) | 2 | 4 |
+| 18 | Quick Notes | [18-quick-notes.md](./18-quick-notes.md) | 5 | 4 |
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 3 | 4 |
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 3 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **259** | |
+| **Total** | | | **262** | |
 
 ---
 
