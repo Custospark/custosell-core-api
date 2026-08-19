@@ -37,8 +37,8 @@ file lists the hooks + endpoints behind that module's videos.
 |---|--------|------|--------|------|
 | 1 | Account, Auth & Security | [01-account-auth-security.md](./01-account-auth-security.md) | 15 | 4 |
 | 2 | Dashboard & Reports | [02-dashboard-reports.md](./02-dashboard-reports.md) | 20 | 3 |
-| 3 | Sales & POS | [03-sales-pos.md](./03-sales-pos.md) | 5 | 1 |
-| 4 | Shifts | [04-shifts.md](./04-shifts.md) | 4 | 1 |
+| 3 | Sales & POS | [03-sales-pos.md](./03-sales-pos.md) | 34 | 1 |
+| 4 | Shifts | [04-shifts.md](./04-shifts.md) | 10 | 1 |
 | 5 | Inventory - Products & Categories | [05-inventory-products.md](./05-inventory-products.md) | 5 | 2 |
 | 6 | Marketplace & Purchase Orders | [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md) | 3 | 2 |
 | 7 | Customers | [07-customers.md](./07-customers.md) | 4 | 2 |
@@ -56,7 +56,7 @@ file lists the hooks + endpoints behind that module's videos.
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 3 | 4 |
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 3 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **101** | |
+| **Total** | | | **136** | |
 
 ---
 
