@@ -266,8 +266,8 @@
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
-- Published title: Find any product in a second.
-- Short-form variant: Find any product
+- Published title: SKU and barcode find any product in a second.
+- Short-form variant: SKU. Barcode. Found.
 - Published description: Add a SKU and barcode to products so you can search and scan them fast at the till and in the catalog. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
 - Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
 - Video assets:
@@ -579,8 +579,8 @@
 - CTA: Try free
 - Related videos: [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md)
 
-- Published title: Out of stock before you run out of stock.
-- Short-form variant: Out of stock before you run out of stock.
+- Published title: Spot low stock before you run out.
+- Short-form variant: Spot low stock before it's gone
 - Published description: Read your stock level indicator on Custosell - see what's low, what's out, and what needs restocking at a glance. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
 - Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
 - Video assets:
@@ -860,6 +860,17 @@
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
+- Published title: Keep building your catalog without internet.
+- Short-form variant: Keep building your catalog without internet.
+- Published description: Create, edit, and adjust products even when offline - Custosell queues the changes and syncs them when you're back online. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
+- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Offline. Queued. Synced." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -884,14 +895,3 @@
 `/products/{id}/image` · `/categories` CRUD · `/stock-movements` CRUD +
 `/stock-movements/bulk-delete` + `/stock-movements/transfer` ·
 `/inventory/overview`
-
-- Published title: Keep building your catalog without internet.
-- Short-form variant: Keep building your catalog without internet.
-- Published description: Create, edit, and adjust products even when offline - Custosell queues the changes and syncs them when you're back online. Try free #custosell #inventory #products #categories #Custosell #SmallBusiness
-- Tags: custosell, inventory, products, categories, sku, barcode, stock, low stock, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Offline. Queued. Synced." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

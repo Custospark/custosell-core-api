@@ -929,6 +929,17 @@
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Right people, right access, one project.
+- Short-form variant: Right people
+- Published description: Invite staff to a project as Viewer, Contributor, or Manager, control who edits and who manages the team, and keep the owner locked in. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
+- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -1002,14 +1013,3 @@ card import via `/import-template` + `/import`
 `business.active` · `subscription.active` · `estimates.workspace`
 (EstimatesAccessMiddleware - full vs limited users, costing gated);
 limited users get board-only access (no costing/team management)
-
-- Published title: Right people, right access, one project.
-- Short-form variant: Right people
-- Published description: Invite staff to a project as Viewer, Contributor, or Manager, control who edits and who manages the team, and keep the owner locked in. Try free #custosell #estimates #projects #templates #Custosell #SmallBusiness
-- Tags: custosell, estimates, projects, templates, quotes, invoicing, project management, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Viewer. Contributor. Manager." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

@@ -91,7 +91,7 @@
   - Beat 1 (Hook): "Referrals are only fun when you can watch them pay off."
   - Beat 2 (Problem): "Rewards nobody can see feel fake."
   - Beat 3 (Action): Referral Dashboard -> Wins tab -> Referrals / Earned /
-    Paid / Bal cards -> Referred Businesses list -> Payout History.
+    Paid / Balance cards -> Referred Businesses list -> Payout History.
   - Beat 4 (Aha): "Every referral shows its status and reward - pending, active,
     or rewarded."
   - Beat 5 (CTA): "Check your dashboard at custosell.com."
@@ -221,6 +221,17 @@
 - CTA: Try free
 - Related videos: [20-referrals-credits.md](./20-referrals-credits.md)
 
+- Published title: How Custosell referrals work - the simple version.
+- Short-form variant: How Custosell referrals work
+- Published description: Understand the Custosell referral program in plain language: how rewards are calculated, whether there are limits, when payouts happen, and what is not allowed. One referral code per referred business, rewards based on the plan actually paid. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
+- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Rewards on what's actually paid." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -260,14 +271,3 @@ subscription.active): apiResource `sales-reps` · `GET /sales-reps/import-templa
 (add/edit with commission rate + type + referee discount + active toggle,
 remove blocked while unpaid commission remains, CSV import from template, record
 payouts now or scheduled with method/notes/attachments).
-
-- Published title: How Custosell referrals work - the simple version.
-- Short-form variant: How Custosell referrals work
-- Published description: Understand the Custosell referral program in plain language: how rewards are calculated, whether there are limits, when payouts happen, and what is not allowed. One referral code per referred business, rewards based on the plan actually paid. Try free #custosell #referrals #credits #rewards #Custosell #SmallBusiness
-- Tags: custosell, referrals, credits, rewards, sales reps, commission, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Rewards on what's actually paid." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

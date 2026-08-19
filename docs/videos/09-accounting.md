@@ -62,7 +62,7 @@
 
 - Published title: Chart of accounts, explained for shop owners.
 - Short-form variant: Chart of accounts
-- Published description: A plain-English tour of the chart of accounts on Custosell - assets, liabilities, equity, revenue, expenses - in flat view or as a parent- child tree, and how each account feeds your reports. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Published description: A plain-English tour of the chart of accounts on Custosell - assets, liabilities, equity, revenue, expenses - in flat view or as a parent-child tree, and how each account feeds your reports. Try free + subscribe #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
 - Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
 - Video assets:
   - Thumbnail: bold text "Assets. Revenue. Expenses. It's that simple." over a bright screenshot of the action
@@ -454,6 +454,17 @@
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Move your books in and out - cleanly.
+- Short-form variant: Move your books in and out
+- Published description: Download a template, import your chart of accounts or journal entries from Excel/CSV, and export current data - with per-row validation so you always know what landed. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
+- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Import. Validate. Done." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -491,14 +502,3 @@ inventory reconciliation)
 `SaleRefundedForAccounting` · `ExpenseCreatedForAccounting` ·
 `InvoiceSentForAccounting` · `InvoicePaidForAccounting` ·
 `PaymentRecordedForAccounting` · `PayoutCompletedForAccounting`
-
-- Published title: Move your books in and out - cleanly.
-- Short-form variant: Move your books in and out
-- Published description: Download a template, import your chart of accounts or journal entries from Excel/CSV, and export current data - with per-row validation so you always know what landed. Try free #custosell #accounting #bookkeeping #journal #Custosell #SmallBusiness
-- Tags: custosell, accounting, bookkeeping, journal, trial balance, income statement, balance sheet, vat, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Import. Validate. Done." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

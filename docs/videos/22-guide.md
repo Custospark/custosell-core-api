@@ -176,6 +176,17 @@
 - CTA: Try free
 - Related videos: [22-guide.md](./22-guide.md)
 
+- Published title: A human, one tap away.
+- Short-form variant: A human
+- Published description: Reach the Custosell team when you need a person - support email and phone lines with one-tap copy, plus business hours. Works offline too: the details stay copyable so you can contact the team after you reconnect. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
+- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Support email" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -211,14 +222,3 @@ markers.
 (create/edit/publish, thumbnail upload + preview) with
 `platform.guide.manage`, manage FAQs, and triage feedback (status updates,
 staff replies, bulk actions) with `platform.guide.feedback.manage`.
-
-- Published title: A human, one tap away.
-- Short-form variant: A human
-- Published description: Reach the Custosell team when you need a person - support email and phone lines with one-tap copy, plus business hours. Works offline too: the details stay copyable so you can contact the team after you reconnect. Try free #custosell #guide #tutorials #faq #Custosell #SmallBusiness
-- Tags: custosell, guide, tutorials, faq, help, feedback, support, how to, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Support email" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

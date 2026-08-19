@@ -195,7 +195,7 @@
 - Related videos: [19-notifications-webpush.md](./19-notifications-webpush.md)
 
 - Published title: The fortune is in the follow-up.
-- Short-form variant: The fortune is
+- Short-form variant: The follow-up is the fortune
 - Published description: Set a reminder on any lead - when and how (in-app, email, or both) - and Custosell nags you so no deal goes cold. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
 - Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
 - Video assets:
@@ -609,6 +609,17 @@
 - CTA: Try free
 - Related videos: [11-pipeline-crm.md](./11-pipeline-crm.md)
 
+- Published title: Closed it? Put it on the wall.
+- Short-form variant: Closed it? Put it on the wall.
+- Published description: Post quotes, shoutouts, performers, and milestones to the board's wall of fame - a fun, motivating feed your team sees when they open the board. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
+- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Posted. Pinned. Celebrated." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -667,14 +678,3 @@ clear-booking|schedule-meeting` + `/pipeline/meetings/{id}` ·
 **Route middleware (BE):** `auth:sanctum` · `business.active` ·
 `subscription.active` · `pipeline.access` (EnsurePipelineModuleAccess) - public
 booking routes unauthenticated
-
-- Published title: Closed it? Put it on the wall.
-- Short-form variant: Closed it? Put it on the wall.
-- Published description: Post quotes, shoutouts, performers, and milestones to the board's wall of fame - a fun, motivating feed your team sees when they open the board. Try free #custosell #crm #pipeline #leads #Custosell #SmallBusiness
-- Tags: custosell, crm, pipeline, leads, sales funnel, kanban, deals, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Posted. Pinned. Celebrated." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

@@ -359,6 +359,17 @@
 - CTA: Try free + subscribe
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Your app, your workspaces.
+- Short-form variant: Your app
+- Published description: Pick which workspaces the business owner sees on Custosell - hide the modules you don't use and go deeper on Estimates or HR with full access toggles, all from one screen. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
+- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your workspaces" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -405,14 +416,3 @@ Delete-account confirm logs the user out and redirects to login.
 locally and sync when back online (pending-sync badges); export and delete flows
 are owner-only; personal accounts keep only Profile + Location tabs and skip the
 Danger Zone.
-
-- Published title: Your app, your workspaces.
-- Short-form variant: Your app
-- Published description: Pick which workspaces the business owner sees on Custosell - hide the modules you don't use and go deeper on Estimates or HR with full access toggles, all from one screen. Try free + subscribe #custosell #settings #businessprofile #tax #Custosell #SmallBusiness
-- Tags: custosell, settings, business profile, tax, currency, receipts, branches, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Your workspaces" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

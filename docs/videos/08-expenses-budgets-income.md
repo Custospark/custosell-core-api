@@ -336,6 +336,17 @@
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
+- Published title: Record expenses even when the internet is gone.
+- Short-form variant: Record expenses even when the internet is gone.
+- Published description: Create and edit expenses offline - Custosell saves them instantly with a Pending sync badge (and pending receipt) and syncs automatically when you're back online. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
+- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -369,14 +380,3 @@ DELETE) · `/expenses/overview` · `/expenses/summary` · `/expenses/budgets` ·
 `/income-source-attachments/{id}`) · `/budgets` CRUD (+ `/budgets/{id}/lines`,
 `/lines/{line}/purchase`, `/affordability`, `/download`) · `/money/summary` ·
 `/money/alerts`
-
-- Published title: Record expenses even when the internet is gone.
-- Short-form variant: Record expenses even when the internet is gone.
-- Published description: Create and edit expenses offline - Custosell saves them instantly with a Pending sync badge (and pending receipt) and syncs automatically when you're back online. Try free #custosell #expenses #budgets #income #Custosell #SmallBusiness
-- Tags: custosell, expenses, budgets, income, receipts, categories, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

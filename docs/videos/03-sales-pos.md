@@ -1191,6 +1191,17 @@
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
+- Published title: Refund offline? Saved - and synced when you're back.
+- Short-form variant: Refund offline? Saved
+- Published description: Process a refund with no internet on Custosell. It saves locally and syncs when you reconnect; sales that haven't synced yet are protected from being refunded early. Try free #custosell #pos #pointofsale #sell #Custosell #SmallBusiness
+- Tags: custosell, pos, point of sale, sell, checkout, retail, payments, receipt, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved locally, syncs later" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -1221,14 +1232,3 @@ refund total + max-refundable + net remaining, bulk delete) ·
 `/sales/{id}/payment` · `/sales/{id}/customer` · `/sales/{id}/pdf` ·
 `/sales/{id}/email` · `/orders` (index/store) · `/orders/{id}` (show/update) ·
 `/orders/{id}/cancel` · `/invoices` CRUD + `/send` `/payment` `/email` `/pdf`
-
-- Published title: Refund offline? Saved - and synced when you're back.
-- Short-form variant: Refund offline? Saved
-- Published description: Process a refund with no internet on Custosell. It saves locally and syncs when you reconnect; sales that haven't synced yet are protected from being refunded early. Try free #custosell #pos #pointofsale #sell #Custosell #SmallBusiness
-- Tags: custosell, pos, point of sale, sell, checkout, retail, payments, receipt, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Saved locally, syncs later" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

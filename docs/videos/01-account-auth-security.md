@@ -585,6 +585,17 @@
   (2FA), [01-account-auth-security.md](./01-account-auth-security.md)
   (change password)
 
+- Published title: See every sign-in, every change - in one feed.
+- Short-form variant: See every sign-in, every change
+- Published description: Review your account activity on Custosell - sign-ins, sign-outs, email verification, 2FA events, password changes, and profile updates, each with the device and IP address. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
+- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Every event, tracked" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -627,14 +638,3 @@ vs business voice), locked-tool cards derived from subscription
 and gating via `hasSubscriptionAccess` + `STATUS_CONFIG` (trial / active /
 past_due / cancelled / suspended / expired + grace period), card targets are
 `MODULE_DEFAULT_ROUTES` / each group's first sub-route.
-
-- Published title: See every sign-in, every change - in one feed.
-- Short-form variant: See every sign-in, every change
-- Published description: Review your account activity on Custosell - sign-ins, sign-outs, email verification, 2FA events, password changes, and profile updates, each with the device and IP address. Try free + subscribe #custosell #account #signup #Custosell #SmallBusiness
-- Tags: custosell, account, sign up, signup, register, login, security, two factor, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Every event, tracked" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

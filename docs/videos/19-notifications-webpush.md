@@ -122,6 +122,17 @@
 - CTA: Try free
 - Related videos: [03-sales-pos.md](./03-sales-pos.md)
 
+- Published title: A chime when the order comes in.
+- Short-form variant: A chime when the order comes in.
+- Published description: Set the order sound on Custosell so your device chimes when a new open order arrives - and set a big-order threshold so large orders get an urgent chime and a highlighted alert. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
+- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Chime on order" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -157,14 +168,3 @@ message auto-marks it read; unread bubbles show on the bell. Web Push is
 browser-only (hidden in Electron) and delivers new orders, sales, and account
 updates as system notifications even while the app is closed. The order sound
 and big-order threshold are device-local preferences for business accounts.
-
-- Published title: A chime when the order comes in.
-- Short-form variant: A chime when the order comes in.
-- Published description: Set the order sound on Custosell so your device chimes when a new open order arrives - and set a big-order threshold so large orders get an urgent chime and a highlighted alert. Try free #custosell #notifications #webpush #alerts #Custosell #SmallBusiness
-- Tags: custosell, notifications, web push, alerts, inbox, orders, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Chime on order" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

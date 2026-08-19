@@ -155,6 +155,17 @@
 - CTA: Try free
 - Related videos: [18-quick-notes.md](./18-quick-notes.md)
 
+- Published title: Your notes, your style.
+- Short-form variant: Your notes
+- Published description: Change the look of your quick notes board on Custosell - pick a background, use full-screen mode to hide navigation, and color-code notes the way you like. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
+- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Your space" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -182,14 +193,3 @@ board; tag rename/remove are the only tag endpoints. Offline-first: creates,
 updates, and deletes complete locally and sync later (dedupe by `client_uuid`,
 pending-sync badges on notes); `is_shared` notes show a Shared badge plus the
 author's name and are visible to the whole organization.
-
-- Published title: Your notes, your style.
-- Short-form variant: Your notes
-- Published description: Change the look of your quick notes board on Custosell - pick a background, use full-screen mode to hide navigation, and color-code notes the way you like. Try free #custosell #quicknotes #notes #memo #Custosell #SmallBusiness
-- Tags: custosell, quick notes, notes, memo, pin, share, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Your space" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

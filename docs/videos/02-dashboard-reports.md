@@ -676,6 +676,17 @@
 - Related videos: [02-dashboard-reports.md](./02-dashboard-reports.md)
   (branch card)
 
+- Published title: Every branch gross, expenses, net, transactions, share.
+- Short-form variant: Every branch: gross, expenses, net, transactions
+- Published description: Open the full Branch Performance report on Custosell - per branch gross, expenses, net sales, transactions, and market share - for any period, right on screen. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
+- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Branch: gross, net, share" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -702,14 +713,3 @@ section)
 · `/reports/shift-reconciliation` · `/reports/shift-close` ·
 `/reports/expenses` · `/reports/vat-summary` · `/reports/inventory` ·
 `/reports/payment-breakdown` · `/reports/branch-performance`
-
-- Published title: Every branch gross, expenses, net, transactions, share.
-- Short-form variant: Every branch: gross, expenses, net, transactions
-- Published description: Open the full Branch Performance report on Custosell - per branch gross, expenses, net sales, transactions, and market share - for any period, right on screen. Try free #custosell #dashboard #reports #salesreport #Custosell #SmallBusiness
-- Tags: custosell, dashboard, reports, sales report, net sales, vat, branch, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Branch: gross, net, share" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

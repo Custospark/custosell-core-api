@@ -227,6 +227,17 @@
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
+- Published title: Add customers even when the internet is gone.
+- Short-form variant: Add customers even when the internet is gone.
+- Published description: Create and edit customers while offline - Custosell saves them instantly with a Pending sync badge and syncs automatically when you're back. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
+- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -249,14 +260,3 @@
 **Overview segments (BE `CustomerService`):** Active (<30 days) · At risk
 (30-90 days) · Lapsed (>90 days) · Never purchased. Frequency buckets: 1 · 2-3 ·
 4-6 · 7+ purchases.
-
-- Published title: Add customers even when the internet is gone.
-- Short-form variant: Add customers even when the internet is gone.
-- Published description: Create and edit customers while offline - Custosell saves them instantly with a Pending sync badge and syncs automatically when you're back. Try free #custosell #customers #customerlist #purchasehistory #Custosell #SmallBusiness
-- Tags: custosell, customers, customer list, purchase history, loyalty, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Saved offline. Synced when back." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

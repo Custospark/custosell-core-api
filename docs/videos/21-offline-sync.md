@@ -155,6 +155,17 @@
 - CTA: Try free + subscribe
 - Related videos: [01-account-auth-security.md](./01-account-auth-security.md)
 
+- Published title: Set up Custosell offline. Sign in online later.
+- Short-form variant: Set up Custosell offline. Sign
+- Published description: You can create your Custosell account without internet - the registration is saved on the device and synced to the server when you connect. An amber banner shows your account is pending sync, and offline sign-in keeps working after that. Try free + subscribe #custosell #offline #sync #nointernet #Custosell #SmallBusiness
+- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Register offline. Sync when online." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -188,14 +199,3 @@ sale_items, stock_movements, staff_transfers, quick_notes) · `GET /sync/pull?si
 · `GET /sync/full` · `sales.php` (auth:sanctum + business.active +
 subscription.active): `POST /sales/batch` (bulk sales sync) · `POST /sales` per
 sale fallback
-
-- Published title: Set up Custosell offline. Sign in online later.
-- Short-form variant: Set up Custosell offline. Sign
-- Published description: You can create your Custosell account without internet - the registration is saved on the device and synced to the server when you connect. An amber banner shows your account is pending sync, and offline sign-in keeps working after that. Try free + subscribe #custosell #offline #sync #nointernet #Custosell #SmallBusiness
-- Tags: custosell, offline, sync, no internet, offline first, pos offline, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Register offline. Sync when online." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

@@ -333,6 +333,17 @@
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Every upload, move, and email - on record.
+- Short-form variant: Every upload, move, and email
+- Published description: Open the vault activity feed to see who uploaded, moved, renamed, emailed, or deleted what - a full audit trail for your documents. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
+- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Filed. Moved. Emailed. Logged." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -365,14 +376,3 @@ POST + `/documents/folders/{id}` GET/PATCH/DELETE + `/{id}/contents` +
 **Vault client helpers (FE):** `uploadDocumentWithProgress` ·
 `downloadFileWithProgress` · `downloadFolderExportWithProgress` ·
 `importFolderTree` (recreates a local folder tree in the vault)
-
-- Published title: Every upload, move, and email - on record.
-- Short-form variant: Every upload, move, and email
-- Published description: Open the vault activity feed to see who uploaded, moved, renamed, emailed, or deleted what - a full audit trail for your documents. Try free #custosell #documents #filestorage #vault #Custosell #SmallBusiness
-- Tags: custosell, documents, file storage, vault, folders, tags, search, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Filed. Moved. Emailed. Logged." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

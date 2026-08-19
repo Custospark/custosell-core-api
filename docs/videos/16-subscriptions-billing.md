@@ -267,6 +267,17 @@
 - CTA: Try free
 - Related videos: [16-subscriptions-billing.md](./16-subscriptions-billing.md)
 
+- Published title: Paid but still pending? Sync it.
+- Short-form variant: Paid but still pending? Sync it.
+- Published description: When a payment shows pending, tap Sync payment to re-check with the provider and confirm the real status - so your subscription updates immediately. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
+- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Pending -> Applied" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -329,14 +340,3 @@ payment_action. History item types = payment | change | credit with statuses
 applied/pending/cancelled/failed/refunded/completed/successful. Payment
 currency: UGX/KES/TZS via PesaPal, otherwise USD. Billing history lives on the
 profile (auth store) and refreshes after confirmed payments.
-
-- Published title: Paid but still pending? Sync it.
-- Short-form variant: Paid but still pending? Sync it.
-- Published description: When a payment shows pending, tap Sync payment to re-check with the provider and confirm the real status - so your subscription updates immediately. Try free #custosell #subscription #billing #plans #Custosell #SmallBusiness
-- Tags: custosell, subscription, billing, plans, upgrade, invoice, payment, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Pending -> Applied" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

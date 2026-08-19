@@ -265,6 +265,17 @@
 - CTA: Try free
 - Related videos: [05-inventory-products.md](./05-inventory-products.md)
 
+- Published title: Sell recurring? See MRR and ARR proxies.
+- Short-form variant: Sell recurring? See MRR and ARR proxies.
+- Published description: Mark products or services as recurring and the KPIs page shows MRR, ARR, active subscribers, and average recurring price as simple proxies from your own catalog. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
+- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "MRR from your catalog" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -309,14 +320,3 @@ sales, runway coverage, month cash ladder rows with can_cover) ·
 `ForecastKpis` (retail: pulse/CAC/LTV/churn; saas: MRR/ARR/subscribers) ·
 `ForecastScenario` + `ForecastScenarioRun` (baseline + scenario forecast +
 delta)
-
-- Published title: Sell recurring? See MRR and ARR proxies.
-- Short-form variant: Sell recurring? See MRR and ARR proxies.
-- Published description: Mark products or services as recurring and the KPIs page shows MRR, ARR, active subscribers, and average recurring price as simple proxies from your own catalog. Try free #custosell #forecasting #budget #cashrunway #Custosell #SmallBusiness
-- Tags: custosell, forecasting, budget, cash runway, scenarios, kpi, projections, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "MRR from your catalog" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

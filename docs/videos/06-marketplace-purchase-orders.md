@@ -589,7 +589,7 @@
   - Brand overlay / watermark: Custosell logo, corner placement
   - Music: royalty-free background bed, low volume under the voiceover
 
-## Video: List products on your public shop
+## Video: Put your catalog in front of customers
 - Format: 45-90s how-to
 - Priority: P2
 - Platforms: Reels / Shorts / TikTok
@@ -648,6 +648,17 @@
 - CTA: Try free
 - Related videos: [21-offline-sync.md](./21-offline-sync.md)
 
+- Published title: Know exactly what needs a connection.
+- Short-form variant: Know exactly what needs a connection.
+- Published description: Marketplace browsing, ordering, and order management need the internet - see how Custosell tells you clearly and keeps your local work safe. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
+- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Offline. Connect to order." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -672,14 +683,3 @@
 (GET/PUT/DELETE) + `/purchase-orders/{id}/submit|cancel|accept|reject|
 fulfill|receive` · `/purchase-orders/incoming` ·
 `/products/{id}/supply-listing` · `/products/{id}/storefront-listing`
-
-- Published title: Know exactly what needs a connection.
-- Short-form variant: Know exactly what needs a connection.
-- Published description: Marketplace browsing, ordering, and order management need the internet - see how Custosell tells you clearly and keeps your local work safe. Try free #custosell #marketplace #purchaseorder #suppliers #Custosell #SmallBusiness
-- Tags: custosell, marketplace, purchase order, suppliers, restock, supply, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Offline. Connect to order." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

@@ -197,7 +197,7 @@
 - On-screen text / captions:
   - "One page, whole shift"
   - "Print or PDF"
-- Demo data needed: An open shift with sales, refunds, expenses, and VAT.
+- Demo data needed: A closed shift with sales, refunds, expenses, and VAT.
 - CTA: Try free
 - Related videos: [04-shifts.md](./04-shifts.md) (close your shift),
   [02-dashboard-reports.md](./02-dashboard-reports.md) (shift report)
@@ -344,6 +344,17 @@
 - Related videos: [21-offline-sync.md](./21-offline-sync.md),
   [03-sales-pos.md](./03-sales-pos.md) (sell offline)
 
+- Published title: Clock in, sell, and close - even with no internet.
+- Short-form variant: Clock in, sell, and close
+- Published description: Open, run, and close a shift with no internet on Custosell. Shift changes save locally and sync when you reconnect - the drawer stays accountable the whole time. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
+- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Shift runs offline" over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -368,14 +379,3 @@ total_mobile_money, total_card, counted_cash) · `useUpdateShiftOpeningBalance`
 `/shifts/{id}/payments` (shift payments) · `/sales/by-shift/{id}` (shift
 sales) · `/expenses?shift_id={id}` (shift expenses) · `/sales/daily` (day
 rollup per shift)
-
-- Published title: Clock in, sell, and close - even with no internet.
-- Short-form variant: Clock in, sell, and close
-- Published description: Open, run, and close a shift with no internet on Custosell. Shift changes save locally and sync when you reconnect - the drawer stays accountable the whole time. Try free #custosell #shift #openingbalance #cashdrawer #Custosell #SmallBusiness
-- Tags: custosell, shift, opening balance, cash drawer, close shift, attendance, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Shift runs offline" over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover

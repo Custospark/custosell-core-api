@@ -414,6 +414,17 @@
 - CTA: Try free
 - Related videos: [17-settings.md](./17-settings.md)
 
+- Published title: Facebook, WhatsApp, TikTok - on your shop page.
+- Short-form variant: Facebook, WhatsApp, TikTok
+- Published description: Add your social links in settings and they appear on your public shop with brand icons - so customers can follow, message, and find you. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
+- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
+- Video assets:
+  - Thumbnail: bold text "Follow. Message. Buy." over a bright screenshot of the action
+  - Screen-record clips: the Screen flow steps, trimmed to the script beats
+  - Captions / subtitles: full on-screen captions exported as a caption file
+  - Brand overlay / watermark: Custosell logo, corner placement
+  - Music: royalty-free background bed, low volume under the voiceover
+
 ---
 
 ## Technical reference (source of truth)
@@ -480,14 +491,3 @@ Wishlist is for products (heart); favorites are for businesses (star); both
 server-backed and sign-in gated. Orders poll every 30s with a status-change
 chime. No theme/branding customization exists - shop look comes from the
 Business record (name, logo, description, contact, currency, social links).
-
-- Published title: Facebook, WhatsApp, TikTok - on your shop page.
-- Short-form variant: Facebook, WhatsApp, TikTok
-- Published description: Add your social links in settings and they appear on your public shop with brand icons - so customers can follow, message, and find you. Try free #custosell #storefront #onlineshop #ecommerce #Custosell #SmallBusiness
-- Tags: custosell, storefront, online shop, ecommerce, marketplace, buy online, how to, tutorial, walkthrough, tips
-- Video assets:
-  - Thumbnail: bold text "Follow. Message. Buy." over a bright screenshot of the action
-  - Screen-record clips: the Screen flow steps, trimmed to the script beats
-  - Captions / subtitles: full on-screen captions exported as a caption file
-  - Brand overlay / watermark: Custosell logo, corner placement
-  - Music: royalty-free background bed, low volume under the voiceover
