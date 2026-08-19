@@ -39,8 +39,8 @@ file lists the hooks + endpoints behind that module's videos.
 | 2 | Dashboard & Reports | [02-dashboard-reports.md](./02-dashboard-reports.md) | 20 | 3 |
 | 3 | Sales & POS | [03-sales-pos.md](./03-sales-pos.md) | 34 | 1 |
 | 4 | Shifts | [04-shifts.md](./04-shifts.md) | 10 | 1 |
-| 5 | Inventory - Products & Categories | [05-inventory-products.md](./05-inventory-products.md) | 5 | 2 |
-| 6 | Marketplace & Purchase Orders | [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md) | 3 | 2 |
+| 5 | Inventory - Products & Categories | [05-inventory-products.md](./05-inventory-products.md) | 25 | 2 |
+| 6 | Marketplace & Purchase Orders | [06-marketplace-purchase-orders.md](./06-marketplace-purchase-orders.md) | 19 | 2 |
 | 7 | Customers | [07-customers.md](./07-customers.md) | 4 | 2 |
 | 8 | Expenses, Budgets & Income | [08-expenses-budgets-income.md](./08-expenses-budgets-income.md) | 4 | 2 |
 | 9 | Accounting | [09-accounting.md](./09-accounting.md) | 4 | 3 |
@@ -56,7 +56,7 @@ file lists the hooks + endpoints behind that module's videos.
 | 19 | Notifications & Web Push | [19-notifications-webpush.md](./19-notifications-webpush.md) | 3 | 4 |
 | 20 | Referrals, Credits & Sales Reps | [20-referrals-credits.md](./20-referrals-credits.md) | 3 | 4 |
 | 21 | Offline-First / Sync | [21-offline-sync.md](./21-offline-sync.md) | 4 | 1 |
-| **Total** | | | **136** | |
+| **Total** | | | **172** | |
 
 ---
 
