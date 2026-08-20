@@ -195,8 +195,6 @@ class CustomerDocumentEmailService
         }
 
         $parts[] = '<p>If you have any questions about this invoice, please reply to this email and ' . e($businessName) . ' will get back to you.</p>';
-        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
-
         return implode("\n", $parts);
     }
 
@@ -216,8 +214,6 @@ class CustomerDocumentEmailService
         }
 
         $parts[] = '<p>If you have any questions about this estimate, please reply to this email and ' . e($businessName) . ' will get back to you.</p>';
-        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
-
         return implode("\n", $parts);
     }
 
@@ -237,8 +233,6 @@ class CustomerDocumentEmailService
         }
 
         $parts[] = '<p>We appreciate your business. If you need anything else, please reply to this email.</p>';
-        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
-
         return implode("\n", $parts);
     }
 
@@ -258,8 +252,6 @@ class CustomerDocumentEmailService
         }
 
         $parts[] = '<p>We appreciate your business. If you need anything else, please reply to this email.</p>';
-        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent to you on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
-
         return implode("\n", $parts);
     }
 

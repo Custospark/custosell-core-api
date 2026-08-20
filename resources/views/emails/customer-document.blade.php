@@ -41,28 +41,22 @@
         }
 
         .business-name {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: #111827;
-            margin: 0 0 6px 0;
+            margin: 0 0 10px 0;
             letter-spacing: -0.3px;
         }
 
-        .via-line {
-            font-size: 13px;
-            color: #64748b;
-            margin: 0 0 20px 0;
-        }
-
-        .via-line strong { color: #475569; }
-
-        .email-header h1 {
-            margin: 0 0 0;
-            padding: 16px 0 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #374151;
+        .document-title {
+            margin: 0;
+            padding: 14px 0 0;
             border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #64748b;
         }
 
         .email-body {
@@ -78,6 +72,7 @@
         .attachment-note {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
+            border-left: 3px solid #2563eb;
             border-radius: 8px;
             padding: 14px 16px;
             margin-top: 24px;
@@ -88,13 +83,13 @@
         .attachment-note strong { color: #1e293b; }
 
         .custosell-promo {
-            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+            background: #f8fafc;
             border-top: 1px solid #e5e7eb;
-            padding: 20px 28px;
+            padding: 16px 28px;
             text-align: center;
-            font-size: 13px;
-            color: #475569;
-            line-height: 1.6;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
         }
 
         .custosell-promo a {
@@ -106,8 +101,7 @@
         .custosell-promo a:hover { text-decoration: underline; }
 
         .email-footer {
-            background: #f8fafc;
-            padding: 20px 28px;
+            padding: 16px 28px;
             text-align: center;
             font-size: 12px;
             color: #94a3b8;
@@ -127,27 +121,25 @@
     <div class="email-container">
         <div class="email-header">
             <p class="business-name">{{ $businessName }}</p>
-            <p class="via-line">Message from <strong>{{ $businessName }}</strong> · sent via <strong>Custosell</strong></p>
-            <h1>{{ $title }}</h1>
+            <p class="document-title">{{ $title }}</p>
         </div>
 
         <div class="email-body">
             {!! $mailBody !!}
 
             <div class="attachment-note">
-                <strong>📎 Attachment included</strong><br>
-                Your document is attached to this email as a PDF. Please keep it for your records.
+                <strong>Attachment included</strong><br>
+                Your document is attached to this email. Please keep it for your records.
             </div>
         </div>
 
         <div class="custosell-promo">
             Powered by <a href="{{ config('brand.url') }}" target="_blank" rel="noopener noreferrer">{{ config('brand.name') }}</a>
-            &mdash; {{ config('brand.tagline') }}.<br>
-            <span style="color:#64748b;">{{ config('brand.supporting_line') }}</span>
+            &mdash; {{ config('brand.tagline') }}.
         </div>
 
         <div class="email-footer">
-            This email was delivered on behalf of {{ $businessName }} using {{ config('brand.name') }},
+            Sent on behalf of {{ $businessName }} via {{ config('brand.name') }},
             a product of <a href="{{ config('brand.company_url') }}">{{ config('brand.company_name') }}</a>.<br>
             &copy; {{ now()->year }} {{ config('brand.company_name') }}. All rights reserved.
         </div>

@@ -126,9 +126,6 @@ class DocumentVaultEmailService
             $parts[] = '<p>' . nl2br(e(trim($customMessage))) . '</p>';
         }
 
-        $parts[] = '<p>The ' . $kind . ' is attached to this email.</p>';
-        $parts[] = '<p style="color:#64748b;font-size:14px;margin-top:1.5em;">This message was sent on behalf of <strong>' . e($businessName) . '</strong> via Custosell.</p>';
-
         return implode("\n", $parts);
     }
 
