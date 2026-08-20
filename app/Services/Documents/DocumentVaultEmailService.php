@@ -6,6 +6,7 @@ namespace App\Services\Documents;
 
 use App\Mail\CustomerDocumentEmail;
 use App\Models\Business;
+use App\Models\Customer;
 use App\Models\Document;
 use App\Models\DocumentFolder;
 use App\Models\User;
@@ -51,7 +52,8 @@ class DocumentVaultEmailService
         $businessName = $business->name ?: 'Your business';
         $subject = sprintf('Shared file: %s from %s', $document->title, $businessName);
         $title = sprintf('Shared file: %s', $document->title);
-        $body = $this->buildVaultBody($sender->name, $businessName, $document->title, $customMessage, false);
+        $recipientName = $this->resolveRecipientName($businessId, $to);
+        $body = $this->buildVaultBody($sender->name, $businessName, $document->title, $customMessage, false, $recipientName);
 
         $this->dispatch($to, $subject, $title, $body, $business, $attachmentName, $bytes, $mime);
 
@@ -79,7 +81,8 @@ class DocumentVaultEmailService
         $businessName = $business->name ?: 'Your business';
         $subject = sprintf('Shared folder: %s from %s', $folder->name, $businessName);
         $title = sprintf('Shared folder: %s', $folder->name);
-        $body = $this->buildVaultBody($sender->name, $businessName, $folder->name, $customMessage, true);
+        $recipientName = $this->resolveRecipientName($businessId, $to);
+        $body = $this->buildVaultBody($sender->name, $businessName, $folder->name, $customMessage, true, $recipientName);
 
         $this->dispatch(
             $to,
@@ -115,10 +118,15 @@ class DocumentVaultEmailService
         string $itemName,
         ?string $customMessage,
         bool $isFolder,
+        ?string $recipientName = null,
     ): string {
         $kind = $isFolder ? 'folder' : 'file';
+        $greeting = $recipientName !== null && trim($recipientName) !== ''
+            ? '<p>Hello ' . e($recipientName) . ',</p>'
+            : '<p>Hello,</p>';
+
         $parts = [
-            '<p>Hello,</p>',
+            $greeting,
             '<p><strong>' . e($senderName) . '</strong> from <strong>' . e($businessName) . '</strong> shared a ' . $kind . ' with you: <strong>' . e($itemName) . '</strong>.</p>',
         ];
 
@@ -127,6 +135,31 @@ class DocumentVaultEmailService
         }
 
         return implode("\n", $parts);
+    }
+
+    private function resolveRecipientName(int $businessId, string $email): ?string
+    {
+        $email = mb_strtolower(trim($email));
+
+        $customer = Customer::query()
+            ->where('business_id', $businessId)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if ($customer !== null && trim((string) $customer->name) !== '') {
+            return trim((string) $customer->name);
+        }
+
+        $user = User::query()
+            ->where('business_id', $businessId)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if ($user !== null && trim((string) $user->name) !== '') {
+            return trim((string) $user->name);
+        }
+
+        return null;
     }
 
     private function dispatch(
