@@ -55,7 +55,7 @@ class DocumentVaultEmailService
         $recipientName = $this->resolveRecipientName($businessId, $to);
         $body = $this->buildVaultBody($sender->name ?: $businessName, $businessName, $document->title, $customMessage, false, $recipientName);
 
-        $this->dispatch($to, $subject, $title, $body, $business, $attachmentName, $bytes, $mime);
+        $this->dispatch($to, $subject, $title, $body, $business, $sender, $attachmentName, $bytes, $mime);
 
         $this->recordDocumentEmailSent($document);
 
@@ -90,6 +90,7 @@ class DocumentVaultEmailService
             $title,
             $body,
             $business,
+            $sender,
             $zip['filename'],
             $zip['bytes'],
             'application/zip',
@@ -172,11 +173,12 @@ class DocumentVaultEmailService
         string $title,
         string $body,
         Business $business,
+        User $sender,
         string $attachmentName,
         string $attachmentBytes,
         string $mime,
     ): void {
-        $replyTo = $this->resolveBusinessReplyTo($business);
+        $replyTo = $this->resolveReplyTo($business, $sender);
 
         try {
             Mail::to($to)->send(new CustomerDocumentEmail(
@@ -202,9 +204,13 @@ class DocumentVaultEmailService
         }
     }
 
-    private function resolveBusinessReplyTo(Business $business): ?string
+    /**
+     * Reply-to resolution: the business email takes priority, falling back to
+     * the sender's own email.
+     */
+    private function resolveReplyTo(Business $business, User $sender): ?string
     {
-        foreach ([$business->business_email ?? null, $business->email ?? null] as $candidate) {
+        foreach ([$business->business_email ?? null, $sender->email ?? null] as $candidate) {
             $email = trim((string) $candidate);
             if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 return $email;

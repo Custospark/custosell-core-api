@@ -69,6 +69,7 @@ class PaymentController extends Controller
                 $request->user()->business,
                 $to,
                 $request->validated('message'),
+                $request->user()->email,
             );
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

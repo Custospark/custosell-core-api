@@ -28,7 +28,7 @@ class CustomerDocumentEmailService
     /**
      * @return array{sent_to: string, sent_at: string, document_type: string, document_ref: string}
      */
-    public function sendInvoice(Invoice $invoice, Business $business, string $to, ?string $customMessage = null): array
+    public function sendInvoice(Invoice $invoice, Business $business, string $to, ?string $customMessage = null, ?string $senderEmail = null): array
     {
         $invoice->loadMissing(['customer']);
         $this->assertValidRecipient($to);
@@ -52,6 +52,7 @@ class CustomerDocumentEmailService
             title: $title,
             body: $body,
             business: $business,
+            senderEmail: $senderEmail,
             attachmentName: $pdfConfig['filename'] . '.pdf',
             attachmentBytes: $pdfBytes,
         );
@@ -64,7 +65,7 @@ class CustomerDocumentEmailService
     /**
      * @return array{sent_to: string, sent_at: string, document_type: string, document_ref: string}
      */
-    public function sendEstimate(Estimate $estimate, Business $business, string $to, ?string $customMessage = null): array
+    public function sendEstimate(Estimate $estimate, Business $business, string $to, ?string $customMessage = null, ?string $senderEmail = null): array
     {
         $estimate->loadMissing(['customer']);
         $this->assertValidRecipient($to);
@@ -88,6 +89,7 @@ class CustomerDocumentEmailService
             title: $title,
             body: $body,
             business: $business,
+            senderEmail: $senderEmail,
             attachmentName: $pdfConfig['filename'] . '.pdf',
             attachmentBytes: $pdfBytes,
         );
@@ -100,7 +102,7 @@ class CustomerDocumentEmailService
     /**
      * @return array{sent_to: string, sent_at: string, document_type: string, document_ref: string}
      */
-    public function sendPaymentReceipt(Payment $payment, Business $business, string $to, ?string $customMessage = null): array
+    public function sendPaymentReceipt(Payment $payment, Business $business, string $to, ?string $customMessage = null, ?string $senderEmail = null): array
     {
         $this->assertValidRecipient($to);
 
@@ -123,6 +125,7 @@ class CustomerDocumentEmailService
             title: $title,
             body: $body,
             business: $business,
+            senderEmail: $senderEmail,
             attachmentName: $pdfConfig['filename'] . '.pdf',
             attachmentBytes: $pdfBytes,
         );
@@ -132,7 +135,7 @@ class CustomerDocumentEmailService
         return $this->buildSendResult($to, 'payment_receipt', $payment->receipt_number, $payment);
     }
 
-    public function sendSaleReceipt(Sale $sale, Business $business, string $to, ?string $customMessage = null): array
+    public function sendSaleReceipt(Sale $sale, Business $business, string $to, ?string $customMessage = null, ?string $senderEmail = null): array
     {
         $sale->loadMissing(['customer', 'saleItems', 'user', 'payments']);
         $this->assertValidRecipient($to);
@@ -156,6 +159,7 @@ class CustomerDocumentEmailService
             title: $title,
             body: $body,
             business: $business,
+            senderEmail: $senderEmail,
             attachmentName: $pdfConfig['filename'] . '.pdf',
             attachmentBytes: $pdfBytes,
         );
@@ -275,10 +279,11 @@ class CustomerDocumentEmailService
         string $title,
         string $body,
         Business $business,
+        ?string $senderEmail,
         string $attachmentName,
         string $attachmentBytes,
     ): void {
-        $replyTo = $this->resolveBusinessReplyTo($business);
+        $replyTo = $this->resolveReplyTo($business, $senderEmail);
 
         try {
             Mail::to($to)->send(new CustomerDocumentEmail(
@@ -304,9 +309,13 @@ class CustomerDocumentEmailService
         }
     }
 
-    private function resolveBusinessReplyTo(Business $business): ?string
+    /**
+     * Reply-to resolution: the business email takes priority, then the sender's
+     * email, then the business's general email as a last resort.
+     */
+    private function resolveReplyTo(Business $business, ?string $senderEmail = null): ?string
     {
-        foreach ([$business->business_email ?? null, $business->email ?? null] as $candidate) {
+        foreach ([$business->business_email ?? null, $senderEmail ?? null, $business->email ?? null] as $candidate) {
             $email = trim((string) $candidate);
             if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 return $email;

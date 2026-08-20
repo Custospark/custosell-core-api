@@ -247,7 +247,7 @@ class SaleController extends Controller
         }
 
         try {
-            $result = $this->emailService->sendSaleReceipt($sale, $business, $to, $message);
+            $result = $this->emailService->sendSaleReceipt($sale, $business, $to, $message, $request->user()->email);
             return response()->json($result);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
