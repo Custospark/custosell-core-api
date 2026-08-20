@@ -98,6 +98,10 @@ It mirrors the board import file `video_import_file.xlsx` row order: Tier 1
 (ACC -> SET -> INV -> POS -> DSH -> SHF -> ...), videos in `01, 02, ...` order
 within each module.
 
+`video_board_overview.xlsx` is a single-card import file that describes the
+board's organization, production order, and priorities - upload it as the
+first card.
+
 ---
 
 ## Measurement (what "working" looks like)
