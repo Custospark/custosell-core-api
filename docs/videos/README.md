@@ -89,6 +89,17 @@ clip for Reels/Shorts/TikTok.
 
 ---
 
+## Production order (tier + prefix)
+
+The full 287-video production sequence, grouped by journey tier then module
+prefix then sequence, lives in [order-of-production.md](./order-of-production.md).
+It mirrors the board import file `video_import_file.xlsx` row order: Tier 1
+(high) -> Tier 2 (medium) -> Tier 3 (low), modules in new-user journey order
+(ACC -> SET -> INV -> POS -> DSH -> SHF -> ...), videos in `01, 02, ...` order
+within each module.
+
+---
+
 ## Measurement (what "working" looks like)
 
 - **Watch-to-completion** (not just views) on the 45-90s videos.
