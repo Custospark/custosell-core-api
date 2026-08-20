@@ -53,7 +53,7 @@ class DocumentVaultEmailService
         $subject = sprintf('Shared file: %s from %s', $document->title, $businessName);
         $title = sprintf('Shared file: %s', $document->title);
         $recipientName = $this->resolveRecipientName($businessId, $to);
-        $body = $this->buildVaultBody($sender->name, $businessName, $document->title, $customMessage, false, $recipientName);
+        $body = $this->buildVaultBody($sender->name ?: $businessName, $businessName, $document->title, $customMessage, false, $recipientName);
 
         $this->dispatch($to, $subject, $title, $body, $business, $attachmentName, $bytes, $mime);
 
@@ -82,7 +82,7 @@ class DocumentVaultEmailService
         $subject = sprintf('Shared folder: %s from %s', $folder->name, $businessName);
         $title = sprintf('Shared folder: %s', $folder->name);
         $recipientName = $this->resolveRecipientName($businessId, $to);
-        $body = $this->buildVaultBody($sender->name, $businessName, $folder->name, $customMessage, true, $recipientName);
+        $body = $this->buildVaultBody($sender->name ?: $businessName, $businessName, $folder->name, $customMessage, true, $recipientName);
 
         $this->dispatch(
             $to,
@@ -139,27 +139,31 @@ class DocumentVaultEmailService
 
     private function resolveRecipientName(int $businessId, string $email): ?string
     {
-        $email = mb_strtolower(trim($email));
+        try {
+            $email = mb_strtolower(trim($email));
 
-        $customer = Customer::query()
-            ->where('business_id', $businessId)
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
+            $customer = Customer::query()
+                ->where('business_id', $businessId)
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->first();
 
-        if ($customer !== null && trim((string) $customer->name) !== '') {
-            return trim((string) $customer->name);
+            if ($customer !== null && trim((string) $customer->name) !== '') {
+                return trim((string) $customer->name);
+            }
+
+            $user = User::query()
+                ->where('business_id', $businessId)
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->first();
+
+            if ($user !== null && trim((string) $user->name) !== '') {
+                return trim((string) $user->name);
+            }
+
+            return null;
+        } catch (\Throwable) {
+            return null;
         }
-
-        $user = User::query()
-            ->where('business_id', $businessId)
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
-
-        if ($user !== null && trim((string) $user->name) !== '') {
-            return trim((string) $user->name);
-        }
-
-        return null;
     }
 
     private function dispatch(
