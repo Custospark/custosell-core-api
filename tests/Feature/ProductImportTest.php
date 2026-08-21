@@ -113,6 +113,22 @@ class ProductImportTest extends TestCase
         $this->assertSame([], $results['errors']);
         $product = Product::where('business_id', $this->business->id)->firstOrFail();
         $this->assertSame(5, (int) $product->low_stock_threshold);
+        $this->assertSame(0.0, (float) $product->tax_percentage);
+
+        @unlink($path);
+    }
+
+    public function test_import_defaults_blank_tax_percentage(): void
+    {
+        $path = $this->makeImportFileWithBlankThreshold('Blank-Tax', 0);
+
+        $results = app(ProductImportService::class)->import($this->business->id, $path);
+
+        $this->assertSame(1, $results['imported']);
+        $this->assertSame([], $results['errors']);
+        $product = Product::where('business_id', $this->business->id)->firstOrFail();
+        $this->assertSame(0.0, (float) $product->tax_percentage);
+        $this->assertSame(5, (int) $product->low_stock_threshold);
 
         @unlink($path);
     }
@@ -139,7 +155,7 @@ class ProductImportTest extends TestCase
         $sheet->fromArray([
             ['Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description'],
         ]);
-        $sheet->fromArray([[$name, 'Pieces', '', '1000', '', '', $qty, '', 'SKU-BLANK', '', '18', 'standard', '']], null, 'A2');
+        $sheet->fromArray([[$name, 'Pieces', '', '1000', '', '', $qty, '', 'SKU-BLANK', '', '', 'standard', '']], null, 'A2');
 
         $path = tempnam(sys_get_temp_dir(), 'product-import-') . '.xlsx';
         (new Xlsx($spreadsheet))->save($path);

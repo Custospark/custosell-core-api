@@ -36,6 +36,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
             if ($request->is('api/*')) {
+                if ($e instanceof \Illuminate\Database\QueryException) {
+                    \Illuminate\Support\Facades\Log::error('Database error on API request', [
+                        'message' => $e->getMessage(),
+                        'route' => $request->path(),
+                    ]);
+
+                    return response()->json([
+                        'message' => 'Something went wrong while saving your data. Please check your entries and try again.',
+                        'errors' => ['data' => ['Something went wrong while saving your data. Please check your entries and try again.']],
+                    ], 422);
+                }
+
                 return response()->json([
                     'message' => $e->getMessage(),
                     'errors' => ['plan_limit' => [$e->getMessage()]],

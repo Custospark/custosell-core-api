@@ -145,32 +145,40 @@ class ProductImportService
                     $stockQty = (int) ($data['stock_quantity'] ?? 0);
                     unset($data['stock_quantity']);
 
-                    $product = Product::create($data);
+                    try {
+                        $product = Product::create($data);
 
-                    if ($stockQty > 0) {
-                        StockMovement::create([
-                            'business_id' => $businessId,
-                            'product_id' => $product->id,
-                            'location_id' => $locationId,
-                            'type' => 'initial',
-                            'quantity_change' => $stockQty,
-                            'stock_before' => 0,
-                            'stock_after' => $stockQty,
-                            'notes' => 'Initial stock from import',
-                            'created_by' => $actorUserId ?? auth()->id(),
-                        ]);
-
-                        \App\Models\LocationProduct::updateOrCreate(
-                            [
+                        if ($stockQty > 0) {
+                            StockMovement::create([
                                 'business_id' => $businessId,
-                                'location_id' => $locationId,
                                 'product_id' => $product->id,
-                            ],
-                            ['stock_quantity' => $stockQty],
-                        );
+                                'location_id' => $locationId,
+                                'type' => 'initial',
+                                'quantity_change' => $stockQty,
+                                'stock_before' => 0,
+                                'stock_after' => $stockQty,
+                                'notes' => 'Initial stock from import',
+                                'created_by' => $actorUserId ?? auth()->id(),
+                            ]);
 
-                        $product->stock_quantity = $stockQty;
-                        $product->save();
+                            \App\Models\LocationProduct::updateOrCreate(
+                                [
+                                    'business_id' => $businessId,
+                                    'location_id' => $locationId,
+                                    'product_id' => $product->id,
+                                ],
+                                ['stock_quantity' => $stockQty],
+                            );
+
+                            $product->stock_quantity = $stockQty;
+                            $product->save();
+                        }
+                    } catch (\Throwable $e) {
+                        $results['errors'][] = [
+                            'row' => $rowNum,
+                            'errors' => ['row' => $this->friendlyRowError($e)],
+                        ];
+                        continue;
                     }
 
                     if ($skuKey) {
@@ -245,7 +253,7 @@ class ProductImportService
             'low_stock_threshold' => $get(7) ?? 5,
             'sku' => $get(8),
             'barcode' => $get(9),
-            'tax_percentage' => $get(10),
+            'tax_percentage' => $get(10) ?? 0,
             'tax_class' => $this->normalizeTaxClass($get(11)),
             'description' => $get(self::DESCRIPTION_COLUMN_INDEX),
         ];
@@ -282,5 +290,20 @@ class ProductImportService
         $normalized = strtolower(str_replace([' ', '-'], '_', trim($value)));
 
         return in_array($normalized, self::TAX_CLASSES, true) ? $normalized : 'standard';
+    }
+
+    protected function friendlyRowError(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'Duplicate entry')) {
+            return 'This product could not be imported because a product with the same SKU already exists.';
+        }
+
+        if (str_contains($message, 'cannot be null')) {
+            return 'This product could not be imported because a required field is missing. Fill in the required columns and try again.';
+        }
+
+        return 'This product could not be imported. Check the row and try again.';
     }
 }
