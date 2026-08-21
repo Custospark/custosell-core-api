@@ -72,6 +72,24 @@ class BudgetLineAndLinkTest extends TestCase
         ]);
     }
 
+    public function test_index_returns_budgets_array_shape(): void
+    {
+        $this->makeBudget();
+        $this->makeBudget();
+
+        $response = $this->withHeaders($this->headers())
+            ->getJson('/api/v1/budgets?status=active');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'budgets' => [
+                '*' => ['id', 'name', 'planned_amount', 'status'],
+            ],
+            'total_planned',
+        ]);
+        $this->assertCount(2, $response->json('budgets'));
+    }
+
     public function test_shopping_list_keeps_fractional_quantity_and_line_total(): void
     {
         $budget = $this->makeBudget();
@@ -148,7 +166,8 @@ class BudgetLineAndLinkTest extends TestCase
                 'expense_date' => now()->toDateString(),
                 'budget_id' => $budget->id,
             ]);
-        $linked->assertStatus(200);
+        $linked->assertStatus(200)
+            ->assertJsonPath('data.budget_id', $budget->id);
         $this->assertDatabaseHas('expenses', ['id' => $expense->id, 'budget_id' => $budget->id]);
 
         // Clear the link on a later update (empty budget_id).
