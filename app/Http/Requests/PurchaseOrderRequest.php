@@ -23,7 +23,7 @@ class PurchaseOrderRequest extends BaseFormRequest
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'items' => $itemsRule,
             'items.*.product_id' => ['required_with:items', 'integer', 'min:1'],
-            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.quantity' => ['required_with:items', 'numeric', 'gt:0'],
         ];
     }
 

@@ -34,7 +34,7 @@ class OrderRequest extends BaseFormRequest
             'items.*.product_name' => ['nullable', 'string', 'max:255'],
             'items.*.product_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.wholesale_price' => ['nullable', 'numeric', 'min:0'],
-            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.quantity' => ['required_with:items', 'numeric', 'gt:0'],
             'items.*.unit_price' => ['required_with:items', 'numeric', 'min:0'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
             'items.*.tax_amount' => ['nullable', 'numeric', 'min:0'],

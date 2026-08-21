@@ -23,8 +23,8 @@ class PurchaseOrderItem extends Model
     {
         return [
             'unit_price' => 'decimal:2',
-            'quantity' => 'integer',
-            'quantity_fulfilled' => 'integer',
+            'quantity' => 'decimal:3',
+            'quantity_fulfilled' => 'decimal:3',
             'subtotal' => 'decimal:2',
         ];
     }

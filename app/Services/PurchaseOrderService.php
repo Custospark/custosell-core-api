@@ -138,7 +138,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                     'product_name' => $item->product_name,
                     'product_sku' => $item->product_sku,
                     'unit_price' => (float) $item->unit_price,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => (float) $item->quantity,
                     'subtotal' => (float) $item->subtotal,
                 ])->all();
                 $totals = $this->lineBuilder->sumLines(
@@ -314,7 +314,7 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
                     ]);
                 }
 
-                if ((int) $product->stock_quantity < (int) $item->quantity) {
+                if ((float) $product->stock_quantity < (float) $item->quantity) {
                     throw ValidationException::withMessages([
                         'items' => ["Insufficient stock for \"{$product->name}\" to fulfill this order."],
                     ]);
@@ -325,14 +325,14 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
 
             foreach ($items as $item) {
                 $product = $products[$item->id];
-                $stockBefore = (int) $product->stock_quantity;
-                $stockAfter = $stockBefore - (int) $item->quantity;
+                $stockBefore = (float) $product->stock_quantity;
+                $stockAfter = $stockBefore - (float) $item->quantity;
 
                 StockMovement::create([
                     'business_id' => $sellerBusinessId,
                     'product_id' => $product->id,
                     'type' => 'sale',
-                    'quantity_change' => -1 * (int) $item->quantity,
+                    'quantity_change' => -1 * (float) $item->quantity,
                     'stock_before' => $stockBefore,
                     'stock_after' => $stockAfter,
                     'reference' => $po->po_number,
@@ -415,14 +415,14 @@ class PurchaseOrderService implements PurchaseOrderServiceInterface
 
                 // Services are not quantitative - skip stock movements for them.
                 if ($product->tracksStock()) {
-                    $stockBefore = (int) $product->stock_quantity;
-                    $stockAfter = $stockBefore + (int) $item->quantity;
+                    $stockBefore = (float) $product->stock_quantity;
+                    $stockAfter = $stockBefore + (float) $item->quantity;
 
                     StockMovement::create([
                         'business_id' => $buyerBusinessId,
                         'product_id' => $product->id,
                         'type' => 'purchase',
-                        'quantity_change' => (int) $item->quantity,
+                        'quantity_change' => (float) $item->quantity,
                         'stock_before' => $stockBefore,
                         'stock_after' => $stockAfter,
                         'reference' => $po->po_number,

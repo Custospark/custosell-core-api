@@ -315,7 +315,7 @@ class ProductServiceSalesTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('data.type', 'service')
-            ->assertJsonPath('data.stock_quantity', 0);
+            ->assertJsonPath('data.stock_quantity', number_format(0, 3, '.', ''));
     }
 
     protected function lineCredit(JournalEntry $entry, int $accountId): float

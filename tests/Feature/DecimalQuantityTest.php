@@ -211,6 +211,36 @@ class DecimalQuantityTest extends TestCase
         $this->assertSame('Roll', $data[$custom->id]['pricing_unit_label']);
     }
 
+    public function test_legacy_product_without_pricing_unit_is_decimal_capable_by_unit(): void
+    {
+        $legacySugar = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'unit' => 'Kg',
+            'pricing_unit' => null,
+        ]);
+        $legacyRoll = Product::factory()->create([
+            'business_id' => $this->business->id,
+            'unit' => 'Roll',
+            'pricing_unit' => null,
+        ]);
+
+        // Legacy products carry no pricing_unit - the resource must derive the
+        // capability from the free-text unit without failing.
+        $this->assertTrue(\App\Support\PricingUnits::supportsDecimalQuantity((string) ($legacySugar->pricing_unit ?? $legacySugar->unit ?? 'piece')));
+        $this->assertFalse(\App\Support\PricingUnits::supportsDecimalQuantity((string) ($legacyRoll->pricing_unit ?? $legacyRoll->unit ?? 'piece')));
+
+        $response = $this->withHeader('Authorization', "Bearer $this->adminToken")
+            ->getJson('/api/v1/products');
+
+        $response->assertStatus(200);
+        $data = collect($response->json('data'))->keyBy('id');
+
+        $this->assertTrue($data[$legacySugar->id]['supports_decimal_quantity']);
+        $this->assertFalse($data[$legacyRoll->id]['supports_decimal_quantity']);
+        $this->assertSame('Kg', $data[$legacySugar->id]['pricing_unit_label']);
+        $this->assertSame('Roll', $data[$legacyRoll->id]['pricing_unit_label']);
+    }
+
     protected function tearDown(): void
     {
         Sale::query()->delete();

@@ -187,7 +187,7 @@ class SupplyChainTest extends TestCase
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'fulfilled');
 
-        $this->assertSame(90, $this->listedProduct->fresh()->stock_quantity);
+        $this->assertEquals(90.0, (float) $this->listedProduct->fresh()->stock_quantity);
         $this->assertDatabaseHas('stock_movements', [
             'business_id' => $this->seller->id,
             'product_id' => $this->listedProduct->id,
@@ -202,7 +202,7 @@ class SupplyChainTest extends TestCase
         ]);
         $receive->assertStatus(200)->assertJsonPath('data.status', 'received');
 
-        $this->assertSame(10, $localProduct->fresh()->stock_quantity);
+        $this->assertEquals(10.0, (float) $localProduct->fresh()->stock_quantity);
         $this->assertDatabaseHas('stock_movements', [
             'business_id' => $this->buyer->id,
             'product_id' => $localProduct->id,
@@ -227,7 +227,7 @@ class SupplyChainTest extends TestCase
         $this->asSeller('POST', "/api/v1/purchase-orders/{$poId}/fulfill")
             ->assertStatus(422);
 
-        $this->assertSame(100, $this->listedProduct->fresh()->stock_quantity);
+        $this->assertEquals(100.0, (float) $this->listedProduct->fresh()->stock_quantity);
         $this->assertDatabaseHas('purchase_orders', ['id' => $poId, 'status' => 'accepted']);
         $this->assertDatabaseMissing('stock_movements', [
             'product_id' => $this->listedProduct->id,

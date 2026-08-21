@@ -124,7 +124,9 @@ class ProductService implements ProductServiceInterface
         }
 
         $unit = $data['unit'] ?? $existing?->unit ?? '';
-        $pricingUnit = $data['pricing_unit'] ?? $existing?->pricing_unit ?? '';
+        $pricingUnit = array_key_exists('pricing_unit', $data)
+            ? trim((string) ($data['pricing_unit'] ?? ''))
+            : trim((string) ($existing?->pricing_unit ?? ''));
         if ($pricingUnit === '' && $unit !== '') {
             $candidate = \App\Support\PricingUnits::normaliseKey((string) $unit);
             $pricingUnit = \App\Support\PricingUnits::isKnown($candidate) ? $candidate : '';

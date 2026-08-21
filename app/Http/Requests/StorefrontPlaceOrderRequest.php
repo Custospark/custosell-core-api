@@ -21,7 +21,7 @@ class StorefrontPlaceOrderRequest extends BaseFormRequest
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.product_id' => ['required', 'integer', 'min:1'],
-            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999'],
         ];
     }
 

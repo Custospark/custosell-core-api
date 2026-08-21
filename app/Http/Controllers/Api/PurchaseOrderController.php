@@ -55,7 +55,7 @@ class PurchaseOrderController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['nullable', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_total' => ['nullable', 'numeric', 'min:0'],
         ]);
