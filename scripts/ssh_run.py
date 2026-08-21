@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run a command on the production server via SSH.
 
-Reads credentials from Backend/.env (SERVER_*) - never prints them.
+Reads credentials from Backend/.env (SSH_DEPLOY_*) - never prints them.
 Usage:
     python scripts/ssh_run.py "<command>"
 """
@@ -22,7 +22,7 @@ def load_env():
             key, _, val = line.partition("=")
             key = key.strip()
             val = val.strip()
-            if key.startswith("SERVER_"):
+            if key.startswith("SSH_DEPLOY_"):
                 values[key] = val
     return values
 
@@ -33,13 +33,13 @@ def main():
         sys.exit(2)
 
     env = load_env()
-    host = env.get("SERVER_HOST", "")
-    port = int(env.get("SERVER_PORT", "22"))
-    user = env.get("SERVER_USER", "")
-    password = env.get("SERVER_PASSWORD", "")
+    host = env.get("SSH_DEPLOY_HOST", "")
+    port = int(env.get("SSH_DEPLOY_PORT", "22"))
+    user = env.get("SSH_DEPLOY_USER", "")
+    password = env.get("SSH_DEPLOY_PASSWORD", "")
 
     if not host or not user or not password:
-        print("SERVER_* env vars incomplete in .env")
+        print("SSH_DEPLOY_* env vars incomplete in .env")
         sys.exit(1)
 
     command = sys.argv[1]

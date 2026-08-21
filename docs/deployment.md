@@ -31,7 +31,7 @@ guess, never assume, never "just try it" on a live environment.
   `Backend/public/staging` and `Backend/public/production`, then copied into the
   web docroot on the server. The backend `public/` folder is the single source
   of truth for deployed web builds.
-- Credentials for the server live in `Backend/.env` under `SERVER_*` and are
+- Credentials for the server live in `Backend/.env` under `SSH_DEPLOY_*` and are
   read by `Backend/scripts/ssh_run.py` (never typed, never printed).
 
 **Separate databases per environment** (staging must never share prod data):
