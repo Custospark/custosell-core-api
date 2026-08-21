@@ -142,7 +142,7 @@ class ProductImportService
                     $data['business_id'] = $businessId;
                     $data['listed_for_supply'] = true;
                     $data['listed_for_storefront'] = true;
-                    $stockQty = (int) ($data['stock_quantity'] ?? 0);
+                    $stockQty = (float) ($data['stock_quantity'] ?? 0);
                     unset($data['stock_quantity']);
 
                     try {
@@ -203,7 +203,7 @@ class ProductImportService
             'unit_price' => ['required', 'numeric', 'min:0'],
             'wholesale_price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'stock_quantity' => ['nullable', 'integer', 'min:0'],
+            'stock_quantity' => ['nullable', 'numeric', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'sku' => [
                 'nullable',

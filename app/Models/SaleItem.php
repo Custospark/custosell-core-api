@@ -36,8 +36,8 @@ class SaleItem extends Model
             'tax_refunded_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'refunded_amount' => 'decimal:2',
-            'quantity' => 'integer',
-            'refunded_quantity' => 'integer',
+            'quantity' => 'decimal:3',
+            'refunded_quantity' => 'decimal:3',
         ];
     }
 

@@ -29,7 +29,7 @@ class OrderItem extends Model
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'wholesale_price' => 'decimal:2',
-            'quantity' => 'integer',
+            'quantity' => 'decimal:3',
         ];
     }
 

@@ -60,7 +60,7 @@ class ProductService implements ProductServiceInterface
 
         $product = $this->productRepository->create($data);
 
-        $stockQty = (int) ($product->stock_quantity ?? 0);
+        $stockQty = (float) ($product->stock_quantity ?? 0);
         if ($stockQty > 0 && $locationId) {
             $this->recordInitialStock($businessId, $product->id, $locationId, $stockQty);
         }
@@ -122,6 +122,14 @@ class ProductService implements ProductServiceInterface
         if ($data['type'] === Product::TYPE_SERVICE) {
             $data['stock_quantity'] = 0;
         }
+
+        $unit = $data['unit'] ?? $existing?->unit ?? '';
+        $pricingUnit = $data['pricing_unit'] ?? $existing?->pricing_unit ?? '';
+        if ($pricingUnit === '' && $unit !== '') {
+            $candidate = \App\Support\PricingUnits::normaliseKey((string) $unit);
+            $pricingUnit = \App\Support\PricingUnits::isKnown($candidate) ? $candidate : '';
+        }
+        $data['pricing_unit'] = $pricingUnit !== '' ? $pricingUnit : null;
 
         return $data;
     }

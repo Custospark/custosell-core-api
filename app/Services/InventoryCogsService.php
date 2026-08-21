@@ -72,7 +72,7 @@ class InventoryCogsService
 
     public function calculateLineCogs(SaleItem $item): float
     {
-        $netQty = max(0, (int) $item->quantity - (int) $item->refunded_quantity);
+        $netQty = max(0, (float) $item->quantity - (float) $item->refunded_quantity);
         if ($netQty <= 0 || !$item->product_id) {
             return 0.0;
         }

@@ -32,7 +32,7 @@ trait ComputesDashboardAndVat
         }
 
         $todaySales = Sale::where('business_id', $businessId)->whereDate('sale_date', $today)->get();
-        $todayProductsSold = (int) SaleItem::whereIn('sale_id', $todaySales->pluck('id'))->sum('quantity');
+        $todayProductsSold = (float) SaleItem::whereIn('sale_id', $todaySales->pluck('id'))->sum('quantity');
 
         $salesTrend = [];
         for ($i = 6; $i >= 0; $i--) {

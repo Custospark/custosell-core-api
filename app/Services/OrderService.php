@@ -203,7 +203,7 @@ class OrderService implements OrderServiceInterface
                     'product_id' => $item->product_id,
                     'product_name' => $item->product_name,
                     'product_price' => (float) $item->product_price,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => (float) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
                     'wholesale_price' => (float) ($item->wholesale_price ?? 0),
                     'discount_amount' => (float) $item->discount_amount,
@@ -360,7 +360,7 @@ class OrderService implements OrderServiceInterface
         $lines = [];
         foreach ($items as $item) {
             $product = !empty($item['product_id']) ? Product::find($item['product_id']) : null;
-            $qty = max(1, (int) ($item['quantity'] ?? 1));
+            $qty = max(0.001, (float) ($item['quantity'] ?? 1));
             $unitPrice = (float) ($item['unit_price'] ?? $product?->unit_price ?? 0);
             $discount = (float) ($item['discount_amount'] ?? 0);
             $tax = (float) ($item['tax_amount'] ?? 0);

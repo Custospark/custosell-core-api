@@ -93,7 +93,7 @@ class InventoryOverviewService
         }
 
         return $rows->mapWithKeys(fn (LocationProduct $lp): array => [
-            (string) $lp->product_id => (int) $lp->stock_quantity,
+            (string) $lp->product_id => (float) $lp->stock_quantity,
         ]);
     }
 
@@ -102,7 +102,7 @@ class InventoryOverviewService
      */
     private function row(Product $product, Collection $branchStock): array
     {
-        $qty = (int) ($branchStock->get((string) $product->id) ?? $product->stock_quantity ?? 0);
+        $qty = (float) ($branchStock->get((string) $product->id) ?? $product->stock_quantity ?? 0);
         $cost = (float) ($product->cost_price ?? 0);
         $retail = (float) ($product->unit_price ?? 0);
         $wholesale = (float) ($product->wholesale_price ?? $retail);
@@ -143,7 +143,7 @@ class InventoryOverviewService
         return [
             'product_count' => $rows->count(),
             'stocked_product_count' => $rows->filter(fn (array $r): bool => $r['stock_quantity'] > 0)->count(),
-            'stock_quantity' => (int) $rows->sum('stock_quantity'),
+            'stock_quantity' => round((float) $rows->sum('stock_quantity'), 3),
             'value_cost' => round($valueCost, 2),
             'value_retail' => round($valueRetail, 2),
             'value_wholesale' => round($valueWholesale, 2),
@@ -152,7 +152,7 @@ class InventoryOverviewService
             'profit_wholesale' => round($profitWholesale, 2),
             'profit_wholesale_pct' => $valueCost > 0 ? round($profitWholesale / $valueCost * 100, 2) : null,
             'low_stock_count' => $rows->filter(fn (array $r): bool => $this->isLow($r))->count(),
-            'out_of_stock_count' => $rows->filter(fn (array $r): bool => $r['stock_quantity'] === 0)->count(),
+            'out_of_stock_count' => $rows->filter(fn (array $r): bool => (float) $r['stock_quantity'] <= 0)->count(),
             'dead_stock_count' => count($this->deadStock($rows, $lastActivity)),
             'zero_cost_sku_count' => $rows->filter(fn (array $r): bool => $r['stock_quantity'] > 0 && (float) $r['cost_price'] <= 0)->count(),
         ];
@@ -167,7 +167,7 @@ class InventoryOverviewService
         return $rows
             ->groupBy('category_id')
             ->map(function (Collection $group): array {
-                $qty = (int) $group->sum('stock_quantity');
+                $qty = round((float) $group->sum('stock_quantity'), 3);
 
                 return [
                     'category_id' => $group->first()['category_id'],
@@ -210,19 +210,19 @@ class InventoryOverviewService
                 $value = 0.0;
                 $retail = 0.0;
                 $wholesale = 0.0;
-                $qty = 0;
+                $qty = 0.0;
                 $count = 0;
 
                 foreach ($items as $lp) {
-                    $qty += (int) $lp->stock_quantity;
+                    $qty += (float) $lp->stock_quantity;
                     $row = $prices->get((string) $lp->product_id);
                     if (!$row) {
                         continue;
                     }
-                    $value += (float) $row['cost_price'] * (int) $lp->stock_quantity;
-                    $retail += (float) $row['unit_price'] * (int) $lp->stock_quantity;
-                    $wholesale += (float) $row['wholesale_price'] * (int) $lp->stock_quantity;
-                    if ((int) $lp->stock_quantity > 0) {
+                    $value += (float) $row['cost_price'] * (float) $lp->stock_quantity;
+                    $retail += (float) $row['unit_price'] * (float) $lp->stock_quantity;
+                    $wholesale += (float) $row['wholesale_price'] * (float) $lp->stock_quantity;
+                    if ((float) $lp->stock_quantity > 0) {
                         $count++;
                     }
                 }
@@ -233,7 +233,7 @@ class InventoryOverviewService
                     'location_id' => $location->id,
                     'location_name' => $location->name,
                     'product_count' => $count,
-                    'stock_quantity' => $qty,
+                    'stock_quantity' => round($qty, 3),
                     'value_cost' => $cost,
                     'value_retail' => round($retail, 2),
                     'value_wholesale' => round($wholesale, 2),
@@ -356,7 +356,7 @@ class InventoryOverviewService
     private function statusList(Collection $rows, string $type): array
     {
         return $rows
-            ->filter(fn (array $r): bool => $type === 'low' ? $this->isLow($r) : $r['stock_quantity'] === 0)
+            ->filter(fn (array $r): bool => $type === 'low' ? $this->isLow($r) : (float) $r['stock_quantity'] <= 0)
             ->map(fn (array $r): array => [
                 'product_id' => $r['product_id'],
                 'name' => $r['name'],

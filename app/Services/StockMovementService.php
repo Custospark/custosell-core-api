@@ -67,7 +67,7 @@ class StockMovementService implements StockMovementServiceInterface
         return \App\Services\LocationService::ensureDefault($businessId)?->id;
     }
 
-    private function syncLocationStock(int $businessId, int $productId, ?int $locationId, int $stockAfter): void
+    private function syncLocationStock(int $businessId, int $productId, ?int $locationId, float $stockAfter): void
     {
         if (!$locationId) {
             return;

@@ -140,11 +140,11 @@ class InvoiceService implements InvoiceServiceInterface
             }
 
             $available = $locationId
-                ? (int) (\App\Models\LocationProduct::where('business_id', $businessId)
+                ? (float) (\App\Models\LocationProduct::where('business_id', $businessId)
                     ->where('location_id', $locationId)
                     ->where('product_id', $productId)
                     ->value('stock_quantity') ?? 0)
-                : (int) $product->stock_quantity;
+                : (float) $product->stock_quantity;
 
             if ($qty > $available) {
                 throw new \Illuminate\Validation\ValidationException(
@@ -192,7 +192,7 @@ class InvoiceService implements InvoiceServiceInterface
                 $items[] = [
                     'product_id' => $item->product_id,
                     'description' => $item->product_name,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => (float) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
                 ];
             }

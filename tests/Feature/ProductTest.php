@@ -163,7 +163,7 @@ class ProductTest extends TestCase
             ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.stock_quantity', 25);
+            ->assertJsonPath('data.stock_quantity', '25.000');
     }
 
     public function test_delete_product(): void

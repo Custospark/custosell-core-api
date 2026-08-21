@@ -87,7 +87,7 @@ class SaleController extends Controller
         $sale = $this->saleService->refund($id, $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => ['required', 'integer', 'exists:sale_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]), $request->user()->id);
         return new SaleResource($sale);
@@ -161,7 +161,7 @@ class SaleController extends Controller
             'sales.*.notes' => ['nullable', 'string'],
             'sales.*.items' => ['required', 'array', 'min:1'],
             'sales.*.items.*.product_id' => ['required', 'integer', 'exists:products,id'],
-            'sales.*.items.*.quantity' => ['required', 'integer', 'min:1'],
+            'sales.*.items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'sales.*.items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'sales.*.items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
         ]);

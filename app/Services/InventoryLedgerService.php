@@ -170,7 +170,7 @@ class InventoryLedgerService
         $excluded = [];
 
         foreach ($products as $product) {
-            $stock = (int) $product->stock_quantity;
+            $stock = (float) $product->stock_quantity;
             $cost = (float) $product->cost_price;
             $lineValue = $stock * $cost;
             $rawValue += $lineValue;
@@ -200,7 +200,7 @@ class InventoryLedgerService
         }
 
         $excludedCount = $products->filter(function (Product $product) use ($maxStock, $maxCost, $maxLine) {
-            $stock = (int) $product->stock_quantity;
+            $stock = (float) $product->stock_quantity;
             $cost = (float) $product->cost_price;
             if ($stock <= 0 || $cost <= 0) {
                 return false;

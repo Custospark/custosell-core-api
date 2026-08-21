@@ -33,7 +33,7 @@ trait ComputesProductPerformance
 
         return $rows->map(fn ($row) => [
             'product_name' => $row->product_name,
-            'quantity_sold' => (int) $row->quantity_sold,
+            'quantity_sold' => (float) $row->quantity_sold,
             'gross_revenue' => (float) $row->gross_revenue,
             'refunds' => (float) $row->refunds,
             'net_after_refunds' => max(0, (float) $row->net_after_refunds),

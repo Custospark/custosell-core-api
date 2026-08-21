@@ -37,7 +37,7 @@ class ProductRepository implements ProductRepositoryInterface
                     $product->stock_quantity = 0;
                     continue;
                 }
-                $product->stock_quantity = (int) $local->stock_quantity;
+                $product->stock_quantity = (float) $local->stock_quantity;
                 $product->low_stock_threshold = (int) $local->low_stock_threshold;
             }
         }

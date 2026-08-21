@@ -23,7 +23,7 @@ class LocationProduct extends Model
     protected function casts(): array
     {
         return [
-            'stock_quantity' => 'integer',
+            'stock_quantity' => 'decimal:3',
             'low_stock_threshold' => 'integer',
         ];
     }

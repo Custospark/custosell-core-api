@@ -151,7 +151,7 @@ class SaleItemTest extends TestCase
             ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.quantity', 3)
+            ->assertJsonPath('data.quantity', number_format(3, 3, '.', ''))
             ->assertJsonPath('data.product_name', $this->product->name);
     }
 

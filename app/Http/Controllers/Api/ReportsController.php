@@ -236,7 +236,7 @@ class ReportsController extends Controller
 
         $headers = ['Product', 'Category', 'SKU', 'Stock', 'Threshold', 'Unit Price', 'Stock Value', 'Status'];
         $exportRows = $products->map(function ($product) {
-            $stockValue = (float) $product->unit_price * (int) $product->stock_quantity;
+            $stockValue = (float) $product->unit_price * (float) $product->stock_quantity;
             $isLow = $product->stock_quantity <= $product->low_stock_threshold;
 
             return [

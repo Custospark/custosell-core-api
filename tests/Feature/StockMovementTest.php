@@ -133,7 +133,7 @@ class StockMovementTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('data.type', 'purchase')
-            ->assertJsonPath('data.quantity_change', 50);
+            ->assertJsonPath('data.quantity_change', number_format(50, 3, '.', ''));
     }
 
     public function test_stock_before_after_correct(): void
@@ -151,8 +151,8 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201);
-        $response->assertJsonPath('data.stock_before', $stockBefore);
-        $response->assertJsonPath('data.stock_after', $stockBefore + 5);
+        $response->assertJsonPath('data.stock_before', number_format($stockBefore, 3, '.', ''));
+        $response->assertJsonPath('data.stock_after', number_format($stockBefore + 5, 3, '.', ''));
     }
 
     public function test_movement_creates_record(): void
@@ -168,7 +168,7 @@ class StockMovementTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.stock_after', $this->product->stock_quantity + 20);
+            ->assertJsonPath('data.stock_after', number_format($this->product->stock_quantity + 20, 3, '.', ''));
     }
 
     public function test_sale_stock_movement_attributes_logged_in_user(): void

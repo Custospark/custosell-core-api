@@ -164,7 +164,7 @@ class ProductController extends Controller
                 'location_id' => (int) $row->location_id,
                 'product_id' => (int) $row->product_id,
                 'product_name' => $row->product?->name,
-                'stock_quantity' => (int) $row->stock_quantity,
+                'stock_quantity' => (float) $row->stock_quantity,
                 'low_stock_threshold' => (int) $row->low_stock_threshold,
             ])->values(),
         ]);

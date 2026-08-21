@@ -54,7 +54,7 @@ class SaleService implements SaleServiceInterface
                 $product = Product::findOrFail($item['product_id']);
                 $saleItemsInput[] = [
                     'product' => $product,
-                    'quantity' => (int) ($item['quantity'] ?? 1),
+                    'quantity' => (float) ($item['quantity'] ?? 1),
                     'unit_price' => (float) ($item['unit_price'] ?? $product->unit_price),
                     'discount_amount' => (float) ($item['discount_amount'] ?? 0),
                 ];
@@ -133,9 +133,9 @@ class SaleService implements SaleServiceInterface
                     ->where('product_id', $product->id)
                     ->first();
 
-                $stockBefore = $branchStock ? (int) $branchStock->stock_quantity : 0;
+                $stockBefore = $branchStock ? (float) $branchStock->stock_quantity : 0.0;
 
-                if ($qty > $stockBefore) {
+                if ($qty > $stockBefore + 0.0001) {
                     throw new \Illuminate\Validation\ValidationException(
                         validator([], []),
                         response()->json([
@@ -335,9 +335,9 @@ class SaleService implements SaleServiceInterface
 
             foreach ($data['items'] as $refundItem) {
                 $saleItem = SaleItem::findOrFail($refundItem['id']);
-                $refundQty = (int) ($refundItem['quantity'] ?? $saleItem->quantity);
+                $refundQty = (float) ($refundItem['quantity'] ?? $saleItem->quantity);
 
-                if ($saleItem->refunded_quantity + $refundQty > $saleItem->quantity) {
+                if ($saleItem->refunded_quantity + $refundQty > $saleItem->quantity + 0.0001) {
                     abort(422, "Cannot refund {$refundQty} of '{$saleItem->product_name}'. Only " . ($saleItem->quantity - $saleItem->refunded_quantity) . " remaining.");
                 }
 
@@ -345,7 +345,7 @@ class SaleService implements SaleServiceInterface
                 // prorated global checkout discount; tax_amount is the tax share.
                 // Refund proportionally to the qty so the customer never gets back
                 // more than they actually paid for the returned units.
-                $itemQty = max(1, (int) $saleItem->quantity);
+                $itemQty = max(0.001, (float) $saleItem->quantity);
                 $lineNetRefund = round((float) $saleItem->subtotal * ($refundQty / $itemQty), 2);
                 $lineTaxRefund = round((float) $saleItem->tax_amount * ($refundQty / $itemQty), 2);
 

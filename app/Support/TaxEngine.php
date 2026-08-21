@@ -47,7 +47,7 @@ class TaxEngine
     public function computeLine(
         Business $business,
         Product $product,
-        int $quantity,
+        float $quantity,
         float $unitPrice,
         float $lineDiscount = 0,
     ): array {
@@ -94,9 +94,9 @@ class TaxEngine
     }
 
     /**
-     * @param  list<array{product: Product, quantity: int, unit_price: float, discount_amount?: float}>  $items
+     * @param  list<array{product: Product, quantity: float, unit_price: float, discount_amount?: float}>  $items
      * @return array{
-     *   lines: list<array{product: Product, quantity: int, unit_price: float, net: float, tax: float, gross: float, rate: float, tax_class: string, subtotal: float, tax_amount: float, discount_amount: float}>,
+     *   lines: list<array{product: Product, quantity: float, unit_price: float, net: float, tax: float, gross: float, rate: float, tax_class: string, subtotal: float, tax_amount: float, discount_amount: float}>,
      *   subtotal: float,
      *   tax_total: float,
      *   discount_amount: float,
@@ -112,7 +112,7 @@ class TaxEngine
 
         foreach ($items as $item) {
             $product = $item['product'];
-            $quantity = (int) $item['quantity'];
+            $quantity = (float) $item['quantity'];
             $unitPrice = (float) $item['unit_price'];
             $lineDiscount = (float) ($item['discount_amount'] ?? 0);
             $computed = $this->computeLine($business, $product, $quantity, $unitPrice, $lineDiscount);
@@ -156,7 +156,7 @@ class TaxEngine
         ];
     }
 
-    public function computeLineTaxRefund(float $lineTaxAmount, int $lineQuantity, int $refundQuantity): float
+    public function computeLineTaxRefund(float $lineTaxAmount, float $lineQuantity, float $refundQuantity): float
     {
         if ($lineQuantity <= 0 || $refundQuantity <= 0 || $lineTaxAmount <= 0) {
             return 0.0;
