@@ -48,7 +48,7 @@ class PipelineLeadController extends Controller
             'stage_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:255'],
             'card_type' => ['nullable', 'in:lead,card'],
-            'description' => ['nullable', 'string', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:60000'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
@@ -94,7 +94,7 @@ class PipelineLeadController extends Controller
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
             'card_type' => ['sometimes', 'in:lead,card'],
-            'description' => ['nullable', 'string', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:60000'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
