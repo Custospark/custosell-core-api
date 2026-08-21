@@ -25,6 +25,7 @@ class IncomeSourceRequest extends BaseFormRequest
             'income_date' => ['required', 'date'],
             'is_recurring' => ['nullable', 'boolean'],
             'recurrence_interval' => ['nullable', 'string', Rule::in(['daily', 'weekly', 'monthly', 'yearly'])],
+            'recurrence_timezone' => ['nullable', 'string', 'max:64'],
             'next_due_date' => ['nullable', 'date'],
         ];
     }

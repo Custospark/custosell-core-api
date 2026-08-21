@@ -21,6 +21,7 @@ class IncomeSource extends Model
         'income_date',
         'is_recurring',
         'recurrence_interval',
+        'recurrence_timezone',
         'next_due_date',
     ];
 

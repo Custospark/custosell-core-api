@@ -124,4 +124,42 @@ class RecurringTransactionsJobTest extends TestCase
         $this->assertFalse((bool) $fresh->is_recurring);
         $this->assertNull($fresh->next_due_date);
     }
+
+    public function test_recurring_expense_fires_in_browser_timezone_not_utc(): void
+    {
+        // A user in a UTC-negative timezone: their local calendar day lags UTC.
+        // next_due_date = tomorrow in UTC but TODAY in America/New_York (UTC-5)
+        // must NOT fire yet, because the user's local day has not arrived.
+        $tomorrowUtc = now()->copy()->addDay()->toDateString();
+        $template = Expense::create([
+            'business_id' => $this->business->id,
+            'recorded_by' => $this->admin->id,
+            'amount' => 70000,
+            'description' => 'Timezone rent',
+            'expense_date' => now()->subMonth()->toDateString(),
+            'is_recurring' => true,
+            'recurrence_interval' => 'monthly',
+            'recurrence_timezone' => 'America/New_York',
+            'next_due_date' => $tomorrowUtc,
+        ]);
+
+        Artisan::call('expenses:process-recurring');
+
+        // Not yet due in the user's local timezone -> no occurrence.
+        $this->assertSame(0, Expense::where('description', 'Timezone rent')
+            ->where('id', '!=', $template->id)
+            ->count());
+        $this->assertEquals($tomorrowUtc, $template->fresh()->next_due_date->toDateString());
+        $this->assertTrue((bool) $template->fresh()->is_recurring);
+
+        // Now due in the user's local day -> fires.
+        $template->update(['next_due_date' => now()->toDateString()]);
+        Artisan::call('expenses:process-recurring');
+
+        $this->assertSame(1, Expense::where('description', 'Timezone rent')
+            ->where('id', '!=', $template->id)
+            ->count());
+        $this->assertTrue((bool) $template->fresh()->is_recurring);
+        $this->assertEquals(now()->addMonth()->toDateString(), $template->fresh()->next_due_date->toDateString());
+    }
 }

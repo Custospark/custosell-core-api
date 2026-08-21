@@ -21,8 +21,8 @@ class RecurringExpenseService
     ) {}
 
     /**
-     * Fire every recurring expense that is due. Returns the number of new
-     * occurrences created.
+     * Fire every recurring expense that is due in the user's browser timezone.
+     * Returns the number of new occurrences created.
      */
     public function processDue(?\Carbon\CarbonInterface $asOf = null): int
     {
@@ -32,25 +32,45 @@ class RecurringExpenseService
         $templates = Expense::query()
             ->where('is_recurring', true)
             ->whereNotNull('next_due_date')
-            ->where('next_due_date', '<=', $now)
-            ->where(function ($q) use ($now) {
-                $q->whereNull('recurrence_end_date')
-                    ->orWhere('recurrence_end_date', '>=', $now->toDateString());
-            })
             ->get();
 
         foreach ($templates as $template) {
             try {
-                $created += DB::transaction(function () use ($template, $now) {
-                    $occurrenceDate = Carbon::parse($template->next_due_date);
+                $tz = $this->resolveTimezone($template->recurrence_timezone);
+                $localToday = $now->copy()->setTimezone($tz)->toDateString();
+                $dueDate = $template->next_due_date instanceof \Carbon\CarbonInterface
+                    ? $template->next_due_date->toDateString()
+                    : \Illuminate\Support\Carbon::parse($template->next_due_date)->toDateString();
+
+                // Fire only once the user's local calendar day has reached the due date.
+                if ($localToday < $dueDate) {
+                    continue;
+                }
+
+                // Stop the series once past the end date (compared in the user's timezone).
+                if ($template->recurrence_end_date && $localToday > $template->recurrence_end_date->toDateString()) {
+                    $template->update([
+                        'is_recurring' => false,
+                        'recurrence_interval' => null,
+                        'recurrence_end_date' => null,
+                        'recurrence_timezone' => null,
+                        'next_due_date' => null,
+                    ]);
+
+                    continue;
+                }
+
+                $created += DB::transaction(function () use ($template, $dueDate) {
+                    $occurrenceDate = \Illuminate\Support\Carbon::parse($dueDate);
                     $nextDue = $this->advance($occurrenceDate, $template->recurrence_interval);
 
                     // Stop the series when the next occurrence would pass the end date.
-                    if ($template->recurrence_end_date && $nextDue->greaterThan(Carbon::parse($template->recurrence_end_date))) {
+                    if ($template->recurrence_end_date && $nextDue->greaterThan($template->recurrence_end_date)) {
                         $template->update([
                             'is_recurring' => false,
                             'recurrence_interval' => null,
                             'recurrence_end_date' => null,
+                            'recurrence_timezone' => null,
                             'next_due_date' => null,
                         ]);
 
@@ -76,6 +96,7 @@ class RecurringExpenseService
                         'is_recurring' => false,
                         'recurrence_interval' => null,
                         'recurrence_end_date' => null,
+                        'recurrence_timezone' => null,
                         'next_due_date' => null,
                         'expense_date' => $occurrenceDate->toDateString(),
                     ]);
@@ -93,6 +114,15 @@ class RecurringExpenseService
         }
 
         return $created;
+    }
+
+    protected function resolveTimezone(?string $timezone): string
+    {
+        try {
+            return $timezone && in_array($timezone, \DateTimeZone::listIdentifiers(), true) ? $timezone : 'UTC';
+        } catch (\Throwable) {
+            return 'UTC';
+        }
     }
 
     protected function advance(Carbon $date, ?string $interval): Carbon

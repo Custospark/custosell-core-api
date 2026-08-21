@@ -34,6 +34,7 @@ class ExpenseResource extends JsonResource
             'attachments' => ExpenseAttachmentResource::collection($this->whenLoaded('attachments')),
             'is_recurring' => $this->is_recurring,
             'recurrence_interval' => $this->recurrence_interval,
+            'recurrence_timezone' => $this->recurrence_timezone,
             'recurrence_end_date' => $this->recurrence_end_date,
             'next_due_date' => $this->next_due_date,
             'expense_date' => $this->expense_date?->toISOString(),

@@ -50,6 +50,7 @@ class ExpenseRequest extends BaseFormRequest
             'receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
             'is_recurring' => ['nullable', 'boolean'],
             'recurrence_interval' => ['nullable', 'string', 'in:daily,weekly,monthly,yearly'],
+            'recurrence_timezone' => ['nullable', 'string', 'max:64'],
             'recurrence_end_date' => ['nullable', 'date', 'after:expense_date'],
             'next_due_date' => ['nullable', 'date'],
             'expense_date' => ['required', 'date'],

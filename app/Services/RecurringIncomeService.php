@@ -20,8 +20,8 @@ class RecurringIncomeService
     ) {}
 
     /**
-     * Fire every recurring income source that is due. Returns the number of
-     * new occurrences created.
+     * Fire every recurring income source that is due in the user's browser
+     * timezone. Returns the number of new occurrences created.
      */
     public function processDue(?\Carbon\CarbonInterface $asOf = null): int
     {
@@ -31,11 +31,20 @@ class RecurringIncomeService
         $templates = IncomeSource::query()
             ->where('is_recurring', true)
             ->whereNotNull('next_due_date')
-            ->where('next_due_date', '<=', $now)
             ->get();
 
         foreach ($templates as $template) {
             try {
+                $tz = $this->resolveTimezone($template->recurrence_timezone);
+                $localToday = $now->copy()->setTimezone($tz)->toDateString();
+                $dueDate = $template->next_due_date instanceof \Carbon\CarbonInterface
+                    ? $template->next_due_date->toDateString()
+                    : \Illuminate\Support\Carbon::parse($template->next_due_date)->toDateString();
+
+                if ($localToday < $dueDate) {
+                    continue;
+                }
+
                 $ownerId = (int) ($template->user_id
                     ?? $template->business?->owner_id
                     ?? $template->loadMissing('business')->business?->owner_id
@@ -45,8 +54,8 @@ class RecurringIncomeService
                     continue;
                 }
 
-                $created += DB::transaction(function () use ($template, $ownerId, $now) {
-                    $occurrenceDate = Carbon::parse($template->next_due_date);
+                $created += DB::transaction(function () use ($template, $ownerId, $dueDate) {
+                    $occurrenceDate = \Illuminate\Support\Carbon::parse($dueDate);
                     $nextDue = $this->advance($occurrenceDate, $template->recurrence_interval);
 
                     $occurrence = $this->incomeSourceService->create(
@@ -60,6 +69,7 @@ class RecurringIncomeService
                             'income_date' => $occurrenceDate->toDateString(),
                             'is_recurring' => false,
                             'recurrence_interval' => null,
+                            'recurrence_timezone' => null,
                             'next_due_date' => null,
                         ],
                     );
@@ -77,6 +87,15 @@ class RecurringIncomeService
         }
 
         return $created;
+    }
+
+    protected function resolveTimezone(?string $timezone): string
+    {
+        try {
+            return $timezone && in_array($timezone, \DateTimeZone::listIdentifiers(), true) ? $timezone : 'UTC';
+        } catch (\Throwable) {
+            return 'UTC';
+        }
     }
 
     protected function advance(Carbon $date, ?string $interval): Carbon

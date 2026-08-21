@@ -21,6 +21,7 @@ class IncomeSourceResource extends JsonResource
             'income_date' => $this->income_date?->toISOString(),
             'is_recurring' => $this->is_recurring,
             'recurrence_interval' => $this->recurrence_interval,
+            'recurrence_timezone' => $this->recurrence_timezone,
             'next_due_date' => $this->next_due_date?->toISOString(),
             'attachments' => IncomeSourceAttachmentResource::collection($this->whenLoaded('attachments')),
             'created_at' => $this->created_at?->toISOString(),

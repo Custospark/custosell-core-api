@@ -55,6 +55,7 @@ class IncomeSourceService implements IncomeSourceServiceInterface
         }
         if (!$recurring) {
             $data['recurrence_interval'] = null;
+            $data['recurrence_timezone'] = null;
             $data['next_due_date'] = null;
         }
         return $data;

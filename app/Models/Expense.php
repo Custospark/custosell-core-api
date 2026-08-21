@@ -31,6 +31,7 @@ class Expense extends Model
         'is_recurring',
         'recurrence_interval',
         'recurrence_end_date',
+        'recurrence_timezone',
         'next_due_date',
         'expense_date',
     ];

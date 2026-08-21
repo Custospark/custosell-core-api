@@ -12,9 +12,9 @@ Schedule::command('pipeline:dispatch-reminders')->everyMinute();
 Schedule::command('pipeline:record-progress-snapshots')->dailyAt('23:55');
 Schedule::command('businesses:clean-dormant')->dailyAt('03:00');
 
-// Fire recurring income & expense occurrences that are due today.
-Schedule::command('income:process-recurring')->dailyAt('00:05');
-Schedule::command('expenses:process-recurring')->dailyAt('00:10');
+// Fire recurring income & expense occurrences when their browser-timezone day arrives.
+Schedule::command('income:process-recurring')->everyMinute();
+Schedule::command('expenses:process-recurring')->everyMinute();
 
 Schedule::command('subscriptions:expire-trials')->dailyAt('02:00');
 Schedule::command('subscriptions:renew')->dailyAt('02:15');
