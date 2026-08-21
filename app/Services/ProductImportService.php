@@ -242,7 +242,7 @@ class ProductImportService
             'wholesale_price' => $get(4),
             'cost_price' => $get(5),
             'stock_quantity' => $get(6),
-            'low_stock_threshold' => $get(7),
+            'low_stock_threshold' => $get(7) ?? 5,
             'sku' => $get(8),
             'barcode' => $get(9),
             'tax_percentage' => $get(10),

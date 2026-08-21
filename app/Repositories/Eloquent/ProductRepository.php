@@ -64,6 +64,8 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function create(array $data): Product
     {
+        $data['low_stock_threshold'] ??= 5;
+
         return Product::create($data);
     }
 

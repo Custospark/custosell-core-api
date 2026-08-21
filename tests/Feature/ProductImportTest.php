@@ -103,6 +103,20 @@ class ProductImportTest extends TestCase
         @unlink($path);
     }
 
+    public function test_import_defaults_blank_low_stock_threshold(): void
+    {
+        $path = $this->makeImportFileWithBlankThreshold('Blank-Threshold', 8);
+
+        $results = app(ProductImportService::class)->import($this->business->id, $path);
+
+        $this->assertSame(1, $results['imported']);
+        $this->assertSame([], $results['errors']);
+        $product = Product::where('business_id', $this->business->id)->firstOrFail();
+        $this->assertSame(5, (int) $product->low_stock_threshold);
+
+        @unlink($path);
+    }
+
     protected function makeStockImportFile(string $name, int $qty): string
     {
         $spreadsheet = new Spreadsheet;
@@ -111,6 +125,21 @@ class ProductImportTest extends TestCase
             ['Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description'],
         ]);
         $sheet->fromArray([[$name, 'Pieces', '', '1000', '', '', $qty, '5', 'SKU-MAP', '', '18', 'standard', '']], null, 'A2');
+
+        $path = tempnam(sys_get_temp_dir(), 'product-import-') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    }
+
+    protected function makeImportFileWithBlankThreshold(string $name, int $qty): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Name*', 'Unit', 'Category', 'Unit Price*', 'Wholesale Price', 'Cost Price', 'Stock Qty', 'Low Stock Threshold', 'SKU', 'Barcode', 'Tax %', 'Tax Class', 'Description'],
+        ]);
+        $sheet->fromArray([[$name, 'Pieces', '', '1000', '', '', $qty, '', 'SKU-BLANK', '', '18', 'standard', '']], null, 'A2');
 
         $path = tempnam(sys_get_temp_dir(), 'product-import-') . '.xlsx';
         (new Xlsx($spreadsheet))->save($path);
