@@ -100,7 +100,7 @@ class PersonalBudgetController extends Controller
             'lines' => ['required', 'array'],
             'lines.*.id' => ['nullable', 'integer'],
             'lines.*.item_name' => ['required', 'string', 'max:255'],
-            'lines.*.quantity' => ['nullable', 'integer', 'min:1'],
+            'lines.*.quantity' => ['nullable', 'numeric', 'gt:0'],
             'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
         $saved = $this->personalBudgetService->syncLines($id, $lines['lines']);

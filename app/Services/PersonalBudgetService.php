@@ -71,7 +71,7 @@ class PersonalBudgetService implements PersonalBudgetServiceInterface
 
             foreach ($lines as $line) {
                 $lineId = $line['id'] ?? null;
-                $quantity = max(1, (int) ($line['quantity'] ?? 1));
+                $quantity = max(0.001, (float) ($line['quantity'] ?? 1));
                 $unitPrice = max(0, (float) ($line['unit_price'] ?? 0));
                 $lineTotal = round($quantity * $unitPrice, 2);
 
