@@ -15,6 +15,7 @@ use App\Services\Pipeline\PipelineBoardActivityService;
 use App\Services\Pipeline\PipelineBoardLookupService;
 use App\Services\Pipeline\PipelineBoardPermissionService;
 use App\Services\Pipeline\PipelineNotificationService;
+use App\Services\Pipeline\PipelineAutomationEventDispatcher;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,7 @@ class PipelineLeadService
         protected PipelineBoardActivityService $boardActivity,
         protected PipelineBoardAutomationService $boardAutomations,
         protected CustomerContactService $customerContactService,
+        protected PipelineAutomationEventDispatcher $eventAutomations,
     ) {}
 
     public function listLeads(int $businessId, User $user, array $filters = []): Collection
@@ -164,6 +166,7 @@ class PipelineLeadService
             'priority' => $data['priority'] ?? null,
             'status' => $data['status'] ?? 'open',
             'assigned_to' => $data['assigned_to'] ?? null,
+            'stage_entered_at' => now(),
         ]);
 
         $lead->load('board', 'stage');
@@ -181,6 +184,10 @@ class PipelineLeadService
         $lead->load('labels', 'assignees');
 
         $this->recordActivity($lead, $user->id, 'system', ($data['card_type'] ?? 'lead') === 'card' ? 'Card created' : 'Lead created');
+
+        if (empty($options['skip_automation'])) {
+            $this->eventAutomations->cardCreated($lead, $user);
+        }
 
         return $this->loadLeadWithHistory($lead);
     }
@@ -251,6 +258,7 @@ class PipelineLeadService
                     User::query()->whereIn('id', $newAssignees)->get()->all(),
                     false,
                 );
+                $this->eventAutomations->assigned($lead, $user);
             }
         }
 
@@ -273,6 +281,7 @@ class PipelineLeadService
                     (int) $lead->id,
                     ['status' => $newStatus],
                 );
+                $this->eventAutomations->statusChanged($lead, $user);
             }
         }
 
@@ -292,6 +301,7 @@ class PipelineLeadService
         $lead->update([
             'stage_id' => $stage->id,
             'position' => $position,
+            'stage_entered_at' => now(),
             'updated_at' => now(),
         ]);
 
@@ -334,6 +344,9 @@ class PipelineLeadService
             ['from' => $fromName, 'to' => $stage->name, 'stage_id' => $stage->id],
         );
 
+        $lead->load('stage');
+        $this->eventAutomations->stageEntered($lead, $user);
+
         return $lead->fresh($this->leadDetailRelations());
     }
 
@@ -353,12 +366,13 @@ class PipelineLeadService
             'status' => 'converted',
         ]);
 
-        $lead->load('board', 'stage');
-
         $this->recordActivity($lead, $user->id, 'system', 'Lead converted to customer', [
             'action' => 'converted',
             'customer_id' => $customer->id,
         ]);
+
+        $lead->load('board', 'stage');
+        $this->eventAutomations->statusChanged($lead, $user);
 
         return $lead->fresh($this->leadDetailRelations());
     }

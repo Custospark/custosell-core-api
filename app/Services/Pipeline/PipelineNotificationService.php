@@ -329,6 +329,31 @@ class PipelineNotificationService
         );
     }
 
+    public function notifyAutomation(User $recipient, PipelineLead $lead, PipelineBoard $board, string $message, bool $email = false): void
+    {
+        $title = "Automation: {$lead->title}";
+        $body = $this->wrapBody(
+            '<p>An automation updated <strong>'.e($lead->title).'</strong> on <em>'.e($board->name).'</em>.</p>'
+            .'<p style="color:#334155;">'.nl2br(e($message)).'</p>'
+            .$this->metaLine('Board', $board->name)
+            .$this->metaLine('Column', $lead->stage?->name ?? 'Not set'),
+        );
+
+        $this->dispatch(
+            $recipient,
+            $title,
+            $body,
+            $email ? 'pipeline.automation.email' : 'pipeline.automation',
+            (int) $lead->business_id,
+            [
+                'lead_id' => $lead->id,
+                'board_id' => $board->id,
+            ],
+            $this->boardCta($board, $lead),
+            'Open card',
+        );
+    }
+
     protected function dispatch(
         User $recipient,
         string $title,

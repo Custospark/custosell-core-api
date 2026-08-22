@@ -35,6 +35,7 @@ class PipelineLead extends Model
         'currency',
         'status',
         'position',
+        'stage_entered_at',
         'expected_close_date',
         'due_date',
         'start_date',
@@ -69,6 +70,7 @@ class PipelineLead extends Model
         return [
             'estimated_value' => 'decimal:2',
             'position' => 'decimal:4',
+            'stage_entered_at' => 'datetime',
             'expected_close_date' => 'datetime',
             'due_date' => 'datetime',
             'start_date' => 'datetime',

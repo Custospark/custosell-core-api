@@ -10,6 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('pipeline:dispatch-reminders')->everyMinute();
 Schedule::command('pipeline:record-progress-snapshots')->dailyAt('23:55');
+Schedule::command('pipeline:run-automations')->everyMinute();
 Schedule::command('businesses:clean-dormant')->dailyAt('03:00');
 
 // Fire recurring income & expense occurrences when their browser-timezone day arrives.
