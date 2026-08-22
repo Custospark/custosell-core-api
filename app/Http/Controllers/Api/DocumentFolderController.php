@@ -131,6 +131,7 @@ class DocumentFolderController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['sometimes', 'string'],
             'parent_id' => ['nullable', 'integer'],
+            'cabinet_id' => ['nullable', 'integer'],
             'member_user_ids' => ['array'],
             'member_user_ids.*' => ['integer'],
             'member_roles' => ['array'],
@@ -153,6 +154,7 @@ class DocumentFolderController extends Controller
                 array_key_exists('member_roles', $validated) ? $this->parseMemberRoles($request) : null,
                 isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
                 array_key_exists('cover_color', $validated) ? ($validated['cover_color'] ?? '') : null,
+                array_key_exists('cabinet_id', $validated) && $validated['cabinet_id'] !== null ? (int) $validated['cabinet_id'] : null,
             ),
         ]);
     }

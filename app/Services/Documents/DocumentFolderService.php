@@ -263,12 +263,14 @@ class DocumentFolderService
         ?array $memberRoles = null,
         ?int $sortOrder = null,
         ?string $coverColor = null,
+        ?int $cabinetId = null,
     ): array {
         $folder = $this->findFolder($businessId, $folderId);
         $this->access->assertCanManage($user, $folder);
 
         $previousName = $folder->name;
         $previousParentId = $folder->parent_id;
+        $previousCabinetId = (int) $folder->cabinet_id;
         $previousVisibility = $folder->visibility;
         $hadMemberUpdate = $memberUserIds !== null;
         $hadColorUpdate = $coverColor !== null;
@@ -295,8 +297,11 @@ class DocumentFolderService
             $folder->visibility = $visibility;
         }
 
-        if ($parentId !== null && $parentId !== $folder->parent_id) {
-            $this->hierarchy->move($businessId, $folder, $parentId);
+        // Cross-cabinet move: folder (and its whole subtree) goes to another cabinet.
+        if ($cabinetId !== null && (int) $cabinetId !== $previousCabinetId) {
+            $this->moveToCabinet($businessId, $user, $folder, (int) $cabinetId, $parentId);
+        } elseif ($parentId !== null && $parentId !== $folder->parent_id) {
+            $this->hierarchy->move($businessId, $folder, $parentId, $cabinetId);
         }
 
         $folder->save();
@@ -319,6 +324,8 @@ class DocumentFolderService
         }
         if ($parentId !== null && $parentId !== $previousParentId) {
             $this->activity->record($businessId, $user, 'folder_moved', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
+        } elseif ((int) $folder->cabinet_id !== $previousCabinetId) {
+            $this->activity->record($businessId, $user, 'folder_moved', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
         }
         if (($visibility !== null && $visibility !== $previousVisibility) || $hadMemberUpdate) {
             $this->activity->record($businessId, $user, 'folder_access_changed', 'folder', $folder->id, $folder->name, $folder->parent_id, $folder->cabinet_id);
@@ -328,6 +335,32 @@ class DocumentFolderService
         }
 
         return $this->serializeFolder($reloaded, $user, true);
+    }
+
+    /**
+     * Move a folder (and its whole subtree) to another cabinet. The target
+     * cabinet must exist and the actor must be able to contribute to it.
+     * When a parent folder is supplied, that parent must already live in the
+     * target cabinet; otherwise the folder becomes a root folder there.
+     */
+    protected function moveToCabinet(int $businessId, User $user, DocumentFolder $folder, int $cabinetId, ?int $parentId): void
+    {
+        $cabinet = DocumentCabinet::query()
+            ->where('business_id', $businessId)
+            ->whereKey($cabinetId)
+            ->firstOrFail();
+
+        $this->access->assertCanContributeToCabinet($user, $cabinet);
+
+        if ($parentId !== null) {
+            $parent = $this->findFolder($businessId, $parentId);
+            if ((int) $parent->cabinet_id !== $cabinetId) {
+                abort(422, 'Destination folder is not in the selected cabinet.');
+            }
+            $this->hierarchy->move($businessId, $folder, $parentId, $cabinetId);
+        } else {
+            $this->hierarchy->moveToRoot($businessId, $folder, $cabinetId, true);
+        }
     }
 
     public function destroy(int $businessId, User $user, int $folderId): void

@@ -305,6 +305,7 @@ class DocumentService
         ?string $url = null,
         bool $unsetCustomer = false,
         bool $unsetProject = false,
+        ?int $cabinetId = null,
     ): array {
         $document = $this->findDocument($businessId, $documentId);
         $this->access->assertCanView($user, $document);
@@ -345,6 +346,15 @@ class DocumentService
             $this->folderResolver->assertFolderUploadAccess($businessId, $user, $folderId, (int) $targetFolder->cabinet_id);
             $document->folder_id = $folderId;
             $document->cabinet_id = $targetFolder->cabinet_id;
+        } elseif ($cabinetId !== null && (int) $cabinetId !== (int) $document->cabinet_id) {
+            // Cross-cabinet move to the root of another cabinet.
+            $cabinet = DocumentCabinet::query()
+                ->where('business_id', $businessId)
+                ->whereKey((int) $cabinetId)
+                ->firstOrFail();
+            $this->access->assertCanContributeToCabinet($user, $cabinet);
+            $document->folder_id = null;
+            $document->cabinet_id = (int) $cabinetId;
         }
 
         if ($unsetCustomer) {

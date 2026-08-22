@@ -180,6 +180,7 @@ class DocumentController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'visibility' => ['sometimes', 'string'],
             'folder_id' => ['nullable', 'integer'],
+            'cabinet_id' => ['nullable', 'integer'],
             'member_user_ids' => ['array'],
             'member_user_ids.*' => ['integer'],
             'member_roles' => ['array'],
@@ -211,6 +212,7 @@ class DocumentController extends Controller
                 $validated['url'] ?? null,
                 (bool) ($validated['clear_customer'] ?? false),
                 (bool) ($validated['clear_project'] ?? false),
+                array_key_exists('cabinet_id', $validated) && $validated['cabinet_id'] !== null ? (int) $validated['cabinet_id'] : null,
             ),
         ]);
     }

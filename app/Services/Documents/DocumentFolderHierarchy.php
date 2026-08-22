@@ -8,7 +8,7 @@ use App\Models\DocumentFolder;
 
 class DocumentFolderHierarchy
 {
-    public function move(int $businessId, DocumentFolder $folder, int $newParentId): void
+    public function move(int $businessId, DocumentFolder $folder, int $newParentId, ?int $cabinetId = null): void
     {
         if ($newParentId === $folder->id) {
             abort(422, 'A folder cannot be moved into itself.');
@@ -25,10 +25,21 @@ class DocumentFolderHierarchy
             abort(422, 'Move would exceed maximum folder depth.');
         }
 
+        // When the destination parent lives in a different cabinet, the whole
+        // subtree (folders and their documents) moves cabinets too.
+        $targetCabinetId = (int) $newParent->cabinet_id;
+        if ($cabinetId !== null && (int) $cabinetId !== (int) $folder->cabinet_id) {
+            $targetCabinetId = (int) $cabinetId;
+        }
+
         $depthDelta = $newDepth - $folder->depth;
         $folder->parent_id = $newParent->id;
         $folder->depth = $newDepth;
-        $this->applyDepthDelta($folder, $businessId, $depthDelta);
+        $folder->cabinet_id = $targetCabinetId;
+        $this->applyDepthDelta($folder, $businessId, $depthDelta, $targetCabinetId);
+        if ((int) $folder->cabinet_id !== (int) $targetCabinetId) {
+            $folder->save();
+        }
     }
 
     public function isDescendant(DocumentFolder $candidate, int $ancestorId): bool
@@ -66,9 +77,9 @@ class DocumentFolderHierarchy
         return 1 + $children->map(fn (DocumentFolder $child) => $this->maxSubtreeDepth($child))->max();
     }
 
-    public function applyDepthDelta(DocumentFolder $folder, int $businessId, int $delta): void
+    public function applyDepthDelta(DocumentFolder $folder, int $businessId, int $delta, ?int $cabinetId = null): void
     {
-        if ($delta === 0) {
+        if ($delta === 0 && $cabinetId === null) {
             return;
         }
 
@@ -79,8 +90,20 @@ class DocumentFolderHierarchy
 
         foreach ($children as $child) {
             $child->depth += $delta;
+            if ($cabinetId !== null && (int) $child->cabinet_id !== (int) $cabinetId) {
+                $child->cabinet_id = (int) $cabinetId;
+            }
             $child->save();
-            $this->applyDepthDelta($child, $businessId, $delta);
+            $this->applyDepthDelta($child, $businessId, $delta, $cabinetId);
+        }
+
+        // Documents nested under this folder move cabinets too.
+        if ($cabinetId !== null) {
+            \App\Models\Document::query()
+                ->where('business_id', $businessId)
+                ->where('folder_id', $folder->id)
+                ->where('cabinet_id', '!=', (int) $cabinetId)
+                ->update(['cabinet_id' => (int) $cabinetId]);
         }
     }
 
@@ -107,5 +130,25 @@ class DocumentFolderHierarchy
             ->where('business_id', $businessId)
             ->whereKey($folderId)
             ->firstOrFail();
+    }
+
+    /**
+     * Move a folder to the root of a (possibly different) cabinet. Re-cabinet
+     * the whole subtree and reset depths from the top.
+     */
+    public function moveToRoot(int $businessId, DocumentFolder $folder, int $cabinetId, bool $changeCabinet): void
+    {
+        $maxSubtreeDepth = $this->maxSubtreeDepth($folder);
+        if ($maxSubtreeDepth > (int) config('documents.max_depth', 5)) {
+            abort(422, 'Move would exceed maximum folder depth.');
+        }
+
+        $delta = 1 - $folder->depth;
+        $folder->parent_id = null;
+        $folder->depth = 1;
+        $targetCabinet = $changeCabinet ? $cabinetId : (int) $folder->cabinet_id;
+        $folder->cabinet_id = $targetCabinet;
+        $this->applyDepthDelta($folder, $businessId, $delta, $changeCabinet ? $cabinetId : null);
+        $folder->save();
     }
 }
