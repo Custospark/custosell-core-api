@@ -91,7 +91,7 @@ trait PipelineLeadUpdateHelpers
     {
         return [
             'stage:id,name,color,is_won,is_lost,sort_order',
-            'board:id,name,business_id,project_id,visibility,background_type,background_value,workspace,cover_color',
+            'board:id,name,business_id,project_id,visibility,created_by,background_type,background_value,workspace,cover_color',
             'creator:id,name,avatar',
             'assignee:id,name,avatar',
             'assignees:id,name,avatar',

@@ -21,7 +21,9 @@ class PipelineBoardPermissionService
     public function canViewBoard(User $user, PipelineBoard $board): bool
     {
         if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
+            return (int) $board->created_by === (int) $user->id
+                || ($this->userIsBoardMember($user, $board)
+                    && $this->externalContributorHasAccess($user, $board));
         }
 
         if ($this->ownsBoardBusiness($user, $board)) {
@@ -99,7 +101,15 @@ class PipelineBoardPermissionService
     public function userCanManageBoard(User $user, PipelineBoard $board): bool
     {
         if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
+            if ((int) $board->created_by === (int) $user->id) {
+                return true;
+            }
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            return $member && $this->boardMemberRoleAllowsManage($member->role);
         }
 
         if ($this->ownsBoardBusiness($user, $board)) {
@@ -162,6 +172,17 @@ class PipelineBoardPermissionService
             }
         }
 
+        if ($board->visibility === 'private' && ! $board->project_id) {
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($member && $this->boardMemberRoleAllowsEdit($member->role)) {
+                return;
+            }
+        }
+
         abort(403, 'You cannot edit this pipeline board.');
     }
 
@@ -172,7 +193,17 @@ class PipelineBoardPermissionService
         }
 
         if ($board->visibility === 'private' && ! $board->project_id) {
-            return (int) $board->created_by === (int) $user->id;
+            if ((int) $board->created_by === (int) $user->id) {
+                return true;
+            }
+            $member = PipelineBoardMember::query()
+                ->where('board_id', $board->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            return $member
+                && $this->boardMemberRoleAllowsEdit($member->role)
+                && $this->externalContributorHasAccess($user, $board);
         }
 
         if ($this->ownsBoardBusiness($user, $board) || (int) $board->created_by === (int) $user->id) {
