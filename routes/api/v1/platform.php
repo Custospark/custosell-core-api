@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Platform\PlatformBusinessController;
 use App\Http\Controllers\Api\Platform\PlatformConversionController;
 use App\Http\Controllers\Api\Platform\PlatformGuideFaqController;
+use App\Http\Controllers\Api\Platform\PlatformGuideCommunityController;
 use App\Http\Controllers\Api\Platform\PlatformGuideFeedbackController;
 use App\Http\Controllers\Api\Platform\PlatformGuideTutorialController;
 use App\Http\Controllers\Api\Platform\PlatformNotificationDispatchController;
@@ -71,6 +72,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
     Route::middleware(['platform:platform.guide.view'])->prefix('guide')->group(function () {
         Route::get('/tutorials', [PlatformGuideTutorialController::class, 'index']);
         Route::get('/faqs', [PlatformGuideFaqController::class, 'index']);
+        Route::get('/communities', [PlatformGuideCommunityController::class, 'index']);
         Route::get('/feedback', [PlatformGuideFeedbackController::class, 'index']);
         Route::get('/feedback/{guideFeedback}', [PlatformGuideFeedbackController::class, 'show']);
     });
@@ -86,6 +88,10 @@ Route::middleware(['auth:sanctum', 'business.active'])->prefix('platform')->grou
         Route::post('/faqs', [PlatformGuideFaqController::class, 'store']);
         Route::put('/faqs/{guideFaq}', [PlatformGuideFaqController::class, 'update']);
         Route::delete('/faqs/{guideFaq}', [PlatformGuideFaqController::class, 'destroy']);
+
+        Route::post('/communities', [PlatformGuideCommunityController::class, 'store']);
+        Route::put('/communities/{guideCommunity}', [PlatformGuideCommunityController::class, 'update']);
+        Route::delete('/communities/{guideCommunity}', [PlatformGuideCommunityController::class, 'destroy']);
     });
 
     Route::middleware(['platform:platform.guide.feedback.manage'])->prefix('guide')->group(function () {
