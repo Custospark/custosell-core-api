@@ -493,3 +493,234 @@ APPROVAL
   in one command. Only the surgical replace (§5.4) is allowed.
 - Never commit or push the `production-backup-*` / `staging-backup-*` folders
   on the server — they are rollback artifacts, not part of any repo.
+## 12. Step-by-step deployment runbook (exact commands, both environments)
+
+> Written from the 2026-08-22 staging + production deploys. Every command below
+> is copy-paste ready. Replace `<ENV>` with `staging` or `production`, and the
+> matching host path:
+>
+> | Variable | STAGING | PRODUCTION |
+> |---|---|---|
+> | Backend app dir | `/home/u214605677/domains/staging-api.custosell.com` | `/home/u214605677/domains/api.custosell.com` |
+> | Web docroot target | `public_html/staging` (own folder) | `public_html` **root (SHARED)** |
+> | Build folder in backend repo | `Backend/public/staging` | `Backend/public/production` |
+> | Web URL | `https://staging.custosell.com` | `https://custosell.com` |
+> | API URL | `https://staging-api.custosell.com` | `https://api.custosell.com` |
+> | DB dump path | `backups/stage-db-*.sql` | `backups/prod-db-*.sql` |
+>
+> **All server commands run through the SSH helper** (reads creds from
+> `Backend/.env`, never prints them):
+> ```bash
+> cd Backend && python scripts/ssh_run.py "<server command>"
+> ```
+
+### 12.1 Pre-flight (local) — both environments
+
+```bash
+# Backend: gates + clean tree
+cd Backend
+composer vera:fast                       # php -l + logic gates
+php -d memory_limit=-1 artisan test --filter=Pipeline   # targeted suite
+git status --short                       # clean (except known gitignored/artifacts)
+
+# Frontend: gates + clean tree
+cd Frontend
+npx tsc --noEmit -p tsconfig.app.json    # strict renderer typecheck
+npx vitest run                           # full unit suite
+git status --short                       # clean
+```
+- **Frontend version:** bump `npm version minor` (commits a tag, e.g. `v5.4.0`)
+  on a clean tree before building. This tag IS the release record.
+- Confirm the **backend dependency** the build needs is present in
+  `composer.json` (e.g. `dragonmantank/cron-expression` for automations) — it
+  must be installed on the server in step 12.4.
+
+### 12.2 Build + ship the frontend web bundle (from `Frontend/`)
+
+```bash
+npm run deploy:web:staging        # OR npm run deploy:web:production
+```
+What it does: typechecks + builds with `--mode <env>`, copies `dist/web` →
+`Backend/public/<env>`, copies `Frontend/deploy/htaccess.<env>` in as
+`.htaccess`, then commits **only** `public/<env>` on the backend repo and pushes.
+The backend repo then carries a commit like
+`deploy(web): <env> build v5.4.0 under public/<env>`.
+
+### 12.3 Backend code onto the server
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+git fetch origin
+git reset --hard origin/main            # bulletproof mirror; .env is gitignored + preserved
+git log --oneline -1                    # confirm HEAD == origin/main
+git status --short | grep -v '^??'      # expect empty (?? .env.swp / public/* are fine)
+"
+```
+
+### 12.4 Install PHP dependencies (only if composer.json changed)
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+/usr/bin/php -d memory_limit=512M /usr/local/bin/composer install --no-dev --prefer-dist --no-interaction
+ls vendor/dragonmantank/cron-expression/composer.json   # sanity: new dep present
+"
+```
+
+### 12.5 Database backup + migrate (only if migrations changed)
+
+> ⚠️ **Gotcha:** the server `.env` has CRLF line endings. Sourcing it directly
+> fails (`$'\r': command not found`) and the dump silently writes **0 bytes**.
+> Always strip CR first, and always verify the dump is non-empty.
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+tr -d '\r' < .env > /tmp/prod_env.sh && set -a && . /tmp/prod_env.sh && set +a && rm -f /tmp/prod_env.sh
+TS=\$(date +%Y%m%d-%H%M%S)
+BK=/home/u214605677/domains/backups/<env>-db-\$TS.sql
+mkdir -p /home/u214605677/domains/backups
+/usr/bin/mysqldump -h \"\${DB_HOST:-localhost}\" -P \"\${DB_PORT:-3306}\" -u \"\$DB_USERNAME\" -p\"\$DB_PASSWORD\" \"\$DB_DATABASE\" > \"\$BK\" 2>/dev/null
+echo \"BACKUP=\$BK\"; ls -la \"\$BK\"            # MUST be non-zero size, else STOP
+"
+```
+Then list pending migrations and run them with `--force`:
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+/usr/bin/php artisan migrate:status | grep -iE 'Pending'   # expect the new ones only
+/usr/bin/php artisan migrate --force
+"
+```
+> Only forward/additive migrations may be shipped. Never `migrate:fresh` /
+> `refresh` / `db:wipe`. Migration `000003` (backfill) rewrites existing rows —
+> that's why the DB dump above is mandatory.
+
+### 12.6 Cache clears + scheduler check
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+/usr/bin/php artisan optimize:clear
+/usr/bin/php artisan config:clear
+/usr/bin/php artisan route:clear
+/usr/bin/php artisan schedule:list | grep -cE 'run-automations|dispatch-reminders'   # expect 2
+/usr/bin/php artisan about | grep -iE 'Environment'        # expect staging|production
+"
+```
+
+### 12.7 Frontend web deploy — STAGING (own subfolder, §5.2)
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/custosell.com/public_html
+# Backup the current staging build FIRST:
+TS=\$(date +%Y%m%d-%H%M%S); cp -rT staging staging-backup-\$TS; echo \"BACKUP=staging-backup-\$TS\"
+# Wipe + copy with cp -rT (carries dotfiles like .htaccess; NEVER cp .../*):
+rm -rf staging && mkdir -p staging
+cp -rT /home/u214605677/domains/staging-api.custosell.com/public/staging staging
+ls staging/index.html staging/.htaccess
+"
+```
+
+### 12.8 Frontend web deploy — PRODUCTION (SURGICAL, §5.4 — docroot root is SHARED)
+
+> The prod docroot root also holds the `api` + `staging-api` **symlinks**, the
+> `staging/` build, and backups. Never `rm -rf *` / `rm -rf .` here. Only the
+> exact prod-build names below are touched.
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/custosell.com/public_html
+# 1) BACKUP only the prod build files:
+TS=\$(date +%Y%m%d-%H%M%S); BK=production-backup-\$TS; mkdir -p \"\$BK\"
+cp -rT assets \"\$BK/assets\"; cp -rT icons \"\$BK/icons\"
+cp -rT screenshots \"\$BK/screenshots\"; cp -rT styles \"\$BK/styles\"
+for f in .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \\
+         robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg; do
+  cp -T \"\$f\" \"\$BK/\$f\"; done
+echo \"BACKUP=\$BK\"; ls -a \"\$BK\" | grep -vE '^\.$|^\.\.$' | wc -l   # expect 14
+# 2) REMOVE explicit prod-build paths ONLY (no wildcards, no dot-dot):
+rm -rf assets icons screenshots styles
+rm -f  .htaccess index.html sw.js manifest.webmanifest favicon.svg icons.svg \\
+       robots.txt sitemap.xml custosell-logo.png custosell-logo-old.jpg
+# 3) COPY the new build CONTENTS into the root (cp -rT carries .htaccess):
+cp -rT /home/u214605677/domains/api.custosell.com/public/production .
+# 4) VERIFY the shared entries survived:
+ls -ld api staging-api staging 2>/dev/null
+ls -d production-backup-* staging-backup-* temp_copy 2>/dev/null
+"
+```
+
+### 12.9 Post-deploy verification — BOTH environments (§5.3)
+
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/custosell.com/public_html/<staging|.>
+echo \"disk assets: \$(ls assets | wc -l)\"
+echo \"index refs:  \$(grep -oE 'assets/[a-zA-Z0-9_/-]+\.js' index.html | sort -u | wc -l)\"
+grep -oE 'assets/[a-zA-Z0-9_/-]+\.js' index.html | sort -u | while read f; do [ -f \"\$f\" ] || echo \"MISSING: \$f\"; done   # expect no output
+JS=\$(grep -oE 'assets/[a-zA-Z0-9_/-]+\.js' index.html | sort -u | head -1)
+curl -s -o /dev/null -w 'JS: %{http_code} %{content_type}\n' \"https://<staging|custosell>.custosell.com/\$JS\"
+curl -s -o /dev/null -w 'root: %{http_code}\n'  https://<staging|custosell>.custosell.com/
+curl -s -o /dev/null -w 'deep: %{http_code}\n'  https://<staging|custosell>.custosell.com/pipeline
+curl -s -o /dev/null -w 'api:  %{http_code}\n'  https://<env>-api.custosell.com/
+"
+```
+Then on the backend server:
+```bash
+cd Backend && python scripts/ssh_run.py "
+cd /home/u214605677/domains/<env>-api.custosell.com
+# API base leak check (must be this env, never the other):
+grep -rhoE 'https://[a-z-]*api[a-z-]*\.custosell\.com' /home/u214605677/domains/custosell.com/public_html/<staging|.>/assets/ | sort -u
+# Error sweep (expect no new error/exception lines):
+find storage/logs -name laravel.log -mmin -30 | while read f; do tail -20 \"\$f\" | grep -iE 'error|exception'; done
+# Route + table smoke (expect env=production/staging and counts):
+/usr/bin/php artisan route:list --path=automation | grep -cE 'automation-rules'
+/usr/bin/php artisan tinker --execute='echo \"env=\" . config(\"app.env\") . PHP_EOL;'
+"
+```
+**All checks green → report to Oscar**: what shipped (commits + tag), backup
+paths, verified results, rollback command. If any check fails → roll back
+(§6.2), never "fix forward" blindly.
+
+### 12.10 Cron — one `schedule:run` per environment (hPanel)
+
+- Cron lives in **hPanel** (`crontab` is NOT installed on the host). There must be
+  **exactly one cron per environment**, every minute, each running
+  `schedule:run` for that environment's own `artisan`:
+  ```
+  /usr/bin/php /home/u214605677/domains/staging-api.custosell.com/artisan schedule:run
+  /usr/bin/php /home/u214605677/domains/api.custosell.com/artisan schedule:run
+  ```
+  All five fields `*`. Never create per-task crons (e.g. a direct
+  `php artisan pipeline:dispatch-reminders`) — the scheduler runs every command.
+- **Wrong path gotcha:** a cron pointed at
+  `/home/u214605677/staging-api.custosell.com/artisan` (missing `domains/`) fails
+  with `Could not open input file`. The correct path always includes `domains/`.
+- To confirm a cron is firing every minute, check the account cron log mtimes:
+  `ls -la --time-style=full-iso /home/u214605677/.logs/ | grep cronjob` — mtimes
+  should advance every ~60s and the log should show
+  `Running ['artisan' pipeline:dispatch-reminders]`, `pipeline:run-automations`,
+  `income:process-recurring`, `expenses:process-recurring`.
+- If **two** crons both target the same environment, delete one — duplicate
+  `schedule:run` causes double firing (reminders are idempotent via
+  `sent_at`, but recurring transactions/automations are not).
+
+### 12.11 Backup retention + cleanup (as approved 2026-08-22)
+
+- Keep only the **latest** `production-backup-*` and the **latest**
+  `staging-backup-*` in the docroot; delete older ones (~40MB each):
+  ```bash
+  cd /home/u214605677/domains/custosell.com/public_html
+  rm -rf production-backup-20260817-073649 production-backup-20260817-081229   # example older ones
+  rm -rf staging-backup-20260816-101113 staging-backup-20260817-052952 staging-backup-20260817-061038 staging-backup-20260822-170252
+  ```
+- The legacy `temp_copy/` folder (old build, ~79MB, not referenced by
+  `index.html` or `.htaccess`) may be removed:
+  ```bash
+  rm -rf temp_copy
+  ```
+- Never commit/push these backup folders — they are rollback artifacts.
