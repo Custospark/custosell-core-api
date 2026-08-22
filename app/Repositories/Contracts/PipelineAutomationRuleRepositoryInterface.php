@@ -26,4 +26,10 @@ interface PipelineAutomationRuleRepositoryInterface
     public function delete(PipelineAutomationRule $rule): bool;
 
     public function markRun(PipelineAutomationRule $rule, bool $success = true): void;
+
+    /** @param  array<string, mixed>  $detail */
+    public function recordRun(PipelineAutomationRule $rule, string $status, int $actionsExecuted, ?int $leadId = null, ?string $message = null, array $detail = []): void;
+
+    /** @return Collection<int, \App\Models\PipelineAutomationRun> */
+    public function recentRuns(int $ruleId, int $limit = 10): Collection;
 }

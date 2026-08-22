@@ -243,7 +243,19 @@ class PipelineLeadService
         }
 
         if (array_key_exists('label_ids', $data)) {
+            $beforeLabelIds = $lead->labels()->pluck('pipeline_labels.id')->map(fn ($id) => (int) $id)->all();
             $lead->labels()->sync($data['label_ids'] ?? []);
+            $afterLabelIds = array_map('intval', $data['label_ids'] ?? []);
+            $added = array_diff($afterLabelIds, $beforeLabelIds);
+            if ($added !== []) {
+                $lead->load('board');
+                $this->eventAutomations->labelAdded($lead, $user);
+            }
+        }
+
+        if ($updates !== [] || array_key_exists('label_ids', $data)) {
+            $lead->load('board');
+            $this->eventAutomations->fieldChanged($lead, $user);
         }
 
         if (array_key_exists('assignee_ids', $data) || array_key_exists('assigned_to', $data)) {
@@ -373,6 +385,7 @@ class PipelineLeadService
 
         $lead->load('board', 'stage');
         $this->eventAutomations->statusChanged($lead, $user);
+        $this->eventAutomations->converted($lead, $user);
 
         return $lead->fresh($this->leadDetailRelations());
     }

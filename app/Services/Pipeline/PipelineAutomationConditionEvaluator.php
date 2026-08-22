@@ -8,8 +8,9 @@ use App\Models\PipelineLead;
 
 /**
  * Evaluates a rule's conditions against a lead. Conditions are a list of
- * {field, operator, value, meta_field_id?} objects, combined with AND by
- * default (OR groups can be added later via a group wrapper).
+ * {field, operator, value, meta_field_id?} objects combined with AND by
+ * default, OR a nested group: {logic: 'and'|'or', conditions: [...]} to mix
+ * AND/OR at the top level.
  */
 class PipelineAutomationConditionEvaluator
 {
@@ -19,13 +20,44 @@ class PipelineAutomationConditionEvaluator
             return true;
         }
 
-        foreach ($conditions as $condition) {
-            if (! $this->passesCondition($lead, $condition)) {
+        return $this->evaluateGroup($lead, $conditions);
+    }
+
+    /**
+     * Evaluate a condition group. A group is either a flat list (AND) or a
+     * {logic, conditions} wrapper. Nested groups are supported recursively.
+     *
+     * @param  array<int, mixed>|array{logic?: string, conditions?: array<mixed>}  $group
+     */
+    protected function evaluateGroup(PipelineLead $lead, array $group): bool
+    {
+        $logic = strtolower((string) ($group['logic'] ?? 'and'));
+
+        if (isset($group['logic']) && isset($group['conditions'])) {
+            $items = $group['conditions'] ?? [];
+            $results = array_map(fn ($item) => $this->evaluateItem($lead, $item), $items);
+
+            return $logic === 'or' ? in_array(true, $results, true) : ! in_array(false, $results, true);
+        }
+
+        // Flat list: AND.
+        foreach ($group as $condition) {
+            if (! $this->evaluateItem($lead, $condition)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /** @param  array<string, mixed>  $item */
+    protected function evaluateItem(PipelineLead $lead, array $item): bool
+    {
+        if (isset($item['logic']) && isset($item['conditions'])) {
+            return $this->evaluateGroup($lead, $item);
+        }
+
+        return $this->passesCondition($lead, $item);
     }
 
     /** @param  array<string, mixed>  $condition */

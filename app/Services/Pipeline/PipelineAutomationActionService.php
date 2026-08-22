@@ -81,6 +81,8 @@ class PipelineAutomationActionService
             'convert_to_customer' => $this->convert($board, $lead, $actor),
             'copy_card' => $this->copyCard($board, $lead, $actor, $action),
             'archive' => $this->archive($board, $lead, $actor),
+            'create_checklist' => $this->createChecklist($lead, $action),
+            'webhook' => $this->callWebhook($rule, $board, $lead, $action),
             default => false,
         };
     }
@@ -272,6 +274,69 @@ class PipelineAutomationActionService
             return false;
         }
         $this->leads->archiveLead((int) $board->business_id, $actor, (int) $lead->id);
+
+        return true;
+    }
+
+    /** @param  array<string, mixed>  $action */
+    protected function createChecklist(PipelineLead $lead, array $action): bool
+    {
+        $title = trim((string) ($action['title'] ?? ''));
+        if ($title === '') {
+            return false;
+        }
+
+        $maxOrder = \App\Models\PipelineChecklist::query()->where('lead_id', $lead->id)->max('sort_order');
+
+        \App\Models\PipelineChecklist::create([
+            'lead_id' => $lead->id,
+            'title' => $title,
+            'description' => $action['description'] ?? null,
+            'sort_order' => (int) ($maxOrder + 1),
+        ]);
+
+        return true;
+    }
+
+    /** @param  array<string, mixed>  $action */
+    protected function callWebhook(PipelineAutomationRule $rule, PipelineBoard $board, PipelineLead $lead, array $action): bool
+    {
+        $url = trim((string) ($action['url'] ?? ''));
+        if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $payload = [
+            'event' => 'automation',
+            'rule_id' => $rule->id,
+            'rule_name' => $rule->name,
+            'trigger' => (string) ($rule->trigger['type'] ?? ''),
+            'board' => ['id' => $board->id, 'name' => $board->name],
+            'card' => [
+                'id' => $lead->id,
+                'title' => $lead->title,
+                'status' => $lead->status,
+                'priority' => $lead->priority,
+                'stage' => $lead->stage?->name,
+                'assignee' => $lead->assignee?->name,
+                'due_date' => $lead->due_date?->toISOString(),
+                'estimated_value' => $lead->estimated_value,
+                'contact_email' => $lead->contact_email,
+                'contact_phone' => $lead->contact_phone,
+            ],
+            'sent_at' => now()->toIso8601String(),
+        ];
+
+        try {
+            \Illuminate\Support\Facades\Http::timeout(8)->post($url, $payload);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Automation webhook failed', [
+                'rule_id' => $rule->id,
+                'lead_id' => $lead->id,
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return true;
     }

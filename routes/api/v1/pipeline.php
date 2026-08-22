@@ -120,6 +120,7 @@ Route::middleware(['auth:sanctum', 'business.active', 'subscription.active', 'pi
     Route::post('/pipeline/boards/{boardId}/automation-rules', [PipelineAutomationRuleController::class, 'store'])->whereNumber('boardId');
     Route::put('/pipeline/automation-rules/{ruleId}', [PipelineAutomationRuleController::class, 'update'])->whereNumber('ruleId');
     Route::patch('/pipeline/automation-rules/{ruleId}/toggle', [PipelineAutomationRuleController::class, 'toggle'])->whereNumber('ruleId');
+    Route::get('/pipeline/automation-rules/{ruleId}/runs', [PipelineAutomationRuleController::class, 'runs'])->whereNumber('ruleId');
     Route::delete('/pipeline/automation-rules/{ruleId}', [PipelineAutomationRuleController::class, 'destroy'])->whereNumber('ruleId');
 
     Route::get('/pipeline/board-templates', [PipelineTemplateController::class, 'boardTemplates']);

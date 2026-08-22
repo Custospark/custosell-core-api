@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories\Eloquent;
 
 use App\Models\PipelineAutomationRule;
+use App\Models\PipelineAutomationRun;
 use App\Repositories\Contracts\PipelineAutomationRuleRepositoryInterface;
 use Illuminate\Support\Collection;
 
@@ -56,5 +57,28 @@ class PipelineAutomationRuleRepository implements PipelineAutomationRuleReposito
             'last_run_at' => now(),
             'consecutive_failures' => $success ? 0 : (int) $rule->consecutive_failures + 1,
         ]);
+    }
+
+    public function recordRun(PipelineAutomationRule $rule, string $status, int $actionsExecuted, ?int $leadId = null, ?string $message = null, array $detail = []): void
+    {
+        PipelineAutomationRun::create([
+            'rule_id' => $rule->id,
+            'business_id' => $rule->business_id,
+            'lead_id' => $leadId,
+            'trigger' => (string) ($rule->trigger['type'] ?? ''),
+            'status' => $status,
+            'actions_executed' => $actionsExecuted,
+            'message' => $message,
+            'detail' => $detail,
+        ]);
+    }
+
+    public function recentRuns(int $ruleId, int $limit = 10): Collection
+    {
+        return PipelineAutomationRun::query()
+            ->where('rule_id', $ruleId)
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
     }
 }

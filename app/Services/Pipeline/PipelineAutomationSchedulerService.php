@@ -87,8 +87,23 @@ class PipelineAutomationSchedulerService
                     $fired++;
                     $executed += (int) $result['executed'];
                     $this->rules->markRun($rule, success: true);
+                    $this->rules->recordRun(
+                        $rule,
+                        \App\Models\PipelineAutomationRun::STATUS_SUCCESS,
+                        (int) $result['executed'],
+                        $lead->id,
+                        null,
+                        ['trigger' => (string) ($rule->trigger['type'] ?? '')],
+                    );
                 } catch (\Throwable $e) {
                     $this->rules->markRun($rule, success: false);
+                    $this->rules->recordRun(
+                        $rule,
+                        \App\Models\PipelineAutomationRun::STATUS_FAILED,
+                        0,
+                        $lead->id,
+                        $e->getMessage(),
+                    );
                     Log::warning('Automation rule failed', [
                         'rule_id' => $rule->id,
                         'lead_id' => $lead->id,
@@ -127,11 +142,26 @@ class PipelineAutomationSchedulerService
 
             if ((int) $result['executed'] > 0) {
                 $this->rules->markRun($rule, success: true);
+                $this->rules->recordRun(
+                    $rule,
+                    \App\Models\PipelineAutomationRun::STATUS_SUCCESS,
+                    (int) $result['executed'],
+                    null,
+                    null,
+                    ['trigger' => 'recurring'],
+                );
 
                 return (int) $result['executed'];
             }
         } catch (\Throwable $e) {
             $this->rules->markRun($rule, success: false);
+            $this->rules->recordRun(
+                $rule,
+                \App\Models\PipelineAutomationRun::STATUS_FAILED,
+                0,
+                null,
+                $e->getMessage(),
+            );
             Log::warning('Recurring automation failed', [
                 'rule_id' => $rule->id,
                 'error' => $e->getMessage(),

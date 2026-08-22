@@ -49,6 +49,21 @@ class PipelineAutomationEventDispatcher
         $this->fire($lead, PipelineAutomationRule::TRIGGER_ASSIGNED, $actor);
     }
 
+    public function labelAdded(PipelineLead $lead, User $actor): void
+    {
+        $this->fire($lead, PipelineAutomationRule::TRIGGER_LABEL_ADDED, $actor);
+    }
+
+    public function fieldChanged(PipelineLead $lead, User $actor): void
+    {
+        $this->fire($lead, PipelineAutomationRule::TRIGGER_FIELD_CHANGED, $actor);
+    }
+
+    public function converted(PipelineLead $lead, User $actor): void
+    {
+        $this->fire($lead, PipelineAutomationRule::TRIGGER_CONVERTED, $actor);
+    }
+
     protected function actions(): PipelineAutomationActionService
     {
         return $this->resolvedActions ??= app(PipelineAutomationActionService::class);
@@ -93,8 +108,23 @@ class PipelineAutomationEventDispatcher
                     $result = $this->actions()->execute($rule, $board, $lead, $actor);
                     if ((int) $result['executed'] > 0) {
                         $this->rules->markRun($rule, success: true);
+                        $this->rules->recordRun(
+                            $rule,
+                            \App\Models\PipelineAutomationRun::STATUS_SUCCESS,
+                            (int) $result['executed'],
+                            $lead->id,
+                            null,
+                            ['trigger' => $triggerType],
+                        );
                     }
                 } catch (\Throwable $e) {
+                    $this->rules->recordRun(
+                        $rule,
+                        \App\Models\PipelineAutomationRun::STATUS_FAILED,
+                        0,
+                        $lead->id,
+                        $e->getMessage(),
+                    );
                     \Illuminate\Support\Facades\Log::warning('Event automation failed', [
                         'rule_id' => $rule->id,
                         'lead_id' => $lead->id,
