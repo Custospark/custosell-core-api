@@ -13,7 +13,8 @@ class EmailClassmates extends Command
         {--list= : Path to recipients CSV (name,email,phone)}
         {--test= : Single recipient email to send to (review) }
         {--delay=10 : Seconds to sleep between sends}
-        {--dry-run : Render and print, do not send}';
+        {--dry-run : Render and print, do not send}
+        {--log= : Optional CSV path to record send results (email,name,status,error,time)}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
 
@@ -33,6 +34,10 @@ class EmailClassmates extends Command
         $this->info('recipients: '.count($recipients).' | delay: '.$delay.'s | dry-run: '.($this->option('dry-run') ? 'yes' : 'no'));
 
         $sent = 0;
+        $failed = 0;
+        $logPath = (string) $this->option('log');
+        $logHandle = $logPath !== '' ? $this->openLog($logPath) : null;
+
         foreach ($recipients as $i => $recipient) {
             $name = $recipient['name'] === '' ? 'there' : $recipient['name'];
             $tokens = preg_split('/\s+/', trim($name));
@@ -43,12 +48,21 @@ class EmailClassmates extends Command
                 continue;
             }
 
+            $status = 'sent';
+            $error = '';
             try {
                 $this->sendClassmateEmail($recipient['email'], $first);
                 $this->line(sprintf('[%d] sent to %s', $i + 1, $recipient['email']));
                 $sent++;
             } catch (\Throwable $e) {
+                $status = 'failed';
+                $error = str_replace(["\r", "\n"], ' ', $e->getMessage());
                 $this->error(sprintf('[%d] FAILED %s: %s', $i + 1, $recipient['email'], $e->getMessage()));
+                $failed++;
+            }
+
+            if ($logHandle !== null) {
+                $this->writeLog($logHandle, $recipient['email'], $recipient['name'], $status, $error);
             }
 
             if ($i < count($recipients) - 1) {
@@ -56,7 +70,12 @@ class EmailClassmates extends Command
             }
         }
 
-        $this->info(sprintf('done. sent=%d of %d', $sent, count($recipients)));
+        if ($logHandle !== null) {
+            fclose($logHandle);
+            $this->info('results logged to: '.$logPath);
+        }
+
+        $this->info(sprintf('done. sent=%d failed=%d of %d', $sent, $failed, count($recipients)));
         return self::SUCCESS;
     }
 
@@ -112,6 +131,24 @@ class EmailClassmates extends Command
             }
         }
         return $assoc;
+    }
+
+    private function openLog(string $path)
+    {
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+        $fh = fopen($path, 'w');
+        if ($fh !== false) {
+            fputcsv($fh, ['email', 'name', 'status', 'error', 'time']);
+        }
+        return $fh;
+    }
+
+    /** @param  resource  $fh */
+    private function writeLog($fh, string $email, string $name, string $status, string $error): void
+    {
+        fputcsv($fh, [$email, $name, $status, $error, now()->toIso8601String()]);
     }
 
     private function sendClassmateEmail(string $to, string $firstName): void
