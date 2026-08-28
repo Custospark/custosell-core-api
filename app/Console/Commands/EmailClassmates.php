@@ -128,7 +128,7 @@ class EmailClassmates extends Command
                 $logoCid = $message->embed($logoPath);
             }
             $final = str_replace('__CUSTOSELL_LOGO_CID__', (string) $logoCid, $body);
-            $message->setBody($final, 'text/html');
+            $message->html($final);
         });
     }
 }
