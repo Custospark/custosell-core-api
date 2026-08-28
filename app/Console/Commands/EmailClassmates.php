@@ -62,10 +62,6 @@ class EmailClassmates extends Command
     /** @return list<array{name: string, email: string, phone: ?string}> */
     private function loadRecipients(string $list, string $test): array
     {
-        if ($test !== '') {
-            return [['name' => '', 'email' => $test, 'phone' => null]];
-        }
-
         $path = $list !== '' ? $list : base_path('docs/custosell-recipients.csv');
         if (!is_file($path)) {
             $this->error("recipients file not found: {$path}");
@@ -89,6 +85,16 @@ class EmailClassmates extends Command
                 ];
             }
             fclose($fh);
+        }
+
+        if ($test !== '') {
+            $target = strtolower(trim($test));
+            foreach ($recipients as $rec) {
+                if ($rec['email'] === $target) {
+                    return [$rec];
+                }
+            }
+            return [['name' => '', 'email' => $target, 'phone' => null]];
         }
 
         return $recipients;

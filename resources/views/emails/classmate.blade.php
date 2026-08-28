@@ -66,7 +66,7 @@
 
         <div class="header">
             @if(!empty($logoCid))
-                <img src="cid:{{ $logoCid }}" alt="Custosell" style="max-height:56px; width:auto; border-radius:50%; padding:4px; background:#fff; border:2px solid #e5e7eb; margin-bottom:12px;">
+                <img src="{{ $logoCid }}" alt="{{ config('brand.name') }}" style="max-height:56px; width:auto; border-radius:50%; padding:4px; background:#fff; border:2px solid #e5e7eb; margin-bottom:12px;">
             @endif
             <div class="brand-name">{{ config('brand.name') }}</div>
             <div class="tagline">{{ config('brand.tagline') }}</div>
