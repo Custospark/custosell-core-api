@@ -24,3 +24,11 @@ Schedule::command('subscriptions:cancel-at-period-end')->dailyAt('02:45');
 
 // Recognize earned deferred subscription revenue into software revenue.
 Schedule::command('accounting:recognize-revenue')->dailyAt('03:30');
+
+// Classmate marketing campaign: sends a batch of 10 every 5 minutes, resuming
+// from the results log so nobody is emailed twice. Disabled until the campaign
+// is switched on via CLASSMATE_CAMPAIGN_ENABLED=true.
+Schedule::command('email:classmates --batch 10 --resume --delay 10 --log storage/logs/classmate-campaign.csv')
+    ->everyFiveMinutes()
+    ->when(fn () => (bool) env('CLASSMATE_CAMPAIGN_ENABLED', false))
+    ->environments(['staging', 'production']);

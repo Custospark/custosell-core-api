@@ -14,6 +14,8 @@ class EmailClassmates extends Command
         {--test= : Single recipient email to send to (review) }
         {--delay=10 : Seconds to sleep between sends}
         {--dry-run : Render and print, do not send}
+        {--batch= : Max recipients to send in this run (0 = all)}
+        {--resume : Skip recipients already recorded in the log (no double-send)}
         {--log= : Optional CSV path to record send results (email,name,status,error,time)}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
@@ -30,21 +32,45 @@ class EmailClassmates extends Command
             return self::FAILURE;
         }
 
+        $logPath = (string) $this->option('log');
+
+        // Resume: drop anyone already recorded in the log so we never double-send.
+        if ($this->option('resume') && $logPath !== '' && is_file($logPath)) {
+            $sentEmails = $this->loggedEmails($logPath);
+            $before = count($recipients);
+            $recipients = array_values(array_filter(
+                $recipients,
+                fn ($r) => ! isset($sentEmails[strtolower($r['email'])]),
+            ));
+            $this->info(sprintf('resume: skipping %d already-processed, %d remaining', $before - count($recipients), count($recipients)));
+        }
+
+        // Batch cap: only process the first N.
+        $batch = max(0, (int) $this->option('batch'));
+        if ($batch > 0 && count($recipients) > $batch) {
+            $recipients = array_slice($recipients, 0, $batch);
+            $this->info("batch: this run sends up to {$batch} recipients");
+        }
+
+        $total = count($recipients);
+        $startIndex = $this->startingIndex($recipients, $this->option('resume') && $logPath !== '' && is_file($logPath) ? $logPath : null);
+        $this->info("progress: sending recipient {$startIndex}-".($startIndex + max(0, $total - 1))." (batch of {$total})");
+
         $this->info('from: '.config('mail.from.address'));
-        $this->info('recipients: '.count($recipients).' | delay: '.$delay.'s | dry-run: '.($this->option('dry-run') ? 'yes' : 'no'));
+        $this->info('recipients: '.$total.' | delay: '.$delay.'s | dry-run: '.($this->option('dry-run') ? 'yes' : 'no'));
 
         $sent = 0;
         $failed = 0;
-        $logPath = (string) $this->option('log');
         $logHandle = $logPath !== '' ? $this->openLog($logPath) : null;
 
         foreach ($recipients as $i => $recipient) {
+            $globalIndex = $startIndex + $i;
             $name = $recipient['name'] === '' ? 'there' : $recipient['name'];
             $tokens = preg_split('/\s+/', trim($name));
             $first = $tokens !== false && $tokens !== [] ? end($tokens) : $name;
 
             if ($this->option('dry-run')) {
-                $this->line(sprintf('[%d] %s -> %s (dry-run)', $i + 1, $recipient['email'], $first));
+                $this->line(sprintf('[%d] %s -> %s (dry-run)', $globalIndex, $recipient['email'], $first));
                 continue;
             }
 
@@ -52,12 +78,12 @@ class EmailClassmates extends Command
             $error = '';
             try {
                 $this->sendClassmateEmail($recipient['email'], $first);
-                $this->line(sprintf('[%d] sent to %s', $i + 1, $recipient['email']));
+                $this->line(sprintf('[%d] sent to %s', $globalIndex, $recipient['email']));
                 $sent++;
             } catch (\Throwable $e) {
                 $status = 'failed';
                 $error = str_replace(["\r", "\n"], ' ', $e->getMessage());
-                $this->error(sprintf('[%d] FAILED %s: %s', $i + 1, $recipient['email'], $e->getMessage()));
+                $this->error(sprintf('[%d] FAILED %s: %s', $globalIndex, $recipient['email'], $e->getMessage()));
                 $failed++;
             }
 
@@ -138,11 +164,39 @@ class EmailClassmates extends Command
         if (! is_dir(dirname($path))) {
             mkdir(dirname($path), 0777, true);
         }
-        $fh = fopen($path, 'w');
-        if ($fh !== false) {
+        $append = is_file($path);
+        $fh = fopen($path, $append ? 'a' : 'w');
+        if ($fh !== false && ! $append) {
             fputcsv($fh, ['email', 'name', 'status', 'error', 'time']);
         }
         return $fh;
+    }
+
+    /** @return array<string, bool> emails already present in the log */
+    private function loggedEmails(string $path): array
+    {
+        $set = [];
+        if (($fh = fopen($path, 'r')) !== false) {
+            fgetcsv($fh); // header
+            while (($row = fgetcsv($fh)) !== false) {
+                $email = strtolower(trim((string) ($row[0] ?? '')));
+                if ($email !== '') {
+                    $set[$email] = true;
+                }
+            }
+            fclose($fh);
+        }
+        return $set;
+    }
+
+    /** 1-based global position where this batch starts (already-processed count + 1). */
+    private function startingIndex(array $recipients, ?string $logPath): int
+    {
+        if ($logPath !== null) {
+            return count($this->loggedEmails($logPath)) + 1;
+        }
+        // No resume: first recipient in the CSV is position 1.
+        return 1;
     }
 
     /** @param  resource  $fh */
