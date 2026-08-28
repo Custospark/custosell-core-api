@@ -65,8 +65,8 @@
     <div class="email-container">
 
         <div class="header">
-            @if(!empty($logoUrl))
-                <img src="{{ $logoUrl }}" alt="Custosell" style="max-height:56px; width:auto; border-radius:50%; padding:4px; background:#fff; border:2px solid #e5e7eb; margin-bottom:12px;">
+            @if(!empty($logoCid))
+                <img src="cid:{{ $logoCid }}" alt="Custosell" style="max-height:56px; width:auto; border-radius:50%; padding:4px; background:#fff; border:2px solid #e5e7eb; margin-bottom:12px;">
             @endif
             <div class="brand-name">{{ config('brand.name') }}</div>
             <div class="tagline">{{ config('brand.tagline') }}</div>
@@ -76,20 +76,20 @@
         <div class="body">
             <p class="hello">Hi {{ $firstName }},</p>
 
-            <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong> - and
-            I built something I want to share with our class first, because it literally
-            started here.</p>
+            <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong>, and together
+            with my team at {{ config('brand.company_name') }} we built something we want
+            to share with our class first, because it literally started here.</p>
 
-            <p>Together with <strong>{{ config('brand.company_name') }}</strong>, I built
+            <p>{{ config('brand.company_name') }} built
             <strong>Custosell</strong>: one system for running a business - Point of Sale,
             an online store, inventory, accounting, invoicing, expenses, HR &amp; payroll,
-            CRM, and more - that even works offline.</p>
+            CRM, and more - all in one connected system.</p>
 
             <div class="benefit">
                 <h3>1. Create a free Personal account - get organized.</h3>
                 <p>Custosell isn't only for businesses. With a Personal account you get
                 project management, productivity tools, expense tracking, bookkeeping, and
-                document management - all in one place, offline-ready. You can start free
+                document management - all in one place. You can start free
                 and upgrade whenever you like.</p>
             </div>
 
@@ -107,7 +107,7 @@
                 <p>Planning a startup? Start with your Personal account today, and upgrade to a
                 Business account when you're ready - Point of Sale, E-commerce Storefront,
                 Inventory, Accounting, HR &amp; Payroll, Invoicing, Expenses, CRM, Forecasting
-                &amp; more, all in one system that works with or without the internet. No
+                &amp; more, all in one system. No
                 re-inventing the wheel.</p>
             </div>
 

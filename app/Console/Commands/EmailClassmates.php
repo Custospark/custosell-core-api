@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Mail\ClassmateMarketingMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -16,8 +17,6 @@ class EmailClassmates extends Command
         {--dry-run : Render and print, do not send}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
-
-    private const SUBJECT = 'Built by one of us - Custosell is here, and it can earn for you';
 
     public function handle(): int
     {
@@ -45,7 +44,7 @@ class EmailClassmates extends Command
             }
 
             try {
-                $this->send($recipient['email'], $first);
+                Mail::to($recipient['email'])->send(new ClassmateMarketingMail($first, now()->year));
                 $this->line(sprintf('[%d] sent to %s', $i + 1, $recipient['email']));
                 $sent++;
             } catch (\Throwable $e) {
@@ -107,22 +106,5 @@ class EmailClassmates extends Command
             }
         }
         return $assoc;
-    }
-
-    private function send(string $to, string $firstName): void
-    {
-        $logoDataUri = null;
-        $logoPath = public_path('images/custosell-logo-email.png');
-        if (file_exists($logoPath)) {
-            $logoDataUri = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
-        }
-
-        Mail::send('emails.classmate', [
-            'firstName' => $firstName,
-            'year' => now()->year,
-            'logoUrl' => $logoDataUri,
-        ], function ($message) use ($to) {
-            $message->to($to)->subject(self::SUBJECT);
-        });
     }
 }
