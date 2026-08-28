@@ -114,49 +114,15 @@ class EmailClassmates extends Command
         $logoDataUri = null;
         $logoPath = public_path('images/custosell-logo-email.png');
         if (file_exists($logoPath)) {
-            $data = file_get_contents($logoPath);
-            $mime = 'image/png';
-            $logoDataUri = 'data:'.$mime.';base64,'.base64_encode($data);
+            $logoDataUri = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
         }
 
-        $body = $this->marketingBody($firstName);
-
-        Mail::send('emails.standard', [
-            'title' => 'From our class to the world - Custosell, built by one of us',
+        Mail::send('emails.classmate', [
+            'firstName' => $firstName,
+            'year' => now()->year,
             'logoUrl' => $logoDataUri,
-            'mailBody' => $body,
-            'isHtml' => true,
-            'ctaUrl' => 'https://custosell.com/register',
-            'ctaLabel' => 'Create your free account',
         ], function ($message) use ($to) {
             $message->to($to)->subject(self::SUBJECT);
         });
-    }
-
-    private function marketingBody(string $firstName): string
-    {
-        return <<<HTML
-        <p>Hello <strong>{$firstName}</strong>,</p>
-        <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong> — and I built something I want to share with our class first, because it literally started here.</p>
-        <p>Together with <strong>Custospark Company Ltd</strong>, I built <strong>Custosell</strong>: one system for running a business — Point of Sale, an online store, inventory, accounting, invoicing, expenses, HR &amp; payroll, CRM, and more — that even works offline.</p>
-
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin:16px 0;">
-          <h3 style="margin:0 0 6px;font-size:15px;color:#2563eb;">1. Create a free Personal account — get organized.</h3>
-          <p style="margin:0;font-size:14px;color:#374151;">With a Personal account you get project management, productivity tools, expense tracking, bookkeeping, and document management — all in one place, offline-ready. Start free and upgrade whenever you like.</p>
-        </div>
-
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin:16px 0;">
-          <h3 style="margin:0 0 6px;font-size:15px;color:#2563eb;">2. Turn your network into income — with your own QR code.</h3>
-          <p style="margin:0;font-size:14px;color:#374151;">The moment you create an account, Custosell automatically generates a personal referral QR code for you. When anyone uses it to subscribe to a Custosell plan, you earn a commission on what they actually pay — paid out monthly to your Mobile Money or bank account. There's no limit to how many businesses you can refer, and your dashboard tracks every earning.</p>
-        </div>
-
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin:16px 0;">
-          <h3 style="margin:0 0 6px;font-size:15px;color:#2563eb;">3. When you're ready to start something real — you already have the engine.</h3>
-          <p style="margin:0;font-size:14px;color:#374151;">Planning a startup? Start with your Personal account today, and upgrade to a Business account when you're ready — POS, inventory, accounting, and your online store, without re-inventing the wheel.</p>
-        </div>
-
-        <p><strong>Built by one of us.</strong> Custosell grew out of our class. Whether you use it, or simply refer it to a business you know, we'd love for our class to be part of it.</p>
-        <p style="text-align:center;font-size:13px;color:#6b7280;">Or explore at <a href="https://custosell.com" style="color:#2563eb;">custosell.com</a> — reply to this email and I'll walk you through it personally.</p>
-        HTML;
     }
 }

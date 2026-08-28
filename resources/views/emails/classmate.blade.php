@@ -1,3 +1,4 @@
+{{-- resources/views/emails/classmate.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,19 +65,22 @@
     <div class="email-container">
 
         <div class="header">
-            <div class="brand-name">Custosell</div>
-            <div class="tagline">Your Business Operating System</div>
+            @if(!empty($logoUrl))
+                <img src="{{ $logoUrl }}" alt="Custosell" style="max-height:56px; width:auto; border-radius:50%; padding:4px; background:#fff; border:2px solid #e5e7eb; margin-bottom:12px;">
+            @endif
+            <div class="brand-name">{{ config('brand.name') }}</div>
+            <div class="tagline">{{ config('brand.tagline') }}</div>
         </div>
         <hr class="divider">
 
         <div class="body">
-            <p class="hello">Hi {{NAME}},</p>
+            <p class="hello">Hi {{ $firstName }},</p>
 
             <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong> - and
             I built something I want to share with our class first, because it literally
             started here.</p>
 
-            <p>Together with <strong>Custospark Company Ltd</strong>, I built
+            <p>Together with <strong>{{ config('brand.company_name') }}</strong>, I built
             <strong>Custosell</strong>: one system for running a business - Point of Sale,
             an online store, inventory, accounting, invoicing, expenses, HR &amp; payroll,
             CRM, and more - that even works offline.</p>
@@ -100,11 +104,11 @@
 
             <div class="benefit">
                 <h3>3. When you're ready to start something real - you already have the engine.</h3>
-                <p>Planning a startup? Start with your Personal account today, and upgrade
-                to a Business account when you're ready - Point of Sale, E-commerce
-                Storefront, Inventory, Accounting, HR &amp; Payroll, Invoicing, Expenses,
-                CRM, Forecasting &amp; more, all in one system that works with or without
-                the internet. No re-inventing the wheel.</p>
+                <p>Planning a startup? Start with your Personal account today, and upgrade to a
+                Business account when you're ready - Point of Sale, E-commerce Storefront,
+                Inventory, Accounting, HR &amp; Payroll, Invoicing, Expenses, CRM, Forecasting
+                &amp; more, all in one system that works with or without the internet. No
+                re-inventing the wheel.</p>
             </div>
 
             <div class="tip">
@@ -131,10 +135,10 @@
             </div>
             <div>
                 A product of
-                <a href="https://www.custospark.com" target="_blank" rel="noopener noreferrer">Custospark Company Ltd</a>
-                · Kampala, Uganda
+                <a href="{{ config('brand.company_url') }}" target="_blank" rel="noopener noreferrer">{{ config('brand.company_name') }}</a>
+                · {{ config('brand.company_city') }}, {{ config('brand.company_country') }}
             </div>
-            <div>&copy; {{YEAR}} Custospark Company Ltd. All rights reserved.</div>
+            <div>&copy; {{ $year }} {{ config('brand.company_name') }}. All rights reserved.</div>
         </div>
 
     </div>
