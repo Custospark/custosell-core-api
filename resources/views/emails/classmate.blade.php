@@ -74,11 +74,13 @@
         <hr class="divider">
 
         <div class="body">
-            <p class="hello">Hi {{ $firstName }}, here is what we have for you.</p>
+            <p class="hello">Hi {{ $firstName }},</p>
 
             <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong>, and together
             with my team at {{ config('brand.company_name') }} we built something we want
             to share with our class first, because it literally started here.</p>
+
+            <p>Here is what we have for you:</p>
 
             <div class="benefit">
                 <h3>1. Create a free Personal account - get organized.</h3>
@@ -131,7 +133,7 @@
             <div>
                 A product of
                 <a href="{{ config('brand.company_url') }}" target="_blank" rel="noopener noreferrer">{{ config('brand.company_name') }}</a>
-                · {{ config('brand.company_city') }}, {{ config('brand.company_country') }}
+                - {{ config('brand.company_city') }}, {{ config('brand.company_country') }}
             </div>
             <div>&copy; {{ $year }} {{ config('brand.company_name') }}. All rights reserved.</div>
         </div>
