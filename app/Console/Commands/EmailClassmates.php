@@ -12,7 +12,7 @@ class EmailClassmates extends Command
     protected $signature = 'email:classmates
         {--list= : Path to recipients CSV (name,email,phone)}
         {--test= : Single recipient email to send to (review) }
-        {--delay=20 : Seconds to sleep between sends}
+        {--delay=10 : Seconds to sleep between sends}
         {--dry-run : Render and print, do not send}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
@@ -35,7 +35,8 @@ class EmailClassmates extends Command
         $sent = 0;
         foreach ($recipients as $i => $recipient) {
             $name = $recipient['name'] === '' ? 'there' : $recipient['name'];
-            $first = preg_split('/\s+/', trim($name))[0] ?? $name;
+            $tokens = preg_split('/\s+/', trim($name));
+            $first = $tokens !== false && $tokens !== [] ? end($tokens) : $name;
 
             if ($this->option('dry-run')) {
                 $this->line(sprintf('[%d] %s -> %s (dry-run)', $i + 1, $recipient['email'], $first));
@@ -128,7 +129,7 @@ class EmailClassmates extends Command
 
         Mail::send([], [], function ($message) use ($to, $body, $logoPath, &$logoCid) {
             $message->to($to);
-            $message->subject('Built by one of us - meet Custosell');
+            $message->subject('Built by one of us - meet Custosell from Custospark.');
             $message->from(config('mail.from.address'), 'Custospark Company Ltd');
             if (file_exists($logoPath)) {
                 $logoCid = $message->embed($logoPath);
