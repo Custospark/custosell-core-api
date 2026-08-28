@@ -74,16 +74,11 @@
         <hr class="divider">
 
         <div class="body">
-            <p class="hello">Hi {{ $firstName }},</p>
+            <p class="hello">Hi {{ $firstName }}, here is what we have for you.</p>
 
             <p>I hope the semester is going well. I'm <strong>Opiyo Oscar</strong>, and together
             with my team at {{ config('brand.company_name') }} we built something we want
             to share with our class first, because it literally started here.</p>
-
-            <p>{{ config('brand.company_name') }} built
-            <strong>Custosell</strong>: one system for running a business - Point of Sale,
-            an online store, inventory, accounting, invoicing, expenses, HR &amp; payroll,
-            CRM, and more - all in one connected system.</p>
 
             <div class="benefit">
                 <h3>1. Create a free Personal account - get organized.</h3>
