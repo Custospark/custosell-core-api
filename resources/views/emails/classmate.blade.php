@@ -80,7 +80,7 @@
             with my team at {{ config('brand.company_name') }} we built something we want
             to share with our class first, because it literally started here.</p>
 
-            <p>Here is what we have for you:</p>
+            <p>Here is what we have for you, {{ $firstName }}:</p>
 
             <div class="benefit">
                 <h3>1. Create a free Personal account - get organized.</h3>
