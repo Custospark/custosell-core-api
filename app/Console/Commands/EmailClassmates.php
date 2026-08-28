@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Mail\ClassmateMarketingMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -44,7 +43,7 @@ class EmailClassmates extends Command
             }
 
             try {
-                Mail::to($recipient['email'])->send(new ClassmateMarketingMail($first, now()->year));
+                $this->sendClassmateEmail($recipient['email'], $first);
                 $this->line(sprintf('[%d] sent to %s', $i + 1, $recipient['email']));
                 $sent++;
             } catch (\Throwable $e) {
@@ -106,5 +105,30 @@ class EmailClassmates extends Command
             }
         }
         return $assoc;
+    }
+
+    private function sendClassmateEmail(string $to, string $firstName): void
+    {
+        $logoPath = public_path('images/custosell-logo-email.png');
+        $logoCid = null;
+
+        // Render the body first with a placeholder; the real cid is assigned
+        // inside the message callback (embed() only works there).
+        $body = view('emails.classmate', [
+            'firstName' => $firstName,
+            'year' => now()->year,
+            'logoCid' => '__CUSTOSELL_LOGO_CID__',
+        ])->render();
+
+        Mail::send([], [], function ($message) use ($to, $body, $logoPath, &$logoCid) {
+            $message->to($to);
+            $message->subject('Built by one of us - meet Custosell');
+            $message->from(config('mail.from.address'), 'Custospark Company Ltd');
+            if (file_exists($logoPath)) {
+                $logoCid = $message->embed($logoPath);
+            }
+            $final = str_replace('__CUSTOSELL_LOGO_CID__', (string) $logoCid, $body);
+            $message->setBody($final, 'text/html');
+        });
     }
 }
