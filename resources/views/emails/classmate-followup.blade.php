@@ -106,6 +106,13 @@
             <p style="text-align:center; font-size:13px; color:#6b7280;">
                 Thanks again for your time. I hope this helps you get the most out of the platform.
             </p>
+
+            <p style="margin:28px 0 0 0;">
+                Warm regards,<br>
+                <strong>Opiyo Oscar</strong><br>
+                Founder &amp; CEO, {{ config('brand.company_name') }}<br>
+                <a href="https://custosell.com" style="color:#2563eb;">custosell.com</a>
+            </p>
         </div>
 
         <div class="footer">

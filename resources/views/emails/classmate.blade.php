@@ -123,6 +123,13 @@
                 Or explore at <a href="https://custosell.com" style="color:#2563eb;">custosell.com</a>
                 - reply to this email and I'll walk you through it personally.
             </p>
+
+            <p style="margin:28px 0 0 0;">
+                Warm regards,<br>
+                <strong>Opiyo Oscar</strong><br>
+                Founder &amp; CEO, {{ config('brand.company_name') }}<br>
+                <a href="https://custosell.com" style="color:#2563eb;">custosell.com</a>
+            </p>
         </div>
 
         <div class="footer">
