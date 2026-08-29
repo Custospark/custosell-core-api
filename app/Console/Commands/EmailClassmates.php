@@ -16,6 +16,9 @@ class EmailClassmates extends Command
         {--dry-run : Render and print, do not send}
         {--batch= : Max recipients to send in this run (0 = all)}
         {--resume : Skip recipients already recorded in the log (no double-send)}
+        {--view=emails.classmate : Blade view to render}
+        {--subject= : Email subject}
+        {--video-url= : YouTube link (for the follow-up view)}
         {--log= : Optional CSV path to record send results (email,name,status,error,time)}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
@@ -77,7 +80,11 @@ class EmailClassmates extends Command
             $status = 'sent';
             $error = '';
             try {
-                $this->sendClassmateEmail($recipient['email'], $first);
+                $this->sendClassmateEmail($recipient['email'], $first, [
+                    'view' => (string) $this->option('view'),
+                    'subject' => (string) $this->option('subject'),
+                    'videoUrl' => (string) $this->option('video-url'),
+                ]);
                 $this->line(sprintf('[%d] sent to %s', $globalIndex, $recipient['email']));
                 $sent++;
             } catch (\Throwable $e) {
@@ -205,22 +212,26 @@ class EmailClassmates extends Command
         fputcsv($fh, [$email, $name, $status, $error, now()->toIso8601String()]);
     }
 
-    private function sendClassmateEmail(string $to, string $firstName): void
+    /** @param  array{view: string, subject: string, videoUrl: string}  $opts */
+    private function sendClassmateEmail(string $to, string $firstName, array $opts): void
     {
         $logoPath = public_path('images/custosell-logo-email.png');
         $logoCid = null;
 
         // Render the body first with a placeholder; the real cid is assigned
         // inside the message callback (embed() only works there).
-        $body = view('emails.classmate', [
+        $body = view($opts['view'], [
             'firstName' => $firstName,
             'year' => now()->year,
+            'videoUrl' => $opts['videoUrl'],
             'logoCid' => '__CUSTOSELL_LOGO_CID__',
         ])->render();
 
-        Mail::send([], [], function ($message) use ($to, $body, $logoPath, &$logoCid) {
+        $subject = $opts['subject'] !== '' ? $opts['subject'] : 'Built by one of us - meet Custosell from Custospark.';
+
+        Mail::send([], [], function ($message) use ($to, $body, $logoPath, &$logoCid, $subject) {
             $message->to($to);
-            $message->subject('Built by one of us - meet Custosell from Custospark.');
+            $message->subject($subject);
             $message->from(config('mail.from.address'), 'Custospark Company Ltd');
             if (file_exists($logoPath)) {
                 $logoCid = $message->embed($logoPath);
