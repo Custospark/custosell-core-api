@@ -19,6 +19,7 @@ class EmailClassmates extends Command
         {--view=emails.classmate : Blade view to render}
         {--subject= : Email subject}
         {--video-url= : YouTube link (for the follow-up view)}
+        {--attach= : Optional file path(s) to attach, comma-separated (e.g. poster, QR)}
         {--log= : Optional CSV path to record send results (email,name,status,error,time)}';
 
     protected $description = 'Send the personalized Custosell classmate marketing email through the configured mailer';
@@ -84,6 +85,7 @@ class EmailClassmates extends Command
                     'view' => (string) $this->option('view'),
                     'subject' => (string) $this->option('subject'),
                     'videoUrl' => (string) $this->option('video-url'),
+                    'attach' => (string) $this->option('attach'),
                 ]);
                 $this->line(sprintf('[%d] sent to %s', $globalIndex, $recipient['email']));
                 $sent++;
@@ -212,11 +214,30 @@ class EmailClassmates extends Command
         fputcsv($fh, [$email, $name, $status, $error, now()->toIso8601String()]);
     }
 
-    /** @param  array{view: string, subject: string, videoUrl: string}  $opts */
+    /** @param  array{view: string, subject: string, videoUrl: string, attach: string}  $opts */
     private function sendClassmateEmail(string $to, string $firstName, array $opts): void
     {
         $logoPath = public_path('images/custosell-logo-email.png');
         $logoCid = null;
+        // Split on commas, but rejoin Windows drive letters (C:\...) first.
+        $raw = array_map('trim', explode(',', $opts['attach'] ?? ''));
+        $attachPaths = [];
+        $total = count($raw);
+        for ($i = 0; $i < $total; $i++) {
+            $part = $raw[$i];
+            if (preg_match('/^[A-Za-z]$/', $part) && isset($raw[$i + 1])) {
+                $part .= ','.$raw[$i + 1];
+                $i++;
+            }
+            if ($part !== '') {
+                $attachPaths[] = $part;
+            }
+        }
+        foreach ($attachPaths as $attachPath) {
+            if (! is_file($attachPath)) {
+                throw new \RuntimeException("attachment not found: {$attachPath}");
+            }
+        }
 
         // Render the body first with a placeholder; the real cid is assigned
         // inside the message callback (embed() only works there).
@@ -229,12 +250,15 @@ class EmailClassmates extends Command
 
         $subject = $opts['subject'] !== '' ? $opts['subject'] : 'Built by one of us - meet Custosell from Custospark.';
 
-        Mail::send([], [], function ($message) use ($to, $body, $logoPath, &$logoCid, $subject) {
+        Mail::send([], [], function ($message) use ($to, $body, $logoPath, $attachPaths, &$logoCid, $subject) {
             $message->to($to);
             $message->subject($subject);
             $message->from(config('mail.from.address'), 'Custospark Company Ltd');
             if (file_exists($logoPath)) {
                 $logoCid = $message->embed($logoPath);
+            }
+            foreach ($attachPaths as $attachPath) {
+                $message->attach($attachPath);
             }
             $final = str_replace('__CUSTOSELL_LOGO_CID__', (string) $logoCid, $body);
             $message->html($final);
