@@ -86,12 +86,11 @@
         <div class="body">
             <p class="hello">Hi {{ $firstName }},</p>
 
-            <p>{{ $firstName }}, here is whats in for you. Big news from <strong>Custospark Team</strong>:
+            <p>Big news from <strong>Custospark Team</strong>:
             <strong>Custospark Academy is now live online</strong>, and applications for
-            <strong>Cohort 3</strong> are officially open. Custospark Academy is by
-            <strong>Custospark Company Ltd</strong> - the same company behind
-            <strong>Custosell</strong> and <strong>Custocare</strong>. Three things
-            in it for you:</p>
+            <strong>Cohort 3</strong> are officially open.</p>
+
+            <p>{{ $firstName }}, three things in it for you:</p>
 
             <div class="benefit programs">
                 <h3>1. Enrol in a sponsored program</h3>
@@ -128,7 +127,7 @@
         </div>
 
         <div class="footer">
-            <strong>Custospark Academy</strong> &middot; An institution of Custospark Company Ltd<br>
+            <strong>Custospark Academy</strong> is by <strong>Custospark Company Ltd</strong> - the same company behind <strong>Custosell</strong> and <strong>Custocare</strong>.<br>
             <a href="mailto:academy@custospark.com">academy@custospark.com</a> &middot; +256 756 697 871<br>
             &copy; {{ $year }} Custospark Company Ltd, Kampala, Uganda.
         </div>
