@@ -86,8 +86,11 @@
         <div class="body">
             <p class="hello">Hi {{ $firstName }},</p>
 
-            <p>Big news from our team: <strong>Custospark Academy is now live online</strong>,
-            and applications for <strong>Cohort 3</strong> are officially open. Three things
+            <p>{{ $firstName }}, here is whats in for you. Big news from <strong>Custospark Team</strong>:
+            <strong>Custospark Academy is now live online</strong>, and applications for
+            <strong>Cohort 3</strong> are officially open. Custospark Academy is by
+            <strong>Custospark Company Ltd</strong> - the same company behind
+            <strong>Custosell</strong> and <strong>Custocare</strong>. Three things
             in it for you:</p>
 
             <div class="benefit programs">
@@ -121,7 +124,7 @@
                 <a class="cta-secondary" href="https://academy.custospark.com/">Explore the Academy</a>
             </div>
 
-            <p>Karibu sana,<br><strong>Opiyo Oscar</strong><br>Founder &amp; CEO, AI &amp; Technology Corporate Strategist<br>Custospark Academy</p>
+            <p>Karibu sana,<br><strong>Opiyo Oscar</strong><br>Founder &amp; CEO,<br>AI &amp; Technology Corporate Strategist<br>Custospark Company Ltd</p>
         </div>
 
         <div class="footer">
