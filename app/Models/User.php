@@ -100,6 +100,28 @@ class User extends Authenticatable
         $this->preferences = $prefs;
     }
 
+    /**
+     * App Store visibility: slugs hidden from the sidebar/launcher on all devices.
+     * Visibility-only - never affects plan or module access resolution.
+     *
+     * @return list<string>
+     */
+    public function hiddenStoreApps(): array
+    {
+        $prefs = is_array($this->preferences) ? $this->preferences : [];
+        $hidden = $prefs['hidden_store_apps'] ?? [];
+
+        return is_array($hidden) ? array_values($hidden) : [];
+    }
+
+    /** @param  list<string>  $slugs */
+    public function setHiddenStoreApps(array $slugs): void
+    {
+        $prefs = is_array($this->preferences) ? $this->preferences : [];
+        $prefs['hidden_store_apps'] = array_values(array_unique($slugs));
+        $this->preferences = $prefs;
+    }
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);

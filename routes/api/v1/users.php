@@ -16,6 +16,7 @@ Route::middleware(['auth:sanctum', 'business.active'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [UserController::class, 'updateProfile']);
+    Route::post('/auth/store-visibility', [AuthController::class, 'saveStoreVisibility']);
     Route::post('/auth/two-factor', [AccountSecurityController::class, 'toggleTwoFactor']);
     Route::post('/auth/password/initiate', [AuthController::class, 'initiatePasswordChange'])->middleware('throttle:3,1');
     Route::post('/auth/password/confirm', [AuthController::class, 'confirmPasswordChange'])->middleware('throttle:10,1');

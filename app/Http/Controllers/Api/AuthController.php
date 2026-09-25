@@ -367,6 +367,27 @@ class AuthController extends Controller
     }
 
     /**
+     * Save the user's own App Store visibility (hidden app slugs).
+     * Visibility-only - stored in user preferences, never touches module access.
+     */
+    public function saveStoreVisibility(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'hidden' => ['present', 'array'],
+            'hidden.*' => ['string', 'in:' . implode(',', [
+                ...\App\Services\ModuleAccessService::BUSINESS_MODULES,
+                'account', 'guide', 'discover',
+            ])],
+        ]);
+
+        $user = $request->user();
+        $user->setHiddenStoreApps($data['hidden']);
+        $user->save();
+
+        return response()->json(['data' => ['preferences' => $user->preferences]]);
+    }
+
+    /**
      * Build the success auth payload (loads relations, reconciles subscription,
      * reopens the active shift, issues a token) shared by login and verify.
      */
