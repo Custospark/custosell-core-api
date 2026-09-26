@@ -17,30 +17,13 @@ class ModuleAccessService
 
     public const HR_FULL_SLUG = 'hr_full';
 
-    public const BUSINESS_MODULES = [
-        'dashboard',
-        'sales',
-        'inventory',
-        'customers',
-        'expenses',
-        'accounting',
-        'pipeline',
-        'estimates',
-        'documents',
-        'hr',
-        'forecasting',
-        'settings',
-    ];
+    // Canonical lists live in ModuleCatalog - these aliases keep every
+    // existing ModuleAccessService::XXX reference working unchanged.
+    public const BUSINESS_MODULES = ModuleCatalog::BUSINESS_MODULES;
 
-    public const PUBLIC_MODULES = [
-        'account',
-        'guide',
-    ];
+    public const PUBLIC_MODULES = ModuleCatalog::PUBLIC_MODULES;
 
-    public const PLATFORM_MODULES = [
-        'platform',
-        'guide_settings',
-    ];
+    public const PLATFORM_MODULES = ModuleCatalog::PLATFORM_MODULES;
 
     /** @return list<string> */
     public static function businessModuleSlugs(): array
@@ -199,8 +182,9 @@ class ModuleAccessService
      */
     private function planAllowsModule(User $user, string $module): bool
     {
-        // Settings is always available regardless of plan
-        if ($module === 'settings') {
+        // Plan-exempt modules (settings, pilot-phase efris) are always
+        // available regardless of plan - see ModuleCatalog::PLAN_EXEMPT_MODULES.
+        if (in_array($module, ModuleCatalog::PLAN_EXEMPT_MODULES, true)) {
             return true;
         }
 
@@ -386,16 +370,8 @@ class ModuleAccessService
      * Used to grant legacy owners access without re-forcing intentional core opt-outs
      * (e.g. turning off inventory).
      *
-     * @var list<string>
+     * List lives in ModuleCatalog::POST_CORE_CATALOG_MODULES.
      */
-    public const POST_CORE_CATALOG_MODULES = [
-        'accounting',
-        'pipeline',
-        'estimates',
-        'documents',
-        'hr',
-        'forecasting',
-    ];
 
     /**
      * Additive grant for legacy business owners: append any missing post-core
@@ -419,7 +395,7 @@ class ModuleAccessService
                 self::HR_FULL_SLUG,
             ];
         } else {
-            $missingPostCore = array_values(array_diff(self::POST_CORE_CATALOG_MODULES, $business));
+            $missingPostCore = array_values(array_diff(ModuleCatalog::POST_CORE_CATALOG_MODULES, $business));
             $merged = array_values(array_unique([
                 ...$stored,
                 ...$missingPostCore,
