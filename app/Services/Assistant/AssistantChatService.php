@@ -20,7 +20,7 @@ class AssistantChatService
      * Kept identical to the fallback lines in the system prompt so users
      * always get the same clean format instead of a bare "I don't know".
      */
-    private const SUPPORT_RECOMMENDATION = "- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark";
+    private const SUPPORT_RECOMMENDATION = "Here is what I recommend you do next:\n- Contact the Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com\n- Get quick help from the WhatsApp community: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe\n- Watch walkthrough videos on the Custospark YouTube channel: https://www.youtube.com/@Custospark";
 
     private const UNCERTAIN_PHRASES = [
         "i don't know",
@@ -229,7 +229,7 @@ class AssistantChatService
                 $block = self::SUPPORT_RECOMMENDATION;
                 if ($isMember) {
                     $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
-                    $block .= "\n- Video tutorials and tour guides inside the app: {$base}/guide/tutorials";
+                    $block .= "\n- Explore the video tutorials and tour guides inside the app: {$base}/guide/tutorials";
                 }
 
                 return rtrim($text)."\n".$block;
@@ -245,13 +245,14 @@ class AssistantChatService
         $kb = $knowledge === []
             ? 'Knowledge base: no direct matches - answer from the snapshot and general Custosell knowledge; use the human-support fallback only when you truly cannot answer.'
             : 'Knowledge base (prefer these verified answers):'. "\n- " . implode("\n- ", $knowledge);
-        $fallback = 'If the answer is not in the snapshot or knowledge base, say so plainly and share these next steps, one per line with a simple dash:'
-            . "\n- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
-            . "\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
-            . "\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark";
+        $fallback = 'If the answer is not in the snapshot or knowledge base, say so in one short sentence, then guide the user with an "I recommend" line followed by these next steps, one per line with a simple dash:'
+            . "\nHere is what I recommend you do next:"
+            . "\n- Contact the Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
+            . "\n- Get quick help from the WhatsApp community: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
+            . "\n- Watch walkthrough videos on the Custospark YouTube channel: https://www.youtube.com/@Custospark";
         $fallbackRule = 'Never invent an answer. Mention these contacts ONLY when you cannot answer - never on greetings or when you can answer.';
         $frontendBase = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
-        $pricingRule = "When asked about plan prices, give the live figures from the knowledge base and always point to the pricing page for confirmation: {$frontendBase}/pricing.";
+        $pricingRule = "When asked about plan prices, give the live figures from the knowledge base for every matching plan - never claim a price is missing when it appears there - and always point to the pricing page for confirmation: {$frontendBase}/pricing.";
         $style = 'Reply in plain chat text only: no markdown (no asterisks, hashes, or backticks), short sentences, simple dashes for lists. Answer ONLY the question asked in under 120 words - never volunteer extra sections. Never state facts absent from the snapshot or knowledge base.';
         $greeting = 'If the user only greets you or makes small talk (hello, hi, good morning), reply with a brief friendly greeting as Oscar and ask how you can help. Do NOT recite capabilities, snapshot data, knowledge base content, or support contacts unless asked.';
 
@@ -271,7 +272,7 @@ class AssistantChatService
             ]);
         }
 
-        $memberFallback = $fallback."\n- Video tutorials inside the app: {$frontendBase}/guide/tutorials";
+        $memberFallback = $fallback."\n- Explore the video tutorials and tour guides inside the app: {$frontendBase}/guide/tutorials";
 
         $lines = [
             "You are Oscar, the enterprise assistant for {$businessName} inside Custosell ERP.",

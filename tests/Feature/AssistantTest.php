@@ -165,9 +165,10 @@ class AssistantTest extends TestCase
         $this->postJson('/api/v1/assistant/guide', [
             'messages' => [['role' => 'user', 'content' => 'How do I charter a helicopter?']],
         ])->assertOk()->assertJsonPath('data.reply', 'Not sure.'
-            ."\n- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
-            ."\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
-            ."\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark");
+            ."\nHere is what I recommend you do next:"
+            ."\n- Contact the Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
+            ."\n- Get quick help from the WhatsApp community: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
+            ."\n- Watch walkthrough videos on the Custospark YouTube channel: https://www.youtube.com/@Custospark");
 
         Http::assertSent(function ($request) {
             $system = $request->data()['messages'][0]['content'] ?? '';
@@ -189,10 +190,11 @@ class AssistantTest extends TestCase
         $this->withToken($token)->postJson('/api/v1/assistant/chat', [
             'messages' => [['role' => 'user', 'content' => 'How do I charter a helicopter?']],
         ])->assertOk()->assertJsonPath('data.reply', 'Not sure.'
-            ."\n- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
-            ."\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
-            ."\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark"
-            ."\n- Video tutorials and tour guides inside the app: ".rtrim((string) env('FRONTEND_URL', config('app.url')), '/').'/guide/tutorials');
+            ."\nHere is what I recommend you do next:"
+            ."\n- Contact the Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
+            ."\n- Get quick help from the WhatsApp community: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
+            ."\n- Watch walkthrough videos on the Custospark YouTube channel: https://www.youtube.com/@Custospark"
+            ."\n- Explore the video tutorials and tour guides inside the app: ".rtrim((string) env('FRONTEND_URL', config('app.url')), '/').'/guide/tutorials');
 
         Http::assertSent(function ($request) {
             $system = $request->data()['messages'][0]['content'] ?? '';
