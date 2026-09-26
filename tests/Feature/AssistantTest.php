@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Business;
+use App\Models\GuideFaq;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -71,5 +72,31 @@ class AssistantTest extends TestCase
         $this->withToken($token)->postJson('/api/v1/assistant/chat', [
             'messages' => [['role' => 'user', 'content' => 'Hello']],
         ])->assertStatus(502)->assertJsonPath('message', 'The assistant is not connected yet. Add an API key to start chatting.');
+    }
+
+    public function test_knowledge_base_faq_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        GuideFaq::query()->create([
+            'uuid' => 'kb-test-faq-1',
+            'question' => 'How do I restock inventory items?',
+            'answer' => 'Open Inventory, pick the product, record a stock movement.',
+            'sort_order' => 1,
+            'is_published' => true,
+        ]);
+
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Here is how.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'How do I restock inventory?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'How do I restock inventory items?')
+                && str_contains($system, 'record a stock movement');
+        });
     }
 }
