@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Assistant\AssistantChatService;
 use App\Services\Assistant\AssistantException;
+use App\Services\Contracts\ChatSessionServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AssistantController extends Controller
 {
-    public function __construct(private AssistantChatService $chat) {}
+    public function __construct(
+        private AssistantChatService $chat,
+        private ChatSessionServiceInterface $sessions,
+    ) {}
 
     public function chat(Request $request): JsonResponse
     {
@@ -20,13 +24,100 @@ class AssistantController extends Controller
         $businessId = (int) $user->business_id;
         $businessName = (string) ($user->business->name ?? 'your business');
 
-        return $this->answer($businessId, $businessName, $messages, $user);
+        $sessionId = $request->integer('session_id') ?: null;
+        $session = null;
+        if ($sessionId !== null) {
+            $session = $this->sessions->open($sessionId, (int) $user->id);
+        }
+
+        try {
+            $reply = $this->chat->reply($businessId, $businessName, $messages, $user);
+        } catch (AssistantException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        // Persist the completed turn; sessions belong to the user, guests stay ephemeral.
+        $lastUser = '';
+        foreach (array_reverse($messages) as $message) {
+            if (($message['role'] ?? null) === 'user') {
+                $lastUser = (string) ($message['content'] ?? '');
+                break;
+            }
+        }
+        if ($session === null) {
+            $session = $this->sessions->start((int) $user->id, $user->business_id ? (int) $user->business_id : null, $lastUser);
+        }
+        $this->sessions->appendTurn($session, $lastUser, $reply);
+
+        return response()->json(['data' => [
+            'reply' => $reply,
+            'session' => ['id' => $session->id, 'title' => $session->title],
+        ]]);
     }
 
     /** Guest how-to answers for landing/auth pages - no business data. */
     public function guide(Request $request): JsonResponse
     {
         return $this->answer(null, 'Custosell ERP', $this->validatedMessages($request));
+    }
+
+    public function indexSessions(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $sessions = $this->sessions->list(
+            (int) $user->id,
+            $user->business_id ? (int) $user->business_id : null
+        );
+
+        return response()->json(['data' => $sessions->map(fn ($session) => [
+            'id' => $session->id,
+            'title' => $session->title,
+            'messages_count' => $session->messages_count ?? 0,
+            'updated_at' => $session->updated_at?->toISOString(),
+        ])->all()]);
+    }
+
+    public function showSession(Request $request, int $id): JsonResponse
+    {
+        try {
+            $session = $this->sessions->open($id, (int) $request->user()->id);
+        } catch (\RuntimeException) {
+            abort(404, 'Chat session not found');
+        }
+
+        return response()->json(['data' => [
+            'id' => $session->id,
+            'title' => $session->title,
+            'updated_at' => $session->updated_at?->toISOString(),
+            'messages' => $session->messages->map(fn ($message) => [
+                'role' => $message->role,
+                'content' => $message->content,
+                'created_at' => $message->created_at?->toISOString(),
+            ])->all(),
+        ]]);
+    }
+
+    public function renameSession(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate(['title' => ['required', 'string', 'max:120']]);
+        try {
+            $session = $this->sessions->rename($id, (int) $request->user()->id, $data['title']);
+        } catch (\RuntimeException) {
+            abort(404, 'Chat session not found');
+        }
+
+        return response()->json(['data' => ['id' => $session->id, 'title' => $session->title]]);
+    }
+
+    public function destroySession(Request $request, int $id): JsonResponse
+    {
+        try {
+            $this->sessions->remove($id, (int) $request->user()->id);
+        } catch (\RuntimeException) {
+            abort(404, 'Chat session not found');
+        }
+
+        return response()->json(null, 204);
     }
 
     /** @return list<array{role: string, content: string}> */

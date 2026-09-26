@@ -17,6 +17,10 @@ use App\Services\Assistant\Tools\ProjectsOverviewTool;
 use App\Services\Assistant\Tools\SalesHistoryTool;
 use App\Services\Assistant\Tools\SalesTodayTool;
 use App\Services\Assistant\Tools\TopCustomersTool;
+use App\Repositories\Contracts\ChatSessionRepositoryInterface;
+use App\Repositories\Eloquent\ChatSessionRepository;
+use App\Services\ChatSessionService;
+use App\Services\Contracts\ChatSessionServiceInterface;
 use App\Services\ChartOfAccountService;
 use App\Services\Contracts\CustomerServiceInterface;
 use App\Services\Contracts\EstimateServiceInterface;
@@ -37,6 +41,16 @@ class AssistantServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(
+            ChatSessionRepositoryInterface::class,
+            ChatSessionRepository::class,
+        );
+
+        $this->app->bind(
+            ChatSessionServiceInterface::class,
+            ChatSessionService::class,
+        );
+
         $this->app->singleton(AssistantToolExecutor::class, function ($app) {
             $access = $app->make(ModuleAccessService::class);
 

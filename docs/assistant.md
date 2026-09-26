@@ -52,7 +52,24 @@ sources (`ROUTES`, `NAV_ITEM_KEYWORDS`, sidebar labels) by
 Passages carry full URLs (`FRONTEND_URL` + path) so Oscar answers "where do
 I X" with real clickable links.
 
+## Chat sessions (`ChatSessionService`)
+
+Signed-in users get persistent history; guests stay ephemeral and never
+touch these endpoints:
+
+- `GET /api/v1/assistant/sessions` - list own sessions (latest first)
+- `GET /api/v1/assistant/sessions/{id}` - open one with its messages
+- `PATCH /api/v1/assistant/sessions/{id}` - rename (title max 120)
+- `DELETE /api/v1/assistant/sessions/{id}` - delete with its messages
+- `POST /api/v1/assistant/chat` accepts optional `session_id` and returns
+  the session (`{id, title}`) so the client can adopt it.
+
+All session rows are scoped by `user_id` + `business_id` - cross-owner
+access returns 404, never another user's data. Tables: `chat_sessions`,
+`chat_messages` (migration `2026_09_26_000002`).
+
 ## Tests
 
 `tests/Feature/AssistantTest.php` - provider reply + snapshot injection (Http::fake),
 guest access, validation, missing-key path.
+`tests/Feature/AssistantSessionsTest.php` - session CRUD scoped to owner.
