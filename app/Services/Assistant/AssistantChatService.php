@@ -84,14 +84,14 @@ class AssistantChatService
                 $completed = $this->complete($working, $businessId);
                 $call = $this->parseToolCall($this->extractText($completed['json']));
                 if ($call === null) {
-                    return $this->finalText($completed, $businessId);
+                    return $this->finalText($completed, $businessId, $user !== null);
                 }
                 $result = $this->tools->execute($user, $call['tool'], $call['args']);
                 $working[] = ['role' => 'assistant', 'content' => json_encode($call)];
                 $working[] = ['role' => 'user', 'content' => 'Tool result: ' . json_encode($result) . ' Summarize briefly for the original question.'];
             }
 
-            return $this->finalText($this->complete($working, $businessId), $businessId);
+            return $this->finalText($this->complete($working, $businessId), $businessId, true);
         }
 
         return $this->finalText(
@@ -100,6 +100,7 @@ class AssistantChatService
                 $businessId,
             ),
             $businessId,
+            $user !== null,
         );
     }
 
@@ -197,7 +198,7 @@ class AssistantChatService
         return ['json' => $response->json() ?? [], 'latency_ms' => $elapsedMs];
     }
 
-    private function finalText(array $completed, ?int $businessId): string
+    private function finalText(array $completed, ?int $businessId, bool $isMember = false): string
     {
         $text = $this->extractText($completed['json']);
         if ($text === '') {
@@ -207,7 +208,7 @@ class AssistantChatService
 
         Log::info('Assistant reply served', ['business_id' => $businessId, 'latency_ms' => $completed['latency_ms']]);
 
-        return $this->withSupportRecommendation($text);
+        return $this->withSupportRecommendation($text, $isMember);
     }
 
     /**
@@ -215,7 +216,7 @@ class AssistantChatService
      * it cannot answer. Skipped when the reply already carries support
      * pointers so contacts are never duplicated.
      */
-    private function withSupportRecommendation(string $text): string
+    private function withSupportRecommendation(string $text, bool $isMember = false): string
     {
         $lower = mb_strtolower($text);
         foreach (self::SUPPORT_MARKERS as $marker) {
@@ -225,7 +226,13 @@ class AssistantChatService
         }
         foreach (self::UNCERTAIN_PHRASES as $phrase) {
             if (str_contains($lower, $phrase)) {
-                return rtrim($text)."\n".self::SUPPORT_RECOMMENDATION;
+                $block = self::SUPPORT_RECOMMENDATION;
+                if ($isMember) {
+                    $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+                    $block .= "\n- Video tutorials and tour guides inside the app: {$base}/guide/tutorials";
+                }
+
+                return rtrim($text)."\n".$block;
             }
         }
 

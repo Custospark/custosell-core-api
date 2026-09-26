@@ -188,7 +188,11 @@ class AssistantTest extends TestCase
 
         $this->withToken($token)->postJson('/api/v1/assistant/chat', [
             'messages' => [['role' => 'user', 'content' => 'How do I charter a helicopter?']],
-        ])->assertOk();
+        ])->assertOk()->assertJsonPath('data.reply', 'Not sure.'
+            ."\n- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com"
+            ."\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe"
+            ."\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark"
+            ."\n- Video tutorials and tour guides inside the app: ".rtrim((string) env('FRONTEND_URL', config('app.url')), '/').'/guide/tutorials');
 
         Http::assertSent(function ($request) {
             $system = $request->data()['messages'][0]['content'] ?? '';
