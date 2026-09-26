@@ -13,11 +13,22 @@ use RuntimeException;
  *
  * Auth + encryption details follow URA T-code docs; this client keeps the
  * transport and credential checks in one place so EfrisService stays domain-focused.
+ *
+ * Credentials arrive per business/location from the fiscal vault when present,
+ * otherwise the deployment-global .env set is used (pilot backward compat).
  */
 class EfrisClient
 {
-    public function isConfigured(): bool
+    /** @param array<string, mixed>|null $credentials Vault row or null for global .env. */
+    public function isConfigured(?array $credentials = null): bool
     {
+        if ($credentials !== null) {
+            return ((string) ($credentials['tin'] ?? '')) !== ''
+                && ((string) ($credentials['device_no'] ?? '')) !== ''
+                && ((string) ($credentials['api_username'] ?? '')) !== ''
+                && ((string) ($credentials['api_password'] ?? '')) !== '';
+        }
+
         $tin = (string) config('efris.tin', '');
         $device = (string) config('efris.device_no', '');
         $user = (string) config('efris.api_username', '');
@@ -30,30 +41,34 @@ class EfrisClient
      * Submit a fiscal invoice/receipt payload to URA.
      *
      * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $credentials Vault row or null for global .env.
      * @return array{fdn: string, qr: string|null, verification_code: string|null, raw: array<string, mixed>}
      */
-    public function submitInvoice(array $payload): array
+    public function submitInvoice(array $payload, ?array $credentials = null): array
     {
-        if (!$this->isConfigured()) {
-            throw new RuntimeException('EFRIS credentials are incomplete. Set TIN, device, and API user/password in Backend .env.');
+        if (! $this->isConfigured($credentials)) {
+            throw new RuntimeException('EFRIS credentials are incomplete. Save per-business credentials or set TIN, device, and API user/password in Backend .env.');
         }
+
+        $tin = $credentials !== null ? (string) $credentials['tin'] : (string) config('efris.tin');
+        $deviceNo = $credentials !== null ? (string) $credentials['device_no'] : (string) config('efris.device_no');
+        $branchId = $credentials !== null ? ($credentials['branch_id'] ?? null) : config('efris.branch_id');
+        $apiUser = $credentials !== null ? (string) $credentials['api_username'] : (string) config('efris.api_username');
+        $apiPass = $credentials !== null ? (string) $credentials['api_password'] : (string) config('efris.api_password');
 
         $baseUrl = rtrim((string) config('efris.base_url'), '/');
         $url = $baseUrl.'/efrisws/ws/trnsSales/saveSales';
 
         $envelope = [
-            'tin' => config('efris.tin'),
-            'deviceNo' => config('efris.device_no'),
-            'branchId' => config('efris.branch_id'),
+            'tin' => $tin,
+            'deviceNo' => $deviceNo,
+            'branchId' => $branchId,
             'data' => $payload,
         ];
 
         $response = Http::timeout(45)
             ->acceptJson()
-            ->withBasicAuth(
-                (string) config('efris.api_username'),
-                (string) config('efris.api_password'),
-            )
+            ->withBasicAuth($apiUser, $apiPass)
             ->post($url, $envelope);
 
         if (!$response->successful()) {

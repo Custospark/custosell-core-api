@@ -8,6 +8,7 @@ use App\Jobs\FiscalizeInvoiceJob;
 use App\Jobs\FiscalizeSaleJob;
 use App\Models\Invoice;
 use App\Models\Sale;
+use App\Services\Contracts\FiscalCredentialServiceInterface;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -15,6 +16,7 @@ class EfrisService implements EfrisServiceInterface
 {
     public function __construct(
         private readonly EfrisClient $client,
+        private readonly FiscalCredentialServiceInterface $credentials,
     ) {}
 
     public function isEnabled(): bool
@@ -68,16 +70,17 @@ class EfrisService implements EfrisServiceInterface
         }
 
         try {
-            if (!$this->client->isConfigured()) {
-                return $this->markFailed($sale, 'EFRIS enabled but credentials are incomplete. See docs/compliance/efris-setup.md');
+            $credentials = $this->resolveCredentials((int) $sale->business_id, $sale->location_id);
+            if (!$this->client->isConfigured($credentials)) {
+                return $this->markFailed($sale, 'EFRIS enabled but credentials are incomplete. Save per-business credentials or see docs/compliance/efris-setup.md');
             }
 
-            $payload = $this->buildSalePayload($sale);
+            $payload = $this->buildSalePayload($sale, $credentials);
             $sale->fiscal_payload = $payload;
             $sale->fiscal_status = 'pending';
             $sale->save();
 
-            $result = $this->client->submitInvoice($payload);
+            $result = $this->client->submitInvoice($payload, $credentials);
             $sale->fiscal_status = 'fiscalized';
             $sale->fiscal_fdn = $result['fdn'];
             $sale->fiscal_qr = $result['qr'];
@@ -118,16 +121,17 @@ class EfrisService implements EfrisServiceInterface
         }
 
         try {
-            if (!$this->client->isConfigured()) {
-                return $this->markFailedInvoice($invoice, 'EFRIS enabled but credentials are incomplete. See docs/compliance/efris-setup.md');
+            $credentials = $this->resolveCredentials((int) $invoice->business_id, $invoice->location_id);
+            if (!$this->client->isConfigured($credentials)) {
+                return $this->markFailedInvoice($invoice, 'EFRIS enabled but credentials are incomplete. Save per-business credentials or see docs/compliance/efris-setup.md');
             }
 
-            $payload = $this->buildInvoicePayload($invoice);
+            $payload = $this->buildInvoicePayload($invoice, $credentials);
             $invoice->fiscal_payload = $payload;
             $invoice->fiscal_status = 'pending';
             $invoice->save();
 
-            $result = $this->client->submitInvoice($payload);
+            $result = $this->client->submitInvoice($payload, $credentials);
             $invoice->fiscal_status = 'fiscalized';
             $invoice->fiscal_fdn = $result['fdn'];
             $invoice->fiscal_qr = $result['qr'];
@@ -214,8 +218,47 @@ class EfrisService implements EfrisServiceInterface
         return false;
     }
 
+    /**
+     * Vault credentials for the sale/invoice scope, falling back to the
+     * deployment-global .env set (pilot backward compat). Null when neither
+     * is complete - callers then mark the fiscal attempt failed, never blocking.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolveCredentials(int $businessId, mixed $locationId): ?array
+    {
+        $locationId = $locationId !== null ? (int) $locationId : null;
+
+        try {
+            $vault = $this->credentials->resolveForScope($businessId, $locationId);
+        } catch (Throwable) {
+            $vault = null;
+        }
+
+        if ($vault !== null) {
+            return $vault;
+        }
+
+        if (! $this->client->isConfigured()) {
+            return null;
+        }
+
+        return [
+            'credential' => null,
+            'tin' => (string) config('efris.tin'),
+            'device_no' => (string) config('efris.device_no'),
+            'branch_id' => config('efris.branch_id'),
+            'api_username' => (string) config('efris.api_username'),
+            'api_password' => (string) config('efris.api_password'),
+            'private_key_path' => config('efris.private_key_path'),
+            'public_key_path' => config('efris.public_key_path'),
+            'environment' => (string) config('efris.environment', 'sandbox'),
+            'country' => strtoupper((string) config('efris.country', 'UG')),
+        ];
+    }
+
     /** @return array<string, mixed> */
-    private function buildSalePayload(Sale $sale): array
+    private function buildSalePayload(Sale $sale, ?array $credentials = null): array
     {
         $sale->loadMissing(['saleItems', 'customer', 'business']);
         $items = [];
@@ -232,9 +275,9 @@ class EfrisService implements EfrisServiceInterface
         }
 
         return [
-            'sellerTin' => config('efris.tin'),
-            'deviceNo' => config('efris.device_no'),
-            'branchId' => config('efris.branch_id'),
+            'sellerTin' => $credentials !== null ? (string) $credentials['tin'] : config('efris.tin'),
+            'deviceNo' => $credentials !== null ? (string) $credentials['device_no'] : config('efris.device_no'),
+            'branchId' => $credentials !== null ? ($credentials['branch_id'] ?? null) : config('efris.branch_id'),
             'documentType' => 'RECEIPT',
             'reference' => $sale->receipt_number,
             'issuedAt' => optional($sale->sale_date)?->toIso8601String() ?? now()->toIso8601String(),
@@ -254,7 +297,7 @@ class EfrisService implements EfrisServiceInterface
     }
 
     /** @return array<string, mixed> */
-    private function buildInvoicePayload(Invoice $invoice): array
+    private function buildInvoicePayload(Invoice $invoice, ?array $credentials = null): array
     {
         $invoice->loadMissing(['items', 'customer', 'business']);
         $items = [];
@@ -271,9 +314,9 @@ class EfrisService implements EfrisServiceInterface
         }
 
         return [
-            'sellerTin' => config('efris.tin'),
-            'deviceNo' => config('efris.device_no'),
-            'branchId' => config('efris.branch_id'),
+            'sellerTin' => $credentials !== null ? (string) $credentials['tin'] : config('efris.tin'),
+            'deviceNo' => $credentials !== null ? (string) $credentials['device_no'] : config('efris.device_no'),
+            'branchId' => $credentials !== null ? ($credentials['branch_id'] ?? null) : config('efris.branch_id'),
             'documentType' => 'INVOICE',
             'reference' => $invoice->invoice_number,
             'issuedAt' => optional($invoice->issue_date)?->toIso8601String() ?? now()->toIso8601String(),
