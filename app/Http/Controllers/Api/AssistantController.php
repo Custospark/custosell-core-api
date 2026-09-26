@@ -20,7 +20,7 @@ class AssistantController extends Controller
         $businessId = (int) $user->business_id;
         $businessName = (string) ($user->business->name ?? 'your business');
 
-        return $this->answer($businessId, $businessName, $messages);
+        return $this->answer($businessId, $businessName, $messages, $user);
     }
 
     /** Guest how-to answers for landing/auth pages - no business data. */
@@ -45,10 +45,10 @@ class AssistantController extends Controller
     }
 
     /** @param list<array{role: string, content: string}> $messages */
-    private function answer(?int $businessId, string $businessName, array $messages): JsonResponse
+    private function answer(?int $businessId, string $businessName, array $messages, ?\App\Models\User $user = null): JsonResponse
     {
         try {
-            $reply = $this->chat->reply($businessId, $businessName, $messages);
+            $reply = $this->chat->reply($businessId, $businessName, $messages, $user);
         } catch (AssistantException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }

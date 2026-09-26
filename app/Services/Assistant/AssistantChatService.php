@@ -2,6 +2,8 @@
 
 namespace App\Services\Assistant;
 
+use App\Models\User;
+use App\Services\Assistant\Tools\AssistantToolExecutor;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,10 +18,18 @@ class AssistantChatService
     public function __construct(
         private AssistantContextService $context,
         private AssistantKnowledgeService $knowledge,
+        private AssistantToolExecutor $tools,
     ) {}
 
-    public function reply(?int $businessId, string $businessName, array $messages): string
+    public function reply(?int $businessId, string $businessName, array $messages, ?User $user = null): string
     {
+        // A full agent turn spans several provider rounds - lift PHP's
+        // execution cap narrowly for this request so slow free-tier models
+        // cannot fatal it at 60 seconds.
+        if (function_exists('set_time_limit')) {
+            set_time_limit((int) config('assistant.php_limit', 240));
+        }
+
         $apiKey = (string) config('assistant.api_key');
         if ($apiKey === '') {
             throw new AssistantException('The assistant is not connected yet. Add an API key to start chatting.');
@@ -35,19 +45,108 @@ class AssistantChatService
         }
         $system = $this->systemPrompt($businessName, $snapshot, $this->knowledge->relevantPassages($lastUser));
 
+        // Members with a session get live-data tools (model-agnostic JSON
+        // protocol - works on free tiers without function-calling support).
+        // At most two tool rounds, then a final summary completion.
+        if ($businessId !== null && $user !== null) {
+            $system .= "\n" . $this->toolsSection();
+            $working = array_merge(
+                [['role' => 'system', 'content' => $system]],
+                $messages,
+            );
+
+            for ($round = 0; $round < 2; $round++) {
+                $completed = $this->complete($working, $businessId);
+                $call = $this->parseToolCall($this->extractText($completed['json']));
+                if ($call === null) {
+                    return $this->finalText($completed, $businessId);
+                }
+                $result = $this->tools->execute($user, $call['tool'], $call['args']);
+                $working[] = ['role' => 'assistant', 'content' => json_encode($call)];
+                $working[] = ['role' => 'user', 'content' => 'Tool result: ' . json_encode($result) . ' Summarize briefly for the original question.'];
+            }
+
+            return $this->finalText($this->complete($working, $businessId), $businessId);
+        }
+
+        return $this->finalText(
+            $this->complete(
+                array_merge([['role' => 'system', 'content' => $system]], $messages),
+                $businessId,
+            ),
+            $businessId,
+        );
+    }
+
+    /** Tool catalog rendered into the system prompt with source endpoints. */
+    private function toolsSection(): string
+    {
+        $lines = [];
+        foreach ($this->tools->definitions() as $definition) {
+            $params = [];
+            foreach ($definition['parameters'] as $name => $spec) {
+                $params[] = $name . ' (' . ($spec['type'] ?? 'string') . (! empty($spec['required']) ? ', required' : ', optional') . ')';
+            }
+            $lines[] = '- ' . $definition['name'] . ': ' . $definition['description']
+                . ' [' . $definition['endpoint'] . ']'
+                . ($params !== [] ? ' Args: ' . implode('; ', $params) : '');
+        }
+
+        return 'Live data tools (use when the question needs current numbers from the business):' . "\n"
+            . implode("\n", $lines) . "\n"
+            . 'Rules: to fetch data, reply with ONLY this JSON and nothing else: {"tool": "<name>", "args": {...}}. '
+            . 'One tool per reply. Never invent business, user, branch or customer IDs - scoping is automatic. '
+            . 'Summarize results briefly; never dump raw rows beyond answering the question.';
+    }
+
+    /**
+     * Parse a model turn into a tool call. Anything else is a final answer -
+     * unknown shapes never execute.
+     *
+     * @return array{tool: string, args: array<string, mixed>}|null
+     */
+    private function parseToolCall(string $text): ?array
+    {
+        $text = trim($text);
+        $text = (string) preg_replace('/^```(?:json)?\s*|\s*```$/', '', $text);
+        if (! str_starts_with($text, '{')) {
+            return null;
+        }
+        $decoded = json_decode($text, true);
+        if (! is_array($decoded) || ! isset($decoded['tool']) || ! is_string($decoded['tool'])) {
+            return null;
+        }
+        $args = $decoded['args'] ?? [];
+        if (! is_array($args)) {
+            return null;
+        }
+
+        return ['tool' => $decoded['tool'], 'args' => $args];
+    }
+
+    private function extractText(array $json): string
+    {
+        return trim((string) data_get($json, 'choices.0.message.content', ''));
+    }
+
+    /** @return array<string, mixed> */
+    private function complete(array $messages, ?int $businessId): array
+    {
+        $apiKey = (string) config('assistant.api_key');
+        if ($apiKey === '') {
+            throw new AssistantException('The assistant is not connected yet. Add an API key to start chatting.');
+        }
+
         try {
             $started = microtime(true);
             $response = Http::timeout((int) config('assistant.timeout', 60))
                 ->acceptJson()
                 ->withToken($apiKey)
-                ->post(rtrim((string) config('assistant.base_url'), '/').'/chat/completions', [
+                ->post(rtrim((string) config('assistant.base_url'), '/') . '/chat/completions', [
                     'model' => config('assistant.model'),
                     // Cost/latency guard: short operational answers, never essays.
                     'max_tokens' => (int) config('assistant.max_tokens', 4000),
-                    'messages' => [
-                        ['role' => 'system', 'content' => $system],
-                        ...$messages,
-                    ],
+                    'messages' => $messages,
                 ]);
             $elapsedMs = (int) ((microtime(true) - $started) * 1000);
         } catch (\Throwable $e) {
@@ -70,13 +169,18 @@ class AssistantChatService
             throw new AssistantException('Oscar had trouble answering. Try again in a moment.');
         }
 
-        $text = trim((string) data_get($response->json(), 'choices.0.message.content', ''));
+        return ['json' => $response->json() ?? [], 'latency_ms' => $elapsedMs];
+    }
+
+    private function finalText(array $completed, ?int $businessId): string
+    {
+        $text = $this->extractText($completed['json']);
         if ($text === '') {
-            Log::warning('Assistant empty reply', ['business_id' => $businessId, 'latency_ms' => $elapsedMs]);
+            Log::warning('Assistant empty reply', ['business_id' => $businessId, 'latency_ms' => $completed['latency_ms']]);
             throw new AssistantException('Oscar returned an empty answer. Try rephrasing.');
         }
 
-        Log::info('Assistant reply served', ['business_id' => $businessId, 'latency_ms' => $elapsedMs]);
+        Log::info('Assistant reply served', ['business_id' => $businessId, 'latency_ms' => $completed['latency_ms']]);
 
         return $text;
     }
@@ -93,7 +197,7 @@ class AssistantChatService
 
         if ($snapshot === null) {
             return implode("\n", [
-                'You are Oscar, the enterprise product assistant for Custosell ERP (Your Business Operating System).',
+                'You are Oscar, the enterprise product assistant for Custosell ERP (Smarter operations. Powered by AI).',
                 'The visitor is not logged in: explain capabilities (POS, inventory, invoices, expenses, HR, projects, pipeline, forecasting), plans and pricing, and onboarding clearly.',
                 'Tone: professional, precise, no fluff, no emojis. Short structured answers. Never claim abilities you do not have.',
                 'You cannot change anything - you only answer.',

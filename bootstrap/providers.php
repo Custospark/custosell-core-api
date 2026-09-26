@@ -41,6 +41,7 @@ use App\Providers\UserServiceProvider;
 use App\Providers\WebPushServiceProvider;
 use App\Providers\QuickNoteServiceProvider;
 use App\Providers\FiscalCredentialServiceProvider;
+use App\Providers\AssistantServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -81,6 +82,7 @@ return [
     EventServiceProvider::class,
     EfrisServiceProvider::class,
     FiscalCredentialServiceProvider::class,
+    AssistantServiceProvider::class,
     StorefrontServiceProvider::class,
     WebPushServiceProvider::class,
     QuickNoteServiceProvider::class,
