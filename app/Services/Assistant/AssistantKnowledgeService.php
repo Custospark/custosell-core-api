@@ -161,7 +161,7 @@ class AssistantKnowledgeService
     private static function productBrief(): array
     {
         return [
-            'What Custosell is' => 'Custosell ERP (Your Business Operating System) unifies POS, inventory, invoices, expenses, HR and payroll, projects, sales pipeline (CRM), forecasting and documents. Works online and offline.',
+            'What Custosell is' => 'Custosell ERP (Smarter operations. Powered by AI) unifies POS, inventory, invoices, expenses, HR and payroll, projects, sales pipeline (CRM), forecasting and documents. Works online and offline.',
             'Who makes Custosell' => 'Custosell ERP is a product of Custospark Company Ltd (www.custospark.com).',
             'Who it serves' => 'Registered businesses (shops, restaurants, pharmacies, warehouses), personal workspace accounts, and Discover-only shoppers who browse and order.',
             'Getting started' => 'Register, verify email, create or join a business, complete onboarding (company, taxes, users), import products and opening stock, then sell via POS or storefront.',

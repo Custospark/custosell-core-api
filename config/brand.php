@@ -12,17 +12,17 @@ return [
 
     'name' => 'Custosell',
 
-    'tagline' => 'Your Business Operating System',
+    'tagline' => 'Smarter operations. Powered by AI',
 
     'tagline_short' => 'Business OS',
 
-    'supporting_line' => 'Custosell is your Business Operating System - Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management - all in one connected system that works with or without the internet.',
+    'supporting_line' => 'Custosell delivers smarter operations, powered by AI - Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management - all in one connected system that works with or without the internet.',
 
-    'seo_description' => 'Custosell is your Business Operating System - Point of Sale, E-commerce, Inventory, Accounting, HR & Payroll, Invoicing and CRM in one connected system that works with or without the internet.',
+    'seo_description' => 'Custosell delivers smarter operations, powered by AI - Point of Sale, E-commerce, Inventory, Accounting, HR & Payroll, Invoicing and CRM in one connected system that works with or without the internet.',
 
     'seo_url' => 'https://www.custosell.com',
 
-    'lockup' => 'Custosell - Your Business Operating System',
+    'lockup' => 'Custosell - Smarter operations. Powered by AI',
 
     'footer' => 'Powered by Custosell · A product of Custospark Company Ltd',
 

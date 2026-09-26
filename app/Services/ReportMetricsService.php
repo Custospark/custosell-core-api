@@ -22,7 +22,7 @@ class ReportMetricsService
     use ComputesShiftMetrics;
     use ComputesDashboardAndVat;
 
-    public const BRAND_TAGLINE = 'Your Business Operating System';
+    public const BRAND_TAGLINE = 'Smarter operations. Powered by AI';
 
     public const BRAND_FOOTER = 'Powered by Custosell · A product of Custospark Company Ltd';
 

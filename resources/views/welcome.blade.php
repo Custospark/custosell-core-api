@@ -97,7 +97,7 @@
 <body>
     <div class="card">
         <div class="logo">{{ config('brand.name', 'Custosell') }}</div>
-        <div class="tagline">{{ config('brand.tagline', 'Your Business Operating System') }}</div>
+        <div class="tagline">{{ config('brand.tagline', 'Smarter operations. Powered by AI') }}</div>
         <div class="badge">
             <span class="status-dot"></span>
             API Operational
