@@ -15,6 +15,31 @@ use Illuminate\Support\Facades\Log;
  */
 class AssistantChatService
 {
+    /**
+     * Verbatim recommendation appended when the model cannot answer.
+     * Kept identical to the fallback lines in the system prompt so users
+     * always get the same clean format instead of a bare "I don't know".
+     */
+    private const SUPPORT_RECOMMENDATION = "- Custosell team: call +256 756 697 871 or +256 764 428 003 (Monday-Friday, 8:00 AM-6:00 PM EAT) or email support@custosell.com\n- WhatsApp community for quick help: https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe\n- Custospark YouTube channel with walkthrough videos: https://www.youtube.com/@Custospark";
+
+    private const UNCERTAIN_PHRASES = [
+        "i don't know",
+        'i do not know',
+        'not sure',
+        "can't answer",
+        'cannot answer',
+        'unable to answer',
+        'no information about',
+        "don't have information",
+        'outside what i can',
+        'beyond what i can',
+    ];
+
+    private const SUPPORT_MARKERS = [
+        'support@custosell.com',
+        'chat.whatsapp.com',
+        'youtube.com/@Custospark',
+    ];
     public function __construct(
         private AssistantContextService $context,
         private AssistantKnowledgeService $knowledge,
@@ -181,6 +206,28 @@ class AssistantChatService
         }
 
         Log::info('Assistant reply served', ['business_id' => $businessId, 'latency_ms' => $completed['latency_ms']]);
+
+        return $this->withSupportRecommendation($text);
+    }
+
+    /**
+     * Guarantee the exact support recommendation whenever the model admits
+     * it cannot answer. Skipped when the reply already carries support
+     * pointers so contacts are never duplicated.
+     */
+    private function withSupportRecommendation(string $text): string
+    {
+        $lower = mb_strtolower($text);
+        foreach (self::SUPPORT_MARKERS as $marker) {
+            if (str_contains($lower, mb_strtolower($marker))) {
+                return $text;
+            }
+        }
+        foreach (self::UNCERTAIN_PHRASES as $phrase) {
+            if (str_contains($lower, $phrase)) {
+                return rtrim($text)."\n".self::SUPPORT_RECOMMENDATION;
+            }
+        }
 
         return $text;
     }
