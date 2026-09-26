@@ -157,7 +157,7 @@ Custosell's edge: offline-first, all-in-one (POS + Accounting + HR + CRM + e-com
 
 ### 🎯 Marketing Perspective
 
-- **Positioning:** "Smarter operations. Powered by AI" - not "POS software." We're competing with QuickBooks, not just the local POS guy.
+- **Positioning:** "Smarter Operations. Powered by AI" - not "POS software." We're competing with QuickBooks, not just the local POS guy.
 - **Early Access launch strategy:** Current "Coming Soon" / "Free for all" phase is grandfather opportunity. First 100-200 businesses get locked-in founder pricing (e.g., Essential at 50k/month for life). Creates urgency and a testimonial base.
 - **Tier naming:** Essential → Professional → Enterprise is universally understood. No need to educate the market on clever names.
 - **Price anchoring:** Display all three tiers together. Essential at 75k makes Professional at 200k feel reasonable. Professional at 200k makes Enterprise at 500k feel premium but justified.
