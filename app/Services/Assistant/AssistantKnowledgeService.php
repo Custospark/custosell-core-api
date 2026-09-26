@@ -4,6 +4,7 @@ namespace App\Services\Assistant;
 
 use App\Models\GuideFaq;
 use App\Models\GuideTutorial;
+use App\Models\Plan;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -84,8 +85,46 @@ class AssistantKnowledgeService
                     $items[] = ['title' => (string) $tutorial->title, 'text' => '[Tutorial] '.((string) $tutorial->title).' ('.((string) $tutorial->category).'): '.((string) $tutorial->description)];
                 });
 
+            foreach ($this->planPassages() as $title => $text) {
+                $items[] = ['title' => $title, 'text' => "[Pricing] {$title}: {$text}"];
+            }
+
             return $items;
         });
+    }
+
+    /** Live subscription plans - prices come from the DB, never hardcoded. */
+    /** @return array<string, string> */
+    private function planPassages(): array
+    {
+        $out = [];
+
+        $plans = Plan::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['name', 'type', 'description', 'features', 'price_monthly_usd', 'price_yearly_usd', 'onboarding_fee_usd', 'trial_days', 'is_popular']);
+
+        foreach ($plans as $plan) {
+            $features = $plan->features;
+            if (is_string($features)) {
+                $features = json_decode($features, true);
+            }
+            $enabled = is_array($features)
+                ? array_slice(array_keys(array_filter($features)), 0, 12)
+                : [];
+            $popular = (bool) $plan->is_popular ? ' (most popular)' : '';
+            $out["Plan {$plan->name}"] = sprintf(
+                '%s plan%s: $%s/month, $%s/year, %d-day trial, no onboarding fee. Includes: %s.',
+                $plan->name,
+                $popular,
+                number_format((float) $plan->price_monthly_usd, 2),
+                number_format((float) ($plan->price_yearly_usd ?? 0), 2),
+                (int) $plan->trial_days,
+                $enabled === [] ? ((string) $plan->description) : implode(', ', $enabled)
+            );
+        }
+
+        return $out;
     }
 
     /** Curated product facts mirroring landing/pricing pages. */

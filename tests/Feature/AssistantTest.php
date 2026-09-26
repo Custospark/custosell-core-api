@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Business;
 use App\Models\GuideFaq;
+use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -97,6 +98,60 @@ class AssistantTest extends TestCase
             $system = $request->data()['messages'][0]['content'] ?? '';
             return str_contains($system, 'How do I restock inventory items?')
                 && str_contains($system, 'record a stock movement');
+        });
+    }
+
+    public function test_live_pricing_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Plan::query()->create([
+            'name' => 'Professional',
+            'slug' => 'professional-test',
+            'type' => 'business',
+            'description' => 'For growing shops',
+            'features' => ['sales' => true, 'inventory' => true],
+            'limits' => [],
+            'price_monthly_usd' => 29.99,
+            'price_yearly_usd' => 299.90,
+            'onboarding_fee_usd' => 0,
+            'trial_days' => 30,
+            'billing_cycle' => 'monthly',
+            'is_popular' => true,
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'It costs $29.99.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'How much does the Professional plan cost?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'Professional')
+                && str_contains($system, '$29.99')
+                && str_contains($system, '30-day trial');
+        });
+    }
+
+    public function test_unknown_questions_offer_human_support(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Not sure.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'How do I charter a helicopter?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'support@custosell.com')
+                && str_contains($system, '+256 756 697 871');
         });
     }
 }
