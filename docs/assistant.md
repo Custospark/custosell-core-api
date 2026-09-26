@@ -50,7 +50,21 @@ Route map (`route-map.json`, 74 entries) extracted from the frontend search
 sources (`ROUTES`, `NAV_ITEM_KEYWORDS`, sidebar labels) by
 `scripts/extract-assistant-routes.py` - re-run it when navigation changes.
 Passages carry full URLs (`FRONTEND_URL` + path) so Oscar answers "where do
-I X" with real clickable links.
+I X" with real clickable links. Auth-recovery routes outside the sidebar
+(login, register, pricing, forgot-password) are pinned in
+`scripts/extract-assistant-routes.py` (`core` list) - re-run it when
+navigation changes and keep that list in sync.
+
+## No-answer fallback
+
+When Oscar truly cannot answer, the system prompt tells it to say so
+plainly and share these next steps (dash list, full URLs so the widget
+linkifies them): Custosell team phones/email, the WhatsApp community
+(`https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe`), and the Custospark
+YouTube channel (`https://www.youtube.com/@Custospark`). Signed-in
+members additionally get the in-app video tutorials
+(`<FRONTEND_URL>/guide/tutorials`). Contacts appear ONLY on genuine
+no-answers - never on greetings.
 
 ## Chat sessions (`ChatSessionService`)
 

@@ -289,6 +289,20 @@
   ]
  },
  {
+  "label": "Forgot password",
+  "path": "/forgot-password",
+  "keywords": [
+   "forgot password",
+   "forgot my password",
+   "cannot log in",
+   "cant log in",
+   "locked out",
+   "password reset email",
+   "password reset link",
+   "recover account"
+  ]
+ },
+ {
   "label": "Communities",
   "path": "/guide/communities",
   "keywords": [

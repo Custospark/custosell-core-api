@@ -151,7 +151,29 @@ class AssistantTest extends TestCase
         Http::assertSent(function ($request) {
             $system = $request->data()['messages'][0]['content'] ?? '';
             return str_contains($system, 'support@custosell.com')
-                && str_contains($system, '+256 756 697 871');
+                && str_contains($system, '+256 756 697 871')
+                && str_contains($system, 'https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe')
+                && str_contains($system, 'https://www.youtube.com/@Custospark');
+        });
+    }
+
+    public function test_member_fallback_points_at_in_app_tutorials(): void
+    {
+        [$user, $business, $token] = $this->member();
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Not sure.']]]], 200),
+        ]);
+
+        $this->withToken($token)->postJson('/api/v1/assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'How do I charter a helicopter?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, $base.'/guide/tutorials')
+                && str_contains($system, 'https://chat.whatsapp.com/HWHjz6ErUuhAjZnZUyfLpe');
         });
     }
 
@@ -170,6 +192,24 @@ class AssistantTest extends TestCase
             $system = $request->data()['messages'][0]['content'] ?? '';
             $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
             return str_contains($system, $base.'/sales/new');
+        });
+    }
+
+    public function test_forgot_password_route_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Reset it here.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'I forgot my password, how do I log in?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, $base.'/forgot-password');
         });
     }
 

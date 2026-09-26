@@ -104,6 +104,9 @@ def main():
         ("Login", "/login", ["login", "sign in", "log in"]),
         ("Register", "/register", ["register", "sign up", "create account"]),
         ("Pricing", "/pricing", ["pricing", "plans", "cost", "price", "subscription cost"]),
+        # Auth recovery lives outside the sidebar - logged-out users asking
+        # about passwords must land here, not on account/security.
+        ("Forgot password", "/forgot-password", ["forgot password", "forgot my password", "cannot log in", "cant log in", "locked out", "password reset email", "password reset link", "recover account"]),
     ]
     for label, path, kws in core:
         if path not in seen:
