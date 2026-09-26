@@ -41,6 +41,11 @@ pages), plus a curated static product brief mirroring landing/pricing. Keyword
 scoring (title x3), top 5 passages, 2500-char cap, corpus cached 10 minutes.
 Injected for members and guests. Covered by `AssistantTest::test_knowledge_base_faq_reaches_provider`.
 
+Live plan pricing (`planPassages()`) reads active `plans` rows - Oscar quotes
+current USD prices, trials and feature lists with nothing hardcoded. Unknown
+questions trigger the human-support fallback (call +256 756 697 871 / +256 764
+428 003, Mon-Fri 8-6 EAT, or support@custosell.com) per `guideSupportConfig.ts`.
+
 ## Tests
 
 `tests/Feature/AssistantTest.php` - provider reply + snapshot injection (Http::fake),
