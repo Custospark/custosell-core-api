@@ -60,4 +60,5 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/currency.php';
     require __DIR__ . '/api/v1/credits.php';
     require __DIR__ . '/api/v1/public.php';
+    require __DIR__ . '/api/v1/assistant.php';
 });
