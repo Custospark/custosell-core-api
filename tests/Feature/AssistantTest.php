@@ -172,4 +172,22 @@ class AssistantTest extends TestCase
             return str_contains($system, $base.'/sales/new');
         });
     }
+
+    public function test_greeting_rule_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Hello!']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'hello']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'only greets you')
+                && str_contains($system, 'never on greetings');
+        });
+    }
 }
