@@ -46,6 +46,12 @@ current USD prices, trials and feature lists with nothing hardcoded. Unknown
 questions trigger the human-support fallback (call +256 756 697 871 / +256 764
 428 003, Mon-Fri 8-6 EAT, or support@custosell.com) per `guideSupportConfig.ts`.
 
+Route map (`route-map.json`, 74 entries) extracted from the frontend search
+sources (`ROUTES`, `NAV_ITEM_KEYWORDS`, sidebar labels) by
+`scripts/extract-assistant-routes.py` - re-run it when navigation changes.
+Passages carry full URLs (`FRONTEND_URL` + path) so Oscar answers "where do
+I X" with real clickable links.
+
 ## Tests
 
 `tests/Feature/AssistantTest.php` - provider reply + snapshot injection (Http::fake),

@@ -89,8 +89,37 @@ class AssistantKnowledgeService
                 $items[] = ['title' => $title, 'text' => "[Pricing] {$title}: {$text}"];
             }
 
+            foreach ($this->routeEntries() as $entry) {
+                $url = rtrim((string) env('FRONTEND_URL', config('app.url')), '/').($entry['path']);
+                $items[] = [
+                    'title' => $entry['label'],
+                    'text' => '[Route] '.($entry['label']).' lives at '.($url).' ('.implode(', ', array_slice($entry['keywords'], 0, 8)).')',
+                ];
+            }
+
             return $items;
         });
+    }
+
+    /** @return list<array{label: string, path: string, keywords: list<string>}> */
+    private function routeEntries(): array
+    {
+        static $entries = null;
+        if ($entries !== null) {
+            return $entries;
+        }
+        $file = __DIR__.'/route-map.json';
+        if (! is_file($file)) {
+            return $entries = [];
+        }
+        $decoded = json_decode((string) file_get_contents($file), true);
+        if (! is_array($decoded)) {
+            return $entries = [];
+        }
+
+        return $entries = array_values(array_filter($decoded, fn ($e) => is_array($e)
+            && isset($e['label'], $e['path'])
+            && is_string($e['label']) && is_string($e['path'])));
     }
 
     /** Live subscription plans - prices come from the DB, never hardcoded. */

@@ -1,0 +1,849 @@
+[
+ {
+  "label": "Notifications",
+  "path": "/account/notifications",
+  "keywords": [
+   "alerts",
+   "messages",
+   "updates",
+   "bell",
+   "announcements"
+  ]
+ },
+ {
+  "label": "My Profile",
+  "path": "/account/profile",
+  "keywords": [
+   "my profile",
+   "personal details",
+   "edit profile",
+   "account info",
+   "update name",
+   "change photo",
+   "my account"
+  ]
+ },
+ {
+  "label": "Referrals",
+  "path": "/account/referrals",
+  "keywords": [
+   "refer friends",
+   "referral program",
+   "rewards",
+   "invite friends",
+   "bonus",
+   "earn money"
+  ]
+ },
+ {
+  "label": "Security",
+  "path": "/account/security",
+  "keywords": [
+   "password",
+   "change password",
+   "reset password",
+   "new password",
+   "update password",
+   "verify email",
+   "email verification",
+   "two-factor",
+   "2fa",
+   "two factor authentication",
+   "security code",
+   "authentication",
+   "sign-in activity",
+   "login security",
+   "account protection",
+   "secure my account"
+  ]
+ },
+ {
+  "label": "Chart of Accounts",
+  "path": "/accounting/chart-of-accounts",
+  "keywords": [
+   "accounts list",
+   "ledger accounts",
+   "accounting chart",
+   "coa",
+   "account structure"
+  ]
+ },
+ {
+  "label": "Fixed Assets",
+  "path": "/accounting/fixed-assets",
+  "keywords": [
+   "asset register",
+   "depreciation",
+   "capital assets",
+   "long term assets",
+   "asset schedule"
+  ]
+ },
+ {
+  "label": "Journal Entries",
+  "path": "/accounting/journal-entries",
+  "keywords": [
+   "journal",
+   "double entry",
+   "accounting entries",
+   "post entry",
+   "journal entry"
+  ]
+ },
+ {
+  "label": "Financial Ratios",
+  "path": "/accounting/ratios",
+  "keywords": [
+   "financial ratios",
+   "liquidity",
+   "profitability",
+   "performance ratios",
+   "ratio analysis"
+  ]
+ },
+ {
+  "label": "Financial Statements",
+  "path": "/accounting/statements",
+  "keywords": [
+   "income statement",
+   "balance sheet",
+   "cash flow",
+   "p&l",
+   "profit and loss",
+   "financial statements"
+  ]
+ },
+ {
+  "label": "Customer List",
+  "path": "/customers",
+  "keywords": [
+   "customer list",
+   "all customers",
+   "find customer",
+   "search customer",
+   "add customer",
+   "new customer",
+   "client list",
+   "customer directory",
+   "clients"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/customers/overview",
+  "keywords": [
+   "customer insights",
+   "customer segments",
+   "customer trends",
+   "customer analytics",
+   "customer statistics",
+   "customer demographics"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/dashboard",
+  "keywords": [
+   "home",
+   "overview",
+   "today",
+   "daily sales",
+   "business performance",
+   "at a glance",
+   "metrics",
+   "start here"
+  ]
+ },
+ {
+  "label": "Browse & Order",
+  "path": "/discover",
+  "keywords": [
+   "browse shops",
+   "place order",
+   "find shops",
+   "online store",
+   "shop online",
+   "browse products",
+   "discover shops"
+  ]
+ },
+ {
+  "label": "My Orders",
+  "path": "/discover/my-orders",
+  "keywords": [
+   "online orders",
+   "placed orders",
+   "track order",
+   "order status",
+   "my online orders"
+  ]
+ },
+ {
+  "label": "Business files",
+  "path": "/documents",
+  "keywords": [
+   "business files",
+   "file storage",
+   "upload files",
+   "documents cabinet",
+   "file library",
+   "documents",
+   "files"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/efris/overview",
+  "keywords": [
+   "overview"
+  ]
+ },
+ {
+  "label": "All estimates",
+  "path": "/estimates",
+  "keywords": [
+   "all estimates",
+   "estimate list",
+   "quotes",
+   "quotations",
+   "create estimate",
+   "new estimate",
+   "proposal"
+  ]
+ },
+ {
+  "label": "My Budgets",
+  "path": "/expenses/budgets",
+  "keywords": [
+   "my budgets",
+   "spending budget",
+   "budget plan",
+   "budget tracking",
+   "budget limits"
+  ]
+ },
+ {
+  "label": "Expense Categories",
+  "path": "/expenses/categories",
+  "keywords": [
+   "expense categories",
+   "expense types",
+   "organize expenses",
+   "new expense category"
+  ]
+ },
+ {
+  "label": "Income",
+  "path": "/expenses/income",
+  "keywords": [
+   "record income",
+   "add income",
+   "business income",
+   "earnings",
+   "money in",
+   "new income"
+  ]
+ },
+ {
+  "label": "Expense List",
+  "path": "/expenses/list",
+  "keywords": [
+   "all expenses",
+   "expense records",
+   "business costs",
+   "money out",
+   "spending log",
+   "record expense",
+   "add expense"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/expenses/overview",
+  "keywords": [
+   "expense summary",
+   "income and expenses",
+   "financial summary",
+   "money overview",
+   "cash position"
+  ]
+ },
+ {
+  "label": "Budgets",
+  "path": "/forecasting/budgets",
+  "keywords": [
+   "forecast budgets",
+   "budget planning",
+   "compare budgets",
+   "forecast plan"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/forecasting/overview",
+  "keywords": [
+   "financial forecast",
+   "forecasting summary",
+   "forecast overview",
+   "projections"
+  ]
+ },
+ {
+  "label": "Communities",
+  "path": "/guide/communities",
+  "keywords": [
+   "communities"
+  ]
+ },
+ {
+  "label": "Contact & Help",
+  "path": "/guide/contact",
+  "keywords": [
+   "support",
+   "help desk",
+   "reach us",
+   "customer support",
+   "chat",
+   "get help"
+  ]
+ },
+ {
+  "label": "FAQs",
+  "path": "/guide/faqs",
+  "keywords": [
+   "frequently asked questions",
+   "questions",
+   "answers",
+   "common questions",
+   "help"
+  ]
+ },
+ {
+  "label": "Feedback",
+  "path": "/guide/feedback",
+  "keywords": [
+   "feature request",
+   "suggest",
+   "ideas",
+   "tell us",
+   "product feedback"
+  ]
+ },
+ {
+  "label": "Tutorials",
+  "path": "/guide/tutorials",
+  "keywords": [
+   "getting started",
+   "how to",
+   "learn",
+   "training",
+   "video guides",
+   "step by step",
+   "walkthrough"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/hr/overview",
+  "keywords": [
+   "workforce overview",
+   "hr metrics",
+   "employee stats",
+   "headcount",
+   "people analytics"
+  ]
+ },
+ {
+  "label": "People",
+  "path": "/hr/people",
+  "keywords": [
+   "employees",
+   "staff list",
+   "team members",
+   "add employee",
+   "new employee",
+   "employee records",
+   "people directory"
+  ]
+ },
+ {
+  "label": "Categories",
+  "path": "/inventory/categories",
+  "keywords": [
+   "product categories",
+   "group products",
+   "organize products",
+   "category list",
+   "product types"
+  ]
+ },
+ {
+  "label": "Incoming orders",
+  "path": "/inventory/incoming-orders",
+  "keywords": [
+   "receive order",
+   "stock receiving",
+   "goods received",
+   "arriving stock",
+   "inbound orders",
+   "incoming stock"
+  ]
+ },
+ {
+  "label": "Marketplace",
+  "path": "/inventory/marketplace",
+  "keywords": [
+   "buy stock",
+   "sell stock",
+   "supplier marketplace",
+   "trade inventory",
+   "order supplies",
+   "buy and sell"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/inventory/overview",
+  "keywords": [
+   "inventory overview",
+   "stock overview",
+   "inventory dashboard",
+   "stock dashboard",
+   "inventory summary",
+   "stock summary",
+   "inventory at a glance",
+   "low stock",
+   "out of stock",
+   "stock value"
+  ]
+ },
+ {
+  "label": "Products",
+  "path": "/inventory/products",
+  "keywords": [
+   "product catalog",
+   "add product",
+   "new product",
+   "create product",
+   "product list",
+   "item list",
+   "goods",
+   "product prices",
+   "price items",
+   "stock items"
+  ]
+ },
+ {
+  "label": "Purchase orders",
+  "path": "/inventory/purchase-orders",
+  "keywords": [
+   "purchase order",
+   "po",
+   "buy from supplier",
+   "create purchase order",
+   "order stock",
+   "supplier order"
+  ]
+ },
+ {
+  "label": "Stock Ledger",
+  "path": "/inventory/stock",
+  "keywords": [
+   "stock levels",
+   "stock movements",
+   "inventory ledger",
+   "stock history",
+   "quantity",
+   "stock balance",
+   "movement record",
+   "stock in",
+   "stock out"
+  ]
+ },
+ {
+  "label": "Sales invoices",
+  "path": "/invoices",
+  "keywords": [
+   "sales invoice",
+   "bill customer",
+   "invoice customers",
+   "issue invoice",
+   "create invoice",
+   "billing"
+  ]
+ },
+ {
+  "label": "Supplier invoices",
+  "path": "/invoices/supplier",
+  "keywords": [
+   "supplier invoice",
+   "vendor bill",
+   "bills from suppliers",
+   "pay supplier",
+   "creditor invoice",
+   "purchase invoice"
+  ]
+ },
+ {
+  "label": "Login",
+  "path": "/login",
+  "keywords": [
+   "login",
+   "sign in",
+   "log in"
+  ]
+ },
+ {
+  "label": "All notes",
+  "path": "/notes",
+  "keywords": [
+   "all notes"
+  ]
+ },
+ {
+  "label": "Boards",
+  "path": "/pipeline/boards",
+  "keywords": [
+   "kanban boards",
+   "sales boards",
+   "funnel boards",
+   "pipeline boards",
+   "drag and drop",
+   "board view"
+  ]
+ },
+ {
+  "label": "Businesses",
+  "path": "/platform/businesses",
+  "keywords": [
+   "all businesses",
+   "tenants",
+   "business management",
+   "customer businesses"
+  ]
+ },
+ {
+  "label": "Campaign Codes",
+  "path": "/platform/campaign-codes",
+  "keywords": [
+   "referral codes",
+   "campaigns",
+   "promo codes",
+   "campaign management"
+  ]
+ },
+ {
+  "label": "Conversions",
+  "path": "/platform/conversions",
+  "keywords": [
+   "conversion rate",
+   "trial to paid",
+   "conversion analytics",
+   "paid subscribers",
+   "trial analytics"
+  ]
+ },
+ {
+  "label": "Communities",
+  "path": "/platform/guide/communities",
+  "keywords": [
+   "communities"
+  ]
+ },
+ {
+  "label": "FAQs",
+  "path": "/platform/guide/faqs",
+  "keywords": [
+   "platform faqs",
+   "admin questions",
+   "platform help"
+  ]
+ },
+ {
+  "label": "Feedback",
+  "path": "/platform/guide/feedback",
+  "keywords": [
+   "platform feedback",
+   "admin feedback",
+   "platform ideas"
+  ]
+ },
+ {
+  "label": "Tutorials",
+  "path": "/platform/guide/tutorials",
+  "keywords": [
+   "platform tutorials",
+   "admin guides",
+   "getting started admin"
+  ]
+ },
+ {
+  "label": "Overview",
+  "path": "/platform/overview",
+  "keywords": [
+   "platform dashboard",
+   "global metrics",
+   "platform analytics",
+   "tenant overview"
+  ]
+ },
+ {
+  "label": "Payouts",
+  "path": "/platform/payouts",
+  "keywords": [
+   "commissions",
+   "rep payouts",
+   "earnings",
+   "payout history"
+  ]
+ },
+ {
+  "label": "Manage Plans",
+  "path": "/platform/plans",
+  "keywords": [
+   "manage plans",
+   "plan setup",
+   "pricing plans",
+   "platform pricing"
+  ]
+ },
+ {
+  "label": "Platform Roles",
+  "path": "/platform/roles",
+  "keywords": [
+   "role management",
+   "platform permissions",
+   "admin roles"
+  ]
+ },
+ {
+  "label": "Sales Reps",
+  "path": "/platform/sales-reps",
+  "keywords": [
+   "representatives",
+   "sales team",
+   "rep management",
+   "sales agents"
+  ]
+ },
+ {
+  "label": "Sent messages",
+  "path": "/platform/sent-messages",
+  "keywords": [
+   "platform messages",
+   "broadcast",
+   "announcements",
+   "sent communications"
+  ]
+ },
+ {
+  "label": "Manage Subscriptions",
+  "path": "/platform/subscriptions",
+  "keywords": [
+   "manage subscriptions",
+   "all subscriptions",
+   "business plans"
+  ]
+ },
+ {
+  "label": "All Users",
+  "path": "/platform/users",
+  "keywords": [
+   "all users",
+   "user management",
+   "platform accounts"
+  ]
+ },
+ {
+  "label": "Pricing",
+  "path": "/pricing",
+  "keywords": [
+   "pricing",
+   "plans",
+   "cost",
+   "price",
+   "subscription cost"
+  ]
+ },
+ {
+  "label": "Register",
+  "path": "/register",
+  "keywords": [
+   "register",
+   "sign up",
+   "create account"
+  ]
+ },
+ {
+  "label": "History",
+  "path": "/sales/history",
+  "keywords": [
+   "past sales",
+   "sales record",
+   "transaction history",
+   "previous sales",
+   "old sales",
+   "sales archive"
+  ]
+ },
+ {
+  "label": "My Shift",
+  "path": "/sales/my-shift",
+  "keywords": [
+   "clock in",
+   "clock out",
+   "open shift",
+   "close shift",
+   "cash in drawer",
+   "till",
+   "shift report"
+  ]
+ },
+ {
+  "label": "New Sale",
+  "path": "/sales/new",
+  "keywords": [
+   "make a sale",
+   "start sale",
+   "sell item",
+   "point of sale",
+   "pos",
+   "checkout",
+   "sell now",
+   "new sale",
+   "add sale",
+   "register sale"
+  ]
+ },
+ {
+  "label": "Orders",
+  "path": "/sales/orders",
+  "keywords": [
+   "open orders",
+   "sales orders",
+   "order list",
+   "pending orders",
+   "active orders",
+   "manage orders",
+   "current orders"
+  ]
+ },
+ {
+  "label": "Refunds",
+  "path": "/sales/refunds",
+  "keywords": [
+   "process refund",
+   "return sale",
+   "reverse sale",
+   "money back",
+   "refund customer"
+  ]
+ },
+ {
+  "label": "Business",
+  "path": "/settings/business",
+  "keywords": [
+   "business profile",
+   "business details",
+   "company info",
+   "business name",
+   "logo",
+   "business preferences"
+  ]
+ },
+ {
+  "label": "Data & Export",
+  "path": "/settings/data-export",
+  "keywords": [
+   "export data",
+   "backup",
+   "download data",
+   "csv export",
+   "data download"
+  ]
+ },
+ {
+  "label": "Branches",
+  "path": "/settings/locations",
+  "keywords": [
+   "branches",
+   "branch",
+   "location",
+   "locations",
+   "store locations",
+   "multiple stores"
+  ]
+ },
+ {
+  "label": "Custosell Apps",
+  "path": "/settings/modules",
+  "keywords": [
+   "custosell apps",
+   "app store",
+   "apps",
+   "module access",
+   "enable modules",
+   "module permissions",
+   "staff modules",
+   "feature access"
+  ]
+ },
+ {
+  "label": "Roles",
+  "path": "/settings/roles",
+  "keywords": [
+   "permissions",
+   "role settings",
+   "access control",
+   "user roles",
+   "permission levels"
+  ]
+ },
+ {
+  "label": "Sales channels",
+  "path": "/settings/sales-channels",
+  "keywords": [
+   "online channels",
+   "storefront",
+   "selling online",
+   "channel setup",
+   "online store settings"
+  ]
+ },
+ {
+  "label": "Staff",
+  "path": "/settings/staff",
+  "keywords": [
+   "invite staff",
+   "manage team",
+   "add staff",
+   "team members",
+   "staff accounts"
+  ]
+ },
+ {
+  "label": "Billing & Subscription",
+  "path": "/settings/subscription",
+  "keywords": [
+   "billing",
+   "plan",
+   "upgrade",
+   "pricing",
+   "payments",
+   "renewal",
+   "invoice",
+   "subscription status"
+  ]
+ },
+ {
+  "label": "Tax & VAT",
+  "path": "/settings/tax",
+  "keywords": [
+   "vat",
+   "tax rates",
+   "tax configuration",
+   "tax setup",
+   "sales tax"
+  ]
+ }
+]

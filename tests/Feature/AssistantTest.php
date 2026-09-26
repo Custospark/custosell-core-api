@@ -154,4 +154,22 @@ class AssistantTest extends TestCase
                 && str_contains($system, '+256 756 697 871');
         });
     }
+
+    public function test_route_path_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Open the URL.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'Where do I make a sale?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, $base.'/sales/new');
+        });
+    }
 }
