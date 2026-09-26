@@ -137,6 +137,24 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_price_questions_include_pricing_page_url(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'See pricing.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'What does it cost?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, $base.'/pricing');
+        });
+    }
+
     public function test_unknown_questions_offer_human_support(): void
     {
         config(['assistant.api_key' => 'test-key']);
