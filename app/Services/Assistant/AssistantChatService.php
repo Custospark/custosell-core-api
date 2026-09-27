@@ -68,7 +68,7 @@ class AssistantChatService
                 break;
             }
         }
-        $system = $this->systemPrompt($businessName, $snapshot, $this->knowledge->relevantPassages($lastUser));
+        $system = $this->systemPrompt($businessName, $snapshot, $this->knowledge->relevantPassages($lastUser), $user);
 
         // Members with a session get live-data tools (model-agnostic JSON
         // protocol - works on free tiers without function-calling support).
@@ -239,8 +239,36 @@ class AssistantChatService
         return $text;
     }
 
+    /**
+     * Who is on the other side, so answers feel personal. Guests never
+     * reach this branch - they keep the generic visitor prompt below.
+     *
+     * @return list<string>
+     */
+    private function identityLines(?User $user, string $businessName): array
+    {
+        if ($user === null) {
+            return [];
+        }
+        $first = trim((string) strtok((string) ($user->name ?? ''), " \t"));
+        if ($first === '') {
+            return [];
+        }
+        $type = (string) ($user->account_type ?? 'business');
+        $lines = ["Talking to {$first} (account: {$type}). Address them by first name naturally - warmly, not in every sentence."];
+        if ($type === 'personal') {
+            $lines[] = 'They use a personal workspace (no storefront, no staff) - frame answers around their own tools and modules.';
+        } elseif ($type === 'storefront_buyer') {
+            $lines[] = 'They are a storefront shopper - help with orders, tracking, and paying, never business tooling.';
+        } elseif ($businessName !== '' && $businessName !== 'your business') {
+            $lines[] = "Their business: {$businessName} - refer to it by name when relevant.";
+        }
+
+        return $lines;
+    }
+
     /** @param list<string> $knowledge */
-    private function systemPrompt(string $businessName, ?array $snapshot, array $knowledge = []): string
+    private function systemPrompt(string $businessName, ?array $snapshot, array $knowledge = [], ?User $user = null): string
     {
         $kb = $knowledge === []
             ? 'Knowledge base: no direct matches - answer from the snapshot and general Custosell knowledge; use the human-support fallback only when you truly cannot answer.'
@@ -278,6 +306,7 @@ class AssistantChatService
 
         $lines = [
             "You are Oscar, the enterprise AI agent inside Custosell ERP.",
+            ...$this->identityLines($user, $businessName),
             'Tone: a helpful colleague, not a corporate chatbot. Warm, direct, and brief - short sentences, plain words, no jargon, no emojis, no fluff. Sound human and respect their time. Answer the question asked, then stop.',
             'Use the live snapshot below when asked about stock, sales or invoices. Never invent numbers; only use the snapshot. If the snapshot lacks the answer, say so.',
             'You can explain Custosell features (POS, e-commerce storefront, inventory & supply chain, accounting, HR & payroll, invoicing, expenses, project management, sales pipeline, forecasting, documents) and subscription plans.',

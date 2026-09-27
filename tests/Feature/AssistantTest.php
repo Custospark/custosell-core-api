@@ -295,6 +295,31 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_member_prompt_personalizes_with_name_and_business(): void
+    {
+        $business = Business::factory()->create(['name' => 'Wholesale n Retail', 'status' => 'active']);
+        $user = User::factory()->create([
+            'name' => 'OPIYO SSEMUJJU',
+            'is_active' => true,
+            'business_id' => $business->id,
+        ]);
+        $token = $user->createToken('test')->plainTextToken;
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Hi OPIYO.']]]], 200),
+        ]);
+
+        $this->withToken($token)->postJson('/api/v1/assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Hello']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'Talking to OPIYO')
+                && str_contains($system, 'Their business: Wholesale n Retail');
+        });
+    }
+
     public function test_conversational_brief_tone_reaches_provider(): void
     {
         config(['assistant.api_key' => 'test-key']);
