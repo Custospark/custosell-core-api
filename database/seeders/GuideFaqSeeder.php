@@ -13,7 +13,7 @@ class GuideFaqSeeder extends Seeder
             // ── Getting Started ─────────────────────────────────
             [
                 'question' => 'What is Custosell?',
-                'answer' => 'Custosell is an all-in-one business operating system for businesses of all sizes - from solopreneurs managing personal projects to large retail chains running multi-department operations. It combines point of sale, inventory management, customer relationships, expenses, invoicing, payroll, accounting, and an online storefront into a single app that works with or without internet.',
+                'answer' => 'Custosell is an Enterprise Resource Planning (ERP) software delivering Smarter Operations, powered by AI: Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management - all in one connected system that works with or without the internet.',
                 'sort_order' => 1,
             ],
             [
