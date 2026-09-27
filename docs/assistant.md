@@ -1,6 +1,6 @@
-# Oscar - In-App Chat Assistant
+# Oscar - In-App AI Agent
 
-Enterprise chat assistant ("Oscar", avatar `public/oscar.webp`, bundled into the
+Enterprise AI agent ("Oscar", avatar `public/oscar.webp`, bundled into the
 frontend) answering from live business data. Provider key never leaves the
 backend - the frontend only calls our proxy.
 
