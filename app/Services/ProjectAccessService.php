@@ -281,7 +281,7 @@ class ProjectAccessService
 
         $bodyBoardId = $request->input('board_id');
         if ($bodyBoardId && is_numeric($bodyBoardId)) {
-            return $this->findBoard($businessId, (int) $bodyBoardId);
+            return $this->findBoard($request->user(), (int) $bodyBoardId);
         }
 
         $routeLeadId = $request->route('leadId');

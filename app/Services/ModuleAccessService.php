@@ -172,6 +172,14 @@ class ModuleAccessService
             return true;
         }
 
+        // Estimates and Pipeline complement each other (projects feed the
+        // funnel and vice versa). Treat `estimates` as granting access to
+        // `pipeline` so staff with project access are never locked out of
+        // the boards they work from.
+        if ($module === 'pipeline' && in_array('estimates', $modules, true)) {
+            return true;
+        }
+
         return in_array($module, $modules, true);
     }
 

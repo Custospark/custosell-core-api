@@ -123,4 +123,22 @@ class ModuleAccessTest extends TestCase
             'Staff modules must survive owner personal Module Access saves.',
         );
     }
+
+    public function test_estimates_grant_implies_pipeline_access(): void
+    {
+        $moduleAccess = app(ModuleAccessService::class);
+
+        $plan = $this->business->subscription->plan;
+        $plan->update(['features' => array_merge($plan->features ?? [], ['estimates' => true, 'pipeline' => true])]);
+
+        $staff = User::factory()->create([
+            'business_id' => $this->business->id,
+            'is_active' => true,
+            'modules' => ['estimates'],
+        ]);
+
+        $this->assertTrue($moduleAccess->canAccess($staff, 'estimates'));
+        $this->assertTrue($moduleAccess->canAccess($staff, 'pipeline'));
+        $this->assertFalse($moduleAccess->canAccess($staff, 'hr'));
+    }
 }
