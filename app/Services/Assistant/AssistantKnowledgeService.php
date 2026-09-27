@@ -5,6 +5,8 @@ namespace App\Services\Assistant;
 use App\Models\GuideFaq;
 use App\Models\GuideTutorial;
 use App\Models\Plan;
+use App\Models\User;
+use App\Services\Platform\PlatformAdminService;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -23,16 +25,25 @@ class AssistantKnowledgeService
 
     private const MAX_CHARS = 2500;
 
-    /** @return list<string> capped, most-relevant-first excerpts */
-    public function relevantPassages(string $query): array
+    /**
+     * Platform routes stay invisible unless the caller is a platform admin.
+     *
+     * @return list<string> capped, most-relevant-first excerpts
+     */
+    public function relevantPassages(string $query, ?User $user = null): array
     {
         $terms = $this->terms($query);
         if ($terms === []) {
             return [];
         }
 
+        $showPlatform = $user !== null && app(PlatformAdminService::class)->isPlatformAdmin($user);
+
         $scored = [];
         foreach ($this->corpus() as $passage) {
+            if (($passage['platform'] ?? false) && ! $showPlatform) {
+                continue;
+            }
             $score = $this->score($passage, $terms);
             if ($score > 0) {
                 $scored[] = [$score, $passage['text']];
@@ -57,14 +68,14 @@ class AssistantKnowledgeService
         return $picked;
     }
 
-    /** @return list<array{title: string, text: string}> */
+    /** @return list<array{title: string, text: string, platform: bool}> */
     private function corpus(): array
     {
         return Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, function () {
             $items = [];
 
             foreach (static::productBrief() as $title => $text) {
-                $items[] = ['title' => $title, 'text' => "[Guide] {$title}: {$text}"];
+                $items[] = ['title' => $title, 'text' => "[Guide] {$title}: {$text}", 'platform' => false];
             }
 
             GuideFaq::query()
@@ -73,7 +84,7 @@ class AssistantKnowledgeService
                 ->limit(200)
                 ->get(['question', 'answer'])
                 ->each(function ($faq) use (&$items) {
-                    $items[] = ['title' => (string) $faq->question, 'text' => '[FAQ] Q: '.((string) $faq->question).' A: '.((string) $faq->answer)];
+                    $items[] = ['title' => (string) $faq->question, 'text' => '[FAQ] Q: '.((string) $faq->question).' A: '.((string) $faq->answer), 'platform' => false];
                 });
 
             GuideTutorial::query()
@@ -82,11 +93,11 @@ class AssistantKnowledgeService
                 ->limit(200)
                 ->get(['title', 'description', 'category'])
                 ->each(function ($tutorial) use (&$items) {
-                    $items[] = ['title' => (string) $tutorial->title, 'text' => '[Tutorial] '.((string) $tutorial->title).' ('.((string) $tutorial->category).'): '.((string) $tutorial->description)];
+                    $items[] = ['title' => (string) $tutorial->title, 'text' => '[Tutorial] '.((string) $tutorial->title).' ('.((string) $tutorial->category).'): '.((string) $tutorial->description), 'platform' => false];
                 });
 
             foreach ($this->planPassages() as $title => $text) {
-                $items[] = ['title' => $title, 'text' => "[Pricing] {$title}: {$text}"];
+                $items[] = ['title' => $title, 'text' => "[Pricing] {$title}: {$text}", 'platform' => false];
             }
 
             foreach ($this->routeEntries() as $entry) {
@@ -94,6 +105,7 @@ class AssistantKnowledgeService
                 $items[] = [
                     'title' => $entry['label'],
                     'text' => '[Route] '.($entry['label']).' lives at '.($url).' ('.implode(', ', array_slice($entry['keywords'], 0, 8)).')',
+                    'platform' => str_starts_with($entry['path'], '/platform'),
                 ];
             }
 

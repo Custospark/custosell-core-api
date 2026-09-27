@@ -399,6 +399,35 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_platform_routes_hidden_from_members_shown_to_admins(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'See users.']]]], 200),
+        ]);
+
+        [$user, $business, $token] = $this->member();
+        $this->withToken($token)->postJson('/api/v1/assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Where do I find platform users?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return ! str_contains($system, '/platform/users');
+        });
+
+        $user->assignRole('platform-admin');
+        $this->withToken($token)->postJson('/api/v1/assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Where do I find platform users?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, $base.'/platform/users');
+        });
+    }
+
     public function test_conversational_brief_tone_reaches_provider(): void
     {
         config(['assistant.api_key' => 'test-key']);

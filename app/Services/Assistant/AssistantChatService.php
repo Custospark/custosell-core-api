@@ -70,7 +70,7 @@ class AssistantChatService
                 break;
             }
         }
-        $system = $this->systemPrompt($businessName, $snapshot, $this->knowledge->relevantPassages($lastUser), $user);
+        $system = $this->systemPrompt($businessName, $snapshot, $this->knowledge->relevantPassages($lastUser, $user), $user);
 
         // Members with a session get live-data tools (model-agnostic JSON
         // protocol - works on free tiers without function-calling support).
