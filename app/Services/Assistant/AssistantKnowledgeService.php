@@ -165,6 +165,7 @@ class AssistantKnowledgeService
             'Who makes Custosell' => 'Custosell ERP is a product of Custospark Company Ltd (www.custospark.com).',
             'Who it serves' => 'Registered businesses (shops, restaurants, pharmacies, warehouses), personal workspace accounts, and Discover-only shoppers who browse and order.',
             'Getting started' => 'Register, verify email, create or join a business, complete onboarding (company, taxes, users), import products and opening stock, then sell via POS or storefront.',
+            'Adding or removing apps' => 'You shape Custosell with the Custosell Apps store: open it from the blue Custosell Apps button at the top-right corner of the screen, tick the apps you want (for example Inventory), untick what you do not need, then save - the sidebar updates immediately. This is how you add stock, HR, forecasting and more, or trim the workspace down. Hidden or ungranted apps never appear.',
             'Plans and billing' => 'Subscription plans per business with a trial period; billing, receipts and referral rewards live under billing. Owners manage subscription from account settings.',
             'Offline mode' => 'Core selling and records keep working without internet and sync when reconnected. The AI assistant needs internet.',
         ];

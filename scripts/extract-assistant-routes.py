@@ -107,6 +107,37 @@ def main():
         # Auth recovery lives outside the sidebar - logged-out users asking
         # about passwords must land here, not on account/security.
         ("Forgot password", "/forgot-password", ["forgot password", "forgot my password", "cannot log in", "cant log in", "locked out", "password reset email", "password reset link", "recover account"]),
+        # Hubs, index pages and flows missing from sidebar/search sources.
+        ("Onboarding", "/onboarding", ["onboarding", "setup wizard", "getting started checklist", "new business setup", "first steps"]),
+        ("Reset password", "/reset-password", ["reset password with code", "set new password", "password reset token"]),
+        ("Verify code", "/verify-code", ["verification code", "verify email code", "enter code", "otp code"]),
+        ("Help center", "/guide", ["help center", "help hub", "guides home", "all help"]),
+        ("Public FAQs", "/faqs", ["faqs", "frequently asked questions", "common questions"]),
+        ("Your tools", "/your-tools", ["your tools", "my tools", "personal workspace", "my workspace tools"]),
+        ("My account", "/account", ["my account", "account home", "account overview"]),
+        ("Settings", "/settings", ["settings home", "all settings", "app settings"]),
+        ("Sales", "/sales", ["sales home", "sell", "record sale", "make a sale"]),
+        ("Inventory", "/inventory", ["inventory home", "stock home", "products home"]),
+        ("Pipeline", "/pipeline", ["pipeline home", "crm home", "deals home", "funnel home"]),
+        ("Projects & Estimates", "/estimates", ["estimates home", "projects home", "quotes home"]),
+        ("Expenses", "/expenses", ["expenses home", "money home", "spending home"]),
+        ("HR & Payroll", "/hr", ["hr home", "team home", "staff home", "people home"]),
+        ("Accounting", "/accounting", ["accounting home", "books home", "ledger home"]),
+        ("Forecasting", "/forecasting", ["forecasting home", "cash outlook home", "projections home"]),
+        ("EFRIS", "/efris", ["efris home", "fiscal home", "ura receipts home"]),
+        ("New invoice", "/invoices/new", ["new invoice", "create invoice", "bill customer", "raise invoice"]),
+        ("HR departments", "/hr/departments", ["departments", "company departments", "teams structure"]),
+        ("HR attendance", "/hr/attendance", ["attendance", "clock in", "time tracking", "staff attendance"]),
+        ("HR leave", "/hr/leave", ["leave", "time off", "vacation request", "staff leave"]),
+        ("HR payroll", "/hr/payroll", ["payroll", "pay salaries", "staff pay", "payslips"]),
+        ("Projects", "/estimates/projects", ["manage projects", "my projects", "project list"]),
+        ("Estimate templates", "/estimates/templates", ["estimate templates", "quote templates"]),
+        ("Sales leads", "/pipeline/leads", ["leads", "sales leads", "new leads"]),
+        ("Financial statements", "/accounting/statements", ["financial statements", "profit and loss", "balance sheet", "income statement"]),
+        ("Forecast scenarios", "/forecasting/scenarios", ["what if scenarios", "forecast scenarios", "projections scenarios"]),
+        ("Wishlist", "/discover/wishlist", ["wishlist", "saved items", "favourite items"]),
+        ("Favorites", "/discover/favorites", ["favorites", "followed shops", "liked products"]),
+        ("Platform", "/platform", ["platform home", "admin home", "platform dashboard"]),
     ]
     for label, path, kws in core:
         if path not in seen:

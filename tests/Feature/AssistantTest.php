@@ -363,6 +363,24 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_app_store_guidance_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Open Custosell Apps.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'How do I add the inventory app to my workspace?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'Custosell Apps store')
+                && str_contains($system, 'top-right corner');
+        });
+    }
+
     public function test_conversational_brief_tone_reaches_provider(): void
     {
         config(['assistant.api_key' => 'test-key']);

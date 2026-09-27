@@ -1,5 +1,14 @@
 [
  {
+  "label": "My account",
+  "path": "/account",
+  "keywords": [
+   "my account",
+   "account home",
+   "account overview"
+  ]
+ },
+ {
   "label": "Notifications",
   "path": "/account/notifications",
   "keywords": [
@@ -55,6 +64,15 @@
    "login security",
    "account protection",
    "secure my account"
+  ]
+ },
+ {
+  "label": "Accounting",
+  "path": "/accounting",
+  "keywords": [
+   "accounting home",
+   "books home",
+   "ledger home"
   ]
  },
  {
@@ -168,6 +186,15 @@
   ]
  },
  {
+  "label": "Favorites",
+  "path": "/discover/favorites",
+  "keywords": [
+   "favorites",
+   "followed shops",
+   "liked products"
+  ]
+ },
+ {
   "label": "My Orders",
   "path": "/discover/my-orders",
   "keywords": [
@@ -176,6 +203,15 @@
    "track order",
    "order status",
    "my online orders"
+  ]
+ },
+ {
+  "label": "Wishlist",
+  "path": "/discover/wishlist",
+  "keywords": [
+   "wishlist",
+   "saved items",
+   "favourite items"
   ]
  },
  {
@@ -189,6 +225,15 @@
    "file library",
    "documents",
    "files"
+  ]
+ },
+ {
+  "label": "EFRIS",
+  "path": "/efris",
+  "keywords": [
+   "efris home",
+   "fiscal home",
+   "ura receipts home"
   ]
  },
  {
@@ -209,6 +254,32 @@
    "create estimate",
    "new estimate",
    "proposal"
+  ]
+ },
+ {
+  "label": "Projects",
+  "path": "/estimates/projects",
+  "keywords": [
+   "manage projects",
+   "my projects",
+   "project list"
+  ]
+ },
+ {
+  "label": "Estimate templates",
+  "path": "/estimates/templates",
+  "keywords": [
+   "estimate templates",
+   "quote templates"
+  ]
+ },
+ {
+  "label": "Expenses",
+  "path": "/expenses",
+  "keywords": [
+   "expenses home",
+   "money home",
+   "spending home"
   ]
  },
  {
@@ -269,6 +340,24 @@
   ]
  },
  {
+  "label": "Public FAQs",
+  "path": "/faqs",
+  "keywords": [
+   "faqs",
+   "frequently asked questions",
+   "common questions"
+  ]
+ },
+ {
+  "label": "Forecasting",
+  "path": "/forecasting",
+  "keywords": [
+   "forecasting home",
+   "cash outlook home",
+   "projections home"
+  ]
+ },
+ {
   "label": "Budgets",
   "path": "/forecasting/budgets",
   "keywords": [
@@ -289,6 +378,15 @@
   ]
  },
  {
+  "label": "Forecast scenarios",
+  "path": "/forecasting/scenarios",
+  "keywords": [
+   "what if scenarios",
+   "forecast scenarios",
+   "projections scenarios"
+  ]
+ },
+ {
   "label": "Forgot password",
   "path": "/forgot-password",
   "keywords": [
@@ -300,6 +398,16 @@
    "password reset email",
    "password reset link",
    "recover account"
+  ]
+ },
+ {
+  "label": "Help center",
+  "path": "/guide",
+  "keywords": [
+   "help center",
+   "help hub",
+   "guides home",
+   "all help"
   ]
  },
  {
@@ -357,6 +465,45 @@
   ]
  },
  {
+  "label": "HR & Payroll",
+  "path": "/hr",
+  "keywords": [
+   "hr home",
+   "team home",
+   "staff home",
+   "people home"
+  ]
+ },
+ {
+  "label": "HR attendance",
+  "path": "/hr/attendance",
+  "keywords": [
+   "attendance",
+   "clock in",
+   "time tracking",
+   "staff attendance"
+  ]
+ },
+ {
+  "label": "HR departments",
+  "path": "/hr/departments",
+  "keywords": [
+   "departments",
+   "company departments",
+   "teams structure"
+  ]
+ },
+ {
+  "label": "HR leave",
+  "path": "/hr/leave",
+  "keywords": [
+   "leave",
+   "time off",
+   "vacation request",
+   "staff leave"
+  ]
+ },
+ {
   "label": "Overview",
   "path": "/hr/overview",
   "keywords": [
@@ -365,6 +512,16 @@
    "employee stats",
    "headcount",
    "people analytics"
+  ]
+ },
+ {
+  "label": "HR payroll",
+  "path": "/hr/payroll",
+  "keywords": [
+   "payroll",
+   "pay salaries",
+   "staff pay",
+   "payslips"
   ]
  },
  {
@@ -378,6 +535,15 @@
    "new employee",
    "employee records",
    "people directory"
+  ]
+ },
+ {
+  "label": "Inventory",
+  "path": "/inventory",
+  "keywords": [
+   "inventory home",
+   "stock home",
+   "products home"
   ]
  },
  {
@@ -487,6 +653,16 @@
   ]
  },
  {
+  "label": "New invoice",
+  "path": "/invoices/new",
+  "keywords": [
+   "new invoice",
+   "create invoice",
+   "bill customer",
+   "raise invoice"
+  ]
+ },
+ {
   "label": "Supplier invoices",
   "path": "/invoices/supplier",
   "keywords": [
@@ -515,6 +691,27 @@
   ]
  },
  {
+  "label": "Onboarding",
+  "path": "/onboarding",
+  "keywords": [
+   "onboarding",
+   "setup wizard",
+   "getting started checklist",
+   "new business setup",
+   "first steps"
+  ]
+ },
+ {
+  "label": "Pipeline",
+  "path": "/pipeline",
+  "keywords": [
+   "pipeline home",
+   "crm home",
+   "deals home",
+   "funnel home"
+  ]
+ },
+ {
   "label": "Boards",
   "path": "/pipeline/boards",
   "keywords": [
@@ -524,6 +721,24 @@
    "pipeline boards",
    "drag and drop",
    "board view"
+  ]
+ },
+ {
+  "label": "Sales leads",
+  "path": "/pipeline/leads",
+  "keywords": [
+   "leads",
+   "sales leads",
+   "new leads"
+  ]
+ },
+ {
+  "label": "Platform",
+  "path": "/platform",
+  "keywords": [
+   "platform home",
+   "admin home",
+   "platform dashboard"
   ]
  },
  {
@@ -689,6 +904,25 @@
   ]
  },
  {
+  "label": "Reset password",
+  "path": "/reset-password",
+  "keywords": [
+   "reset password with code",
+   "set new password",
+   "password reset token"
+  ]
+ },
+ {
+  "label": "Sales",
+  "path": "/sales",
+  "keywords": [
+   "sales home",
+   "sell",
+   "record sale",
+   "make a sale"
+  ]
+ },
+ {
   "label": "History",
   "path": "/sales/history",
   "keywords": [
@@ -751,6 +985,15 @@
    "reverse sale",
    "money back",
    "refund customer"
+  ]
+ },
+ {
+  "label": "Settings",
+  "path": "/settings",
+  "keywords": [
+   "settings home",
+   "all settings",
+   "app settings"
   ]
  },
  {
@@ -858,6 +1101,26 @@
    "tax configuration",
    "tax setup",
    "sales tax"
+  ]
+ },
+ {
+  "label": "Verify code",
+  "path": "/verify-code",
+  "keywords": [
+   "verification code",
+   "verify email code",
+   "enter code",
+   "otp code"
+  ]
+ },
+ {
+  "label": "Your tools",
+  "path": "/your-tools",
+  "keywords": [
+   "your tools",
+   "my tools",
+   "personal workspace",
+   "my workspace tools"
   ]
  }
 ]
