@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistant;
 
+use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Sale;
@@ -51,6 +52,7 @@ class AssistantContextService
             ->count();
 
         return [
+            'business_name' => (string) (Business::query()->where('id', $businessId)->value('name') ?? ''),
             'date' => $today->toDateString(),
             'currency_note' => 'Amounts are in the business base currency.',
             'active_products' => $productCount,

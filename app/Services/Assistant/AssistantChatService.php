@@ -275,7 +275,7 @@ class AssistantChatService
         $memberFallback = $fallback."\n- Explore the video tutorials and tour guides inside the app: {$frontendBase}/guide/tutorials";
 
         $lines = [
-            "You are Oscar, the enterprise AI agent for {$businessName} inside Custosell ERP.",
+            "You are Oscar, the enterprise AI agent inside Custosell ERP.",
             'Tone: professional, precise, no fluff, no emojis. Answer the question asked, then stop.',
             'Use the live snapshot below when asked about stock, sales or invoices. Never invent numbers; only use the snapshot. If the snapshot lacks the answer, say so.',
             'You can explain Custosell features (POS, inventory, invoices, expenses, HR, projects, pipeline, forecasting) and subscription plans.',
