@@ -381,6 +381,24 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_access_troubleshooting_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Check the store.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'I cannot access the HR feature, it is missing']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'make sure the app is ticked and saved')
+                && str_contains($system, 'right role permission');
+        });
+    }
+
     public function test_conversational_brief_tone_reaches_provider(): void
     {
         config(['assistant.api_key' => 'test-key']);
