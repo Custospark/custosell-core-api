@@ -155,6 +155,25 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_answers_carry_actionable_cta_rule(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Pick a plan.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'How do I get started?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            return str_contains($system, 'Close every answer with one concrete next step')
+                && str_contains($system, $base.'/register');
+        });
+    }
+
     public function test_unknown_questions_offer_human_support(): void
     {
         config(['assistant.api_key' => 'test-key']);
