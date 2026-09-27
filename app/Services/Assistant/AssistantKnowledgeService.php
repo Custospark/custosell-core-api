@@ -161,7 +161,7 @@ class AssistantKnowledgeService
     private static function productBrief(): array
     {
         return [
-            'What Custosell is' => 'Custosell ERP is ERP software delivering Smarter Operations, powered by AI: Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management - all in one connected system that works with or without the internet.',
+            'What Custosell is' => 'Custosell is an Enterprise Resource Planning (ERP) software delivering Smarter Operations, powered by AI: Point of Sale (POS), E-commerce Storefront, Inventory & Supply Chain, Accounting, HR & Payroll, Invoicing, Expenses, Project Management, Sales Pipeline (CRM), Financial Forecasting, and Document Management - all in one connected system that works with or without the internet.',
             'Who makes Custosell' => 'Custosell ERP is a product of Custospark Company Ltd (www.custospark.com).',
             'Who it serves' => 'Registered businesses (shops, restaurants, pharmacies, warehouses), personal workspace accounts, and Discover-only shoppers who browse and order.',
             'Getting started' => 'Register, verify email, create or join a business, complete onboarding (company, taxes, users), import products and opening stock, then sell via POS or storefront.',
