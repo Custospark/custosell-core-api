@@ -28,6 +28,10 @@ class AssistantController extends Controller
         $session = null;
         if ($sessionId !== null) {
             $session = $this->sessions->open($sessionId, (int) $user->id);
+            // Server-side continuity: stored turns join the model context so
+            // follow-ups ("it", "that one", "and for June?") resolve even
+            // when the client only sends the latest turn.
+            $messages = $this->sessions->contextWithHistory($session, $messages);
         }
 
         try {

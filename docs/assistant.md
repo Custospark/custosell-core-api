@@ -82,6 +82,17 @@ All session rows are scoped by `user_id` + `business_id` - cross-owner
 access returns 404, never another user's data. Tables: `chat_sessions`,
 `chat_messages` (migration `2026_09_26_000002`).
 
+## Conversation continuity
+
+Jumpy follow-ups are fixed on both sides. The client sends up to 20
+recent turns with every request and resumes its thread after reloads
+(members: last `session_id` from local storage; guests: last 20 turns
+from local storage, never touching the server). The server additionally
+merges stored session turns under the incoming messages
+(`ChatSessionService::contextWithHistory`, deduped, capped to
+`assistant.max_messages`), so pronouns ("it", "that one") resolve even
+when only the latest turn arrives.
+
 ## Tests
 
 `tests/Feature/AssistantTest.php` - provider reply + snapshot injection (Http::fake),

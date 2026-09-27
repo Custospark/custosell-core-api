@@ -75,4 +75,30 @@ class AssistantSessionsTest extends TestCase
         $this->assertDatabaseMissing('chat_sessions', ['id' => $session->id]);
         $this->assertDatabaseMissing('chat_messages', ['chat_session_id' => $session->id]);
     }
+
+    public function test_chat_merges_stored_turns_for_follow_ups(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        $service = app(\App\Services\Contracts\ChatSessionServiceInterface::class);
+        $session = $service->start($this->owner->id, $this->business->id, 'How did sales do today?');
+        $service->appendTurn($session, 'How did sales do today?', 'Sales total UGX 100,000.');
+
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => 'Mostly maize flour.']]]], 200),
+        ]);
+
+        // Client sends only the latest turn (fresh tab); the server must
+        // still give the model the earlier turn for pronoun resolution.
+        $this->withToken($this->token)->postJson('/api/v1/assistant/chat', [
+            'session_id' => $session->id,
+            'messages' => [['role' => 'user', 'content' => 'Which product sold most in it?']],
+        ])->assertOk();
+
+        \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+            $contents = array_column($request->data()['messages'] ?? [], 'content');
+            $joined = implode("\n", array_map('strval', $contents));
+            return str_contains($joined, 'How did sales do today?')
+                && str_contains($joined, 'Which product sold most in it?');
+        });
+    }
 }
