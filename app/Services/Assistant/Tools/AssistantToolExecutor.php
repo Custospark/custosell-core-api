@@ -45,6 +45,25 @@ class AssistantToolExecutor
     }
 
     /**
+     * Tool names this user may actually use - same module resolution as
+     * login, so the model never offers capabilities outside their account
+     * (a personal user hears nothing about sales unless they ask).
+     *
+     * @return list<string>
+     */
+    public function allowedToolNames(User $user): array
+    {
+        $allowed = [];
+        foreach ($this->tools as $tool) {
+            if ($this->moduleAccess->canAccess($user, $tool->requiredModule())) {
+                $allowed[] = $tool->name();
+            }
+        }
+
+        return $allowed;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function execute(User $user, string $name, array $args): array

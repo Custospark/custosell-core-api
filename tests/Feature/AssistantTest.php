@@ -320,6 +320,49 @@ class AssistantTest extends TestCase
         });
     }
 
+    public function test_restricted_staff_prompt_lists_only_their_capabilities(): void
+    {
+        $business = Business::factory()->create(['status' => 'active']);
+        $staff = User::factory()->create(['is_active' => true, 'business_id' => $business->id, 'modules' => ['sales']]);
+        $token = $staff->createToken('test')->plainTextToken;
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Not sure.']]]], 200),
+        ]);
+
+        $this->withToken($token)->postJson('/api/v1/assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'What can I do here?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'This account includes:')
+                && str_contains($system, '- sales_today:')
+                && str_contains($system, 'point of sale (POS) and invoicing')
+                && ! str_contains($system, '- low_stock:')
+                && ! str_contains($system, 'HR and payroll');
+        });
+    }
+
+    public function test_guest_prompt_keeps_full_capabilities_without_scoping(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Custosell does POS.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'What can Custosell do?']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'e-commerce storefront')
+                && ! str_contains($system, 'This account includes:')
+                && ! str_contains($system, 'Talking to');
+        });
+    }
+
     public function test_conversational_brief_tone_reaches_provider(): void
     {
         config(['assistant.api_key' => 'test-key']);
