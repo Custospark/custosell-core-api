@@ -294,4 +294,22 @@ class AssistantTest extends TestCase
                 && str_contains($system, 'under 120 words');
         });
     }
+
+    public function test_conversational_brief_tone_reaches_provider(): void
+    {
+        config(['assistant.api_key' => 'test-key']);
+        Http::fake([
+            '*' => Http::response(['choices' => [['message' => ['content' => 'Hi.']]]], 200),
+        ]);
+
+        $this->postJson('/api/v1/assistant/guide', [
+            'messages' => [['role' => 'user', 'content' => 'hello']],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            $system = $request->data()['messages'][0]['content'] ?? '';
+            return str_contains($system, 'helpful colleague')
+                && str_contains($system, 'no jargon');
+        });
+    }
 }
