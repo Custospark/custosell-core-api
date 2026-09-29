@@ -47,6 +47,7 @@ class InvestmentQuotationTest extends TestCase
     {
         $response = $this->postJson('/api/v1/quotations/estimate', [
             'plan' => 'essential',
+            'kit' => 'full',
             'drivers' => ['tills' => 2, 'staff' => 3, 'branches' => 1],
         ])->assertOk();
 
@@ -77,6 +78,36 @@ class InvestmentQuotationTest extends TestCase
             (float) $data['annual_recurring_ugx'],
             0.01,
         );
+    }
+
+    public function test_default_kit_only_includes_custosell_services(): void
+    {
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'drivers' => ['tills' => 2, 'staff' => 3, 'branches' => 1],
+        ])->assertOk();
+
+        $codes = collect($response->json('data.hardware_lines'))->pluck('code')->all();
+        $this->assertContains('setup-service', $codes);
+        $this->assertNotContains('thermal-printer-80', $codes);
+        $this->assertNotContains('desktop-i5', $codes);
+    }
+
+    public function test_item_rows_set_absolute_quantities_and_remove_at_zero(): void
+    {
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'kit' => 'full',
+            'drivers' => ['tills' => 2, 'staff' => 1, 'branches' => 1],
+            'items' => [
+                ['code' => 'thermal-printer-80', 'qty' => 5],
+                ['code' => 'desktop-i5', 'qty' => 0],
+            ],
+        ])->assertOk();
+
+        $lines = collect($response->json('data.hardware_lines'));
+        $this->assertSame(5, (int) $lines->firstWhere('code', 'thermal-printer-80')['qty']);
+        $this->assertNull($lines->firstWhere('code', 'desktop-i5'));
     }
 
     public function test_custom_lines_discount_vat_and_fields_flow_through(): void

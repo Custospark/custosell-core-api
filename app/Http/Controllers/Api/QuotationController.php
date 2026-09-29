@@ -80,7 +80,7 @@ class QuotationController extends Controller
             'drivers.branches' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'items' => ['sometimes', 'array', 'max:100'],
             'items.*.code' => ['required_with:items', 'string', 'max:64'],
-            'items.*.qty' => ['required_with:items', 'integer', 'min:1', 'max:10000'],
+            'items.*.qty' => ['required_with:items', 'integer', 'min:0', 'max:10000'],
             'custom_lines' => ['sometimes', 'array', 'max:50'],
             'custom_lines.*.label' => ['required_with:custom_lines', 'string', 'max:120'],
             'custom_lines.*.amount_ugx' => ['required_with:custom_lines', 'numeric', 'min:0', 'max:1000000000'],
@@ -89,6 +89,7 @@ class QuotationController extends Controller
             'custom_fields.*.value' => ['required_with:custom_fields'],
             'discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'vat_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'kit' => ['sometimes', 'string', 'in:full,services,none'],
             'rep_name' => ['sometimes', 'nullable', 'string', 'max:120'],
             'rep_phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'customer_name' => ['sometimes', 'nullable', 'string', 'max:120'],
@@ -108,6 +109,7 @@ class QuotationController extends Controller
                 (float) ($data['discount_percent'] ?? 0),
                 (float) ($data['vat_percent'] ?? 0),
                 $data['custom_fields'] ?? [],
+                $data['kit'] ?? 'services',
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             abort(404, 'Plan not found');

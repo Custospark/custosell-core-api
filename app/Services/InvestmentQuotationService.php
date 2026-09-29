@@ -106,14 +106,18 @@ class InvestmentQuotationService
             ->all();
     }
 
+    /** Item codes Custosell itself delivers (installation, setup) - the only lines ever defaulted on. */
+    private const SERVICE_CODES = ['setup-service'];
+
     /**
      * @param array{tills?: int, staff?: int, branches?: int} $drivers
      * @param list<array{code: string, qty: int}> $extraItems absolute-qty rows added on top
      * @param list<array{label: string, amount_ugx: float}> $customLines free-form costs (travel, levies, furniture…)
      * @param list<array{label: string, value: string|int|float}> $customFields free-form details (dates, refs, notes…)
+     * @param string $kit full (whole recommended kit) | services (only what Custosell delivers) | none
      * @return array<string, mixed> full quotation with grand totals
      */
-    public function estimate(string $planSlug, array $drivers = [], array $extraItems = [], string $billing = 'monthly', array $customLines = [], float $discountPercent = 0, float $vatPercent = 0, array $customFields = []): array
+    public function estimate(string $planSlug, array $drivers = [], array $extraItems = [], string $billing = 'monthly', array $customLines = [], float $discountPercent = 0, float $vatPercent = 0, array $customFields = [], string $kit = 'services'): array
     {
         $plan = Plan::query()->where('slug', $planSlug)->where('is_active', true)->firstOrFail();
         $drivers = [
@@ -122,28 +126,40 @@ class InvestmentQuotationService
             'branches' => max(1, (int) ($drivers['branches'] ?? 1)),
         ];
 
-        $lines = $this->bundleLines($plan->slug, $drivers);
+        $lines = $this->bundleLines($plan->slug, $drivers, $kit);
         foreach ($extraItems as $extra) {
             $code = (string) ($extra['code'] ?? '');
             $qty = max(0, (int) ($extra['qty'] ?? 0));
-            if ($code === '' || $qty < 1) {
+            if ($code === '') {
                 continue;
             }
-            $found = false;
-            foreach ($lines as &$line) {
+            $at = null;
+            foreach ($lines as $i => $line) {
                 if ($line['code'] === $code) {
-                    $line['qty'] += $qty;
-                    $line['line_total_ugx'] = $line['qty'] * $line['unit_ugx'];
-                    $found = true;
+                    $at = $i;
                     break;
                 }
             }
-            unset($line);
-            if (! $found) {
-                $item = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
-                if ($item) {
-                    $lines[] = $this->lineFor($item, $qty, null);
+            // Absolute quantities: a row the caller sends wins outright
+            // (set to qty, removed at zero) - nothing is ever assumed.
+            if ($at !== null) {
+                if ($qty < 1) {
+                    array_splice($lines, $at, 1);
+                } else {
+                    $fresh = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
+                    $unit = $fresh ? (float) $fresh->price_ugx : (float) ($lines[$at]['unit_ugx'] ?? 0);
+                    $lines[$at]['qty'] = $qty;
+                    $lines[$at]['unit_ugx'] = round($unit, 2);
+                    $lines[$at]['line_total_ugx'] = round($unit * $qty, 2);
                 }
+                continue;
+            }
+            if ($qty < 1) {
+                continue;
+            }
+            $item = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
+            if ($item) {
+                $lines[] = $this->lineFor($item, $qty, null);
             }
         }
 
@@ -240,10 +256,16 @@ class InvestmentQuotationService
     }
 
     /** @return list<array<string, mixed>> */
-    private function bundleLines(string $planSlug, array $drivers): array
+    private function bundleLines(string $planSlug, array $drivers, string $kit = 'services'): array
     {
         $lines = [];
         foreach (self::TIER_BUNDLES[$planSlug] ?? [] as $code => $spec) {
+            if ($kit === 'none') {
+                break;
+            }
+            if ($kit === 'services' && ! in_array($code, self::SERVICE_CODES, true)) {
+                continue;
+            }
             $item = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
             if (! $item) {
                 continue;
