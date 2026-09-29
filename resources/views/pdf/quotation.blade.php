@@ -46,11 +46,41 @@
   @if(!empty($quote['client']['name'] ?? null))
     <p>Prepared for: <strong>{{ $quote['client']['name'] }}</strong>@if(!empty($quote['client']['email'])) &lt;{{ $quote['client']['email'] }}&gt; @endif @if(!empty($quote['client']['phone'])) &middot; {{ $quote['client']['phone'] }} @endif</p>
   @endif
+@php
+  // Single-currency document: when conversion is available, every figure
+  // below renders in the chosen currency so nothing mixes UGX with Naira.
+  $cur = $quote['currency'] ?? 'UGX';
+  $csym = $quote['currency_symbol'] ?? $cur;
+  $useConv = $cur !== 'UGX' && !empty($quote['converted']['available']);
+  if ($useConv) {
+    $convLines = [];
+    foreach (($quote['converted']['lines'] ?? []) as $cl) { $convLines[$cl['code']] = $cl; }
+    foreach ($quote['hardware_lines'] as $i => $line) {
+      if (isset($convLines[$line['code']])) {
+        $quote['hardware_lines'][$i]['unit_ugx'] = $convLines[$line['code']]['unit'];
+        $quote['hardware_lines'][$i]['line_total_ugx'] = $convLines[$line['code']]['total'];
+      }
+    }
+    $convCustoms = [];
+    foreach (($quote['converted']['customs'] ?? []) as $cc) { $convCustoms[$cc['label']] = $cc['amount']; }
+    $ct = $quote['converted']['totals'];
+    $pick = fn ($k) => $ct[$k.'_'.$cur] ?? null;
+    foreach (['hardware_total_ugx' => 'hardware', 'custom_total_ugx' => 'custom', 'discount_ugx' => 'discount', 'vat_ugx' => 'vat', 'subscription_first_year_ugx' => 'subscription', 'onboarding_ugx' => 'onboarding', 'maintenance_annual_ugx' => 'maintenance', 'grand_total_ugx' => 'grand', 'one_time_ugx' => 'one_time', 'annual_recurring_ugx' => 'annual'] as $field => $short) {
+      if (isset($ct[$short.'_'.$cur])) { $quote[$field] = $ct[$short.'_'.$cur]; }
+    }
+    foreach ($quote['custom_lines'] as $i => $cl) {
+      if (isset($convCustoms[$cl['label']])) { $quote['custom_lines'][$i]['amount_ugx'] = $convCustoms[$cl['label']]; }
+    }
+  } else {
+    $cur = 'UGX';
+    $csym = 'UGX';
+  }
+@endphp
   <p class="muted">Quoted by {{ $brand['name'] ?? 'Custosell' }} ({{ $brand['company'] ?? '' }})@if(!empty($quote['rep']['name'] ?? null)) &middot; Rep: <strong>{{ $quote['rep']['name'] }}</strong>@if(!empty($quote['rep']['phone'] ?? null)) ({{ $quote['rep']['phone'] }})@endif @endif - valid 30 days from generation.</p>
 
   <h2>Hardware &amp; Setup</h2>
   <table>
-    <tr><th>Item</th><th>Specs</th><th class="num">Qty</th><th class="num">Unit (UGX)</th><th class="num">Total (UGX)</th></tr>
+    <tr><th>Item</th><th>Specs</th><th class="num">Qty</th><th class="num">Unit ({{ $cur }})</th><th class="num">Total ({{ $cur }})</th></tr>
     @foreach($quote['hardware_lines'] as $line)
       <tr>
         <td><strong>{{ $line['name'] }}</strong><br><span class="muted">{{ $line['category'] }}@if($line['per']) &middot; per {{ $line['per'] }}@endif</span></td>
@@ -66,7 +96,7 @@
   @if(!empty($quote['custom_lines']))
   <h2>Additional Costs</h2>
   <table>
-    <tr><th>Description</th><th class="num">UGX</th></tr>
+    <tr><th>Description</th><th class="num">{{ $cur }}</th></tr>
     @foreach($quote['custom_lines'] as $custom)
       <tr><td>{{ $custom['label'] }}</td><td class="num">{{ number_format($custom['amount_ugx'], 0) }}</td></tr>
     @endforeach
@@ -85,27 +115,27 @@
 
   <h2>Software &amp; Services (first year)</h2>
   <table>
-    <tr><th>Description</th><th class="num">UGX</th><th class="num">USD</th></tr>
+    <tr><th>Description</th><th class="num">{{ $cur }}</th><th class="num">USD</th></tr>
     <tr><td>Subscription - {{ $quote['plan']['name'] }} ({{ $quote['plan']['billing'] }}, incl. {{ $quote['plan']['trial_days'] }}-day trial)</td><td class="num">{{ number_format($quote['subscription_first_year_ugx'], 0) }}</td><td class="num">{{ number_format($quote['subscription_first_year_usd'], 2) }}</td></tr>
     <tr><td>One-time onboarding &amp; setup</td><td class="num">{{ number_format($quote['onboarding_ugx'], 0) }}</td><td class="num">{{ number_format($quote['onboarding_usd'], 2) }}</td></tr>
-    <tr><td>Annual maintenance (flat, per tier)</td><td class="num">{{ number_format($quote['maintenance_annual_ugx'], 0) }}</td><td class="num">-</td></tr>
+    <tr><td>Annual maintenance (flat, per tier)</td><td class="num">{{ number_format($quote['maintenance_annual_ugx'], 0) }}</td><td class="num">{{ number_format($quote['maintenance_annual_usd'], 2) }}</td></tr>
     @if(($quote['discount_ugx'] ?? 0) > 0)
-    <tr><td>Discount ({{ $quote['discount_percent'] }}%)</td><td class="num">-{{ number_format($quote['discount_ugx'], 0) }}</td><td class="num">-</td></tr>
+    <tr><td>Discount ({{ $quote['discount_percent'] }}%)</td><td class="num">-{{ number_format($quote['discount_ugx'], 0) }}</td><td class="num">-{{ number_format($quote['discount_usd'], 2) }}</td></tr>
     @endif
     @if(($quote['vat_ugx'] ?? 0) > 0)
-    <tr><td>VAT ({{ $quote['vat_percent'] }}% on hardware after discount + onboarding)</td><td class="num">{{ number_format($quote['vat_ugx'], 0) }}</td><td class="num">-</td></tr>
+    <tr><td>VAT ({{ $quote['vat_percent'] }}% on hardware after discount + onboarding)</td><td class="num">{{ number_format($quote['vat_ugx'], 0) }}</td><td class="num">{{ number_format($quote['vat_usd'], 2) }}</td></tr>
     @endif
-    <tr class="grand"><td>GRAND TOTAL</td><td class="num">{{ number_format($quote['grand_total_ugx'], 0) }} UGX</td><td class="num">${{ number_format($quote['grand_total_usd'], 2) }}</td></tr>
+    <tr class="grand"><td>GRAND TOTAL</td><td class="num">{{ number_format($quote['grand_total_ugx'], 0) }} {{ $cur }}</td><td class="num">${{ number_format($quote['grand_total_usd'], 2) }}</td></tr>
   </table>
 
   <h2>Budget Summary - how much do you need?</h2>
   <table>
-    <tr><th>Budget line</th><th class="num">UGX</th><th class="num">USD</th></tr>
+    <tr><th>Budget line</th><th class="num">{{ $cur }}</th><th class="num">USD</th></tr>
     <tr><td>One-time setup (hardware, onboarding &amp; installation)</td><td class="num">{{ number_format($quote['one_time_ugx'], 0) }}</td><td class="num">${{ number_format($quote['one_time_usd'], 2) }}</td></tr>
     <tr><td>Every year after (subscription + maintenance)</td><td class="num">{{ number_format($quote['annual_recurring_ugx'], 0) }}</td><td class="num">${{ number_format($quote['annual_recurring_usd'], 2) }}</td></tr>
   </table>
 
-  <p class="muted">{{ $quote['usd_rate_note'] }} Prices exclude delivery and installation travel outside Kampala unless stated. Hardware prices are market estimates - confirmed at order time.</p>
+  <p class="muted">{{ $quote['usd_rate_note'] }}@if(!empty($quote['converted']['available']) && ($quote['currency'] ?? 'UGX') !== 'UGX') {{ $quote['converted']['note'] }}@endif Prices exclude delivery and installation travel outside Kampala unless stated. Hardware prices are market estimates - confirmed at order time.</p>
 
   <h2>Operational Requirements (minimum, per site)</h2>
   <table>

@@ -18,9 +18,14 @@ class QuotationController extends Controller
     ) {}
 
     /** Public package catalog: tiers with pricing, maintenance and recommended kit. */
-    public function packages(): JsonResponse
+    public function packages(Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->quotations->packages()]);
+        $currency = strtoupper((string) ($request->query('currency', 'UGX')));
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            $currency = 'UGX';
+        }
+
+        return response()->json(['data' => $this->quotations->packages($currency)]);
     }
 
     /** Public hardware catalog for the estimator item grid. */
@@ -90,6 +95,10 @@ class QuotationController extends Controller
             'discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'vat_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'kit' => ['sometimes', 'string', 'in:full,services,none'],
+            'currency' => ['sometimes', 'string', 'size:3'],
+            'price_overrides' => ['sometimes', 'array', 'max:100'],
+            'price_overrides.*.code' => ['required_with:price_overrides', 'string', 'max:64'],
+            'price_overrides.*.unit_ugx' => ['required_with:price_overrides', 'numeric', 'min:0', 'max:1000000000'],
             'rep_name' => ['sometimes', 'nullable', 'string', 'max:120'],
             'rep_phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'customer_name' => ['sometimes', 'nullable', 'string', 'max:120'],
@@ -100,19 +109,22 @@ class QuotationController extends Controller
     private function quoted(array $data): array
     {
         try {
-            return $this->quotations->estimate(
-                $data['plan'],
-                $data['drivers'] ?? [],
-                $data['items'] ?? [],
-                $data['billing'] ?? 'monthly',
-                $data['custom_lines'] ?? [],
-                (float) ($data['discount_percent'] ?? 0),
-                (float) ($data['vat_percent'] ?? 0),
-                $data['custom_fields'] ?? [],
-                $data['kit'] ?? 'services',
-            );
+            return $this->quotations->estimate($data['plan'], [
+                'drivers' => $data['drivers'] ?? [],
+                'items' => $data['items'] ?? [],
+                'billing' => $data['billing'] ?? 'monthly',
+                'custom_lines' => $data['custom_lines'] ?? [],
+                'discount_percent' => (float) ($data['discount_percent'] ?? 0),
+                'vat_percent' => (float) ($data['vat_percent'] ?? 0),
+                'custom_fields' => $data['custom_fields'] ?? [],
+                'kit' => $data['kit'] ?? 'services',
+                'currency' => $data['currency'] ?? 'UGX',
+                'price_overrides' => $data['price_overrides'] ?? [],
+            ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             abort(404, 'Plan not found');
+        } catch (\RuntimeException $e) {
+            abort(422, $e->getMessage());
         }
     }
 

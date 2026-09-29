@@ -17,6 +17,31 @@ class InvestmentQuotationService
     /** Fallback UGX-per-USD when the live rate is unreachable (labelled approx). */
     private const FALLBACK_UGX_PER_USD = 3700.0;
 
+    private const CONVERTED_KEYS = [
+        'hardwareUgx' => 'hardware',
+        'customUgx' => 'custom',
+        'discountUgx' => 'discount',
+        'vatUgx' => 'vat',
+        'subscriptionUgx' => 'subscription',
+        'onboardingUgx' => 'onboarding',
+        'maintenanceUgx' => 'maintenance',
+        'grandUgx' => 'grand',
+        'oneTimeUgx' => 'one_time',
+        'annualUgx' => 'annual',
+    ];
+    private const CURRENCY_SYMBOLS = [
+        'UGX' => 'UGX',
+        'USD' => '$',
+        'KES' => 'KSh',
+        'TZS' => 'TSh',
+        'NGN' => '₦',
+        'RWF' => 'RF',
+        'GHS' => '₵',
+        'ZAR' => 'R',
+        'EUR' => '€',
+        'GBP' => '£',
+    ];
+
     /**
      * Recommended kit per tier: item code => [base qty, driver].
      * Drivers: null (flat), 'till', 'staff', 'branch'.
@@ -86,24 +111,72 @@ class InvestmentQuotationService
     ) {}
 
     /** @return list<array<string, mixed>> tiers with pricing, maintenance and recommended kit */
-    public function packages(): array
+    public function packages(string $currency = 'UGX'): array
     {
+        $currency = strtoupper($currency);
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            $currency = 'UGX';
+        }
+        $conv = $currency === 'UGX' ? null : $this->currencyConverter($currency);
+
         return Plan::query()
             ->where('type', 'business')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(fn (Plan $plan) => [
-                'slug' => $plan->slug,
-                'name' => $plan->name,
-                'trial_days' => (int) ($plan->trial_days ?? 0),
-                'price_monthly_usd' => (float) ($plan->price_monthly_usd ?? 0),
-                'price_yearly_usd' => $plan->price_yearly_usd !== null ? (float) $plan->price_yearly_usd : null,
-                'onboarding_fee_usd' => (float) ($plan->onboarding_fee_usd ?? 0),
-                'maintenance_fee_ugx' => (float) ($plan->maintenance_fee_ugx ?? 0),
-                'bundle' => $this->bundleLines($plan->slug, ['tills' => 1, 'staff' => 1, 'branches' => 1]),
-            ])
+            ->map(function (Plan $plan) use ($currency, $conv) {
+                $monthlyUsd = (float) ($plan->price_monthly_usd ?? 0);
+                $yearlyUsd = $plan->price_yearly_usd !== null ? (float) $plan->price_yearly_usd : null;
+                $onboardingUsd = (float) ($plan->onboarding_fee_usd ?? 0);
+                $maintenanceUgx = (float) ($plan->maintenance_fee_ugx ?? 0);
+                $maintenanceUsd = (float) ($plan->maintenance_fee_usd ?? 0);
+
+                return [
+                    'slug' => $plan->slug,
+                    'name' => $plan->name,
+                    'trial_days' => (int) ($plan->trial_days ?? 0),
+                    'price_monthly_usd' => $monthlyUsd,
+                    'price_yearly_usd' => $yearlyUsd,
+                    'onboarding_fee_usd' => $onboardingUsd,
+                    'maintenance_fee_ugx' => $maintenanceUgx,
+                    'maintenance_fee_usd' => $maintenanceUsd,
+                    'currency' => $currency,
+                    'converted' => $conv ? [
+                        'monthly' => round($monthlyUsd * $conv['usd'], 2),
+                        'yearly' => $yearlyUsd !== null ? round($yearlyUsd * $conv['usd'], 2) : null,
+                        'onboarding' => round($onboardingUsd * $conv['usd'], 2),
+                        'maintenance' => round($maintenanceUgx * $conv['ugx'], 2),
+                    ] : null,
+                    'bundle' => $this->bundleLines($plan->slug, ['tills' => 1, 'staff' => 1, 'branches' => 1]),
+                ];
+            })
             ->all();
+    }
+
+    /**
+     * Per-unit multipliers into $currency: ['usd' => X-per-USD, 'ugx' => X-per-UGX].
+     * Null when conversion is unavailable.
+     *
+     * @return array{usd: float, ugx: float}|null
+     */
+    private function currencyConverter(string $currency): ?array
+    {
+        $rate = $this->ugxPerUsd();
+        if ($currency === 'USD') {
+            return $rate['rate'] > 0 ? ['usd' => 1.0, 'ugx' => 1 / $rate['rate']] : null;
+        }
+        $perUgx = $this->exchange->getExchangeRate('UGX', $currency);
+        if (! $perUgx) {
+            $usdToX = $this->exchange->getExchangeRate('USD', $currency);
+            if ($usdToX && $rate['rate'] > 0) {
+                $perUgx = $usdToX / $rate['rate'];
+            }
+        }
+        if (! $perUgx) {
+            return null;
+        }
+
+        return ['usd' => $perUgx * $rate['rate'], 'ugx' => $perUgx];
     }
 
     /** Item codes Custosell itself delivers (installation, setup) - the only lines ever defaulted on. */
@@ -117,16 +190,40 @@ class InvestmentQuotationService
      * @param string $kit full (whole recommended kit) | services (only what Custosell delivers) | none
      * @return array<string, mixed> full quotation with grand totals
      */
-    public function estimate(string $planSlug, array $drivers = [], array $extraItems = [], string $billing = 'monthly', array $customLines = [], float $discountPercent = 0, float $vatPercent = 0, array $customFields = [], string $kit = 'services'): array
+    public function estimate(string $planSlug, array $options = []): array
     {
         $plan = Plan::query()->where('slug', $planSlug)->where('is_active', true)->firstOrFail();
+        $currency = strtoupper((string) ($options['currency'] ?? 'UGX'));
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            $currency = 'UGX';
+        }
+        $drivers = $options['drivers'] ?? [];
+        $extraItems = $options['items'] ?? [];
+        $billing = $options['billing'] ?? 'monthly';
+        $customLines = $options['custom_lines'] ?? [];
+        $discountPercent = (float) ($options['discount_percent'] ?? 0);
+        $vatPercent = (float) ($options['vat_percent'] ?? 0);
+        $customFields = $options['custom_fields'] ?? [];
+        $kit = $options['kit'] ?? 'services';
         $drivers = [
             'tills' => max(1, (int) ($drivers['tills'] ?? 1)),
             'staff' => max(1, (int) ($drivers['staff'] ?? 1)),
             'branches' => max(1, (int) ($drivers['branches'] ?? 1)),
         ];
 
-        $lines = $this->bundleLines($plan->slug, $drivers, $kit);
+        // Caller-edited hardware prices are stated in the QUOTE currency
+        // (their real local figures, not standards) - convert once to UGX
+        // for consistent maths. Catalog defaults stay UGX-native.
+        $prices = [];
+        foreach ((array) ($options['price_overrides'] ?? []) as $row) {
+            $code = (string) ($row['code'] ?? '');
+            if ($code === '' || ! isset($row['unit_ugx']) || ! is_numeric($row['unit_ugx'])) {
+                continue;
+            }
+            $prices[$code] = $this->toUgxAmount(max(0, (float) $row['unit_ugx']), $currency);
+        }
+
+        $lines = $this->bundleLines($plan->slug, $drivers, $kit, $prices);
         foreach ($extraItems as $extra) {
             $code = (string) ($extra['code'] ?? '');
             $qty = max(0, (int) ($extra['qty'] ?? 0));
@@ -147,10 +244,13 @@ class InvestmentQuotationService
                     array_splice($lines, $at, 1);
                 } else {
                     $fresh = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
-                    $unit = $fresh ? (float) $fresh->price_ugx : (float) ($lines[$at]['unit_ugx'] ?? 0);
+                    $unit = array_key_exists($code, $prices)
+                        ? $prices[$code]
+                        : ($fresh ? (float) $fresh->price_ugx : (float) ($lines[$at]['unit_ugx'] ?? 0));
                     $lines[$at]['qty'] = $qty;
                     $lines[$at]['unit_ugx'] = round($unit, 2);
                     $lines[$at]['line_total_ugx'] = round($unit * $qty, 2);
+                    $lines[$at]['price_source'] = array_key_exists($code, $prices) ? 'custom' : ($lines[$at]['price_source'] ?? 'catalog');
                 }
                 continue;
             }
@@ -159,7 +259,7 @@ class InvestmentQuotationService
             }
             $item = InvestmentItem::query()->where('code', $code)->where('is_active', true)->first();
             if ($item) {
-                $lines[] = $this->lineFor($item, $qty, null);
+                $lines[] = $this->lineFor($item, $qty, null, $prices);
             }
         }
 
@@ -190,6 +290,7 @@ class InvestmentQuotationService
             : (float) ($plan->price_monthly_usd ?? 0) * 12;
         $onboardingUsd = (float) ($plan->onboarding_fee_usd ?? 0);
         $maintenanceUgx = (float) ($plan->maintenance_fee_ugx ?? 0);
+        $maintenanceUsd = (float) ($plan->maintenance_fee_usd ?? 0);
 
         $rate = $this->ugxPerUsd();
         $subscriptionUgx = $this->toUgx($subscriptionUsd, $rate);
@@ -241,6 +342,9 @@ class InvestmentQuotationService
             'onboarding_ugx' => round($onboardingUgx, 2),
             'onboarding_usd' => round($onboardingUsd, 2),
             'maintenance_annual_ugx' => round($maintenanceUgx, 2),
+            'maintenance_annual_usd' => round($maintenanceUsd, 2),
+            'discount_usd' => $this->toUsd($discountUgx, $rate),
+            'vat_usd' => $this->toUsd($vatUgx, $rate),
             'grand_total_ugx' => round($grandUgx, 2),
             'grand_total_usd' => $this->toUsd($grandUgx, $rate),
             'one_time_ugx' => round($oneTimeUgx, 2),
@@ -250,13 +354,16 @@ class InvestmentQuotationService
             'usd_rate_note' => $rate['approx']
                 ? 'USD figures use an approximate rate of '.number_format($rate['rate'], 0).' UGX per USD.'
                 : 'USD figures use the live rate of '.number_format($rate['rate'], 2).' UGX per USD.',
+            'currency' => $currency,
+            'currency_symbol' => self::CURRENCY_SYMBOLS[$currency] ?? $currency,
+            'converted' => $this->convertedTotals($currency, $rate, compact('hardwareUgx', 'customUgx', 'discountUgx', 'vatUgx', 'subscriptionUgx', 'onboardingUgx', 'maintenanceUgx', 'grandUgx', 'oneTimeUgx', 'annualUgx'), $lines, $custom),
             'operational_requirements' => self::OPERATIONAL_REQUIREMENTS,
             'generated_at' => now()->toDateTimeString(),
         ];
     }
 
     /** @return list<array<string, mixed>> */
-    private function bundleLines(string $planSlug, array $drivers, string $kit = 'services'): array
+    private function bundleLines(string $planSlug, array $drivers, string $kit = 'services', array $prices = []): array
     {
         $lines = [];
         foreach (self::TIER_BUNDLES[$planSlug] ?? [] as $code => $spec) {
@@ -274,16 +381,16 @@ class InvestmentQuotationService
             if ($qty < 1) {
                 continue;
             }
-            $lines[] = $this->lineFor($item, $qty, $spec['per']);
+            $lines[] = $this->lineFor($item, $qty, $spec['per'], $prices);
         }
 
         return $lines;
     }
 
     /** @return array<string, mixed> */
-    private function lineFor(InvestmentItem $item, int $qty, ?string $per): array
+    private function lineFor(InvestmentItem $item, int $qty, ?string $per, array $prices = []): array
     {
-        $unit = (float) $item->price_ugx;
+        $unit = array_key_exists($item->code, $prices) ? $prices[$item->code] : (float) $item->price_ugx;
         $perLabel = ['tills' => 'till', 'branches' => 'branch', 'staff' => 'staff'][$per ?? ''] ?? $per;
 
         return [
@@ -295,7 +402,104 @@ class InvestmentQuotationService
             'per' => $perLabel,
             'unit_ugx' => round($unit, 2),
             'line_total_ugx' => round($unit * $qty, 2),
+            'price_source' => array_key_exists($item->code, $prices) ? 'custom' : 'catalog',
         ];
+    }
+
+    /**
+     * Hardware, customs, discount and VAT are stated figures (catalog
+     * defaults the user edits to local prices) - they keep their numbers
+     * and only take the chosen symbol. True standards (subscription,
+     * onboarding, maintenance) convert through the rate.
+     *
+     * @param array<string, float> $ugx
+     * @param array<string, float> $usd
+     */
+    private function convertedTotals(string $currency, array $rate, array $ugx, array $lines = [], array $custom = []): array
+    {
+        if ($currency === 'UGX') {
+            $out = [];
+            foreach ($ugx as $key => $value) {
+                $out[(self::CONVERTED_KEYS[$key] ?? $key).'_'.$currency] = round((float) $value, 2);
+            }
+
+            return ['available' => true, 'live' => true, 'note' => 'Native UGX figures.', 'totals' => $out, 'lines' => [], 'customs' => []];
+        }
+
+        // Direct UGX->X, else cross through USD.
+        $perUgx = $this->exchange->getExchangeRate('UGX', $currency);
+        $usedCross = false;
+        if (! $perUgx) {
+            $usdToX = $this->exchange->getExchangeRate('USD', $currency);
+            if ($usdToX && $rate['rate'] > 0) {
+                $perUgx = $usdToX / $rate['rate'];
+                $usedCross = true;
+            }
+        }
+        if (! $perUgx) {
+            return [
+                'available' => false,
+                'live' => false,
+                'note' => "Live {$currency} conversion is unavailable right now - UGX figures below are exact.",
+                'totals' => [],
+                'lines' => [],
+                'customs' => [],
+            ];
+        }
+
+        $out = [];
+        foreach ($ugx as $key => $value) {
+            $out[(self::CONVERTED_KEYS[$key] ?? $key).'_'.$currency] = round((float) $value * $perUgx, 2);
+        }
+
+        $convertedLines = [];
+        foreach ($lines as $line) {
+            $convertedLines[] = [
+                'code' => $line['code'],
+                'unit' => round((float) ($line['unit_ugx'] ?? 0) * $perUgx, 2),
+                'total' => round((float) ($line['line_total_ugx'] ?? 0) * $perUgx, 2),
+            ];
+        }
+        $convertedCustoms = [];
+        foreach ($custom as $row) {
+            $convertedCustoms[] = [
+                'label' => $row['label'],
+                'amount' => round((float) ($row['amount_ugx'] ?? 0) * $perUgx, 2),
+            ];
+        }
+
+        return [
+            'available' => true,
+            'live' => ! $usedCross && ! $rate['approx'],
+            'note' => ($usedCross || $rate['approx'] ? 'Approximate' : 'Live').' rate: 1 UGX = '.number_format($perUgx, 6).' '.$currency.'.',
+            'totals' => $out,
+            'lines' => $convertedLines,
+            'customs' => $convertedCustoms,
+        ];
+    }
+
+    /**
+     * Convert an amount stated in the quote currency to UGX for maths.
+     * Throws when no rate exists so figures never silently mix currencies.
+     */
+    private function toUgxAmount(float $amount, string $currency): float
+    {
+        if ($currency === 'UGX') {
+            return round($amount, 2);
+        }
+        $perUnit = $this->exchange->getExchangeRate($currency, 'UGX');
+        if (! $perUnit) {
+            $usdPerUnit = $this->exchange->getExchangeRate($currency, 'USD');
+            $ugxPerUsd = $this->ugxPerUsd()['rate'] ?? 0;
+            if ($usdPerUnit && $ugxPerUsd > 0) {
+                $perUnit = $usdPerUnit * $ugxPerUsd;
+            }
+        }
+        if (! $perUnit) {
+            throw new \RuntimeException("Cannot convert entered prices from {$currency} - exchange rate unavailable.");
+        }
+
+        return round($amount * $perUnit, 2);
     }
 
     /** @return array{rate: float, approx: bool} */

@@ -23,6 +23,13 @@ class InvestmentCatalogSeeder extends Seeder
         'enterprise' => 600000,
     ];
 
+    /** @var array<string, float> same fees in USD for accurate conversion */
+    public const TIER_MAINTENANCE_USD = [
+        'essential' => 40,
+        'professional' => 95,
+        'enterprise' => 160,
+    ];
+
     public function run(): void
     {
         $order = 0;
@@ -38,6 +45,12 @@ class InvestmentCatalogSeeder extends Seeder
                 ->where('slug', $slug)
                 ->where('maintenance_fee_ugx', 0)
                 ->update(['maintenance_fee_ugx' => $fee]);
+        }
+        foreach (self::TIER_MAINTENANCE_USD as $slug => $fee) {
+            Plan::query()
+                ->where('slug', $slug)
+                ->where('maintenance_fee_usd', 0)
+                ->update(['maintenance_fee_usd' => $fee]);
         }
 
         $this->command?->info('Seeded investment catalog and tier maintenance fees.');

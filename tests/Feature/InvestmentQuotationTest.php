@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use Database\Seeders\InvestmentCatalogSeeder;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class InvestmentQuotationTest extends TestCase
@@ -144,6 +145,85 @@ class InvestmentQuotationTest extends TestCase
             'plan' => 'essential',
             'drivers' => ['tills' => 0],
         ])->assertStatus(422);
+    }
+
+    public function test_currency_choice_converts_and_price_overrides_apply(): void
+    {
+        Http::fake([
+            '*pair/USD/KES*' => Http::response(['conversion_rate' => 129.0], 200),
+            '*' => Http::response(['conversion_rate' => 129.0 / 3700.0], 200),
+        ]);
+
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'currency' => 'KES',
+            'kit' => 'full',
+            'drivers' => ['tills' => 1, 'staff' => 1, 'branches' => 1],
+            'price_overrides' => [['code' => 'thermal-printer-80', 'unit_ugx' => 500000]],
+        ])->assertOk();
+
+        $data = $response->json('data');
+        $this->assertSame('KES', $data['currency']);
+        // Override stated in KES converts to UGX internally and is flagged.
+        $printer = collect($data['hardware_lines'])->firstWhere('code', 'thermal-printer-80');
+        $this->assertSame('custom', $printer['price_source']);
+        $this->assertEqualsWithDelta(500000 * 129.0 / 3700.0, (float) $printer['unit_ugx'], 1.0);
+        $this->assertTrue((bool) ($data['converted']['available'] ?? false));
+        $this->assertGreaterThan(0, (float) ($data['converted']['totals']['grand_KES'] ?? 0));
+    }
+
+    public function test_non_default_currency_converts_every_figure_consistently(): void
+    {
+        // Direction-aware fake rates: UGX->KES, USD->UGX, KES->UGX, USD->KES.
+        Http::fake(function ($request) {
+            $url = (string) $request->url();
+            $rate = str_contains($url, 'UGX/KES') ? 0.0349
+                : (str_contains($url, 'USD/UGX') ? 3700.0
+                : (str_contains($url, 'KES/UGX') ? 28.65
+                : (str_contains($url, 'USD/KES') ? 129.0 : null)));
+            return $rate ? Http::response(['conversion_rate' => $rate], 200) : Http::response([], 500);
+        });
+
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'currency' => 'KES',
+            'kit' => 'full',
+            'drivers' => ['tills' => 1, 'staff' => 1, 'branches' => 1],
+            'discount_percent' => 10,
+            'vat_percent' => 18,
+        ])->assertOk();
+
+        $data = $response->json('data');
+        $this->assertSame('KES', $data['currency']);
+        $this->assertTrue((bool) ($data['converted']['available'] ?? false));
+        $totals = $data['converted']['totals'];
+
+        // Every figure converts through the same rate - correct currency throughout.
+        $this->assertEqualsWithDelta((float) $data['hardware_total_ugx'] * 0.0349, (float) $totals['hardware_KES'], 1.0);
+        $this->assertEqualsWithDelta((float) $data['grand_total_ugx'] * 0.0349, (float) $totals['grand_KES'], 1.0);
+        $this->assertEqualsWithDelta((float) $data['one_time_ugx'] * 0.0349, (float) $totals['one_time_KES'], 1.0);
+        $this->assertEqualsWithDelta((float) $data['annual_recurring_ugx'] * 0.0349, (float) $totals['annual_KES'], 1.0);
+        $this->assertEqualsWithDelta((float) $data['discount_ugx'] * 0.0349, (float) $totals['discount_KES'], 1.0);
+        $this->assertEqualsWithDelta((float) $data['vat_ugx'] * 0.0349, (float) $totals['vat_KES'], 1.0);
+
+        // Per-line conversion matches too.
+        $lines = $data['converted']['lines'];
+        $this->assertNotEmpty($lines);
+        foreach (array_slice($lines, 0, 3) as $converted) {
+            $native = collect($data['hardware_lines'])->firstWhere('code', $converted['code']);
+            $this->assertEqualsWithDelta((float) $native['line_total_ugx'] * 0.0349, (float) $converted['total'], 1.0);
+        }
+
+        // Grand identity holds in the chosen currency as well.
+        $grand = (float) $totals['grand_KES'];
+        $recomposed = (float) $totals['hardware_KES']
+            - (float) $totals['discount_KES']
+            + (float) $totals['subscription_KES']
+            + (float) $totals['onboarding_KES']
+            + (float) $totals['maintenance_KES']
+            + (float) $totals['vat_KES']
+            + (float) $totals['custom_KES'];
+        $this->assertEqualsWithDelta($grand, $recomposed, 2.0);
     }
 
     public function test_download_returns_pdf(): void
