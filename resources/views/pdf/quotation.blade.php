@@ -43,9 +43,10 @@
   <p class="muted">{{ $quote['plan']['name'] }} plan &middot; {{ ucfirst($quote['plan']['billing']) }} billing
     &middot; {{ $quote['drivers']['tills'] }} till(s) &middot; {{ $quote['drivers']['staff'] }} staff &middot; {{ $quote['drivers']['branches'] }} branch(es)
     &middot; Generated {{ $quote['generated_at'] }}</p>
-  @if(!empty($customerName))
-    <p>Prepared for: <strong>{{ $customerName }}</strong></p>
+  @if(!empty($quote['client']['name'] ?? null))
+    <p>Prepared for: <strong>{{ $quote['client']['name'] }}</strong>@if(!empty($quote['client']['email'])) &lt;{{ $quote['client']['email'] }}&gt; @endif @if(!empty($quote['client']['phone'])) &middot; {{ $quote['client']['phone'] }} @endif</p>
   @endif
+  <p class="muted">Quoted by {{ $brand['name'] ?? 'Custosell' }} ({{ $brand['company'] ?? '' }}) - valid 30 days from generation.</p>
 
   <h2>Hardware &amp; Setup</h2>
   <table>

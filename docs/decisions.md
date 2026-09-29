@@ -653,3 +653,22 @@
 - No new tables; mail config unchanged (SMTP).
 
 **Gates:** `composer vera:fast` passed; `StorefrontOrderNotificationsTest` 5/5; `StorefrontOrderTest` 10/10.
+
+## ADR-040: Customer investment quotations (hardware + software + maintenance)
+
+**Date:** 2026-09-29
+**Status:** Accepted
+
+**Context:** Prospects budget total investment, not just subscription: machines, network, setup, first-year plan, annual maintenance, and the site requirements that keep systems fast. Sales needs downloadable, branded budgets per tier in UGX with USD approximations.
+
+**Decision:**
+1. `investment_items` table (code, category, name, specs, price_ugx) seeded with an editable POS/network catalog; `plans.maintenance_fee_ugx` flat annual fee per tier (seed placeholder values flagged for review).
+2. `InvestmentQuotationService` builds quotes: bundle lines scale on drivers (tills/staff/branches) with explicit overrides; totals = hardware + first-year subscription + onboarding + maintenance, split one-time vs annual for enterprise budgeting; USD via live exchange rate with labelled approx fallback.
+3. Public endpoints `GET /quotations/packages`, `POST /quotations/estimate`, `POST /quotations/download` (branded dompdf with logo, tagline, totals, requirements table with provided-by column, handover milestone). Authenticated callers get their business prefilled as the client.
+4. Static `OPERATIONAL_REQUIREMENTS` (OS, RAM, internet, power, backups, training, handover) ship on every quote so slow systems trace to unmet requirements.
+
+**Consequences:**
+- No auth needed for estimates/downloads (public pricing tool); no new tables beyond catalog.
+- Catalog prices and tier maintenance fees are placeholders until confirmed against suppliers.
+
+**Gates:** `composer vera:fast` passed; `InvestmentQuotationTest` 4/4.

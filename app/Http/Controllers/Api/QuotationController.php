@@ -22,6 +22,31 @@ class QuotationController extends Controller
         return response()->json(['data' => $this->quotations->packages()]);
     }
 
+    /**
+     * Quote recipient: the signed-in user's business when authenticated,
+     * otherwise the guest-supplied name. Reads like a quote from Custosell
+     * to the other business either way.
+     *
+     * @return array{name: string|null, email: string|null, phone: string|null}
+     */
+    private function clientFor(Request $request, ?string $guestName): array
+    {
+        $user = $request->user();
+        $business = $user?->business;
+        if ($business) {
+            return [
+                'name' => (string) ($business->name ?? $user->name ?? ''),
+                'email' => $business->business_email ?? $business->email,
+                'phone' => $business->business_phone ?? $business->phone,
+            ];
+        }
+        if ($user) {
+            return ['name' => (string) ($user->name ?? ''), 'email' => $user->email, 'phone' => $user->phone ?? null];
+        }
+
+        return ['name' => $guestName, 'email' => null, 'phone' => null];
+    }
+
     /** Public estimator: plan + drivers + optional extra rows -> full totals. */
     public function estimate(Request $request): JsonResponse
     {
@@ -47,6 +72,8 @@ class QuotationController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             abort(404, 'Plan not found');
         }
+
+        $quote['client'] = $this->clientFor($request, null);
 
         return response()->json(['data' => $quote]);
     }
@@ -77,6 +104,8 @@ class QuotationController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             abort(404, 'Plan not found');
         }
+
+        $quote['client'] = $this->clientFor($request, $data['customer_name'] ?? null);
 
         $logoFile = public_path('images/custosell-logo-pdf.png');
         $brand = [

@@ -78,6 +78,7 @@ class InvestmentQuotationService
         ['area' => 'Printers', 'requirement' => 'USB or LAN thermal printers with auto cutter; barcode scanners USB plug-and-play (no special drivers).', 'provided_by' => 'Custosell'],
         ['area' => 'Data & backups', 'requirement' => 'Automatic cloud backup whenever online; keep a weekly local backup copy. Transaction data grows with sales - review disk space quarterly.', 'provided_by' => 'Included'],
         ['area' => 'Staff readiness', 'requirement' => 'One trained cashier per till plus a supervisor with admin rights. Half-day onboarding training included per branch.', 'provided_by' => 'Included'],
+        ['area' => 'Handover & sign-off', 'requirement' => 'The Custosell team commissions every till, pairs printers and scanners, verifies inter-branch sync and staff collaboration, and only signs off when the client team works smoothly on its own.', 'provided_by' => 'Custosell'],
     ];
 
     public function __construct(
