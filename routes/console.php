@@ -18,7 +18,8 @@ Schedule::command('income:process-recurring')->everyMinute();
 Schedule::command('expenses:process-recurring')->everyMinute();
 
 Schedule::command('subscriptions:expire-trials')->dailyAt('02:00');
-Schedule::command('subscriptions:renew')->dailyAt('02:15');
+// Owner low-stock digest every morning 07:00 EAT (server runs UTC).
+Schedule::command('inventory:notify-low-stock')->dailyAt('04:00');Schedule::command('subscriptions:renew')->dailyAt('02:15');
 Schedule::command('subscriptions:suspend-past-due')->dailyAt('02:30');
 Schedule::command('subscriptions:cancel-at-period-end')->dailyAt('02:45');
 

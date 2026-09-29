@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductStorefrontRating;
+use App\Jobs\SendOrderPlacedEmail;
 use App\Services\Contracts\OrderServiceInterface;
 use App\Support\StorefrontSlug;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -259,7 +260,7 @@ class StorefrontService
             ];
         }
 
-        return $this->orderService->createFromStorefront($business, $ownerId, [
+        $order = $this->orderService->createFromStorefront($business, $ownerId, [
             'customer_name' => trim((string) $payload['customer_name']),
             'customer_phone' => trim((string) $payload['customer_phone']),
             'delivery_address' => isset($payload['delivery_address'])
@@ -272,6 +273,11 @@ class StorefrontService
             'items' => $normalized,
             'storefront_buyer_user_id' => $payload['storefront_buyer_user_id'] ?? null,
         ]);
+
+        // Owner alert goes on the queue - buyer checkout never waits on SMTP.
+        SendOrderPlacedEmail::dispatch($order->id);
+
+        return $order;
     }
 
     /**

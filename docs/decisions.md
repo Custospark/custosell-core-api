@@ -635,3 +635,21 @@
 - New permission means role-assignments must be re-migrated on existing environments (standard `php artisan migrate`).
 
 **Gates:** `composer vera:fast` passed (8 files, logic 6/6); `migrate --pretend` clean for both new migrations; `PlatformConversionStatsTest` 4/4 (45 assertions); `SubscriptionBillingTest|BusinessTest|PlanTest|SubscriptionStateMachine|OnboardingDismiss` 48/48.
+
+## ADR-039: Owner email alerts for low stock and storefront orders
+
+**Date:** 2026-09-27
+**Status:** Accepted
+
+**Context:** Shop owners miss restock moments and learn about online orders late. Both need email without slowing the request path.
+
+**Decision:**
+1. `inventory:notify-low-stock` artisan command (scheduled daily 04:00 UTC = 07:00 EAT) chunks active businesses and dispatches `SendLowStockDigestEmail` per business. The job skips quietly when nothing is low or the owner has no email.
+2. `StorefrontService::placeOrder` dispatches `SendOrderPlacedEmail` (order id only) right after creation - buyer checkout never waits on SMTP.
+3. Both jobs send the existing `StandardEmail` mailable with order/digest summary plus a `FRONTEND_URL` CTA, retry with backoff, and log-and-skip on missing owner email.
+
+**Consequences:**
+- Requires a queue worker processing the `database` queue on every environment, plus the existing once-per-minute `schedule:run` cron (already in hPanel).
+- No new tables; mail config unchanged (SMTP).
+
+**Gates:** `composer vera:fast` passed; `StorefrontOrderNotificationsTest` 5/5; `StorefrontOrderTest` 10/10.
