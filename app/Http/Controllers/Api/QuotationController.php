@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\InvestmentItem;
 use App\Services\InvestmentQuotationService;
 use App\Services\ReportExportService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,15 @@ class QuotationController extends Controller
     public function packages(): JsonResponse
     {
         return response()->json(['data' => $this->quotations->packages()]);
+    }
+
+    /** Web estimator page (Blade + vanilla JS, no app build needed). */
+    public function page(): \Illuminate\View\View
+    {
+        return view('quotations.estimator', [
+            'packages' => $this->quotations->packages(),
+            'items' => InvestmentItem::query()->where('is_active', true)->orderBy('sort_order')->get(['code', 'category', 'name', 'price_ugx']),
+        ]);
     }
 
     /**
