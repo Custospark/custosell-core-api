@@ -23,6 +23,17 @@ class QuotationController extends Controller
         return response()->json(['data' => $this->quotations->packages()]);
     }
 
+    /** Public hardware catalog for the estimator item grid. */
+    public function items(): JsonResponse
+    {
+        $items = InvestmentItem::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['code', 'category', 'name', 'specs', 'price_ugx']);
+
+        return response()->json(['data' => $items]);
+    }
+
     /** Web estimator page (Blade + vanilla JS, no app build needed). */
     public function page(): \Illuminate\View\View
     {

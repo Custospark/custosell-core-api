@@ -32,6 +32,17 @@ class InvestmentQuotationTest extends TestCase
         $this->assertNotEmpty($essential['bundle']);
     }
 
+    public function test_items_endpoint_lists_active_catalog_with_specs(): void
+    {
+        $response = $this->getJson('/api/v1/quotations/items')->assertOk();
+
+        $codes = collect($response->json('data'))->pluck('code')->all();
+        $this->assertContains('thermal-printer-80', $codes);
+        $first = $response->json('data.0');
+        $this->assertArrayHasKey('specs', $first);
+        $this->assertArrayHasKey('price_ugx', $first);
+    }
+
     public function test_estimate_scales_bundle_by_drivers_and_totals(): void
     {
         $response = $this->postJson('/api/v1/quotations/estimate', [
