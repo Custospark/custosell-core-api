@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use Database\Seeders\InvestmentCatalogSeeder;
+use Database\Seeders\PlanSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class InvestmentQuotationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(PlanSeeder::class);
+        $this->seed(InvestmentCatalogSeeder::class);
+    }
+
+    public function test_packages_lists_tiers_with_kit_and_maintenance(): void
+    {
+        $response = $this->getJson('/api/v1/quotations/packages')->assertOk();
+
+        $slugs = collect($response->json('data'))->pluck('slug')->all();
+        $this->assertContains('essential', $slugs);
+
+        $essential = collect($response->json('data'))->firstWhere('slug', 'essential');
+        $this->assertSame(150000.0, (float) $essential['maintenance_fee_ugx']);
+        $this->assertNotEmpty($essential['bundle']);
+    }
+
+    public function test_estimate_scales_bundle_by_drivers_and_totals(): void
+    {
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'drivers' => ['tills' => 2, 'staff' => 3, 'branches' => 1],
+        ])->assertOk();
+
+        $data = $response->json('data');
+        $lines = collect($data['hardware_lines']);
+
+        // Per-till lines multiply: thermal printer base 1 x 2 tills.
+        $this->assertSame(2, (int) $lines->firstWhere('code', 'thermal-printer-80')['qty']);
+        // Flat lines stay put.
+        $this->assertSame(1, (int) $lines->firstWhere('code', 'desktop-i5')['qty']);
+
+        $expectedHardware = $lines->sum(fn ($l) => (float) $l['line_total_ugx']);
+        $this->assertEqualsWithDelta($expectedHardware, (float) $data['hardware_total_ugx'], 0.01);
+
+        $expectedGrand = (float) $data['hardware_total_ugx']
+            + (float) $data['subscription_first_year_ugx']
+            + (float) $data['onboarding_ugx']
+            + (float) $data['maintenance_annual_ugx'];
+        $this->assertEqualsWithDelta($expectedGrand, (float) $data['grand_total_ugx'], 0.01);
+        $this->assertGreaterThan(0, (float) $data['grand_total_usd']);
+        $this->assertEqualsWithDelta(
+            (float) $data['hardware_total_ugx'] + (float) $data['onboarding_ugx'],
+            (float) $data['one_time_ugx'],
+            0.01,
+        );
+        $this->assertEqualsWithDelta(
+            (float) $data['subscription_first_year_ugx'] + (float) $data['maintenance_annual_ugx'],
+            (float) $data['annual_recurring_ugx'],
+            0.01,
+        );
+    }
+
+    public function test_estimate_rejects_unknown_plan_and_bad_input(): void
+    {
+        $this->postJson('/api/v1/quotations/estimate', ['plan' => 'nope'])->assertNotFound();
+        $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'drivers' => ['tills' => 0],
+        ])->assertStatus(422);
+    }
+
+    public function test_download_returns_pdf(): void
+    {
+        $response = $this->postJson('/api/v1/quotations/download', [
+            'plan' => 'essential',
+            'customer_name' => 'Test Shop',
+        ]);
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $response->headers->get('Content-Type'));
+        $this->assertNotEmpty($response->getContent());
+    }
+}
