@@ -61,7 +61,7 @@
       <tr><th>Item</th><th class="num">UGX</th><th class="num">Qty</th></tr>
       @foreach($items as $item)
         <tr>
-          <td>{{ $item['name'] }} <span class="muted">({{ $item['category'] }})</span></td>
+          <td>{{ $item['name'] }} <span class="muted">({{ $item['category'] }})</span><br><span class="muted">{{ $item['specs'] }}</span></td>
           <td class="num">{{ number_format($item['price_ugx'], 0) }}</td>
           <td class="num"><input type="number" min="0" max="10000" value="0" data-code="{{ $item['code'] }}" style="width:70px;" class="extra-qty"></td>
         </tr>
@@ -182,7 +182,7 @@
     const d = (await res.json()).data;
     const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
     let rows = d.hardware_lines.map((l) =>
-      `<tr><td>${l.name} &times; ${l.qty}</td><td class="num">${fmt(l.line_total_ugx)}</td></tr>`).join('');
+      `<tr><td>${l.name} &times; ${l.qty}<br><span class="muted">${l.specs || ''}</span></td><td class="num">${fmt(l.line_total_ugx)}</td></tr>`).join('');
     rows += `<tr><td>Software first year + onboarding</td><td class="num">${fmt(d.subscription_first_year_ugx + d.onboarding_ugx)}</td></tr>`;
     rows += `<tr><td>Annual maintenance</td><td class="num">${fmt(d.maintenance_annual_ugx)}</td></tr>`;
     (d.custom_lines || []).forEach((c) => { rows += `<tr><td>${c.label}</td><td class="num">${fmt(c.amount_ugx)}</td></tr>`; });

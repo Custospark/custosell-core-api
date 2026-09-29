@@ -28,7 +28,7 @@ class QuotationController extends Controller
     {
         return view('quotations.estimator', [
             'packages' => $this->quotations->packages(),
-            'items' => InvestmentItem::query()->where('is_active', true)->orderBy('sort_order')->get(['code', 'category', 'name', 'price_ugx']),
+            'items' => InvestmentItem::query()->where('is_active', true)->orderBy('sort_order')->get(['code', 'category', 'name', 'specs', 'price_ugx']),
         ]);
     }
 
