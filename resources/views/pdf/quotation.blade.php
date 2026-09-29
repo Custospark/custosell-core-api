@@ -46,7 +46,7 @@
   @if(!empty($quote['client']['name'] ?? null))
     <p>Prepared for: <strong>{{ $quote['client']['name'] }}</strong>@if(!empty($quote['client']['email'])) &lt;{{ $quote['client']['email'] }}&gt; @endif @if(!empty($quote['client']['phone'])) &middot; {{ $quote['client']['phone'] }} @endif</p>
   @endif
-  <p class="muted">Quoted by {{ $brand['name'] ?? 'Custosell' }} ({{ $brand['company'] ?? '' }}) - valid 30 days from generation.</p>
+  <p class="muted">Quoted by {{ $brand['name'] ?? 'Custosell' }} ({{ $brand['company'] ?? '' }})@if(!empty($quote['rep']['name'] ?? null)) &middot; Rep: <strong>{{ $quote['rep']['name'] }}</strong>@if(!empty($quote['rep']['phone'] ?? null)) ({{ $quote['rep']['phone'] }})@endif @endif - valid 30 days from generation.</p>
 
   <h2>Hardware &amp; Setup</h2>
   <table>
@@ -63,12 +63,38 @@
     <tr class="total"><td colspan="4">Hardware subtotal</td><td class="num">{{ number_format($quote['hardware_total_ugx'], 0) }}</td></tr>
   </table>
 
+  @if(!empty($quote['custom_lines']))
+  <h2>Additional Costs</h2>
+  <table>
+    <tr><th>Description</th><th class="num">UGX</th></tr>
+    @foreach($quote['custom_lines'] as $custom)
+      <tr><td>{{ $custom['label'] }}</td><td class="num">{{ number_format($custom['amount_ugx'], 0) }}</td></tr>
+    @endforeach
+    <tr class="total"><td>Additional subtotal</td><td class="num">{{ number_format($quote['custom_total_ugx'], 0) }}</td></tr>
+  </table>
+  @endif
+
+  @if(!empty($quote['custom_fields']))
+  <h2>Additional Details</h2>
+  <table>
+    @foreach($quote['custom_fields'] as $field)
+      <tr><td><strong>{{ $field['label'] }}</strong></td><td>{{ $field['value'] }}</td></tr>
+    @endforeach
+  </table>
+  @endif
+
   <h2>Software &amp; Services (first year)</h2>
   <table>
     <tr><th>Description</th><th class="num">UGX</th><th class="num">USD</th></tr>
     <tr><td>Subscription - {{ $quote['plan']['name'] }} ({{ $quote['plan']['billing'] }}, incl. {{ $quote['plan']['trial_days'] }}-day trial)</td><td class="num">{{ number_format($quote['subscription_first_year_ugx'], 0) }}</td><td class="num">{{ number_format($quote['subscription_first_year_usd'], 2) }}</td></tr>
     <tr><td>One-time onboarding &amp; setup</td><td class="num">{{ number_format($quote['onboarding_ugx'], 0) }}</td><td class="num">{{ number_format($quote['onboarding_usd'], 2) }}</td></tr>
     <tr><td>Annual maintenance (flat, per tier)</td><td class="num">{{ number_format($quote['maintenance_annual_ugx'], 0) }}</td><td class="num">-</td></tr>
+    @if(($quote['discount_ugx'] ?? 0) > 0)
+    <tr><td>Discount ({{ $quote['discount_percent'] }}%)</td><td class="num">-{{ number_format($quote['discount_ugx'], 0) }}</td><td class="num">-</td></tr>
+    @endif
+    @if(($quote['vat_ugx'] ?? 0) > 0)
+    <tr><td>VAT ({{ $quote['vat_percent'] }}% on hardware after discount + onboarding)</td><td class="num">{{ number_format($quote['vat_ugx'], 0) }}</td><td class="num">-</td></tr>
+    @endif
     <tr class="grand"><td>GRAND TOTAL</td><td class="num">{{ number_format($quote['grand_total_ugx'], 0) }} UGX</td><td class="num">${{ number_format($quote['grand_total_usd'], 2) }}</td></tr>
   </table>
 

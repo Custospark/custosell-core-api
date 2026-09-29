@@ -57,10 +57,10 @@ class QuotationController extends Controller
         return ['name' => $guestName, 'email' => null, 'phone' => null];
     }
 
-    /** Public estimator: plan + drivers + optional extra rows -> full totals. */
-    public function estimate(Request $request): JsonResponse
+    /** Shared validation for the JSON estimator and the PDF download form. */
+    private function validatedPayload(Request $request): array
     {
-        $data = $request->validate([
+        return $request->validate([
             'plan' => ['required', 'string', 'max:64'],
             'billing' => ['sometimes', 'string', 'in:monthly,yearly'],
             'drivers' => ['sometimes', 'array'],
@@ -70,19 +70,44 @@ class QuotationController extends Controller
             'items' => ['sometimes', 'array', 'max:100'],
             'items.*.code' => ['required_with:items', 'string', 'max:64'],
             'items.*.qty' => ['required_with:items', 'integer', 'min:1', 'max:10000'],
+            'custom_lines' => ['sometimes', 'array', 'max:50'],
+            'custom_lines.*.label' => ['required_with:custom_lines', 'string', 'max:120'],
+            'custom_lines.*.amount_ugx' => ['required_with:custom_lines', 'numeric', 'min:0', 'max:1000000000'],
+            'custom_fields' => ['sometimes', 'array', 'max:20'],
+            'custom_fields.*.label' => ['required_with:custom_fields', 'string', 'max:80'],
+            'custom_fields.*.value' => ['required_with:custom_fields'],
+            'discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'vat_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'rep_name' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'rep_phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'customer_name' => ['sometimes', 'nullable', 'string', 'max:120'],
         ]);
+    }
 
+    /** @return array<string, mixed> */
+    private function quoted(array $data): array
+    {
         try {
-            $quote = $this->quotations->estimate(
+            return $this->quotations->estimate(
                 $data['plan'],
                 $data['drivers'] ?? [],
                 $data['items'] ?? [],
                 $data['billing'] ?? 'monthly',
+                $data['custom_lines'] ?? [],
+                (float) ($data['discount_percent'] ?? 0),
+                (float) ($data['vat_percent'] ?? 0),
+                $data['custom_fields'] ?? [],
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             abort(404, 'Plan not found');
         }
+    }
 
+    /** Public estimator: plan + drivers + optional extra rows -> full totals. */
+    public function estimate(Request $request): JsonResponse
+    {
+        $data = $this->validatedPayload($request);
+        $quote = $this->quoted($data);
         $quote['client'] = $this->clientFor($request, null);
 
         return response()->json(['data' => $quote]);
@@ -91,31 +116,13 @@ class QuotationController extends Controller
     /** Public PDF download of the same quotation. */
     public function download(Request $request): Response
     {
-        $data = $request->validate([
-            'plan' => ['required', 'string', 'max:64'],
-            'billing' => ['sometimes', 'string', 'in:monthly,yearly'],
-            'drivers' => ['sometimes', 'array'],
-            'drivers.tills' => ['sometimes', 'integer', 'min:1', 'max:500'],
-            'drivers.staff' => ['sometimes', 'integer', 'min:1', 'max:5000'],
-            'drivers.branches' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'items' => ['sometimes', 'array', 'max:100'],
-            'items.*.code' => ['required_with:items', 'string', 'max:64'],
-            'items.*.qty' => ['required_with:items', 'integer', 'min:1', 'max:10000'],
-            'customer_name' => ['sometimes', 'nullable', 'string', 'max:120'],
-        ]);
-
-        try {
-            $quote = $this->quotations->estimate(
-                $data['plan'],
-                $data['drivers'] ?? [],
-                $data['items'] ?? [],
-                $data['billing'] ?? 'monthly',
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
-            abort(404, 'Plan not found');
-        }
-
+        $data = $this->validatedPayload($request);
+        $quote = $this->quoted($data);
         $quote['client'] = $this->clientFor($request, $data['customer_name'] ?? null);
+        $quote['rep'] = [
+            'name' => $data['rep_name'] ?? null,
+            'phone' => $data['rep_phone'] ?? null,
+        ];
 
         $logoFile = public_path('images/custosell-logo-pdf.png');
         $brand = [

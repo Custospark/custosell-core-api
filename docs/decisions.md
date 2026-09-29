@@ -672,3 +672,17 @@
 - Catalog prices and tier maintenance fees are placeholders until confirmed against suppliers.
 
 **Gates:** `composer vera:fast` passed; `InvestmentQuotationTest` 4/4.
+
+## ADR-041: Quotation flexibility (customs, discount, VAT, rep, platform support)
+
+**Date:** 2026-09-29
+**Status:** Accepted
+
+**Context:** Enterprise buyers ask for travel/levy lines, negotiated discounts, VAT treatment, rep contacts, and platform coverage (web + mobile + Windows desktop, Mac/Linux soon) that the first estimator cut lacked.
+
+**Decision:**
+1. Estimate/download accept `custom_lines` (label + UGX), `custom_fields` (free label/value details), `discount_percent` (hardware), `vat_percent` (hardware after discount + onboarding), `rep_name`/`rep_phone` printed as "Prepared by".
+2. `OPERATIONAL_REQUIREMENTS` gains a Platforms entry (web any modern browser incl. Mac/Linux, desktop Windows with Mac/Linux coming soon, offline-first POS).
+3. Web estimator page adds discount/VAT/rep inputs plus dynamic custom-line and custom-detail repeaters, all mirrored into the PDF post.
+
+**Gates:** `composer vera:fast` passed; `InvestmentQuotationTest` 5/5.

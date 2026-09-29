@@ -109,9 +109,11 @@ class InvestmentQuotationService
     /**
      * @param array{tills?: int, staff?: int, branches?: int} $drivers
      * @param list<array{code: string, qty: int}> $extraItems absolute-qty rows added on top
+     * @param list<array{label: string, amount_ugx: float}> $customLines free-form costs (travel, levies, furniture…)
+     * @param list<array{label: string, value: string|int|float}> $customFields free-form details (dates, refs, notes…)
      * @return array<string, mixed> full quotation with grand totals
      */
-    public function estimate(string $planSlug, array $drivers = [], array $extraItems = [], string $billing = 'monthly'): array
+    public function estimate(string $planSlug, array $drivers = [], array $extraItems = [], string $billing = 'monthly', array $customLines = [], float $discountPercent = 0, float $vatPercent = 0, array $customFields = []): array
     {
         $plan = Plan::query()->where('slug', $planSlug)->where('is_active', true)->firstOrFail();
         $drivers = [
@@ -147,6 +149,25 @@ class InvestmentQuotationService
 
         $hardwareUgx = array_sum(array_column($lines, 'line_total_ugx'));
 
+        // Free-form extras the catalog does not cover (travel, levies, furniture…).
+        $custom = [];
+        foreach ($customLines as $row) {
+            $label = trim((string) ($row['label'] ?? ''));
+            $amount = max(0, (float) ($row['amount_ugx'] ?? 0));
+            if ($label === '' || $amount <= 0) {
+                continue;
+            }
+            $custom[] = ['label' => mb_substr($label, 0, 120), 'amount_ugx' => round($amount, 2)];
+        }
+        $customUgx = array_sum(array_column($custom, 'amount_ugx'));
+
+        // Discount applies to hardware; VAT applies to hardware (after
+        // discount) plus onboarding. Stated plainly on the PDF.
+        $discountPercent = min(100, max(0, $discountPercent));
+        $vatPercent = min(100, max(0, $vatPercent));
+        $discountUgx = round($hardwareUgx * $discountPercent / 100, 2);
+        $vatBase = $hardwareUgx - $discountUgx;
+
         $billing = $billing === 'yearly' ? 'yearly' : 'monthly';
         $subscriptionUsd = $billing === 'yearly' && $plan->price_yearly_usd !== null
             ? (float) $plan->price_yearly_usd
@@ -158,10 +179,28 @@ class InvestmentQuotationService
         $subscriptionUgx = $this->toUgx($subscriptionUsd, $rate);
         $onboardingUgx = $this->toUgx($onboardingUsd, $rate);
 
-        $grandUgx = $hardwareUgx + $subscriptionUgx + $onboardingUgx + $maintenanceUgx;
+        $vatUgx = round(($vatBase + $onboardingUgx) * $vatPercent / 100, 2);
+
+        $fields = [];
+        foreach (array_slice($customFields, 0, 20) as $field) {
+            if (! is_array($field)) {
+                continue;
+            }
+            $label = trim((string) ($field['label'] ?? ''));
+            if ($label === '' || ! array_key_exists('value', $field)) {
+                continue;
+            }
+            $value = $field['value'];
+            if (! is_scalar($value)) {
+                continue;
+            }
+            $fields[] = ['label' => mb_substr($label, 0, 80), 'value' => mb_substr((string) $value, 0, 500)];
+        }
+
+        $grandUgx = $hardwareUgx - $discountUgx + $customUgx + $subscriptionUgx + $onboardingUgx + $maintenanceUgx + $vatUgx;
 
         // Enterprise budgeting split: one-time setup vs every-year costs.
-        $oneTimeUgx = $hardwareUgx + $onboardingUgx;
+        $oneTimeUgx = $hardwareUgx - $discountUgx + $customUgx + $onboardingUgx + $vatUgx;
         $annualUgx = $subscriptionUgx + $maintenanceUgx;
 
         return [
@@ -174,6 +213,13 @@ class InvestmentQuotationService
             'drivers' => $drivers,
             'hardware_lines' => $lines,
             'hardware_total_ugx' => round($hardwareUgx, 2),
+            'custom_lines' => $custom,
+            'custom_total_ugx' => round($customUgx, 2),
+            'discount_percent' => $discountPercent,
+            'discount_ugx' => $discountUgx,
+            'vat_percent' => $vatPercent,
+            'vat_ugx' => $vatUgx,
+            'custom_fields' => $fields,
             'subscription_first_year_ugx' => round($subscriptionUgx, 2),
             'subscription_first_year_usd' => round($subscriptionUsd, 2),
             'onboarding_ugx' => round($onboardingUgx, 2),

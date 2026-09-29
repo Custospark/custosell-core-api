@@ -68,6 +68,33 @@ class InvestmentQuotationTest extends TestCase
         );
     }
 
+    public function test_custom_lines_discount_vat_and_fields_flow_through(): void
+    {
+        $response = $this->postJson('/api/v1/quotations/estimate', [
+            'plan' => 'essential',
+            'drivers' => ['tills' => 1, 'staff' => 1, 'branches' => 1],
+            'custom_lines' => [['label' => 'Upcountry travel', 'amount_ugx' => 200000]],
+            'custom_fields' => [['label' => 'Valid until', 'value' => '30 Oct 2026']],
+            'discount_percent' => 10,
+            'vat_percent' => 18,
+        ])->assertOk();
+
+        $data = $response->json('data');
+        $this->assertSame('Upcountry travel', $data['custom_lines'][0]['label']);
+        $this->assertSame('30 Oct 2026', $data['custom_fields'][0]['value']);
+        $this->assertGreaterThan(0, (float) $data['discount_ugx']);
+        $this->assertGreaterThan(0, (float) $data['vat_ugx']);
+
+        $expectedGrand = (float) $data['hardware_total_ugx']
+            - (float) $data['discount_ugx']
+            + (float) $data['custom_total_ugx']
+            + (float) $data['subscription_first_year_ugx']
+            + (float) $data['onboarding_ugx']
+            + (float) $data['maintenance_annual_ugx']
+            + (float) $data['vat_ugx'];
+        $this->assertEqualsWithDelta($expectedGrand, (float) $data['grand_total_ugx'], 0.01);
+    }
+
     public function test_estimate_rejects_unknown_plan_and_bad_input(): void
     {
         $this->postJson('/api/v1/quotations/estimate', ['plan' => 'nope'])->assertNotFound();
