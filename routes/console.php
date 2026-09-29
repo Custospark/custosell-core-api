@@ -9,6 +9,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('pipeline:dispatch-reminders')->everyMinute();
+// Drain the queue every minute (shared host has no supervisor): exits when
+// idle, never overlaps, so order/low-stock emails send within ~a minute.
+Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')->everyMinute()->withoutOverlapping()->name('queue-drain');
 Schedule::command('pipeline:record-progress-snapshots')->dailyAt('23:55');
 Schedule::command('pipeline:run-automations')->everyMinute();
 Schedule::command('businesses:clean-dormant')->dailyAt('03:00');
