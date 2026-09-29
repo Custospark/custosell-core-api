@@ -56,6 +56,25 @@ class StorefrontOrderNotificationsTest extends StorefrontTestCase
         });
     }
 
+    public function test_low_stock_digest_sends_only_once_per_day(): void
+    {
+        Mail::fake();
+
+        Product::factory()->create([
+            'business_id' => $this->business->id,
+            'name' => 'Almost Gone Flour',
+            'is_active' => true,
+            'type' => Product::TYPE_PRODUCT,
+            'stock_quantity' => 2,
+            'low_stock_threshold' => 10,
+        ]);
+
+        (new SendLowStockDigestEmail($this->business->id))->handle();
+        (new SendLowStockDigestEmail($this->business->id))->handle();
+
+        Mail::assertSent(StandardEmail::class, 1);
+    }
+
     public function test_low_stock_digest_stays_silent_when_stocked(): void
     {
         Mail::fake();

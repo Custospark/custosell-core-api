@@ -14,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -37,6 +38,12 @@ class SendLowStockDigestEmail implements ShouldQueue
     {
         $business = Business::query()->with('owner')->find($this->businessId);
         if (! $business) {
+            return;
+        }
+
+        // Once-daily guard: retries or manual re-runs never double-send.
+        $marker = 'lowstock-digest:'.$business->id.':'.now()->toDateString();
+        if (Cache::get($marker)) {
             return;
         }
 
@@ -77,6 +84,8 @@ class SendLowStockDigestEmail implements ShouldQueue
             ctaUrl: $base.'/inventory/overview',
             ctaLabel: 'Review inventory',
         ));
+
+        Cache::put($marker, true, now()->endOfDay());
     }
 
     public function failed(?Throwable $exception): void
